@@ -1,0 +1,23 @@
+[
+  ["ćufte", "cufte"],
+  ["Ćufte", "cufte"],
+  ["ћуфте", "cufte"],
+  ["đuveč", "djuvec"],
+  ["djuveč", "djuvec"],
+  ["Đuveč", "djuvec"],
+  ["šargarepa", "sargarepa"],
+  ["Njegoš", "njegos"],
+  ["  bela   pavlaka ", "bela pavlaka"],
+  ["ЖЕЛЕ", "zele"],
+
+  ["brašno, glatko", "brasno, glatko"],
+  ["Dž", "dz"],
+  ["Њ", "nj"],
+  ["ЏЕМ", "dzem"],
+  ["Љубав", "ljubav"],
+  ["", ""],
+  ["   ", ""],
+  ["ђubre", "djubre"],
+  ["mleko\tu\nprahu", "mleko u prahu"],
+  ["Пилећа džigerica", "pileca dzigerica"]
+]

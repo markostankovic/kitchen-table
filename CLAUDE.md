@@ -1,0 +1,87 @@
+# CLAUDE.md
+
+Project rules. These are not suggestions. If a change would violate one, stop and ask.
+
+## What this is
+
+A Flutter + Supabase app for family recipes and meal planning. Serbian-first,
+bilingual (sr / en) by design. Household-scoped data, not per-user.
+
+Full context lives in `docs/`. Read `docs/DECISIONS.md` before proposing any
+architectural change — most alternatives were already considered and rejected
+there, with reasons.
+
+## Stack (fixed)
+
+- Flutter, iOS + Android. Latin script only for display.
+- Riverpod (with `riverpod_generator`) for state. Not BLoC, not Provider, not GetX.
+- `go_router` with typed routes. `freezed` + `json_serializable` for all models.
+- Supabase: Postgres, Auth, Storage, RLS.
+- Supabase Edge Functions (TypeScript, Deno) for anything touching an API key.
+- Zod on the server is the single source of truth for AI-facing schemas.
+
+## Hard rules
+
+1. **Supabase client only inside `data/`.** No file under `application/`,
+   `domain/`, or `presentation/` may import `supabase_flutter`. No
+   `Map<String, dynamic>` and no `PostgrestException` crosses out of `data/`.
+2. **No AI provider key ever reaches the client.** All model calls happen in
+   Edge Functions.
+3. **`recipe_ingredients.raw_text` is NOT NULL, always.** Structured fields are
+   an enhancement on top of it. A failed parse must still render the line.
+4. **No hard deletes.** Every household-scoped table has `deleted_at`.
+   Every household-scoped table has `updated_at` maintained by a trigger.
+5. **Quantities are integer fractions** (`qty_num` / `qty_den`). Never floats.
+6. **Text normalization has one definition per side** — `normalize_text()` in
+   Postgres, `TextNormalizer` in Dart — and they are verified against the shared
+   fixture list in `test/fixtures/normalization.json`. Change one, change both,
+   run the test.
+7. **Domain models are pure Dart.** No Flutter imports, no Supabase imports.
+8. **New third-party package = ask first.**
+
+## Layout
+
+```
+lib/
+  core/            # supabase client, router, theme, env, shared widgets
+  features/<name>/
+    data/          # repositories, DTOs, Supabase + Drift datasources
+    domain/        # freezed models, pure Dart
+    application/   # @riverpod providers, orchestration
+    presentation/  # screens, widgets
+supabase/
+  migrations/
+  functions/
+    _shared/       # zod schemas, ai client, usage limits
+```
+
+Features: `auth`, `households`, `recipes`, `ingredients`, `import`, `meal_plan`,
+`shopping_list`.
+
+## Commands
+
+```
+dart run build_runner watch -d      # codegen while developing
+dart analyze                        # must be clean before any commit
+flutter test
+supabase db reset                   # rebuild local db from migrations
+supabase functions serve
+make types                          # regenerate Dart models from Zod schemas
+```
+
+## Conventions
+
+- Files `snake_case.dart`. Classes `PascalCase`. Providers named for what they
+  return: `recipeListProvider`, `recipeRepositoryProvider`.
+- One feature per folder. Cross-feature imports go through `domain/` only.
+- Commit generated files (`*.g.dart`, `*.freezed.dart`).
+- Every migration is a new timestamped file. Never edit an applied migration.
+- Locale codes are `sr` and `en`. Nothing else.
+
+## Working style
+
+- Small steps. Finish and verify one vertical slice before starting the next.
+- After any schema change, regenerate types and run `dart analyze` before moving on.
+- If a task is ambiguous, ask rather than guessing a convention.
+- Do not add abstraction layers that aren't in `docs/ARCHITECTURE.md`. No
+  `BaseRepository<T>`, no use-case class per operation.

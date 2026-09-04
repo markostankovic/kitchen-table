@@ -1,0 +1,46 @@
+# Static analysis configuration.
+#
+# Enforcement, not documentation (docs/ARCHITECTURE.md "Enforcement").
+# `dart analyze` must be clean before any commit (CLAUDE.md).
+#
+# riverpod_lint 3.x is an analysis_server_plugin, not a custom_lint plugin, so
+# its rules run under plain `dart analyze` -- there is no separate lint command.
+
+include: package:flutter_lints/flutter.yaml
+
+plugins:
+  riverpod_lint: ^3.1.9
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+
+  language:
+    strict-casts: true
+    strict-raw-types: true
+    strict-inference: true
+
+  errors:
+    # Freezed emits annotations on generated constructor params; the analyzer
+    # flags targets it cannot see. Pure noise, not a real diagnostic.
+    invalid_annotation_target: ignore
+
+    # Promoted to error: each of these is a correctness or boundary concern
+    # that should stop a commit rather than scroll past in a warning list.
+    avoid_dynamic_calls: error
+    unawaited_futures: error
+    always_declare_return_types: error
+    prefer_final_locals: error
+
+    # A dangling TODO should not fail the build.
+    todo: ignore
+
+linter:
+  rules:
+    # Enabled here so the `errors:` promotions above have something to promote.
+    - avoid_dynamic_calls
+    - unawaited_futures
+    - always_declare_return_types
+    - prefer_final_locals
