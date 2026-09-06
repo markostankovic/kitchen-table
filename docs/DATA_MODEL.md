@@ -9,8 +9,9 @@ Conventions everywhere:
 - `updated_at timestamptz not null default now()` maintained by trigger
 - `deleted_at timestamptz` on every household-scoped table; **never hard delete**
 
-Extensions: `pg_trgm`, `unaccent` (unaccent is used as a helper inside
-`normalize_text`, not on its own — see D5).
+Extensions: `pg_trgm` only. **`unaccent` is deliberately not installed** — it
+maps đ→d, and it is `STABLE` rather than `IMMUTABLE` so it cannot back a
+generated column at all. See D19.
 
 ---
 
@@ -19,36 +20,35 @@ Extensions: `pg_trgm`, `unaccent` (unaccent is used as a helper inside
 One function, used by generated columns and by search. Must match
 `TextNormalizer` in Dart exactly.
 
-```sql
-create or replace function normalize_text(input text)
-returns text
-language sql
-immutable
-strict
-as $$
-  select trim(regexp_replace(
-    translate(
-      lower(
-        -- Cyrillic -> Latin, digraphs first
-        replace(replace(replace(replace(replace(replace(
-          lower(input),
-          'њ','nj'), 'љ','lj'), 'џ','dz'), 'ђ','dj'), 'ћ','c'), 'ж','z')
-      ),
-      'абвгдезијклмнопрстуфхцчш',
-      'abvgdezijklmnoprstufhccs'
-    ),
-    -- Latin diacritics
-    'čćžšđ', 'cczsd'
-  , 'g'), '\s+', ' ', 'g'));
-$$;
-```
+**The implementation lives in `supabase/migrations/20260904210716_init.sql`.**
+That file is the definition; this section is the spec it satisfies. An earlier
+draft of this document carried an illustrative SQL body — it has been removed
+because it did not compile and contradicted D5 (it mapped Latin đ→d via
+`translate`, which is 1:1 and cannot emit two characters).
 
-> The body above is a sketch. Implement it properly: handle đ→dj (two chars, so
-> `replace` not `translate`), lj/nj/dž, then strip remaining diacritics, collapse
-> whitespace. Verify against `test/fixtures/normalization.json`, which must
-> contain at minimum:
-> `ćufte→cufte`, `Ćufte→cufte`, `ћуфте→cufte`, `đuveč→djuvec`,
-> `djuveč→djuvec`, `šargarepa→sargarepa`, `Njegoš→njegos`.
+The algorithm, in this order:
+
+1. lowercase
+2. Cyrillic → Latin, **digraphs first** — `њ→nj`, `љ→lj`, `џ→dz`, `ђ→dj`,
+   `ћ→c`, `ж→z` — then the 1:1 map
+   `абвгдезијклмнопрстуфхцчш` → `abvgdezijklmnoprstufhccs`
+3. Latin diacritics — `č→c`, `ć→c`, `š→s`, `ž→z`, and **`đ→dj` via `replace`**,
+   since it is two characters and cannot ride in `translate`
+4. collapse whitespace, trim
+
+Punctuation is deliberately preserved: the ingredient line parser already
+splits notes off at the first comma.
+
+`test/fixtures/normalization.json` is the contract, and it is the *only* place
+the cases are written down. `tool/gen_normalization_sql.dart` generates
+`supabase/tests/normalization_test.sql` from it, so the Postgres and Dart sides
+are asserted against the same list. Run both with `make test-sql` and
+`flutter test`.
+
+> **Changing `normalize_text` requires a migration that also rebuilds every
+> generated column derived from it.** Postgres accepts `CREATE OR REPLACE` on
+> the function without recomputing stored generated columns, so the data goes
+> stale silently and search starts missing rows that used to match.
 
 ---
 
@@ -116,13 +116,16 @@ as $$
 $$;
 ```
 
-Then every household-scoped table gets the same four policies:
+Then every household-scoped table gets the same policies. **Membership only —
+no `deleted_at` clause** (D23): the Phase 2 delta fetch needs to see tombstones
+in order to evict them from the cache, so soft-deleted rows are filtered in
+`data/`, not here.
 
 ```sql
 alter table recipes enable row level security;
 
 create policy recipes_select on recipes for select
-  using (is_household_member(household_id) and deleted_at is null);
+  using (is_household_member(household_id));
 create policy recipes_insert on recipes for insert
   with check (is_household_member(household_id));
 create policy recipes_update on recipes for update

@@ -8,10 +8,12 @@ feature at a time, not all schema then all UI.
 
 ## Phase 0 — Foundations
 
+**Status: complete** (`392ab96`). Decisions taken during it: D19–D24.
+
 No product features. This exists so nothing later has to be undone.
 
 - `flutter create`, package structure per ARCHITECTURE.md, empty feature folders
-- `analysis_options.yaml` strict, `custom_lint` + `riverpod_lint` wired
+- `analysis_options.yaml` strict, `riverpod_lint` wired via `plugins:` (D20)
 - `tool/check_layers.dart` — fails if `presentation/` imports `data/`, or if
   `supabase_flutter` appears outside `data/` and `core/supabase/`
 - `build_runner` working; one throwaway freezed model to prove it

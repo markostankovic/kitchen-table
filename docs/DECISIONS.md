@@ -217,6 +217,100 @@ awkward to bolt on later.
 field on the server, the Dart parser quietly reads null, and the bug surfaces
 three screens later.
 
+## D19 — `unaccent` is not installed; `normalize_text` is hand-rolled
+
+**Decided.** The `unaccent` extension is not created. `normalize_text()` is
+built from `lower` / `replace` / `translate` / `regexp_replace` only, which
+keeps it `IMMUTABLE`. See `supabase/migrations/20260904210716_init.sql`.
+
+**Why.** D5 already rejected `unaccent` on correctness grounds (it maps đ→d,
+splitting *đuveč* from someone typing *djuvec*). There is a second, harder
+reason that is easy to miss and worth writing down: `unaccent()` is `STABLE`,
+not `IMMUTABLE`, because its behaviour depends on a mutable dictionary. Any
+function that calls it is therefore also non-`IMMUTABLE` — and a
+non-`IMMUTABLE` function **cannot back a generated column at all**. That kills
+`ingredient_names.normalized_name` and `recipes.title_normalized` outright, not
+just their accuracy.
+
+**Rejected.** `unaccent` in any form, including "just for the ASCII fallback".
+`docs/DATA_MODEL.md` originally listed it as a helper inside `normalize_text`;
+that is not implementable.
+
+## D20 — `riverpod_lint` 3.x replaces `custom_lint`
+
+**Decided.** `custom_lint` is not a dependency. `riverpod_lint` is declared in
+a `plugins:` block in `analysis_options.yaml` and its rules run under plain
+`dart analyze`.
+
+**Why.** riverpod_lint 3.x migrated off `custom_lint_builder` to Dart's native
+`analysis_server_plugin`. Adding `custom_lint` alongside it forces the version
+solver back to riverpod_lint 2.x, which transitively pins `freezed_annotation
+^2.2.0` and blocks freezed 4. The enforcement intent of
+`docs/ARCHITECTURE.md` is unchanged; there is simply one fewer command to run,
+because `make lint` no longer needs a separate `dart run custom_lint` step.
+
+## D21 — `fromJson` / `toJson` are exempt from the raw-map ban
+
+**Decided.** `tool/check_layers.dart` does not flag `Map<String, dynamic>` on
+lines declaring `fromJson` or `toJson`.
+
+**Why.** CLAUDE.md rule 1 bans `Map<String, dynamic>` outside `data/`, but
+CLAUDE.md also mandates `freezed` + `json_serializable` for *all* models, and a
+generated `fromJson` necessarily takes a raw map. A literal reading of rule 1
+would ban the exact pattern the stack requires. What rule 1 protects against is
+untyped maps used as the currency *between* layers — not the one constructor
+that turns a map into a typed model.
+
+## D22 — Toolchain floor: Flutter 3.47.2 / Dart 3.13.2
+
+**Decided.** The project requires Dart >= 3.13. `pubspec.yaml` pins
+`sdk: ^3.13.2`.
+
+**Why.** freezed 4.x, riverpod_lint 3.1.9 and riverpod_generator 4.0.9 all
+require analyzer 13, which requires Dart 3.13. On Dart 3.12 no combination of
+these resolves — pub's own diagnostic recommends upgrading the SDK.
+
+**Consequence, and it will bite again.** `riverpod_lint` depends on `riverpod`
+at an **exact** version (3.1.9 → `riverpod 3.4.3`). So `flutter_riverpod` and
+`riverpod_annotation` cannot be bumped independently: all four move in
+lockstep, or version solving fails with an error that misleadingly blames
+`freezed_annotation`.
+
+## D23 — RLS checks membership only; repositories filter `deleted_at`
+
+**Decided.** Household-scoped SELECT policies check membership and nothing
+else. Filtering out soft-deleted rows is done in `data/`, not in the policy.
+
+**Why.** `docs/ARCHITECTURE.md` requires the Phase 2 delta fetch to *see*
+`deleted_at` rows in order to evict them from the Drift cache. A policy of
+`using (is_household_member(...) and deleted_at is null)` makes tombstones
+invisible to the client, so the cache could never learn that a row was deleted.
+The two requirements are mutually exclusive; access control belongs in RLS,
+presentation belongs in the repository.
+
+**Rejected.**
+- `deleted_at is null` in the policy, with a separate tombstone RPC added in
+  Phase 2 — a second read path built later to work around a choice made now.
+- Deferring the question to Phase 2 — it would mean rewriting every
+  household-scoped SELECT policy in a later migration.
+
+## D24 — "Household-scoped" means "has a `household_id` column"
+
+**Decided.** CLAUDE.md rule 4 (`deleted_at` + `updated_at` + trigger on every
+household-scoped table) applies to tables carrying a `household_id` column.
+Child rows — `recipe_ingredients`, `recipe_steps`, `shopping_list_items`,
+`household_members` — cascade with their parent and carry neither column.
+
+**Why.** The reference schema in `docs/DATA_MODEL.md` already works this way,
+and putting `deleted_at` on every child means every child query needs a filter
+that adds no safety: a soft-deleted recipe's ingredient rows are already
+unreachable.
+
+**Consequence.** Removing someone from a household is a **hard delete** of the
+`household_members` row. Revisit if membership revocation ever needs to be
+auditable — that is a real argument for making this one join table the
+exception.
+
 ## Open / deferred
 
 - **Client vs Edge Function split** — rule of thumb written in
@@ -227,3 +321,10 @@ three screens later.
   Phase 1–3.
 - **Cross-family unit conversion** — deferred, see D9.
 - **Handwritten card OCR quality** — unknown until there's a real card to test.
+- **`ingredients` has no stable seed key** — `docs/INGREDIENTS.md` seeds from a
+  CSV keyed on `brasno_glatko` / `parent_key`, but no such column exists on the
+  table. Without it the seed is not idempotent and parent references cannot be
+  resolved on re-run. Needs a `key text unique` column. Decide in Phase 1b,
+  before the seed script is written.
+- **Auditable membership revocation** — see D24. Only matters once members can
+  be removed.

@@ -191,11 +191,18 @@ Writes are online-only and fail loudly with a "you're offline" message.
 Conventions in a document get ignored around session forty. These fail the build:
 
 - `analysis_options.yaml`: `strict-casts: true`, `strict-raw-types: true`,
-  selected lints as errors
-- `custom_lint` + `riverpod_lint` in CI
+  `strict-inference: true`, selected lints as errors
+- `riverpod_lint` declared in the `plugins:` block of `analysis_options.yaml`.
+  Its rules run under plain `dart analyze` — there is no separate lint command,
+  and `custom_lint` is deliberately not a dependency (D20).
 - Import boundary check: a `tool/check_layers.dart` script that fails if
   `presentation/` imports `data/`, or if `supabase_flutter` appears outside
-  `data/` and `core/supabase/`. Run in CI and pre-commit.
+  `data/` and `core/supabase/`. Run in CI and pre-commit. It also enforces the
+  rest of rule 1 — `drift` confined to `data/`, no Flutter imports in
+  `domain/`, cross-feature imports through `domain/` only, and no raw maps or
+  Postgrest/Auth exceptions escaping `data/` (D21 exempts `fromJson`/`toJson`).
+  `test/tool/check_layers_test.dart` plants each violation and asserts the
+  checker rejects it.
 - `dart analyze` must be clean before any commit.
 
 ## Deliberately not built
