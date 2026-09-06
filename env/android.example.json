@@ -1,0 +1,5 @@
+{
+  "_comment": "Android emulator only. 10.0.2.2 is the emulator's alias for the host loopback; 127.0.0.1 would resolve to the emulator itself. Use env/local.json for iOS and desktop.",
+  "SUPABASE_URL": "http://10.0.2.2:54321",
+  "SUPABASE_ANON_KEY": "paste the anon key from `supabase status`"
+}

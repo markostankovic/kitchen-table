@@ -9,13 +9,57 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/households/presentation/settings_screen.dart';
+import '../../features/auth/presentation/sign_in_screen.dart';
+import '../../features/auth/presentation/verify_otp_screen.dart';
+import '../../features/auth/presentation/settings_screen.dart';
+import '../../features/households/presentation/create_household_screen.dart';
+import '../../features/households/presentation/household_screen.dart';
 import '../../features/meal_plan/presentation/meal_plan_screen.dart';
 import '../../features/recipes/presentation/recipe_list_screen.dart';
 import '../../features/shopping_list/presentation/shopping_list_screen.dart';
 import 'app_shell.dart';
 
 part 'routes.g.dart';
+
+// Onboarding routes sit outside the shell, so the bottom nav does not render
+// while signing in or naming a household.
+
+@TypedGoRoute<SignInRoute>(path: SignInRoute.path)
+class SignInRoute extends GoRouteData with $SignInRoute {
+  const SignInRoute();
+
+  static const String path = '/sign-in';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const SignInScreen();
+}
+
+@TypedGoRoute<VerifyOtpRoute>(path: VerifyOtpRoute.path)
+class VerifyOtpRoute extends GoRouteData with $VerifyOtpRoute {
+  const VerifyOtpRoute({required this.email});
+
+  /// Carried as a query parameter, so a resend has the address without
+  /// re-asking for it.
+  final String email;
+
+  static const String path = '/sign-in/verify';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      VerifyOtpScreen(email: email);
+}
+
+@TypedGoRoute<CreateHouseholdRoute>(path: CreateHouseholdRoute.path)
+class CreateHouseholdRoute extends GoRouteData with $CreateHouseholdRoute {
+  const CreateHouseholdRoute();
+
+  static const String path = '/create-household';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const CreateHouseholdScreen();
+}
 
 @TypedStatefulShellRoute<AppShellRoute>(
   branches: <TypedStatefulShellBranch<StatefulShellBranchData>>[
@@ -36,7 +80,12 @@ part 'routes.g.dart';
     ),
     TypedStatefulShellBranch<SettingsBranch>(
       routes: <TypedRoute<RouteData>>[
-        TypedGoRoute<SettingsRoute>(path: SettingsRoute.path),
+        TypedGoRoute<SettingsRoute>(
+          path: SettingsRoute.path,
+          routes: <TypedRoute<RouteData>>[
+            TypedGoRoute<HouseholdRoute>(path: 'household'),
+          ],
+        ),
       ],
     ),
   ],
@@ -107,4 +156,15 @@ class SettingsRoute extends GoRouteData with $SettingsRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       const SettingsScreen();
+}
+
+/// Nested under Settings, so it keeps the bottom nav and the back stack.
+class HouseholdRoute extends GoRouteData with $HouseholdRoute {
+  const HouseholdRoute();
+
+  static const String path = '/settings/household';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const HouseholdScreen();
 }

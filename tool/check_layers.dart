@@ -33,6 +33,8 @@ const Map<String, String> _bannedTypes = <String, String>{
       'raw maps must be converted to a domain model inside data/',
   'PostgrestException':
       'Supabase errors must be translated to an AppFailure inside data/',
+  'AuthException':
+      'Supabase errors must be translated to an AppFailure inside data/',
 };
 
 void main(List<String> args) {

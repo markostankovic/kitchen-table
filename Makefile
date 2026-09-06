@@ -23,9 +23,16 @@ lint: ## Analyze + enforce layer boundaries
 test: ## Dart/Flutter tests
 	flutter test
 
-test-sql: ## Regenerate and run the Postgres normalization test
+# NOTE: `supabase db query` sends the file as a single prepared statement, so
+# each test file must contain exactly ONE statement. In practice that means
+# wrapping everything -- including any DDL -- in a single `do $$ ... $$;` block
+# and using EXECUTE for the DDL.
+test-sql: ## Regenerate generated SQL, then run every test in supabase/tests/
 	dart run tool/gen_normalization_sql.dart
-	supabase db query --file supabase/tests/normalization_test.sql
+	@for f in supabase/tests/*.sql; do \
+		echo "--- $$f"; \
+		supabase db query --file "$$f" || exit 1; \
+	done
 
 check: lint test test-sql ## Everything CI would run
 
@@ -38,8 +45,13 @@ db-stop: ## Stop the local Supabase stack
 db-reset: ## Rebuild the local database from migrations
 	supabase db reset
 
-run: ## Run the app (requires env/local.json)
+run: ## Run the app on iOS/desktop (requires env/local.json)
 	flutter run $(DART_DEFINE)
+
+# The Android emulator cannot reach 127.0.0.1 -- that address resolves to the
+# emulator itself. 10.0.2.2 is its alias for the host loopback.
+run-android: ## Run the app on the Android emulator (requires env/android.json)
+	flutter run --dart-define-from-file=env/android.json
 
 types: ## Regenerate Dart models from the Zod schemas (Phase 1d)
 	@echo "make types is not wired up yet."

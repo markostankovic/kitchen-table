@@ -95,6 +95,15 @@ void main() {
     expect(result.output, contains('PostgrestException'));
   });
 
+  test('rejects AuthException escaping data/', () {
+    final result = runChecker(<String, String>{
+      'lib/features/auth/application/auth_providers.dart':
+          "void f(AuthException e) {}\n",
+    });
+    expect(result.exitCode, 1);
+    expect(result.output, contains('AuthException'));
+  });
+
   test('rejects cross-feature imports that bypass domain/', () {
     final result = runChecker(<String, String>{
       'lib/features/recipes/data/recipe_repository.dart': "class R {}\n",
