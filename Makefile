@@ -4,8 +4,8 @@
 
 DART_DEFINE := --dart-define-from-file=env/local.json
 
-.PHONY: help gen watch lint test test-sql db-reset db-start db-stop types check \
-	functions-serve functions-deploy
+.PHONY: help gen watch lint test test-sql seed seed-check db-reset db-start \
+	db-stop types check functions-serve functions-deploy
 
 help:
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -35,7 +35,19 @@ test-sql: ## Regenerate generated SQL, then run every test in supabase/tests/
 		supabase db query --file "$$f" || exit 1; \
 	done
 
-check: lint test test-sql ## Everything CI would run
+# NOTE: seed-check is its own step and NOT folded into test-sql. test-sql can
+# regenerate normalization_test.sql in place, because that file is a test.
+# The catalog seed is a migration, and an applied migration is never rewritten
+# (CLAUDE.md) -- so the only thing that can catch an edited CSV with no
+# migration behind it is an explicit check. Different guarantees, different
+# targets.
+check: lint test seed-check test-sql ## Everything CI would run
+
+seed: ## Emit a new catalog seed migration from supabase/seeds/*.csv
+	dart run tool/gen_ingredient_seed.dart --new-migration
+
+seed-check: ## Fail if the seed CSVs changed without a new seed migration
+	dart run tool/gen_ingredient_seed.dart --check
 
 db-start: ## Start the local Supabase stack
 	supabase start

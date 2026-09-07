@@ -1,0 +1,251 @@
+# The curated ingredient core (D1). Read by tool/gen_ingredient_seed.dart,
+# which turns this and ingredient_names.csv into a generated, idempotent
+# migration. Run `make seed` after editing. Never edit the generated SQL.
+#
+# key                  a stable slug, ^[a-z][a-z0-9_]*$, unique, permanent.
+#                      Renaming a key orphans the old row -- it does not rename
+#                      anything. Retiring an ingredient is merge_ingredients(),
+#                      a reviewed act, never a deleted line here (the generator
+#                      does not emit deletions; it cannot tell a retirement
+#                      from a typo).
+# parent_key           blank, or another key in this file. ONE level only (D3):
+#                      a parent may not itself have a parent. Used sparingly --
+#                      flours, sugars, dairy fat, paprika, yeast, oil, chicken
+#                      cuts -- and never for "these are both vegetables".
+# category             produce fruit dairy meat fish pantry spice bakery
+#                      beverage nuts. Nullable; only aisle grouping in Phase 4
+#                      reads it.
+# default_unit_family  mass | volume | count | blank. What the ingredient is
+#                      usually measured in, for the shopping list's display
+#                      choice. Not a constraint on what a recipe may write.
+# is_pantry_staple     true only for the five things nobody shops for. A
+#                      household overrides this in household_pantry_prefs.
+#
+# Everything here is seeded is_verified = true. The long tail auto-creates
+# unverified and is not written down (D1).
+#
+# No commas inside any field: the reader splits on commas and nothing else.
+
+key,parent_key,category,default_unit_family,is_pantry_staple
+
+# --- flour, sugar, and the other parented sets (D3) ------------------------
+brasno,,pantry,mass,false
+brasno_glatko,brasno,pantry,mass,false
+brasno_ostro,brasno,pantry,mass,false
+brasno_integralno,brasno,pantry,mass,false
+brasno_kukuruzno,brasno,pantry,mass,false
+secer,,pantry,mass,true
+secer_kristal,secer,pantry,mass,false
+secer_u_prahu,secer,pantry,mass,false
+secer_vanilin,secer,pantry,mass,false
+secer_smedji,secer,pantry,mass,false
+pavlaka,,dairy,volume,false
+pavlaka_slatka,pavlaka,dairy,volume,false
+pavlaka_kisela,pavlaka,dairy,volume,false
+aleva_paprika,,spice,mass,false
+aleva_paprika_slatka,aleva_paprika,spice,mass,false
+aleva_paprika_ljuta,aleva_paprika,spice,mass,false
+kvasac,,pantry,mass,false
+kvasac_suvi,kvasac,pantry,mass,false
+kvasac_svezi,kvasac,pantry,mass,false
+ulje,,pantry,volume,true
+ulje_suncokretovo,ulje,pantry,volume,false
+ulje_maslinovo,ulje,pantry,volume,false
+piletina,,meat,mass,false
+pileca_prsa,piletina,meat,mass,false
+pileci_batak,piletina,meat,mass,false
+pileci_file,piletina,meat,mass,false
+
+# --- Serbian pantry: the items no external dataset has --------------------
+kajmak,,dairy,mass,false
+ajvar,,pantry,mass,false
+pindjur,,pantry,mass,false
+urnebes,,pantry,mass,false
+vegeta,,spice,mass,false
+zacin_c,,spice,mass,false
+suvo_meso,,meat,mass,false
+slanina,,meat,mass,false
+kulen,,meat,mass,false
+sudzuk,,meat,mass,false
+cvarci,,meat,mass,false
+prezle,,pantry,mass,false
+mladi_sir,,dairy,mass,false
+beli_sir,,dairy,mass,false
+kore_za_pitu,,pantry,count,false
+gotova_kora,,pantry,count,false
+prasak_za_pecivo,,pantry,mass,false
+gustin,,pantry,mass,false
+mineralna_voda,,beverage,volume,false
+rakija,,beverage,volume,false
+seckani_paradajz,,pantry,mass,false
+paradajz_pire,,pantry,mass,false
+pasirani_paradajz,,pantry,mass,false
+majcina_dusica,,spice,mass,false
+vlasac,,spice,mass,false
+celer_list,,produce,mass,false
+
+# --- dairy and eggs --------------------------------------------------------
+mleko,,dairy,volume,false
+kiselo_mleko,,dairy,volume,false
+jogurt,,dairy,volume,false
+puter,,dairy,mass,false
+margarin,,dairy,mass,false
+sir,,dairy,mass,false
+kackavalj,,dairy,mass,false
+feta,,dairy,mass,false
+parmezan,,dairy,mass,false
+mocarela,,dairy,mass,false
+slag,,dairy,volume,false
+jaje,,dairy,count,false
+
+# --- meat and fish ---------------------------------------------------------
+junetina,,meat,mass,false
+juneci_but,,meat,mass,false
+svinjetina,,meat,mass,false
+svinjski_vrat,,meat,mass,false
+jagnjetina,,meat,mass,false
+mleveno_meso,,meat,mass,false
+cureca_prsa,,meat,mass,false
+sunka,,meat,mass,false
+salama,,meat,mass,false
+virsle,,meat,count,false
+riba,,fish,mass,false
+oslic,,fish,mass,false
+pastrmka,,fish,mass,false
+tuna,,fish,mass,false
+sardina,,fish,mass,false
+
+# --- vegetables ------------------------------------------------------------
+crni_luk,,produce,count,false
+beli_luk,,produce,count,false
+mladi_luk,,produce,count,false
+praziluk,,produce,count,false
+krompir,,produce,mass,false
+sargarepa,,produce,mass,false
+paradajz,,produce,mass,false
+paradajz_ceri,,produce,mass,false
+paprika,,produce,count,false
+paprika_babura,,produce,count,false
+feferoni,,produce,count,false
+krastavac,,produce,count,false
+kiseli_krastavac,,pantry,count,false
+tikvica,,produce,mass,false
+plavi_patlidzan,,produce,mass,false
+kupus,,produce,mass,false
+kiseli_kupus,,produce,mass,false
+karfiol,,produce,mass,false
+brokoli,,produce,mass,false
+spanac,,produce,mass,false
+blitva,,produce,mass,false
+zelena_salata,,produce,count,false
+rotkvica,,produce,count,false
+cvekla,,produce,mass,false
+celer_koren,,produce,mass,false
+persun_koren,,produce,mass,false
+persun_list,,produce,count,false
+bundeva,,produce,mass,false
+pecurke,,produce,mass,false
+sampinjoni,,produce,mass,false
+boranija,,produce,mass,false
+grasak,,produce,mass,false
+pasulj,,pantry,mass,false
+socivo,,pantry,mass,false
+leblebija,,pantry,mass,false
+kukuruz_secerac,,produce,mass,false
+mirodjija,,spice,count,false
+
+# --- fruit -----------------------------------------------------------------
+jabuka,,fruit,mass,false
+kruska,,fruit,mass,false
+sljiva,,fruit,mass,false
+visnja,,fruit,mass,false
+tresnja,,fruit,mass,false
+jagoda,,fruit,mass,false
+malina,,fruit,mass,false
+kupina,,fruit,mass,false
+borovnica,,fruit,mass,false
+breskva,,fruit,mass,false
+kajsija,,fruit,mass,false
+grozdje,,fruit,mass,false
+limun,,fruit,count,false
+limunova_kora,,fruit,mass,false
+pomorandza,,fruit,count,false
+banana,,fruit,count,false
+lubenica,,fruit,mass,false
+dinja,,fruit,mass,false
+suvo_grozdje,,fruit,mass,false
+suva_sljiva,,fruit,mass,false
+
+# --- nuts and seeds --------------------------------------------------------
+orah,,nuts,mass,false
+lesnik,,nuts,mass,false
+badem,,nuts,mass,false
+kikiriki,,nuts,mass,false
+susam,,nuts,mass,false
+mak,,nuts,mass,false
+suncokret_semenke,,nuts,mass,false
+bundevine_semenke,,nuts,mass,false
+kokos,,nuts,mass,false
+
+# --- grains and pasta ------------------------------------------------------
+pirinac,,pantry,mass,false
+testenina,,pantry,mass,false
+spageti,,pantry,mass,false
+makarone,,pantry,mass,false
+rezanci,,pantry,mass,false
+griz,,pantry,mass,false
+ovsene_pahuljice,,pantry,mass,false
+heljda,,pantry,mass,false
+kus_kus,,pantry,mass,false
+kinoa,,pantry,mass,false
+hleb,,bakery,count,false
+zemicka,,bakery,count,false
+
+# --- pantry ----------------------------------------------------------------
+so,,pantry,mass,true
+voda,,pantry,volume,true
+sirce,,pantry,volume,false
+jabukovo_sirce,,pantry,volume,false
+balzamiko,,pantry,volume,false
+senf,,pantry,mass,false
+majonez,,pantry,mass,false
+kecap,,pantry,mass,false
+med,,pantry,mass,false
+dzem,,pantry,mass,false
+cokolada,,pantry,mass,false
+kakao,,pantry,mass,false
+soda_bikarbona,,pantry,mass,false
+zelatin,,pantry,mass,false
+supa_kocka,,pantry,count,false
+sos_od_soje,,pantry,volume,false
+maslina,,pantry,mass,false
+kapari,,pantry,mass,false
+nutela,,pantry,mass,false
+puding,,pantry,mass,false
+
+# --- spices and herbs ------------------------------------------------------
+biber,,spice,mass,true
+lovorov_list,,spice,count,false
+origano,,spice,mass,false
+bosiljak,,spice,mass,false
+ruzmarin,,spice,mass,false
+cimet,,spice,mass,false
+karanfilic,,spice,mass,false
+muskatni_orascic,,spice,mass,false
+kim,,spice,mass,false
+korijander,,spice,mass,false
+kurkuma,,spice,mass,false
+djumbir,,spice,mass,false
+cili,,spice,mass,false
+menta,,spice,mass,false
+zalfija,,spice,mass,false
+vanila,,spice,mass,false
+curry,,spice,mass,false
+
+# --- beverages -------------------------------------------------------------
+vino_belo,,beverage,volume,false
+vino_crno,,beverage,volume,false
+pivo,,beverage,volume,false
+kafa,,beverage,mass,false
+caj,,beverage,count,false
+sok_od_pomorandze,,beverage,volume,false

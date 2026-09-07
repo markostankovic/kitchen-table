@@ -1,0 +1,677 @@
+# Every string that should resolve to a curated ingredient (D1). Read by
+# tool/gen_ingredient_seed.dart together with ingredients.csv. Run `make seed`.
+#
+# ingredient_key   must exist in ingredients.csv.
+# locale           sr | en. Nothing else (CLAUDE.md).
+# name             as a human writes it, diacritics and all. normalize_text()
+#                  strips them on the way into the database, so `ćufte` and
+#                  `cufte` and `ЋУФТЕ` are one row here and one match there.
+# is_display_name  exactly one true per (ingredient_key, locale). This is the
+#                  string shown back on a shopping list.
+#
+# The non-display rows are the point of this file. Serbian is heavily inflected
+# and there is no stemmer (D6), so the forms recipes actually use are written
+# down: `dve kašike brašna`, `200 g šargarepe`. Nominative alone matches almost
+# nothing. The fuzzy tier catches the rest.
+#
+# No commas inside any field. No two rows may normalize to the same string in
+# the same locale -- a unique index rejects that, and it would mean one word
+# resolving two ways.
+
+ingredient_key,locale,name,is_display_name
+
+# --- flour -----------------------------------------------------------------
+brasno,sr,brašno,true
+brasno,sr,brašna,false
+brasno,en,flour,true
+brasno_glatko,sr,glatko brašno,true
+brasno_glatko,sr,glatkog brašna,false
+brasno_glatko,sr,brašno glatko,false
+brasno_glatko,sr,meko brašno,false
+brasno_glatko,en,all-purpose flour,true
+brasno_glatko,en,plain flour,false
+brasno_ostro,sr,oštro brašno,true
+brasno_ostro,sr,oštrog brašna,false
+brasno_ostro,en,bread flour,true
+brasno_ostro,en,strong flour,false
+brasno_integralno,sr,integralno brašno,true
+brasno_integralno,sr,integralnog brašna,false
+brasno_integralno,en,wholemeal flour,true
+brasno_kukuruzno,sr,kukuruzno brašno,true
+brasno_kukuruzno,sr,kukuruznog brašna,false
+brasno_kukuruzno,sr,palenta,false
+brasno_kukuruzno,en,cornmeal,true
+
+# --- sugar -----------------------------------------------------------------
+secer,sr,šećer,true
+secer,sr,šećera,false
+secer,en,sugar,true
+secer_kristal,sr,kristal šećer,true
+secer_kristal,sr,beli šećer,false
+secer_kristal,en,granulated sugar,true
+secer_u_prahu,sr,šećer u prahu,true
+secer_u_prahu,sr,prah šećer,false
+secer_u_prahu,en,powdered sugar,true
+secer_u_prahu,en,icing sugar,false
+secer_vanilin,sr,vanilin šećer,true
+secer_vanilin,sr,vanil šećer,false
+secer_vanilin,en,vanilla sugar,true
+secer_smedji,sr,smeđi šećer,true
+secer_smedji,sr,braon šećer,false
+secer_smedji,en,brown sugar,true
+
+# --- cream -----------------------------------------------------------------
+pavlaka,sr,pavlaka,true
+pavlaka,sr,pavlake,false
+pavlaka,en,cream,true
+pavlaka_slatka,sr,slatka pavlaka,true
+pavlaka_slatka,sr,slatke pavlake,false
+pavlaka_slatka,en,heavy cream,true
+pavlaka_slatka,en,whipping cream,false
+pavlaka_kisela,sr,kisela pavlaka,true
+pavlaka_kisela,sr,kisele pavlake,false
+pavlaka_kisela,en,sour cream,true
+
+# --- paprika ---------------------------------------------------------------
+aleva_paprika,sr,aleva paprika,true
+aleva_paprika,sr,aleve paprike,false
+aleva_paprika,en,ground paprika,true
+aleva_paprika_slatka,sr,slatka aleva paprika,true
+aleva_paprika_slatka,en,sweet paprika,true
+aleva_paprika_ljuta,sr,ljuta aleva paprika,true
+aleva_paprika_ljuta,en,hot paprika,true
+
+# --- yeast -----------------------------------------------------------------
+kvasac,sr,kvasac,true
+kvasac,sr,kvasca,false
+kvasac,en,yeast,true
+kvasac_suvi,sr,suvi kvasac,true
+kvasac_suvi,sr,suvog kvasca,false
+kvasac_suvi,en,dry yeast,true
+kvasac_suvi,en,instant yeast,false
+kvasac_svezi,sr,svež kvasac,true
+kvasac_svezi,sr,svežeg kvasca,false
+kvasac_svezi,en,fresh yeast,true
+
+# --- oil -------------------------------------------------------------------
+ulje,sr,ulje,true
+ulje,sr,ulja,false
+ulje,en,oil,true
+ulje,en,cooking oil,false
+ulje_suncokretovo,sr,suncokretovo ulje,true
+ulje_suncokretovo,sr,suncokretovog ulja,false
+ulje_suncokretovo,en,sunflower oil,true
+ulje_maslinovo,sr,maslinovo ulje,true
+ulje_maslinovo,sr,maslinovog ulja,false
+ulje_maslinovo,en,olive oil,true
+
+# --- chicken ---------------------------------------------------------------
+piletina,sr,piletina,true
+piletina,sr,piletine,false
+piletina,sr,pileće meso,false
+piletina,en,chicken,true
+pileca_prsa,sr,pileća prsa,true
+pileca_prsa,sr,pilećih prsa,false
+pileca_prsa,en,chicken breast,true
+pileci_batak,sr,pileći batak,true
+pileci_batak,sr,pileći bataci,false
+pileci_batak,en,chicken drumstick,true
+pileci_file,sr,pileći file,true
+pileci_file,sr,pilećeg filea,false
+pileci_file,en,chicken fillet,true
+
+# --- the Serbian pantry ----------------------------------------------------
+kajmak,sr,kajmak,true
+kajmak,sr,kajmaka,false
+kajmak,en,kajmak,true
+ajvar,sr,ajvar,true
+ajvar,sr,ajvara,false
+ajvar,en,ajvar,true
+pindjur,sr,pinđur,true
+pindjur,en,pindjur,true
+urnebes,sr,urnebes,true
+urnebes,sr,urnebes salata,false
+urnebes,en,urnebes,true
+vegeta,sr,vegeta,true
+vegeta,sr,vegete,false
+vegeta,en,vegeta,true
+zacin_c,sr,začin C,true
+zacin_c,en,seasoning C,true
+suvo_meso,sr,suvo meso,true
+suvo_meso,sr,suvog mesa,false
+suvo_meso,en,dried meat,true
+slanina,sr,slanina,true
+slanina,sr,slanine,false
+slanina,en,bacon,true
+kulen,sr,kulen,true
+kulen,sr,kulena,false
+kulen,en,kulen,true
+sudzuk,sr,sudžuk,true
+sudzuk,sr,sudžuka,false
+sudzuk,en,sudzuk,true
+cvarci,sr,čvarci,true
+cvarci,sr,čvaraka,false
+cvarci,en,pork cracklings,true
+prezle,sr,prezle,true
+prezle,sr,prezli,false
+prezle,en,breadcrumbs,true
+mladi_sir,sr,mladi sir,true
+mladi_sir,sr,mladog sira,false
+mladi_sir,en,curd cheese,true
+beli_sir,sr,beli sir,true
+beli_sir,sr,belog sira,false
+beli_sir,en,brine cheese,true
+kore_za_pitu,sr,kore za pitu,true
+kore_za_pitu,sr,kora za pitu,false
+kore_za_pitu,en,filo pastry,true
+gotova_kora,sr,gotova kora,true
+gotova_kora,sr,gotove kore,false
+gotova_kora,en,ready-made pastry,true
+prasak_za_pecivo,sr,prašak za pecivo,true
+prasak_za_pecivo,sr,praška za pecivo,false
+prasak_za_pecivo,en,baking powder,true
+gustin,sr,gustin,true
+gustin,sr,gustina,false
+gustin,en,cornstarch,true
+mineralna_voda,sr,mineralna voda,true
+mineralna_voda,sr,kisela voda,false
+mineralna_voda,en,sparkling water,true
+rakija,sr,rakija,true
+rakija,sr,rakije,false
+rakija,en,rakija,true
+seckani_paradajz,sr,seckani paradajz,true
+seckani_paradajz,sr,seckanog paradajza,false
+seckani_paradajz,en,chopped tomatoes,true
+paradajz_pire,sr,paradajz pire,true
+paradajz_pire,sr,pire od paradajza,false
+paradajz_pire,en,tomato paste,true
+pasirani_paradajz,sr,pasirani paradajz,true
+pasirani_paradajz,en,passata,true
+majcina_dusica,sr,majčina dušica,true
+majcina_dusica,sr,timijan,false
+majcina_dusica,en,thyme,true
+vlasac,sr,vlašac,true
+vlasac,sr,vlašca,false
+vlasac,en,chives,true
+celer_list,sr,list celera,true
+celer_list,sr,celerov list,false
+celer_list,en,celery leaves,true
+
+# --- dairy and eggs --------------------------------------------------------
+mleko,sr,mleko,true
+mleko,sr,mleka,false
+mleko,en,milk,true
+kiselo_mleko,sr,kiselo mleko,true
+kiselo_mleko,sr,kiselog mleka,false
+kiselo_mleko,en,soured milk,true
+jogurt,sr,jogurt,true
+jogurt,sr,jogurta,false
+jogurt,en,yoghurt,true
+jogurt,en,yogurt,false
+puter,sr,puter,true
+puter,sr,putera,false
+puter,sr,maslac,false
+puter,en,butter,true
+margarin,sr,margarin,true
+margarin,sr,margarina,false
+margarin,en,margarine,true
+sir,sr,sir,true
+sir,sr,sira,false
+sir,en,cheese,true
+kackavalj,sr,kačkavalj,true
+kackavalj,sr,kačkavalja,false
+kackavalj,en,kashkaval,true
+feta,sr,feta,true
+feta,sr,feta sir,false
+feta,en,feta,true
+parmezan,sr,parmezan,true
+parmezan,sr,parmezana,false
+parmezan,en,parmesan,true
+mocarela,sr,mocarela,true
+mocarela,sr,mocarele,false
+mocarela,en,mozzarella,true
+slag,sr,šlag,true
+slag,sr,šlaga,false
+slag,en,whipped cream,true
+jaje,sr,jaje,true
+jaje,sr,jaja,false
+jaje,sr,jajeta,false
+jaje,en,egg,true
+jaje,en,eggs,false
+
+# --- meat and fish ---------------------------------------------------------
+junetina,sr,junetina,true
+junetina,sr,junetine,false
+junetina,sr,juneće meso,false
+junetina,en,beef,true
+juneci_but,sr,juneći but,true
+juneci_but,en,beef round,true
+svinjetina,sr,svinjetina,true
+svinjetina,sr,svinjetine,false
+svinjetina,sr,svinjsko meso,false
+svinjetina,en,pork,true
+svinjski_vrat,sr,svinjski vrat,true
+svinjski_vrat,en,pork neck,true
+jagnjetina,sr,jagnjetina,true
+jagnjetina,sr,jagnjetine,false
+jagnjetina,en,lamb,true
+mleveno_meso,sr,mleveno meso,true
+mleveno_meso,sr,mlevenog mesa,false
+mleveno_meso,en,ground meat,true
+mleveno_meso,en,mince,false
+cureca_prsa,sr,ćureća prsa,true
+cureca_prsa,en,turkey breast,true
+sunka,sr,šunka,true
+sunka,sr,šunke,false
+sunka,en,ham,true
+salama,sr,salama,true
+salama,sr,salame,false
+salama,en,salami,true
+virsle,sr,viršle,true
+virsle,sr,viršli,false
+virsle,en,frankfurters,true
+riba,sr,riba,true
+riba,sr,ribe,false
+riba,en,fish,true
+oslic,sr,oslić,true
+oslic,en,hake,true
+pastrmka,sr,pastrmka,true
+pastrmka,sr,pastrmke,false
+pastrmka,en,trout,true
+tuna,sr,tuna,true
+tuna,sr,tunjevina,false
+tuna,en,tuna,true
+sardina,sr,sardina,true
+sardina,sr,sardine,false
+sardina,en,sardine,true
+
+# --- vegetables ------------------------------------------------------------
+crni_luk,sr,crni luk,true
+crni_luk,sr,luk,false
+crni_luk,sr,luka,false
+crni_luk,sr,glavica luka,false
+crni_luk,en,onion,true
+crni_luk,en,onions,false
+beli_luk,sr,beli luk,true
+beli_luk,sr,belog luka,false
+beli_luk,en,garlic,true
+mladi_luk,sr,mladi luk,true
+mladi_luk,sr,mladog luka,false
+mladi_luk,en,spring onion,true
+praziluk,sr,praziluk,true
+praziluk,sr,praziluka,false
+praziluk,en,leek,true
+krompir,sr,krompir,true
+krompir,sr,krompira,false
+krompir,en,potato,true
+krompir,en,potatoes,false
+sargarepa,sr,šargarepa,true
+sargarepa,sr,šargarepe,false
+sargarepa,sr,šargarepu,false
+sargarepa,en,carrot,true
+sargarepa,en,carrots,false
+paradajz,sr,paradajz,true
+paradajz,sr,paradajza,false
+paradajz,en,tomato,true
+paradajz,en,tomatoes,false
+paradajz_ceri,sr,čeri paradajz,true
+paradajz_ceri,en,cherry tomatoes,true
+paprika,sr,paprika,true
+paprika,sr,paprike,false
+paprika,en,pepper,true
+paprika,en,bell pepper,false
+paprika_babura,sr,babura,true
+paprika_babura,sr,babure,false
+paprika_babura,en,roasting pepper,true
+feferoni,sr,feferoni,true
+feferoni,sr,feferona,false
+feferoni,en,chilli peppers,true
+krastavac,sr,krastavac,true
+krastavac,sr,krastavca,false
+krastavac,en,cucumber,true
+kiseli_krastavac,sr,kiseli krastavac,true
+kiseli_krastavac,sr,kiseli krastavci,false
+kiseli_krastavac,en,pickled cucumber,true
+tikvica,sr,tikvica,true
+tikvica,sr,tikvice,false
+tikvica,en,courgette,true
+tikvica,en,zucchini,false
+plavi_patlidzan,sr,plavi patlidžan,true
+plavi_patlidzan,sr,patlidžan,false
+plavi_patlidzan,en,aubergine,true
+plavi_patlidzan,en,eggplant,false
+kupus,sr,kupus,true
+kupus,sr,kupusa,false
+kupus,en,cabbage,true
+kiseli_kupus,sr,kiseli kupus,true
+kiseli_kupus,sr,kiselog kupusa,false
+kiseli_kupus,en,sauerkraut,true
+karfiol,sr,karfiol,true
+karfiol,sr,karfiola,false
+karfiol,en,cauliflower,true
+brokoli,sr,brokoli,true
+brokoli,sr,brokolija,false
+brokoli,en,broccoli,true
+spanac,sr,spanać,true
+spanac,sr,spanaća,false
+spanac,en,spinach,true
+blitva,sr,blitva,true
+blitva,sr,blitve,false
+blitva,en,chard,true
+zelena_salata,sr,zelena salata,true
+zelena_salata,sr,zelene salate,false
+zelena_salata,en,lettuce,true
+rotkvica,sr,rotkvica,true
+rotkvica,sr,rotkvice,false
+rotkvica,en,radish,true
+cvekla,sr,cvekla,true
+cvekla,sr,cvekle,false
+cvekla,en,beetroot,true
+celer_koren,sr,celer,true
+celer_koren,sr,celera,false
+celer_koren,sr,koren celera,false
+celer_koren,en,celeriac,true
+persun_koren,sr,koren peršuna,true
+persun_koren,sr,peršunov koren,false
+persun_koren,en,parsley root,true
+persun_list,sr,peršun,true
+persun_list,sr,peršuna,false
+persun_list,sr,list peršuna,false
+persun_list,en,parsley,true
+bundeva,sr,bundeva,true
+bundeva,sr,bundeve,false
+bundeva,en,pumpkin,true
+pecurke,sr,pečurke,true
+pecurke,sr,pečuraka,false
+pecurke,sr,gljive,false
+pecurke,en,mushrooms,true
+sampinjoni,sr,šampinjoni,true
+sampinjoni,sr,šampinjona,false
+sampinjoni,en,button mushrooms,true
+boranija,sr,boranija,true
+boranija,sr,boranije,false
+boranija,en,green beans,true
+grasak,sr,grašak,true
+grasak,sr,graška,false
+grasak,en,peas,true
+pasulj,sr,pasulj,true
+pasulj,sr,pasulja,false
+pasulj,en,beans,true
+socivo,sr,sočivo,true
+socivo,sr,sočiva,false
+socivo,en,lentils,true
+leblebija,sr,leblebija,true
+leblebija,sr,slanutak,false
+leblebija,en,chickpeas,true
+kukuruz_secerac,sr,kukuruz šećerac,true
+kukuruz_secerac,sr,kukuruz,false
+kukuruz_secerac,en,sweetcorn,true
+mirodjija,sr,mirođija,true
+mirodjija,sr,mirođije,false
+mirodjija,en,dill,true
+
+# --- fruit -----------------------------------------------------------------
+jabuka,sr,jabuka,true
+jabuka,sr,jabuke,false
+jabuka,en,apple,true
+jabuka,en,apples,false
+kruska,sr,kruška,true
+kruska,sr,kruške,false
+kruska,en,pear,true
+sljiva,sr,šljiva,true
+sljiva,sr,šljive,false
+sljiva,en,plum,true
+visnja,sr,višnja,true
+visnja,sr,višnje,false
+visnja,en,sour cherry,true
+tresnja,sr,trešnja,true
+tresnja,sr,trešnje,false
+tresnja,en,cherry,true
+jagoda,sr,jagoda,true
+jagoda,sr,jagode,false
+jagoda,en,strawberry,true
+malina,sr,malina,true
+malina,sr,maline,false
+malina,en,raspberry,true
+kupina,sr,kupina,true
+kupina,sr,kupine,false
+kupina,en,blackberry,true
+borovnica,sr,borovnica,true
+borovnica,sr,borovnice,false
+borovnica,en,blueberry,true
+breskva,sr,breskva,true
+breskva,sr,breskve,false
+breskva,en,peach,true
+kajsija,sr,kajsija,true
+kajsija,sr,kajsije,false
+kajsija,en,apricot,true
+grozdje,sr,grožđe,true
+grozdje,sr,grožđa,false
+grozdje,en,grapes,true
+limun,sr,limun,true
+limun,sr,limuna,false
+limun,en,lemon,true
+limunova_kora,sr,limunova kora,true
+limunova_kora,sr,kora limuna,false
+limunova_kora,en,lemon zest,true
+pomorandza,sr,pomorandža,true
+pomorandza,sr,pomorandže,false
+pomorandza,en,orange,true
+banana,sr,banana,true
+banana,sr,banane,false
+banana,en,banana,true
+lubenica,sr,lubenica,true
+lubenica,sr,lubenice,false
+lubenica,en,watermelon,true
+dinja,sr,dinja,true
+dinja,sr,dinje,false
+dinja,en,melon,true
+suvo_grozdje,sr,suvo grožđe,true
+suvo_grozdje,sr,suvog grožđa,false
+suvo_grozdje,en,raisins,true
+suva_sljiva,sr,suva šljiva,true
+suva_sljiva,sr,suve šljive,false
+suva_sljiva,en,prunes,true
+
+# --- nuts and seeds --------------------------------------------------------
+orah,sr,orah,true
+orah,sr,orasi,false
+orah,sr,oraha,false
+orah,en,walnut,true
+orah,en,walnuts,false
+lesnik,sr,lešnik,true
+lesnik,sr,lešnika,false
+lesnik,en,hazelnut,true
+badem,sr,badem,true
+badem,sr,badema,false
+badem,en,almond,true
+kikiriki,sr,kikiriki,true
+kikiriki,sr,kikirikija,false
+kikiriki,en,peanuts,true
+susam,sr,susam,true
+susam,sr,susama,false
+susam,en,sesame,true
+mak,sr,mak,true
+mak,sr,maka,false
+mak,en,poppy seed,true
+suncokret_semenke,sr,semenke suncokreta,true
+suncokret_semenke,en,sunflower seeds,true
+bundevine_semenke,sr,semenke bundeve,true
+bundevine_semenke,en,pumpkin seeds,true
+kokos,sr,kokos,true
+kokos,sr,kokosa,false
+kokos,en,coconut,true
+
+# --- grains and bread ------------------------------------------------------
+pirinac,sr,pirinač,true
+pirinac,sr,pirinča,false
+pirinac,en,rice,true
+testenina,sr,testenina,true
+testenina,sr,testenine,false
+testenina,en,pasta,true
+spageti,sr,špageti,true
+spageti,sr,špageta,false
+spageti,en,spaghetti,true
+makarone,sr,makarone,true
+makarone,sr,makarona,false
+makarone,en,macaroni,true
+rezanci,sr,rezanci,true
+rezanci,sr,rezanaca,false
+rezanci,en,noodles,true
+griz,sr,griz,true
+griz,sr,griza,false
+griz,en,semolina,true
+ovsene_pahuljice,sr,ovsene pahuljice,true
+ovsene_pahuljice,sr,ovsenih pahuljica,false
+ovsene_pahuljice,en,rolled oats,true
+heljda,sr,heljda,true
+heljda,sr,heljde,false
+heljda,en,buckwheat,true
+kus_kus,sr,kus-kus,true
+kus_kus,en,couscous,true
+kinoa,sr,kinoa,true
+kinoa,sr,kvinoja,false
+kinoa,en,quinoa,true
+hleb,sr,hleb,true
+hleb,sr,hleba,false
+hleb,en,bread,true
+zemicka,sr,zemička,true
+zemicka,sr,zemičke,false
+zemicka,en,bread roll,true
+
+# --- pantry ----------------------------------------------------------------
+# `so` and `med` are three characters or fewer. They are below the fuzzy tier's
+# four-character floor by design (docs/INGREDIENTS.md: so/soja, luk/luka), so
+# they resolve on the exact tier or not at all. Their inflected forms have to
+# be written down here or they will not match at all.
+so,sr,so,true
+so,sr,soli,false
+so,sr,so za jelo,false
+so,en,salt,true
+voda,sr,voda,true
+voda,sr,vode,false
+voda,en,water,true
+sirce,sr,sirće,true
+sirce,sr,sirćeta,false
+sirce,en,vinegar,true
+jabukovo_sirce,sr,jabukovo sirće,true
+jabukovo_sirce,en,apple cider vinegar,true
+balzamiko,sr,balzamiko,true
+balzamiko,sr,balzamico,false
+balzamiko,en,balsamic vinegar,true
+senf,sr,senf,true
+senf,sr,senfa,false
+senf,en,mustard,true
+majonez,sr,majonez,true
+majonez,sr,majoneza,false
+majonez,en,mayonnaise,true
+kecap,sr,kečap,true
+kecap,sr,kečapa,false
+kecap,en,ketchup,true
+med,sr,med,true
+med,sr,meda,false
+med,en,honey,true
+dzem,sr,džem,true
+dzem,sr,džema,false
+dzem,en,jam,true
+cokolada,sr,čokolada,true
+cokolada,sr,čokolade,false
+cokolada,en,chocolate,true
+kakao,sr,kakao,true
+kakao,sr,kakaa,false
+kakao,en,cocoa,true
+soda_bikarbona,sr,soda bikarbona,true
+soda_bikarbona,sr,sode bikarbone,false
+soda_bikarbona,en,baking soda,true
+zelatin,sr,želatin,true
+zelatin,sr,želatina,false
+zelatin,en,gelatine,true
+supa_kocka,sr,kocka za supu,true
+supa_kocka,sr,supena kocka,false
+supa_kocka,en,stock cube,true
+sos_od_soje,sr,soja sos,true
+sos_od_soje,sr,sos od soje,false
+sos_od_soje,en,soy sauce,true
+maslina,sr,maslina,true
+maslina,sr,masline,false
+maslina,en,olives,true
+kapari,sr,kapari,true
+kapari,sr,kapara,false
+kapari,en,capers,true
+nutela,sr,nutela,true
+nutela,sr,krem od lešnika,false
+nutela,en,hazelnut spread,true
+puding,sr,puding,true
+puding,sr,pudinga,false
+puding,en,pudding powder,true
+
+# --- spices and herbs ------------------------------------------------------
+biber,sr,biber,true
+biber,sr,bibera,false
+biber,sr,crni biber,false
+biber,en,black pepper,true
+lovorov_list,sr,lovorov list,true
+lovorov_list,sr,lovor,false
+lovorov_list,en,bay leaf,true
+origano,sr,origano,true
+origano,sr,origana,false
+origano,en,oregano,true
+bosiljak,sr,bosiljak,true
+bosiljak,sr,bosiljka,false
+bosiljak,en,basil,true
+ruzmarin,sr,ruzmarin,true
+ruzmarin,sr,ruzmarina,false
+ruzmarin,en,rosemary,true
+cimet,sr,cimet,true
+cimet,sr,cimeta,false
+cimet,en,cinnamon,true
+karanfilic,sr,karanfilić,true
+karanfilic,en,cloves spice,true
+muskatni_orascic,sr,muskatni oraščić,true
+muskatni_orascic,en,nutmeg,true
+kim,sr,kim,true
+kim,sr,kima,false
+kim,en,caraway,true
+korijander,sr,korijander,true
+korijander,sr,korijandera,false
+korijander,en,coriander,true
+kurkuma,sr,kurkuma,true
+kurkuma,sr,kurkume,false
+kurkuma,en,turmeric,true
+djumbir,sr,đumbir,true
+djumbir,sr,đumbira,false
+djumbir,en,ginger,true
+cili,sr,čili,true
+cili,sr,čilija,false
+cili,en,chilli,true
+menta,sr,menta,true
+menta,sr,nana,false
+menta,en,mint,true
+zalfija,sr,žalfija,true
+zalfija,sr,žalfije,false
+zalfija,en,sage,true
+vanila,sr,vanila,true
+vanila,sr,vanile,false
+vanila,en,vanilla,true
+curry,sr,kari,true
+curry,sr,karija,false
+curry,en,curry powder,true
+
+# --- beverages -------------------------------------------------------------
+vino_belo,sr,belo vino,true
+vino_belo,sr,belog vina,false
+vino_belo,en,white wine,true
+vino_crno,sr,crno vino,true
+vino_crno,sr,crnog vina,false
+vino_crno,en,red wine,true
+pivo,sr,pivo,true
+pivo,sr,piva,false
+pivo,en,beer,true
+kafa,sr,kafa,true
+kafa,sr,kafe,false
+kafa,en,coffee,true
+caj,sr,čaj,true
+caj,sr,čaja,false
+caj,en,tea,true
+sok_od_pomorandze,sr,sok od pomorandže,true
+sok_od_pomorandze,en,orange juice,true
