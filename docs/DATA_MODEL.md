@@ -143,6 +143,8 @@ check membership through their parent with an `exists` subquery.
 ```sql
 create table ingredients (
   id uuid primary key default gen_random_uuid(),
+  key text unique                                -- curated seed key (D27)
+    check (key is null or key ~ '^[a-z][a-z0-9_]*$'),
   parent_id uuid references ingredients(id),     -- ONE level only (D3)
   category text,                                 -- nullable; aisle grouping later
   default_unit_family text                       -- mass | volume | count
@@ -165,9 +167,15 @@ create table ingredient_names (
   is_display_name boolean not null default false,
   household_id uuid references households(id) on delete cascade, -- null = global
   source text not null check (source in ('curated','llm','user')),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),  -- D28
+  deleted_at timestamptz                          -- D28
 );
 
+-- Deliberately TOTAL, not partial on `deleted_at is null` (D28). One string
+-- resolves to exactly ONE ingredient per locale and scope, globally and
+-- forever. Re-seeding a retired alias resurrects and repoints this row rather
+-- than creating a second one for the same string.
 create unique index ingredient_names_unique
   on ingredient_names (normalized_name, locale, coalesce(household_id, '00000000-0000-0000-0000-000000000000'::uuid));
 
@@ -176,12 +184,16 @@ create index ingredient_names_trgm
 
 create unique index one_display_name_per_locale
   on ingredient_names (ingredient_id, locale)
-  where is_display_name and household_id is null;
+  where is_display_name and household_id is null and deleted_at is null;
 ```
 
 `ingredients` and global `ingredient_names` are readable by all authenticated
-users, writable only by Edge Functions (service role). Household-scoped
-`ingredient_names` rows follow the normal membership policy.
+users. **In Phase 1b there is no client write path at all** — no INSERT, UPDATE
+or DELETE policy on any catalog table, deliberately (D32). Household-scoped
+`ingredient_names` rows are *readable* under the normal membership policy; the
+write path for them belongs to a later "we call it X in this house" feature
+that does not exist. Phase 1c adds a narrow `SECURITY DEFINER` RPC for
+"create a new ingredient" rather than a broad INSERT policy.
 
 ### Merge
 
@@ -197,12 +209,33 @@ create table ingredient_merges (
   created_at timestamptz not null default now()
 );
 
--- function merge_ingredients(source uuid, target uuid):
---   1. update recipe_ingredients set ingredient_id = target where = source
---   2. update ingredient_names set ingredient_id = target where = source
---      (on conflict, drop the duplicate name row)
---   3. update household_pantry_prefs likewise
---   4. soft-delete source, insert ingredient_merges row
+-- merge_ingredients(source_ingredient uuid, target_ingredient uuid,
+--                    actor uuid default auth.uid()) returns void
+--
+-- Implemented in supabase/migrations/*_merge_ingredients.sql. The parameters
+-- are NOT named `source` / `target`: `source` is also a column of
+-- ingredient_names, and a plpgsql parameter sharing a name with a column in
+-- the same statement is an ambiguity error (D30).
+--
+--   1. guards: distinct, both live, and D3 -- refuse a merge that would make
+--      a grandchild
+--   2. repoint recipe_ingredients and shopping_list_items, each behind a
+--      to_regclass() guard, since neither exists before 1c / Phase 2 (D30)
+--   3. household_pantry_prefs: delete the source rows that would violate its
+--      (household_id, ingredient_id) primary key, then repoint the rest
+--   4. re-parent the source's children onto the target
+--   5. ingredient_names: demote the source's display name where the target
+--      already has one for that locale, then repoint. NOTHING IS DELETED --
+--      per D28's total unique index two ingredients cannot share an alias, so
+--      a merge cannot produce a duplicate name row and the "drop the
+--      duplicate" step an earlier draft of this document described is
+--      unreachable
+--   6. soft-delete the source (keeping its key, or the next seed run would
+--      resurrect it) and insert the ingredient_merges row
+--
+-- revoke execute from public, anon AND authenticated -- all three. Supabase
+-- grants EXECUTE to anon and authenticated by default privileges, so revoking
+-- PUBLIC alone leaves it callable by any signed-in user (D30).
 ```
 
 ---
@@ -218,16 +251,81 @@ create table units (
 );
 
 create table unit_names (
+  id uuid primary key default gen_random_uuid(),
   unit_code text not null references units(code),
   locale text not null check (locale in ('sr','en')),
   name text not null,
   normalized_name text generated always as (normalize_text(name)) stored,
   is_display_name boolean not null default false
 );
+
+-- The load-bearing one: without it `kš` could resolve to both tsp and tbsp and
+-- the parser would take whichever row came back first -- a wrong unit that
+-- renders as a confident number. Rule 3 prefers no unit and the raw line.
+create unique index unit_names_normalized_locale_idx
+  on unit_names (normalized_name, locale);
+
+create unique index unit_names_one_display_per_locale_idx
+  on unit_names (unit_code, locale) where is_display_name;
 ```
 
-Seed: g, kg, ml, l, dl, kašičica (tsp, 5 ml), kašika (tbsp, 15 ml), šolja
-(cup, 240 ml), kom (piece), prstohvat (pinch, `other`), po ukusu (`other`).
+`units` and `unit_names` get neither `deleted_at` nor `updated_at`: no
+`household_id` (D24), two dozen immutable reference rows that only a migration
+writes, refetched wholesale and cached for a session.
+
+Seeded inline by the catalog migration, 22 units and ~120 names. Beyond the
+list above: `mg`, `oz`, `lb`, `fl_oz` for Phase 1d's English web imports, and
+the count units Serbian recipes actually use — `clove` (čen), `head` (glavica),
+`bunch` (veza), `slice` (kriška), `sachet` (kesica), `can` (konzerva).
+
+Two judgement calls worth keeping:
+
+- **`glass` (čaša, 200 ml) is its own unit, not an alias of `cup`** (šolja,
+  240 ml). Aliasing them silently loses 40 ml in every shopping-list sum.
+- **`k.` and `kaš.` are deliberately not seeded**, though
+  `docs/INGREDIENTS.md` lists them under *kašika*. `k.` reads equally as kom or
+  kg. A confidently wrong unit is worse than the null unit rule 3 supports.
+  `kš` is unambiguous and is seeded.
+
+`test/fixtures/unit_aliases.json` is the contract between the Dart parser and
+this table: `tool/gen_unit_alias_sql.dart` turns it into a SQL test asserting
+every spelling exists and that none resolves to two different units.
+
+---
+
+## Catalog functions
+
+Built in Phase 1b. Signatures as implemented, not as sketched.
+
+```sql
+-- Tiers 2 and 3 of the matcher (D31). One row per ingredient, best match
+-- first. security invoker, so RLS scopes household aliases and there is no
+-- household_id parameter.
+search_ingredients(search_query text,
+                   preferred_locale text default 'sr',
+                   max_results int default 20)
+  returns table (ingredient_id uuid, display_name text, matched_name text,
+                 matched_locale text, is_verified boolean,
+                 is_household_alias boolean, match_method text,
+                 match_confidence numeric, auto_accept boolean)
+
+-- The display-name fallback chain, defined once: requested locale's display
+-- name, then any display name, then any name. Global rows only.
+ingredient_display_name(iid uuid, loc text default 'sr') returns text
+
+-- See the Merge section above. Operator only.
+merge_ingredients(source_ingredient uuid, target_ingredient uuid,
+                  actor uuid default auth.uid()) returns void
+```
+
+`match_method` is `exact` (the ingredient's display name matched), `alias`
+(any other spelling or translation matched), or `fuzzy`. `auto_accept` applies
+the 0.75 line from `docs/INGREDIENTS.md` server-side, so no client holds a copy
+of that constant (D31).
+
+The three matcher constants — the four-character floor before fuzzy fires, the
+0.4 similarity threshold, and 0.75 — exist **only** inside
+`search_ingredients`. Do not reintroduce any of them in Dart.
 
 ---
 

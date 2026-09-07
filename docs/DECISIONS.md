@@ -374,6 +374,234 @@ recovery is to ask for a new one. The fix, if it ever matters, is a direct
 postgres connection and a real transaction — not a `SECURITY DEFINER` RPC,
 which would split the trust boundary across two places.
 
+## D27 — `ingredients.key`, the stable seed key
+
+**Decided.** `key text unique check (key is null or key ~ '^[a-z][a-z0-9_]*$')`.
+Nullable, and null is the common case: only the curated core carries one, and
+everything the matcher auto-creates has `key = null`.
+
+**Why.** `docs/INGREDIENTS.md` seeds from a CSV keyed on `brasno_glatko` /
+`parent_key`, and without a column to hold it the seed is not idempotent and
+parent references cannot be resolved on a re-run. Nullable `UNIQUE` says
+exactly the right thing, because Postgres treats NULLs as distinct: "unique
+among the rows that have one".
+
+**Rejected.**
+- A partial unique index `where key is not null` — conflict inference would
+  have to restate the predicate in every `on conflict`, for no benefit at 200
+  keyed rows.
+- Deriving ids from the key (uuid v5) instead of storing it — hides the key
+  where nothing can query or debug it, and makes the CSV silently load-bearing
+  for primary keys.
+- Coupling `key` to `is_verified` — a curated row can be retired and a tail row
+  verified by hand. Two independent facts.
+
+## D28 — `ingredient_names` keeps `updated_at` and `deleted_at`
+
+**Decided.** Unlike `household_invites` in D25, this table takes no exception
+to CLAUDE.md rule 4. It gets both lifecycle columns, and its unique index
+`(normalized_name, locale, coalesce(household_id, zero-uuid))` stays **total**
+rather than partial on `deleted_at is null`.
+
+**Why.** The append-only argument that carried D25 does not survive contact
+with this table: `is_display_name` is mutable — a merge demotes it — so rows
+here are written more than once. It has a `household_id`, so D24 catches it
+literally. Phase 2 caches the catalog for offline autocomplete and a cache
+needs tombstones to evict. And `docs/DATA_MODEL.md` words the merge's second
+step as "drop the duplicate name row", which is a hard delete and a straight
+violation of rule 4; `deleted_at` makes it soft and keeps the rule intact.
+
+The total index is the interesting half. It means a given
+`(normalized_name, locale, scope)` resolves to exactly **one** ingredient
+globally, forever — so one string can never come to mean two things, and
+re-seeding a retired alias resurrects and repoints the existing row rather
+than adding a second one for the same string.
+
+**Consequence worth knowing.** Because two ingredients cannot share an alias,
+a merge can never produce a duplicate name row, so the "drop the duplicate"
+step is unreachable and nothing is ever deleted. See D30.
+
+**Rejected.**
+- Append-only with no lifecycle columns, the D25 shape — see above.
+- A partial unique index — would allow two live rows for one string as soon as
+  one of them was soft-deleted and re-created, which is the failure this index
+  exists to prevent.
+
+## D29 — The catalog seed ships as generated migrations, not `seed.sql`
+
+**Decided.** `supabase/seeds/*.csv` → `tool/gen_ingredient_seed.dart` → a new
+timestamped migration. `[db.seed]` in `supabase/config.toml` is deliberately
+empty. Editing the CSVs emits a **new** migration rather than rewriting an
+applied one; every emitted file is a pure upsert, so applying v1 then v2
+converges on v2.
+
+**Why.** `[db.seed]` runs on a local `supabase db reset` and nowhere else. The
+curated catalog is not fixture data — it is reference data the matcher depends
+on in production — so it has to travel through the only thing `supabase db
+push` executes. And CLAUDE.md forbids editing an applied migration, so the
+generator cannot rewrite its output in place the way
+`tool/gen_normalization_sql.dart` does.
+
+Two guards make re-application safe, and both are load-bearing:
+
+- **`is distinct from` on every upsert.** Without it each deploy touches
+  `updated_at` on all 200 rows and Phase 2's `updated_at > last_sync_at` delta
+  fetch re-downloads the whole catalog to every device for a no-op release. It
+  reads like a micro-optimisation and is the difference between a working cache
+  and a broken one. Verified: a full replay touches zero rows.
+- **`deleted_at is null` on every join**, so a merged-away curated ingredient
+  stays merged away instead of being resurrected by the next seed.
+
+`make seed-check` is a separate target from `test-sql` because the two have
+different guarantees: `test-sql` regenerates its output in place and therefore
+cannot drift, whereas an edited CSV with no migration behind it is the default
+failure mode here unless something explicitly checks.
+
+**Deletions are not generated.** A key that leaves the CSV is left alone — the
+generator cannot tell "retired" from "typo", and retiring a curated ingredient
+means repointing every recipe that used it. That is `merge_ingredients()`, a
+reviewed act, never a side effect of editing a spreadsheet.
+
+**Rejected.**
+- `supabase/seed.sql` — absent in production, which is the only place it
+  matters.
+- Both — two sources for one catalog, diverging the first time one is edited.
+- Regenerating one migration in place — forbidden, and it would silently change
+  a file already applied elsewhere.
+
+## D30 — `merge_ingredients()` is written once, guarded by `to_regclass`
+
+**Decided.** The function handles `recipe_ingredients` (Phase 1c),
+`shopping_list_items` and `household_pantry_prefs` (Phase 2) behind
+`to_regclass('public.…') is not null` and a dynamic `EXECUTE`. It is correct
+today and needs no rewrite when those tables land.
+
+**Why.** `docs/DATA_MODEL.md`'s step 1 repoints `recipe_ingredients`, which
+does not exist yet. The alternative is a `create or replace` in 1c's migration
+— but the 1c roadmap entry does not mention `merge_ingredients` at all, so
+that rewrite is exactly what a future session would forget, and the symptom
+would be a silent dangling reference to a retired ingredient.
+
+The explicit table list is kept honest by an FK-coverage assertion in
+`supabase/tests/merge_ingredients_test.sql`: it walks `pg_constraint` and fails
+the moment a foreign key to `ingredients(id)` appears from a table the function
+does not name. Same move as `tool/check_layers.dart` — encode the invariant in
+a test rather than trust a future session to remember.
+
+**Nothing is deleted.** Per D28's total unique index, two ingredients cannot
+share an alias, so a merge cannot produce a duplicate name row. The repoint is
+a plain `UPDATE`. What *can* collide is `one_display_name_per_locale`, since
+both ingredients may have their own display name for a locale; those rows are
+demoted, not deleted, so the string stays matchable and merely stops being the
+one shown back.
+
+**Two traps, both found by the test rather than by reading.**
+- Parameters may not be named `source` / `target` as DATA_MODEL writes them:
+  `source` is also a column of `ingredient_names`, and a plpgsql parameter that
+  shares a name with a column in the same statement is an ambiguity error.
+- **`revoke execute … from public` is not sufficient on Supabase.** The
+  platform ships `alter default privileges in schema public grant all on
+  functions to postgres, anon, authenticated, service_role`, so `anon` and
+  `authenticated` hold EXECUTE in their own right and survive a PUBLIC revoke.
+  The test called this `SECURITY DEFINER` function successfully as
+  `authenticated` with the PUBLIC revoke already in place — a data-destruction
+  endpoint that would have shipped looking correct. **Every future
+  `SECURITY DEFINER` function not meant for clients needs the three-role revoke
+  and a test that proves it.**
+
+**Rejected.**
+- Discovering referencing tables from `pg_constraint` at runtime — never goes
+  stale, but has to guess a conflict strategy per table and would silently
+  sweep in tables nobody considered.
+- Writing a partial function now and extending it in 1c — see above.
+
+## D31 — Where each matching tier lives, and where its constants live
+
+**Decided.**
+- **Tier 1 (line parse) is Dart**, `features/ingredients/domain/
+  ingredient_line_parser.dart`, pure, with the unit lexicon injected. Its
+  contract is `test/fixtures/ingredient_lines.json`, and Phase 1d's Deno mirror
+  is asserted against the same file — the D5 pattern.
+- **Tiers 2 and 3 are ONE Postgres RPC**, `search_ingredients`, not two.
+- **All three thresholds live in SQL**: the four-character floor before fuzzy
+  fires, the 0.4 similarity threshold, and the 0.75 auto-accept line.
+  `search_ingredients` returns `auto_accept` already computed, so no client
+  holds a copy of 0.75.
+
+**Why.** `docs/ROADMAP.md` said "tiers 1–3 as a Postgres RPC", written before
+the client/edge split settled. Tier 1 touches no data — it is string work over
+a lexicon — so a round trip buys nothing and costs the responsiveness 1c's
+line editor needs while somebody types; it would also break offline entry in
+Phase 2. Tiers 2–3 are set-based candidate ranking over `pg_trgm` and belong
+in the database. Splitting the RPC in two would put 0.4 on one side of a
+boundary and 0.75 on the other.
+
+**`exact` versus `alias` finally mean something** (D7 lists both):
+`exact` is normalized equality against the ingredient's display name, `alias`
+against any other spelling or translation. Both carry confidence 1.0. The split
+is what lets a later quality dashboard show how much the alias table earns.
+
+**Implementation notes that are decisions, not details.**
+- `language sql`, not plpgsql: an output column named `ingredient_id` collides
+  with `ingredient_names.ingredient_id` inside a plpgsql body.
+- `security invoker`, so RLS does the household scoping and no `household_id`
+  parameter is needed — a parameter would be a claim to verify, and the policy
+  already knows.
+- `similarity(a, b) > 0.4` rather than the `%` operator, which reads a session
+  GUC set by the VOLATILE `set_limit()` and would make the function
+  session-dependent and non-`STABLE`. The cost is that the GIN trigram index
+  does not serve the fuzzy arm; at catalog scale that is irrelevant, and the
+  index still serves the prefix arm.
+- **A prefix arm exists** because `similarity('sargarepa', 'sarg')` is 0.36 —
+  four letters of a nine-letter word would otherwise return nothing and
+  autocomplete would not work. Prefix hits report their TRUE similarity rather
+  than an invented high confidence, so they stay suggestions instead of
+  auto-accepting, and `match_method` stays inside D7's vocabulary.
+- Locale is a **tie-break, never a filter**. `flour` must reach *brašno* and
+  come back rendered in Serbian; that hop is the product's wedge.
+
+**Rejected.**
+- A Postgres line parser — a round trip per line, and integer-fraction parsing
+  (`1 1/2`, `2–3`, `½`, `pola`, `1,5`) is far easier to get right and to test
+  exhaustively in Dart.
+- Three implementations of the parser mirrored from day one — 1d adds the Deno
+  one against the same fixture, when there is a caller for it.
+- A separate `match_ingredient()` returning a single best row — the Dart
+  wrapper takes the first result, and a second function would duplicate the
+  ranking.
+
+## D32 — No client write path into the catalog in Phase 1b
+
+**Decided.** `ingredients`, `ingredient_names`, `units`, `unit_names` get a
+SELECT policy and nothing else. `ingredient_merges` gets RLS with **no policy
+at all**. The seed runs as `postgres` during migration; merges run as the
+service role.
+
+**Why.** Nothing in Phase 1b writes the catalog. The matcher's write-back tier
+is an Edge Function that does not exist until 1d. Phase 1c's "create a new
+ingredient" does need a path, and it gets a deliberate one then — a narrow
+`SECURITY DEFINER` RPC on the `create_household` precedent, which can check for
+an existing exact match first and so stop two people typing the same new
+ingredient from creating two rows. What it must not do is inherit a broad
+INSERT policy written a phase early by someone guessing at its shape.
+
+Migration 3 already ruled on this exact question: a write policy nobody uses
+"would be dead code that reads like a second, weaker way in".
+
+`docs/DATA_MODEL.md` says household-scoped alias rows "follow the normal
+membership policy", which reads like an INSERT policy. It is not one yet:
+per `docs/INGREDIENTS.md` every write-back alias is **global** — "that string
+now resolves at tier 2 forever, for every household" — so household-scoped rows
+are for a later "we call it X in this house" feature. The SELECT policy still
+has to handle `household_id`, because the column, its index and the RPC's
+visibility rules all exist today.
+
+**Rejected.**
+- An INSERT policy for authenticated users — hands every client an unguarded
+  write into a global, cross-household table.
+- Shipping `create_ingredient()` now — builds 1c's feature a phase early,
+  before there is a screen to tell us what it needs.
+
 ## Open / deferred
 
 - **Client vs Edge Function split** — rule of thumb written in
@@ -384,11 +612,21 @@ which would split the trust boundary across two places.
   Phase 1–3.
 - **Cross-family unit conversion** — deferred, see D9.
 - **Handwritten card OCR quality** — unknown until there's a real card to test.
-- **`ingredients` has no stable seed key** — `docs/INGREDIENTS.md` seeds from a
-  CSV keyed on `brasno_glatko` / `parent_key`, but no such column exists on the
-  table. Without it the seed is not idempotent and parent references cannot be
-  resolved on re-run. Needs a `key text unique` column. Decide in Phase 1b,
-  before the seed script is written.
+- **`to_taste` is seeded as a unit but the parser never emits it** — see D31.
+  Where recipes actually write `po ukusu`, at the end of a line, it is a note
+  and an optional marker, which is what lets `so po ukusu` resolve to *so*.
+  The unit code exists for imports that carry an explicit "to taste" field.
+  Revisit if 1d's importers turn out to need it.
+- **The GIN trigram index is not used by `search_ingredients`** — see D31.
+  `similarity()` cannot use it; only the `%` operator can, and `%` was rejected.
+  Irrelevant at a few hundred aliases. Revisit if the catalog reaches the tens
+  of thousands, at which point the change is `set_limit()` plus dropping
+  `STABLE`, not a new index.
+- **Phase 2's admin screen needs two grants that do not exist** — a read policy
+  on `ingredient_merges` (D32 gives it none) and, if merges are to be triggered
+  from the app, `grant execute on merge_ingredients to authenticated` (D30
+  revokes it from all three client roles). Both are deliberate omissions, not
+  oversights.
 - **Auditable membership revocation** — see D24. Only matters once members can
   be removed.
 - **Invite revocation** — see D25. Needs a `revoked_at` column and a rebuilt

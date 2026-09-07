@@ -15,8 +15,10 @@ raw_text: "2 šolje glatkog brašna, prosejano"
    ├─ 1. LINE PARSE  → qty 2, unit 'šolja', name "glatko brašno", note "prosejano"
    │
    ├─ 2. EXACT       normalize_text(name) == ingredient_names.normalized_name
-   │                 (same locale first, then any locale)
-   │                 → match_method = 'exact', confidence 1.0
+   │                 (locale is a TIE-BREAK, never a filter -- `flour` must
+   │                 still reach brašno and render in Serbian)
+   │                 → 'exact' if the ingredient's display name matched,
+   │                   'alias' if any other spelling did. Both confidence 1.0
    │
    ├─ 3. FUZZY       similarity(normalized, candidates) > 0.4, pg_trgm
    │                 → 'fuzzy', confidence = similarity
@@ -43,18 +45,43 @@ re-matching pass.
 
 ## Line parsing
 
+**Implemented in `lib/features/ingredients/domain/ingredient_line_parser.dart`,
+in pure Dart (D31).** Not in Postgres: it touches no data, and a round trip per
+line would cost the 1c line editor its responsiveness and break offline entry
+in Phase 2. Phase 1d adds `supabase/functions/_shared/parse_line.ts` for the
+importers, asserted against the same fixture.
+
+`test/fixtures/ingredient_lines.json` is the contract, in exactly the role
+`normalization.json` plays below. Add a case every time a real recipe line
+surprises you; every implementation is then held to it.
+
+The parsed `name` is the **literal remainder**: `2 šolje glatkog brašna` yields
+`glatkog brašna`, in the genitive. De-inflecting it would be stemming, which D6
+rejects — landing the inflected form is what the seeded aliases and the trigram
+tier are for.
+
 Do this deterministically before reaching for a model. Most lines are
 `[quantity] [unit] [name][, note]`.
 
-- Quantities: `2`, `1/2`, `1 1/2`, `2-3`, `2–3`, `½`, `pola`, `par`.
+- Quantities: `2`, `1/2`, `1 1/2`, `1½`, `2-3`, `2–3`, `2 - 3`, `½`, `pola`,
+  `par`, and the Serbian decimal comma `1,5` → 3/2.
   Parse to `qty_num`/`qty_den`; ranges fill `qty_max_*`. Unicode fraction
   characters map to fractions. `pola` → 1/2.
+  **The decimal comma is a trap**: notes split on the first comma, so the split
+  has to skip a comma flanked by digits or `1,5 dl vode` becomes quantity 1 and
+  the note `5 dl vode` — wrong by a factor of ten, silently.
+  `po` is deliberately NOT parsed as "half": it far more often means "each",
+  and a wrong number is worse than the null parse rule 3 already supports.
 - Units: match against `unit_names.normalized_name`. Serbian units are often
   inflected or abbreviated — `kašika`, `kašike`, `kašiku`, `kš`, `k.`, `šolja`,
   `šolje`, `dl`, `gr`, `kom`, `komada`. Seed aliases generously.
 - Notes: everything after the first comma, plus parenthesised text.
   `sitno seckan`, `prosejano`, `na sobnoj temperaturi`, `po ukusu`.
-- Optional markers: `opciono`, `po želji`, `optional`, `to taste`.
+- Optional markers: `opciono`, `po želji`, `po ukusu`, `optional`, `to taste`,
+  `if desired`. These become a note and set `is_optional`.
+  `po ukusu` is also seeded as a unit with family `other`, but where recipes
+  actually write it — trailing the line — it is a note, which is what lets
+  `so po ukusu` resolve to *so*.
 
 If the deterministic parse fails, keep `raw_text` and leave structured fields
 null. That is a supported state, not a bug.
@@ -99,6 +126,12 @@ No stemmer (D6). Two mitigations:
 **Trigram threshold.** `šargarepe` vs `šargarepa` scores well above 0.4.
 `brašna` vs `brašno` likewise. This absorbs most case endings.
 
+A **prefix arm** sits alongside it, and autocomplete does not work without one:
+`similarity('sargarepa', 'sarg')` is 0.36, below the threshold, so four letters
+of a nine-letter word would return nothing. Prefix hits report their true
+similarity rather than an inflated confidence, so they stay suggestions instead
+of auto-accepting.
+
 **Explicit aliases on the curated core.** For the ~200 seeded ingredients, add
 the forms that actually appear in recipe text — usually nominative, genitive
 singular, and genitive plural, since recipes say *dve kašike brašna* and
@@ -108,10 +141,22 @@ Watch for the failure mode where a short word fuzzy-matches the wrong thing
 (*so* / *soja*, *luk* / *luka*). Enforce a minimum length of 4 characters before
 the fuzzy tier fires; shorter strings must hit exact or go to the LLM.
 
+**All three constants — the 4-character floor, the 0.4 threshold and the 0.75
+auto-accept line — live only inside `search_ingredients` (D31.)** It returns
+`auto_accept` already computed. Do not reintroduce any of them in Dart.
+
 ## Catalog seeding
 
 Seed ~200 ingredients as `is_verified = true`, weighted heavily toward what a
 Serbian household actually cooks with. Everything else auto-creates.
+
+**Built.** `supabase/seeds/ingredients.csv` (200 rows) and
+`supabase/seeds/ingredient_names.csv` (618 rows), turned into a generated
+idempotent migration by `tool/gen_ingredient_seed.dart` (`make seed`). Not
+`supabase/seed.sql`, which never reaches production — see D29.
+`tool/seed_csv.dart` validates the CSVs before any SQL is generated, and
+`test/features/ingredients/seed_csv_test.dart` runs the same checks under
+`flutter test`.
 
 Seed format, a CSV per ingredient plus a CSV of names:
 

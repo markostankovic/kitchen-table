@@ -125,8 +125,10 @@ Client (direct Supabase, protected by RLS):
 - Search (including trigram / normalized search via RPC)
 - Shopping list generation — pure aggregation over rows the client can already
   read. No secret, fast, easier to iterate on. Runs in Dart.
-- Exact and alias-tier ingredient matching during manual entry (autocomplete
-  queries `ingredient_names` directly)
+- Exact and fuzzy ingredient matching during manual entry, through the
+  `search_ingredients` RPC. It is `security invoker`, so RLS scopes household
+  aliases and no `household_id` is passed (D31)
+- Ingredient line parsing (tier 1) — pure Dart, no database at all (D31)
 
 Ambiguous cases and the call:
 
@@ -148,9 +150,13 @@ _shared/
   ai.ts          # model client, retry, JSON-mode helpers
   usage.ts       # checkQuota(householdId) + recordUsage(...)
   normalize.ts   # same normalization as Postgres/Dart (for matching)
+  parse_line.ts  # same line parse as Dart, against the same fixture (D31)
 ```
 
 The first three exist as of Phase 1a; the rest arrive with Phase 1d.
+`normalize.ts` and `parse_line.ts` are each one side of a contract whose other
+sides already exist — `test/fixtures/normalization.json` and
+`test/fixtures/ingredient_lines.json`. Neither may be written freehand.
 
 Every function runs **two clients**. A caller-scoped one, carrying the request's
 `Authorization` header, does exactly one thing: `auth.getUser()`, which verifies

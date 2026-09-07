@@ -49,14 +49,31 @@ the inviter named, and both members by name. `supabase/tests/` covers the same
 ground with the negative cases.
 
 ### 1b. Ingredient catalog
+
+**Status: complete.** Decisions taken during it: D27–D32.
+
 - `ingredients`, `ingredient_names`, `units`, `unit_names`, indexes
-- Seed script: ~200 ingredients + names from CSV (see INGREDIENTS.md)
+- Seed: 200 ingredients + 618 names from CSV (see INGREDIENTS.md), applied as a
+  generated idempotent migration rather than `seed.sql` (D29)
 - `merge_ingredients()` function
-- Matching tiers 1–3 (parse, exact, fuzzy) as a Postgres RPC + Dart wrapper.
-  No LLM tier yet.
+- Matching tiers 1–3 (parse, exact, fuzzy). **Tier 1 is a pure Dart parser and
+  tiers 2–3 are one Postgres RPC + Dart wrapper** — this line originally said
+  all three were the RPC, written before the client/edge split settled. Tier 1
+  touches no data, and a round trip per line would break both the 1c line
+  editor's responsiveness and Phase 2's offline entry. See D31. No LLM tier yet.
 
 **Done when:** typing "cufte" or "sargarepa" in a search RPC returns the right
-ingredient, and `merge_ingredients` correctly repoints rows.
+ingredient, and `merge_ingredients` correctly repoints rows. — Met, with one
+correction. `sargarepa` is asserted literally, along with `šargarepa`,
+`ШАРГАРЕПА` and `Šargarepa` all reaching the same row, plus the genitive
+`sargarepe` through a seeded alias and `flour` reaching *brašno* and rendering
+in Serbian. **`cufte` is not asserted**: ćufte is a dish, not an ingredient —
+the string comes from the normalization fixture list in INGREDIENTS.md, which
+is about `normalize_text` rather than about the catalog. The
+diacritic-insensitive search it stood for is asserted directly instead.
+`merge_ingredients` is covered by `supabase/tests/merge_ingredients_test.sql`
+including both refusals, the grant, and an FK-coverage assertion that will fail
+in 1c if `recipe_ingredients` is added without being handled.
 
 ### 1c. Manual recipe entry
 - `recipes`, `recipe_ingredients`, `recipe_steps` + RLS
