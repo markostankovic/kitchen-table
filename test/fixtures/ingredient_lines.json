@@ -1,0 +1,78 @@
+[
+  {"_comment": "The ingredient line parser's contract, in the same role test/fixtures/normalization.json plays for normalize_text. Phase 1d's Deno mirror will be asserted against this same file (D31). Add a case every time a real recipe line surprises you. Omitted fields are expected to be null; `optional` defaults to false. `name` is the LITERAL remainder -- the parser does not de-inflect, because D6 rejects a stemmer and tier 2/3 are what land the inflected form."},
+
+  {"raw": "2 šolje glatkog brašna, prosejano",
+   "qty": [2, 1], "unit": "cup", "name": "glatkog brašna", "note": "prosejano"},
+
+  {"raw": "1/2 kašičice soli", "qty": [1, 2], "unit": "tsp", "name": "soli"},
+
+  {"raw": "1 1/2 šolje mleka", "qty": [3, 2], "unit": "cup", "name": "mleka"},
+
+  {"raw": "1½ šolje mleka", "qty": [3, 2], "unit": "cup", "name": "mleka"},
+
+  {"raw": "½ kg krompira", "qty": [1, 2], "unit": "kg", "name": "krompira"},
+
+  {"raw": "200 g šargarepe", "qty": [200, 1], "unit": "g", "name": "šargarepe"},
+
+  {"raw": "2-3 kašike ulja",
+   "qty": [2, 1], "qtyMax": [3, 1], "unit": "tbsp", "name": "ulja"},
+
+  {"raw": "2–3 čena belog luka",
+   "qty": [2, 1], "qtyMax": [3, 1], "unit": "clove", "name": "belog luka"},
+
+  {"raw": "2 - 3 kašike šećera",
+   "qty": [2, 1], "qtyMax": [3, 1], "unit": "tbsp", "name": "šećera"},
+
+  {"raw": "pola limuna", "qty": [1, 2], "name": "limuna"},
+
+  {"raw": "par kašika prezli", "qty": [2, 1], "unit": "tbsp", "name": "prezli"},
+
+  {"raw": "1,5 dl vode", "qty": [3, 2], "unit": "dl", "name": "vode",
+   "_why": "the Serbian decimal comma. Splitting notes on this comma would give quantity 1 and the note `5 dl vode`."},
+
+  {"raw": "1.5 dl vode", "qty": [3, 2], "unit": "dl", "name": "vode"},
+
+  {"raw": "3 jaja", "qty": [3, 1], "name": "jaja"},
+
+  {"raw": "2 kom paradajza", "qty": [2, 1], "unit": "kom", "name": "paradajza"},
+
+  {"raw": "1 kesica praška za pecivo",
+   "qty": [1, 1], "unit": "sachet", "name": "praška za pecivo"},
+
+  {"raw": "prstohvat soli", "unit": "pinch", "name": "soli"},
+
+  {"raw": "so po ukusu", "name": "so", "note": "po ukusu", "optional": true},
+
+  {"raw": "biber (sveže mleveni)", "name": "biber", "note": "sveže mleveni"},
+
+  {"raw": "peršun, sitno seckan", "name": "peršun", "note": "sitno seckan"},
+
+  {"raw": "100 g kajmaka (opciono)",
+   "qty": [100, 1], "unit": "g", "name": "kajmaka",
+   "note": "opciono", "optional": true},
+
+  {"raw": "1 kašika ajvara, po želji",
+   "qty": [1, 1], "unit": "tbsp", "name": "ajvara",
+   "note": "po želji", "optional": true},
+
+  {"raw": "2 tbsp olive oil", "qty": [2, 1], "unit": "tbsp", "name": "olive oil"},
+
+  {"raw": "1 cup all-purpose flour, sifted",
+   "qty": [1, 1], "unit": "cup", "name": "all-purpose flour", "note": "sifted"},
+
+  {"raw": "salt to taste", "name": "salt", "note": "to taste", "optional": true},
+
+  {"raw": "šargarepa", "name": "šargarepa"},
+
+  {"raw": "kašika", "name": "kašika",
+   "_why": "a bare unit with nothing after it is far more likely to be somebody's ingredient than a unit with no quantity and no name."},
+
+  {"raw": "malo ulja", "name": "malo ulja",
+   "_why": "`malo` is not a quantity. Rule 3: the line still renders."},
+
+  {"raw": "za posluživanje", "name": "za posluživanje"},
+
+  {"raw": "   2   kašike    ulja   ",
+   "qty": [2, 1], "unit": "tbsp", "name": "ulja",
+   "_why": "collapsed whitespace, and rawText preserved exactly as written."}
+]

@@ -1,0 +1,45 @@
+{
+  "_comment": [
+    "The unit spellings the ingredient line parser is expected to recognise,",
+    "and the units.code each must resolve to. This is a contract with two",
+    "sides, like test/fixtures/normalization.json: the Dart parser tests build",
+    "their UnitCatalog from this file, and tool/gen_unit_alias_sql.dart turns",
+    "it into supabase/tests/unit_alias_test.sql, which asserts the database",
+    "agrees. Add a spelling here and `make test-sql` tells you whether the",
+    "migration that seeds unit_names actually has it.",
+    "Keys are written as a human writes them; both sides normalize before",
+    "comparing."
+  ],
+
+  "g": "g", "gr": "g", "gram": "g", "grama": "g", "grams": "g",
+  "kg": "kg", "kilogram": "kg", "kila": "kg",
+  "ml": "ml", "mililitar": "ml",
+  "dl": "dl", "decilitar": "dl",
+  "l": "l", "litar": "l", "litre": "l",
+
+  "kašičica": "tsp", "kašičice": "tsp", "kašičicu": "tsp",
+  "čajna kašičica": "tsp", "tsp": "tsp", "teaspoon": "tsp",
+
+  "kašika": "tbsp", "kašike": "tbsp", "kašiku": "tbsp",
+  "supena kašika": "tbsp", "kš": "tbsp",
+  "tbsp": "tbsp", "tablespoon": "tbsp", "tablespoons": "tbsp",
+
+  "šolja": "cup", "šolje": "cup", "šolju": "cup",
+  "cup": "cup", "cups": "cup",
+
+  "čaša": "glass", "čaše": "glass", "glass": "glass",
+
+  "kom": "kom", "komad": "kom", "komada": "kom",
+  "piece": "kom", "pieces": "kom",
+
+  "čen": "clove", "čena": "clove", "čenova": "clove",
+  "clove": "clove", "cloves": "clove",
+
+  "glavica": "head", "glavice": "head", "head": "head",
+  "veza": "bunch", "struk": "bunch", "bunch": "bunch",
+  "kriška": "slice", "kriške": "slice", "parče": "slice", "slice": "slice",
+  "kesica": "sachet", "kesice": "sachet", "sachet": "sachet",
+  "konzerva": "can", "can": "can",
+  "prstohvat": "pinch", "prstohvata": "pinch", "pinch": "pinch",
+  "po ukusu": "to_taste", "to taste": "to_taste"
+}
