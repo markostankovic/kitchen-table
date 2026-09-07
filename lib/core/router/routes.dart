@@ -16,6 +16,7 @@ import '../../features/households/presentation/create_household_screen.dart';
 import '../../features/households/presentation/household_screen.dart';
 import '../../features/households/presentation/join_household_screen.dart';
 import '../../features/meal_plan/presentation/meal_plan_screen.dart';
+import '../../features/recipes/presentation/recipe_detail_screen.dart';
 import '../../features/recipes/presentation/recipe_list_screen.dart';
 import '../../features/shopping_list/presentation/shopping_list_screen.dart';
 import 'app_shell.dart';
@@ -77,7 +78,12 @@ class JoinHouseholdRoute extends GoRouteData with $JoinHouseholdRoute {
   branches: <TypedStatefulShellBranch<StatefulShellBranchData>>[
     TypedStatefulShellBranch<RecipesBranch>(
       routes: <TypedRoute<RouteData>>[
-        TypedGoRoute<RecipesRoute>(path: RecipesRoute.path),
+        TypedGoRoute<RecipesRoute>(
+          path: RecipesRoute.path,
+          routes: <TypedRoute<RouteData>>[
+            TypedGoRoute<RecipeDetailRoute>(path: ':recipeId'),
+          ],
+        ),
       ],
     ),
     TypedStatefulShellBranch<MealPlanBranch>(
@@ -138,6 +144,24 @@ class RecipesRoute extends GoRouteData with $RecipesRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       const RecipeListScreen();
+}
+
+/// Nested under the recipes tab, so it keeps the bottom nav and the back
+/// stack.
+///
+/// When a literal segment is added under `/recipes` -- `new`, for the edit
+/// screen -- it must be declared BEFORE this one, or go_router matches
+/// `/recipes/new` here and tries to load a recipe whose id is "new".
+class RecipeDetailRoute extends GoRouteData with $RecipeDetailRoute {
+  const RecipeDetailRoute(this.recipeId);
+
+  final String recipeId;
+
+  static const String path = '/recipes/:recipeId';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      RecipeDetailScreen(recipeId: recipeId);
 }
 
 class MealPlanRoute extends GoRouteData with $MealPlanRoute {

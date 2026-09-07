@@ -1,31 +1,39 @@
-/// Ingredient catalog data access. The only place in this feature that touches
-/// Supabase (CLAUDE.md rule 1).
+/// Catalog reads for the recipe line editor.
+///
+/// **This duplicates `features/ingredients/data/ingredient_repository.dart`,
+/// on purpose (D33).** `tool/check_layers.dart` allows a cross-feature import
+/// only into `domain/`, and that boundary was kept rather than relaxed when
+/// Phase 1c needed `search_ingredients`. So the RPC contract, the unit fetch
+/// and the numeric-as-String handling exist twice.
+///
+/// It is kept in its own file rather than folded into `RecipeRepository` so
+/// the duplication is visible and easy to delete. The domain types it returns
+/// -- [IngredientMatch], [UnitCatalog], [Unit] -- are the originals, not
+/// copies; only the wire access is duplicated.
+///
+/// If a third caller appears -- Phase 2's shopping list is the likely one --
+/// that is the signal to reopen D33 rather than to write a third copy.
 library;
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/supabase/supabase_failure.dart';
-import '../domain/ingredient_match.dart';
-import '../domain/unit.dart';
-import '../domain/unit_catalog.dart';
+import '../../ingredients/domain/ingredient_match.dart';
+import '../../ingredients/domain/unit.dart';
+import '../../ingredients/domain/unit_catalog.dart';
 
-class IngredientRepository {
-  const IngredientRepository(this._client);
+class IngredientCatalogDatasource {
+  const IngredientCatalogDatasource(this._client);
 
   final SupabaseClient _client;
 
   /// Candidate ingredients for [query], best match first.
   ///
-  /// Tiers 2 and 3 of the matcher. Goes through the `search_ingredients` RPC
-  /// rather than a PostgREST query because the ranking is a `distinct on` over
-  /// a union of an exact arm and a fuzzy arm -- and because the three
-  /// thresholds it applies belong in one place, in SQL (D31).
-  ///
-  /// Not an Edge Function: it needs no secret and reads nothing RLS would not
-  /// already hand the caller (docs/ARCHITECTURE.md, client/edge split).
-  ///
-  /// Returns an empty list for a blank query rather than asking the server.
+  /// Tiers 2 and 3 of the matcher. The three thresholds it applies -- the
+  /// four-character floor, 0.4, and the 0.75 auto-accept line -- live in SQL
+  /// and have no copy on this side (D31). Read [IngredientMatch.autoAccept];
+  /// never compare [IngredientMatch.confidence] against a number here.
   Future<List<IngredientMatch>> search(
     String query, {
     String locale = 'sr',
@@ -47,12 +55,7 @@ class IngredientRepository {
         return rows.map(_toMatch).toList();
       });
 
-  /// The whole unit lexicon, in one round trip.
-  ///
-  /// Twenty-odd units and a hundred-odd names, fetched once per session and
-  /// handed to `IngredientLineParser`. That is what keeps parsing local: no
-  /// request while somebody types, and it still works offline once Phase 2
-  /// caches it.
+  /// The whole unit lexicon, in one round trip, for the line parser.
   Future<UnitCatalog> fetchUnitCatalog() => runGuarded(() async {
         final List<Map<String, dynamic>> unitRows = await _client
             .from('units')
@@ -82,8 +85,6 @@ class IngredientRepository {
   Unit _toUnit(Map<String, dynamic> row) => Unit(
         code: row['code'] as String,
         family: UnitFamily.values.byName(row['family'] as String),
-        // numeric arrives as num or String depending on the value's precision,
-        // so it is normalised here rather than trusted.
         toBase: _toDouble(row['to_base']),
         isMetric: row['is_metric'] as bool? ?? false,
       );
@@ -100,12 +101,9 @@ class IngredientRepository {
         isHouseholdAlias: row['is_household_alias'] as bool? ?? false,
       );
 
-  /// Postgres `numeric` reaches Dart as a `String` when it will not fit a
-  /// double exactly, and as a `num` otherwise. Both shapes have to be handled
-  /// or a perfectly ordinary conversion factor crashes the parse.
-  ///
-  /// This is a display and conversion value, not a recipe quantity -- rule 5's
-  /// integer fractions are `Quantity`, and nothing here feeds one.
+  /// Postgres `numeric` arrives as a `String` when it will not fit a double
+  /// exactly, and as a `num` otherwise. Both shapes have to be handled or an
+  /// ordinary conversion factor crashes the parse.
   static double _toDouble(Object? value) => switch (value) {
         final num n => n.toDouble(),
         final String s => double.parse(s),

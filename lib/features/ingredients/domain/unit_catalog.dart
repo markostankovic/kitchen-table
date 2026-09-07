@@ -14,20 +14,25 @@ class UnitCatalog {
   UnitCatalog({
     required List<Unit> units,
     required Map<String, String> aliases,
+    Map<String, String> displayNames = const <String, String>{},
   })  : _byCode = <String, Unit>{
           for (final Unit u in units) u.code: u,
         },
         _byAlias = <String, String>{
           for (final MapEntry<String, String> e in aliases.entries)
             TextNormalizer.normalize(e.key): e.value,
-        };
+        },
+        // Copied rather than aliased: the catalog is held for the whole
+        // session and must not change under the caller's feet.
+        _displayNames = Map<String, String>.unmodifiable(displayNames);
 
   /// An empty lexicon. A parser given this still parses quantities, names and
   /// notes -- it simply never resolves a unit, which is a supported state
   /// (rule 3), not a failure.
   UnitCatalog.empty()
       : _byCode = const <String, Unit>{},
-        _byAlias = const <String, String>{};
+        _byAlias = const <String, String>{},
+        _displayNames = const <String, String>{};
 
   final Map<String, Unit> _byCode;
 
@@ -41,7 +46,27 @@ class UnitCatalog {
   /// than a silent last-write-wins.
   final Map<String, String> _byAlias;
 
+  /// `'<code>|<locale>'` -> the spelling to render, from the `unit_names` rows
+  /// flagged `is_display_name`.
+  ///
+  /// Separate from [_byAlias], which goes the other way and is deliberately
+  /// locale-blind: recognising `kašike` on input is not the same question as
+  /// choosing what to print for `tbsp` in Serbian. A Serbian-first app that
+  /// renders a saved line as `2 tbsp brašno` has lost the plot, and the
+  /// spelling it should use is already in the table -- only the fetch was
+  /// dropping it.
+  final Map<String, String> _displayNames;
+
   Iterable<Unit> get units => _byCode.values;
+
+  /// What to print for [code] in [locale].
+  ///
+  /// Falls back to the code itself, and deliberately not to the other locale:
+  /// printing `tbsp` where Serbian is missing is honest, printing the English
+  /// word inside a Serbian line is not. The code is a defensible last resort
+  /// anyway -- `g`, `kg`, `ml` and `dl` are spelled the same in both.
+  String displayName(String code, {String locale = 'sr'}) =>
+      _displayNames['$code|$locale'] ?? code;
 
   Unit? byCode(String code) => _byCode[code];
 

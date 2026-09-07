@@ -135,6 +135,13 @@ RouteBase get $appShellRoute => StatefulShellRouteData.$route(
           path: '/recipes',
           hasOverriddenOnExit: false,
           factory: $RecipesRoute._fromState,
+          routes: [
+            GoRouteData.$route(
+              path: ':recipeId',
+              hasOverriddenOnExit: false,
+              factory: $RecipeDetailRoute._fromState,
+            ),
+          ],
         ),
       ],
     ),
@@ -184,6 +191,30 @@ mixin $RecipesRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/recipes');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $RecipeDetailRoute on GoRouteData {
+  static RecipeDetailRoute _fromState(GoRouterState state) =>
+      RecipeDetailRoute(state.pathParameters['recipeId']!);
+
+  RecipeDetailRoute get _self => this as RecipeDetailRoute;
+
+  @override
+  String get location =>
+      GoRouteData.$location('/recipes/${Uri.encodeComponent(_self.recipeId)}');
 
   @override
   void go(BuildContext context) => context.go(location);
