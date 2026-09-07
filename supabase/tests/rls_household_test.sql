@@ -72,11 +72,14 @@ begin
     raise warning 'create_household did not create the owner membership';
   end if;
 
-  -- A sees only their own profile until co-member visibility lands.
+  -- Still just A's own profile. profiles_select_co_member is in force by now
+  -- (migration 3), but A is in a household with nobody yet, so it adds nothing
+  -- to profiles_select_own. B joins further down; the co-member count is
+  -- asserted there.
   select count(*) into n from profiles;
   if n <> 1 then
     failures := failures + 1;
-    raise warning 'A should see exactly 1 profile (own), saw %', n;
+    raise warning 'A alone in a household should see 1 profile (own), saw %', n;
   end if;
 
   ---------------------------------------------------------------------------
@@ -122,6 +125,22 @@ begin
     raise warning 'B should see both membership rows, saw %', n;
   end if;
 
+  -- Co-member profile visibility (migration 3). Without it the member list
+  -- renders every co-member as "Unknown", because the join to profiles returns
+  -- nothing. B should now see exactly two profiles: their own, and A's.
+  select count(*) into n from profiles;
+  if n <> 2 then
+    failures := failures + 1;
+    raise warning 'B should see 2 profiles (own + co-member A), saw %', n;
+  end if;
+
+  select count(*) into n
+    from profiles where id = user_a and display_name = 'a';
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'B cannot read co-member A''s display_name';
+  end if;
+
   ---------------------------------------------------------------------------
   -- Non-member C sees nothing
   ---------------------------------------------------------------------------
@@ -138,6 +157,15 @@ begin
   if n <> 0 then
     failures := failures + 1;
     raise warning 'non-member C can see membership rows';
+  end if;
+
+  -- C is in no household, so shares_household_with matches nobody and
+  -- profiles_select_own is all that applies. If this ever returns 3, the
+  -- co-member policy is matching on something other than shared membership.
+  select count(*) into n from profiles;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'non-member C should see 1 profile (own), saw %', n;
   end if;
 
   -- C must not be able to rename someone else's household.
