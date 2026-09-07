@@ -62,7 +62,17 @@ schema_paths = []
 enabled = true
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = ["./seed.sql"]
+#
+# Deliberately empty (D29). The ingredient catalog is the only thing that would
+# want seeding, and it must NOT live here: [db.seed] runs on a local `db reset`
+# and nowhere else, so a catalog seeded through it would simply be absent in
+# production -- where it is reference data the whole matcher depends on. It
+# ships as generated, idempotent migrations instead; see
+# tool/gen_ingredient_seed.dart and `make seed`.
+#
+# Left as [] rather than pointing at a ./seed.sql that does not exist, which
+# printed a warning on every single reset.
+sql_paths = []
 
 [db.network_restrictions]
 # Enable management of network restrictions.
