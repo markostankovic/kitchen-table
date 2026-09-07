@@ -16,6 +16,14 @@ abstract class HouseholdMember with _$HouseholdMember {
     required String householdId,
     required String userId,
     required HouseholdRole role,
+
+    /// The member's name, from the embedded `profiles` row rather than from
+    /// `household_members` itself.
+    ///
+    /// Null means `profiles_select_co_member` did not return the profile.
+    /// Render that visibly rather than dropping the member, so a policy
+    /// regression is noticed instead of silently hiding somebody.
+    String? displayName,
   }) = _HouseholdMember;
 
   factory HouseholdMember.fromJson(Map<String, dynamic> json) =>

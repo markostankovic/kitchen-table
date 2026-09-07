@@ -11,6 +11,7 @@ _HouseholdMember _$HouseholdMemberFromJson(Map<String, dynamic> json) =>
       householdId: json['householdId'] as String,
       userId: json['userId'] as String,
       role: $enumDecode(_$HouseholdRoleEnumMap, json['role']),
+      displayName: json['displayName'] as String?,
     );
 
 Map<String, dynamic> _$HouseholdMemberToJson(_HouseholdMember instance) =>
@@ -18,6 +19,7 @@ Map<String, dynamic> _$HouseholdMemberToJson(_HouseholdMember instance) =>
       'householdId': instance.householdId,
       'userId': instance.userId,
       'role': _$HouseholdRoleEnumMap[instance.role]!,
+      'displayName': instance.displayName,
     };
 
 const _$HouseholdRoleEnumMap = {

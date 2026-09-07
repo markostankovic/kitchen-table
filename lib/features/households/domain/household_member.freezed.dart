@@ -16,7 +16,13 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$HouseholdMember {
 
- String get householdId; String get userId; HouseholdRole get role;
+ String get householdId; String get userId; HouseholdRole get role;/// The member's name, from the embedded `profiles` row rather than from
+/// `household_members` itself.
+///
+/// Null means `profiles_select_co_member` did not return the profile.
+/// Render that visibly rather than dropping the member, so a policy
+/// regression is noticed instead of silently hiding somebody.
+ String? get displayName;
 /// Create a copy of HouseholdMember
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +36,20 @@ $HouseholdMemberCopyWith<HouseholdMember> get copyWith => _$HouseholdMemberCopyW
 @override
 bool operator ==(Object other) {
   final _this = this as HouseholdMember;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HouseholdMember&&(identical(other.householdId, _this.householdId) || other.householdId == _this.householdId)&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.role, _this.role) || other.role == _this.role));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HouseholdMember&&(identical(other.householdId, _this.householdId) || other.householdId == _this.householdId)&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.role, _this.role) || other.role == _this.role)&&(identical(other.displayName, _this.displayName) || other.displayName == _this.displayName));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as HouseholdMember;
-  return Object.hash(runtimeType,_this.householdId,_this.userId,_this.role);
+  return Object.hash(runtimeType,_this.householdId,_this.userId,_this.role,_this.displayName);
 }
 
 @override
 String toString() {
   final _this = this as HouseholdMember;
-  return 'HouseholdMember(householdId: ${_this.householdId}, userId: ${_this.userId}, role: ${_this.role})';
+  return 'HouseholdMember(householdId: ${_this.householdId}, userId: ${_this.userId}, role: ${_this.role}, displayName: ${_this.displayName})';
 }
 
 
@@ -54,7 +60,7 @@ abstract mixin class $HouseholdMemberCopyWith<$Res>  {
   factory $HouseholdMemberCopyWith(HouseholdMember value, $Res Function(HouseholdMember) _then) = _$HouseholdMemberCopyWithImpl;
 @useResult
 $Res call({
- String householdId, String userId, HouseholdRole role
+ String householdId, String userId, HouseholdRole role, String? displayName
 });
 
 
@@ -71,12 +77,13 @@ class _$HouseholdMemberCopyWithImpl<$Res>
 
 /// Create a copy of HouseholdMember
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? householdId = null,Object? userId = null,Object? role = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? householdId = null,Object? userId = null,Object? role = null,Object? displayName = freezed,}) {
   return _then(HouseholdMember(
 householdId: null == householdId ? _self.householdId : householdId // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
-as HouseholdRole,
+as HouseholdRole,displayName: freezed == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -161,10 +168,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String householdId,  String userId,  HouseholdRole role)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String householdId,  String userId,  HouseholdRole role,  String? displayName)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _HouseholdMember() when $default != null:
-return $default(_that.householdId,_that.userId,_that.role);case _:
+return $default(_that.householdId,_that.userId,_that.role,_that.displayName);case _:
   return orElse();
 
 }
@@ -182,10 +189,10 @@ return $default(_that.householdId,_that.userId,_that.role);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String householdId,  String userId,  HouseholdRole role)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String householdId,  String userId,  HouseholdRole role,  String? displayName)  $default,) {final _that = this;
 switch (_that) {
 case _HouseholdMember():
-return $default(_that.householdId,_that.userId,_that.role);case _:
+return $default(_that.householdId,_that.userId,_that.role,_that.displayName);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +209,10 @@ return $default(_that.householdId,_that.userId,_that.role);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String householdId,  String userId,  HouseholdRole role)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String householdId,  String userId,  HouseholdRole role,  String? displayName)?  $default,) {final _that = this;
 switch (_that) {
 case _HouseholdMember() when $default != null:
-return $default(_that.householdId,_that.userId,_that.role);case _:
+return $default(_that.householdId,_that.userId,_that.role,_that.displayName);case _:
   return null;
 
 }
@@ -217,12 +224,19 @@ return $default(_that.householdId,_that.userId,_that.role);case _:
 @JsonSerializable()
 
 class _HouseholdMember implements HouseholdMember {
-  const _HouseholdMember({required this.householdId, required this.userId, required this.role});
+  const _HouseholdMember({required this.householdId, required this.userId, required this.role, this.displayName});
   factory _HouseholdMember.fromJson(Map<String, dynamic> json) => _$HouseholdMemberFromJson(json);
 
 @override final  String householdId;
 @override final  String userId;
 @override final  HouseholdRole role;
+/// The member's name, from the embedded `profiles` row rather than from
+/// `household_members` itself.
+///
+/// Null means `profiles_select_co_member` did not return the profile.
+/// Render that visibly rather than dropping the member, so a policy
+/// regression is noticed instead of silently hiding somebody.
+@override final  String? displayName;
 
 /// Create a copy of HouseholdMember
 /// with the given fields replaced by the non-null parameter values.
@@ -237,18 +251,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _HouseholdMember&&(identical(other.householdId, householdId) || other.householdId == householdId)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.role, role) || other.role == role));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _HouseholdMember&&(identical(other.householdId, householdId) || other.householdId == householdId)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.role, role) || other.role == role)&&(identical(other.displayName, displayName) || other.displayName == displayName));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,householdId,userId,role);
+    return Object.hash(runtimeType,householdId,userId,role,displayName);
 }
 
 @override
 String toString() {
-    return 'HouseholdMember(householdId: $householdId, userId: $userId, role: $role)';
+    return 'HouseholdMember(householdId: $householdId, userId: $userId, role: $role, displayName: $displayName)';
 }
 
 
@@ -259,7 +273,7 @@ abstract mixin class _$HouseholdMemberCopyWith<$Res> implements $HouseholdMember
   factory _$HouseholdMemberCopyWith(_HouseholdMember value, $Res Function(_HouseholdMember) _then) = __$HouseholdMemberCopyWithImpl;
 @override @useResult
 $Res call({
- String householdId, String userId, HouseholdRole role
+ String householdId, String userId, HouseholdRole role, String? displayName
 });
 
 
@@ -276,12 +290,13 @@ class __$HouseholdMemberCopyWithImpl<$Res>
 
 /// Create a copy of HouseholdMember
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? householdId = null,Object? userId = null,Object? role = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? householdId = null,Object? userId = null,Object? role = null,Object? displayName = freezed,}) {
   return _then(_HouseholdMember(
 householdId: null == householdId ? _self.householdId : householdId // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
-as HouseholdRole,
+as HouseholdRole,displayName: freezed == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

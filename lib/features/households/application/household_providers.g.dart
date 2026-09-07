@@ -123,3 +123,104 @@ final class CurrentHouseholdProvider
 }
 
 String _$currentHouseholdHash() => r'fcdf29d5844120bfc7a306ede57a8f800c21d303';
+
+/// Everyone in the caller's household, for the member list.
+///
+/// Display names depend on `profiles_select_co_member`; without that policy
+/// every co-member renders as unknown.
+
+@ProviderFor(householdMembers)
+final householdMembersProvider = HouseholdMembersProvider._();
+
+/// Everyone in the caller's household, for the member list.
+///
+/// Display names depend on `profiles_select_co_member`; without that policy
+/// every co-member renders as unknown.
+
+final class HouseholdMembersProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<HouseholdMember>>,
+          List<HouseholdMember>,
+          FutureOr<List<HouseholdMember>>
+        >
+    with
+        $FutureModifier<List<HouseholdMember>>,
+        $FutureProvider<List<HouseholdMember>> {
+  /// Everyone in the caller's household, for the member list.
+  ///
+  /// Display names depend on `profiles_select_co_member`; without that policy
+  /// every co-member renders as unknown.
+  HouseholdMembersProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'householdMembersProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$householdMembersHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<HouseholdMember>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<HouseholdMember>> create(Ref ref) {
+    return householdMembers(ref);
+  }
+}
+
+String _$householdMembersHash() => r'da6342bcdf5be05e316d6df64926f0323cb8be64';
+
+/// Invite codes that can still be redeemed, newest first.
+
+@ProviderFor(liveInvites)
+final liveInvitesProvider = LiveInvitesProvider._();
+
+/// Invite codes that can still be redeemed, newest first.
+
+final class LiveInvitesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<HouseholdInvite>>,
+          List<HouseholdInvite>,
+          FutureOr<List<HouseholdInvite>>
+        >
+    with
+        $FutureModifier<List<HouseholdInvite>>,
+        $FutureProvider<List<HouseholdInvite>> {
+  /// Invite codes that can still be redeemed, newest first.
+  LiveInvitesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'liveInvitesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$liveInvitesHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<HouseholdInvite>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<HouseholdInvite>> create(Ref ref) {
+    return liveInvites(ref);
+  }
+}
+
+String _$liveInvitesHash() => r'76b21836967f4bdcdea7056cf816bbd88d519f8e';
