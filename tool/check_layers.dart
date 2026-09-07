@@ -35,6 +35,12 @@ const Map<String, String> _bannedTypes = <String, String>{
       'Supabase errors must be translated to an AppFailure inside data/',
   'AuthException':
       'Supabase errors must be translated to an AppFailure inside data/',
+  // Edge Function errors. Note this does not match the Functions* subtypes
+  // (FunctionsHttpException and friends -- plural), because the match is a
+  // substring test. The declared type anyone actually writes in a catch is the
+  // base one, and runGuarded catches subtypes through it.
+  'FunctionException':
+      'Supabase errors must be translated to an AppFailure inside data/',
 };
 
 void main(List<String> args) {

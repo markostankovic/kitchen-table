@@ -27,6 +27,10 @@ Future<T> runGuarded<T>(Future<T> Function() body) async {
     Error.throwWithStackTrace(_fromPostgrest(e), s);
   } on AuthException catch (e, s) {
     Error.throwWithStackTrace(_fromAuth(e), s);
+  } on FunctionException catch (e, s) {
+    // Also catches FunctionsHttpException / FunctionsFetchException /
+    // FunctionsRelayException -- `on` matches subtypes.
+    Error.throwWithStackTrace(_fromFunction(e), s);
   } on SocketException catch (e, s) {
     Error.throwWithStackTrace(NetworkFailure(cause: e), s);
   } on TimeoutException catch (e, s) {
@@ -52,6 +56,50 @@ AppFailure _fromPostgrest(PostgrestException e) {
       return ValidationFailure(message: e.message, cause: e);
     case '42501': // insufficient_privilege -- an RLS policy said no
       return UnauthorizedFailure(cause: e);
+    default:
+      return UnknownFailure(cause: e);
+  }
+}
+
+/// Edge Function errors.
+///
+/// `create-invite` and `redeem-invite` answer every failure with
+/// `{"error": "<code>", "message": "..."}` and `Content-Type:
+/// application/json`, which `functions_client` decodes into
+/// [FunctionException.details]. See `supabase/functions/_shared/http.ts` --
+/// that file and this one are the two ends of the same contract.
+///
+/// Mapped on the machine-readable `error` rather than the HTTP status: it
+/// keeps the coupling at exactly one point, and it lets Phase 3 localize by
+/// code with the server's text as the fallback.
+AppFailure _fromFunction(FunctionException e) {
+  // status 0 is FunctionsFetchException: the request never reached the server.
+  if (e.status == 0) return NetworkFailure(cause: e);
+
+  final Object? details = e.details;
+  final String? code =
+      details is Map<String, dynamic> ? details['error'] as String? : null;
+  final String? message =
+      details is Map<String, dynamic> ? details['message'] as String? : null;
+
+  switch (code) {
+    case 'unauthenticated':
+    case 'not_a_member':
+      return UnauthorizedFailure(cause: e);
+    case 'no_household':
+    case 'invite_not_found':
+      return NotFoundFailure(
+          message: message ?? 'That code is not valid.', cause: e);
+    case 'invite_already_used':
+    case 'already_in_household':
+      return ConflictFailure(
+          message: message ?? 'That code has already been used.', cause: e);
+    case 'invalid_code':
+    case 'invalid_body':
+    case 'invite_expired':
+    case 'method_not_allowed':
+      return ValidationFailure(
+          message: message ?? 'That code was not accepted.', cause: e);
     default:
       return UnknownFailure(cause: e);
   }

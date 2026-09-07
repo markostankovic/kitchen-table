@@ -104,6 +104,15 @@ void main() {
     expect(result.output, contains('AuthException'));
   });
 
+  test('rejects FunctionException escaping data/', () {
+    final result = runChecker(<String, String>{
+      'lib/features/households/application/household_providers.dart':
+          "void f(FunctionException e) {}\n",
+    });
+    expect(result.exitCode, 1);
+    expect(result.output, contains('FunctionException'));
+  });
+
   test('rejects cross-feature imports that bypass domain/', () {
     final result = runChecker(<String, String>{
       'lib/features/recipes/data/recipe_repository.dart': "class R {}\n",
