@@ -32,6 +32,10 @@ pass in both Dart and Postgres, app runs and navigates between four blank tabs.
 ## Phase 1 — Recipes, households, import
 
 ### 1a. Auth + households
+
+**Status: complete** (`7fe319a`, then the invites slice). Decisions taken
+during it: D25–D26.
+
 - Supabase Auth (email OTP is simplest; skip social for now)
 - `profiles`, `households`, `household_members`, `household_invites` + RLS
 - `is_household_member()` helper, applied to one table to prove the pattern
@@ -39,7 +43,10 @@ pass in both Dart and Postgres, app runs and navigates between four blank tabs.
 - Screens: sign in, create household, join by code, member list
 
 **Done when:** two accounts on two devices are in one household, and each can
-see a row the other created.
+see a row the other created. — Met. There are no recipes until 1c, so the rows
+shared are the household and the membership rows: the joiner sees the household
+the inviter named, and both members by name. `supabase/tests/` covers the same
+ground with the negative cases.
 
 ### 1b. Ingredient catalog
 - `ingredients`, `ingredient_names`, `units`, `unit_names`, indexes

@@ -141,12 +141,23 @@ Shared server code lives in `supabase/functions/_shared/`:
 
 ```
 _shared/
+  http.ts        # CORS, the {error, message} envelope, the handler wrapper
+  auth.ts        # resolve caller -> household, assert membership
+  invite_code.ts # invite code generation and validation
   schema.ts      # Zod — the single definition of AI-facing shapes
   ai.ts          # model client, retry, JSON-mode helpers
   usage.ts       # checkQuota(householdId) + recordUsage(...)
-  auth.ts        # resolve caller -> household, assert membership
   normalize.ts   # same normalization as Postgres/Dart (for matching)
 ```
+
+The first three exist as of Phase 1a; the rest arrive with Phase 1d.
+
+Every function runs **two clients**. A caller-scoped one, carrying the request's
+`Authorization` header, does exactly one thing: `auth.getUser()`, which verifies
+the JWT against the Auth server rather than trusting a locally decoded `sub`.
+Everything else runs on a service-role client, which bypasses RLS — so every
+query it issues must carry its own explicit predicate. The trust boundary is the
+handler, not the database.
 
 ## Type flow
 
