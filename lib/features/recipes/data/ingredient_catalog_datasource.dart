@@ -82,6 +82,64 @@ class IngredientCatalogDatasource {
         );
       });
 
+  /// Creates a new ingredient and returns its id, or returns the id of the
+  /// one that already answers to [name] in [locale].
+  ///
+  /// Tier 5 of docs/INGREDIENTS.md, driven by a human. The dedupe is the
+  /// server's job, not this method's: `create_ingredient` checks for an exact
+  /// match first, so two people typing `urnebes` on the same evening get one
+  /// row rather than a merge to do later (D34).
+  ///
+  /// [unitFamily] is a hint for the shopping list and may be omitted.
+  /// `UnitFamily.other` is not a legal value -- it is the escape hatch for
+  /// `prstohvat` and `po ukusu`, which are not families anything converts
+  /// within -- so it is sent as null rather than rejected by the server.
+  Future<String> createIngredient(
+    String name, {
+    String locale = 'sr',
+    UnitFamily? unitFamily,
+  }) =>
+      runGuarded(() async {
+        final dynamic id = await _client.rpc<dynamic>(
+          'create_ingredient',
+          params: <String, dynamic>{
+            'ingredient_name': name,
+            'loc': locale,
+            'unit_family': unitFamily == null || unitFamily == UnitFamily.other
+                ? null
+                : unitFamily.name,
+          },
+        );
+        return id as String;
+      });
+
+  /// Records that [aliasName] names [ingredientId], globally and forever.
+  ///
+  /// Tier 2 write-back: the string resolves by exact match from now on, for
+  /// every household, which is what makes the catalog compound as the app is
+  /// used (docs/INGREDIENTS.md, D8).
+  ///
+  /// Returns false when the string already names a DIFFERENT ingredient. That
+  /// is not an error and must not be surfaced as one -- the recipe line is
+  /// still valid and still saves; all that happened is that one household's
+  /// wording did not get to redefine a word for everybody.
+  Future<bool> linkAlias(
+    String ingredientId,
+    String aliasName, {
+    String locale = 'sr',
+  }) =>
+      runGuarded(() async {
+        final dynamic written = await _client.rpc<dynamic>(
+          'link_ingredient_alias',
+          params: <String, dynamic>{
+            'ingredient': ingredientId,
+            'alias_name': aliasName,
+            'loc': locale,
+          },
+        );
+        return written as bool? ?? false;
+      });
+
   Unit _toUnit(Map<String, dynamic> row) => Unit(
         code: row['code'] as String,
         family: UnitFamily.values.byName(row['family'] as String),
