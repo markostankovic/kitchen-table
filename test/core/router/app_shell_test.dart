@@ -15,6 +15,8 @@ import 'package:kitchen_table/features/auth/domain/app_user.dart';
 import 'package:kitchen_table/features/auth/domain/profile.dart';
 import 'package:kitchen_table/features/households/application/household_providers.dart';
 import 'package:kitchen_table/features/households/domain/household.dart';
+import 'package:kitchen_table/features/households/domain/household_invite.dart';
+import 'package:kitchen_table/features/households/domain/household_member.dart';
 import 'package:kitchen_table/main.dart';
 
 const AppUser _user = AppUser(id: 'u1', email: 'a@example.com');
@@ -24,6 +26,30 @@ const Household _household = Household(
   name: 'Test Household',
   createdBy: 'u1',
 );
+const List<HouseholdMember> _members = <HouseholdMember>[
+  HouseholdMember(
+    householdId: 'h1',
+    userId: 'u1',
+    role: HouseholdRole.owner,
+    displayName: 'Marko',
+  ),
+  HouseholdMember(
+    householdId: 'h1',
+    userId: 'u2',
+    role: HouseholdRole.adult,
+    displayName: 'Ana',
+  ),
+];
+final List<HouseholdInvite> _invites = <HouseholdInvite>[
+  HouseholdInvite(
+    id: 'i1',
+    householdId: 'h1',
+    code: '482913',
+    createdBy: 'u1',
+    createdAt: DateTime(2026, 9, 7),
+    expiresAt: DateTime.now().add(const Duration(days: 7)),
+  ),
+];
 
 /// Pumps the app with auth state forced to a known shape.
 ///
@@ -42,6 +68,10 @@ Future<void> pumpApp(
         authStateProvider.overrideWith(
             (Ref ref) => Stream<AppUser?>.value(userId == null ? null : _user)),
         ownProfileProvider.overrideWith((Ref ref) async => _profile),
+        // Without these two the household screen reaches the real
+        // repository, and so Supabase.instance.client, which throws.
+        householdMembersProvider.overrideWith((Ref ref) async => _members),
+        liveInvitesProvider.overrideWith((Ref ref) async => _invites),
       ],
       child: const KitchenTableApp(),
     ),
@@ -141,6 +171,51 @@ void main() {
       expect(find.text('Test Household'), findsOneWidget);
       expect(find.byType(NavigationBar), findsOneWidget,
           reason: 'the household screen is nested inside the Settings tab');
+    });
+
+    testWidgets('the household screen lists members and live invite codes',
+        (WidgetTester tester) async {
+      await pumpApp(tester);
+
+      await tester.tap(find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Settings'),
+      ));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Household'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ana'), findsOneWidget);
+      expect(find.text('owner'), findsOneWidget);
+      expect(find.text('adult'), findsOneWidget);
+      expect(find.text('482913'), findsOneWidget);
+    });
+  });
+
+  group('onboarding', () {
+    testWidgets('can reach the join-by-code screen',
+        (WidgetTester tester) async {
+      await pumpApp(tester, household: null);
+
+      await tester.tap(find.text('I have an invite code'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Enter your invite code'), findsOneWidget,
+          reason: 'the redirect must treat /join-household as an onboarding '
+              'route, or it bounces straight back to /create-household');
+      expect(find.byType(NavigationBar), findsNothing);
+    });
+
+    testWidgets('can get back to creating a household',
+        (WidgetTester tester) async {
+      await pumpApp(tester, household: null);
+
+      await tester.tap(find.text('I have an invite code'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Create a household instead'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Name your household'), findsOneWidget);
     });
   });
 }

@@ -14,6 +14,7 @@ import '../../features/auth/presentation/verify_otp_screen.dart';
 import '../../features/auth/presentation/settings_screen.dart';
 import '../../features/households/presentation/create_household_screen.dart';
 import '../../features/households/presentation/household_screen.dart';
+import '../../features/households/presentation/join_household_screen.dart';
 import '../../features/meal_plan/presentation/meal_plan_screen.dart';
 import '../../features/recipes/presentation/recipe_list_screen.dart';
 import '../../features/shopping_list/presentation/shopping_list_screen.dart';
@@ -59,6 +60,17 @@ class CreateHouseholdRoute extends GoRouteData with $CreateHouseholdRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       const CreateHouseholdScreen();
+}
+
+@TypedGoRoute<JoinHouseholdRoute>(path: JoinHouseholdRoute.path)
+class JoinHouseholdRoute extends GoRouteData with $JoinHouseholdRoute {
+  const JoinHouseholdRoute();
+
+  static const String path = '/join-household';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const JoinHouseholdScreen();
 }
 
 @TypedStatefulShellRoute<AppShellRoute>(

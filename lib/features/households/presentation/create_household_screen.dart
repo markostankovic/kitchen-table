@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/router/routes.dart';
 import '../application/household_providers.dart';
 
 /// Onboarding: the signed-in user has no household yet.
 ///
-/// Joining an existing one by invite code lands in the next slice; until then
-/// this is the only way out of onboarding.
+/// The other way out of onboarding is [JoinHouseholdScreen], for someone who
+/// was handed an invite code instead.
 class CreateHouseholdScreen extends ConsumerStatefulWidget {
   const CreateHouseholdScreen({super.key});
 
@@ -103,6 +104,13 @@ class _CreateHouseholdScreenState
                             child:
                                 CircularProgressIndicator(strokeWidth: 2))
                         : const Text('Create'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: _saving
+                        ? null
+                        : () => const JoinHouseholdRoute().go(context),
+                    child: const Text('I have an invite code'),
                   ),
                 ],
               ),

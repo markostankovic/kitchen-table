@@ -52,7 +52,11 @@ GoRouter goRouter(Ref ref) {
           ref.read(currentHouseholdProvider);
       if (!household.hasValue) return null;
 
-      final bool onboarding = location == CreateHouseholdRoute.path;
+      // Both onboarding branches must be listed. Omitting one bounces the
+      // user back to create-household the moment they navigate to it,
+      // which makes the screen unreachable rather than merely awkward.
+      final bool onboarding = location == CreateHouseholdRoute.path ||
+          location == JoinHouseholdRoute.path;
       if (household.value == null) {
         return onboarding ? null : CreateHouseholdRoute.path;
       }
