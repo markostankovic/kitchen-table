@@ -368,6 +368,23 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Both invite functions verify the caller's JWT at the gateway AND again inside
+# the function via auth.getUser(). verify_jwt = true is already the default; it
+# is written out because the failure mode of flipping it by accident is a
+# household-join endpoint open to the internet.
+#
+# Consequence to know about: with this on, the gateway rejects a browser
+# preflight (OPTIONS carries no Authorization) with 401 before the handler
+# runs. Harmless today -- the only client is Flutter, which sends none. Phase
+# 4's web layer can set this to false without weakening anything, because
+# getUser() is checked inside the function regardless. The OPTIONS branch in
+# _shared/http.ts is kept so that stays a one-line change.
+[functions.create-invite]
+verify_jwt = true
+
+[functions.redeem-invite]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

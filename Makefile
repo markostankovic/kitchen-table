@@ -4,11 +4,12 @@
 
 DART_DEFINE := --dart-define-from-file=env/local.json
 
-.PHONY: help gen watch lint test test-sql db-reset db-start db-stop types check
+.PHONY: help gen watch lint test test-sql db-reset db-start db-stop types check \
+	functions-serve functions-deploy
 
 help:
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) \
-		| awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
+		| awk 'BEGIN {FS = ":.*?## "}; {printf "  %-17s %s\n", $$1, $$2}'
 
 gen: ## Run code generation once
 	dart run build_runner build
@@ -44,6 +45,15 @@ db-stop: ## Stop the local Supabase stack
 
 db-reset: ## Rebuild the local database from migrations
 	supabase db reset
+
+# Deliberately not wired into `check`: there is no deno on this machine yet
+# (see the `types` target), so a deno lint/test step would fail for everyone.
+# Phase 1d installs deno for `make types`; add `test-functions` then.
+functions-serve: ## Serve the Edge Functions locally, with hot reload
+	supabase functions serve
+
+functions-deploy: ## Deploy the invite Edge Functions to the linked project
+	supabase functions deploy create-invite redeem-invite
 
 run: ## Run the app on iOS/desktop (requires env/local.json)
 	flutter run $(DART_DEFINE)
