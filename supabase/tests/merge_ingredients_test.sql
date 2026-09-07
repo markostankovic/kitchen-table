@@ -19,6 +19,9 @@ declare
   parented  uuid;
   orphan    uuid;
 
+  hid       uuid;
+  rid       uuid;
+
   n         int;
   failures  int := 0;
   got_error boolean;
@@ -37,6 +40,10 @@ begin
   ---------------------------------------------------------------------------
   -- Setup
   ---------------------------------------------------------------------------
+  -- Households first: it cascades to recipes and on to recipe_ingredients,
+  -- whose ingredient_id has no ON DELETE and would otherwise block the
+  -- ingredient delete on the next line.
+  delete from households where created_by = user_a;
   update ingredients set parent_id = null where key like 'zzz\_merge\_%';
   delete from ingredients where key like 'zzz\_merge\_%';
   delete from ingredient_merges where merged_by = user_a;
@@ -62,6 +69,31 @@ begin
     (src, 'zzz merge source', 'en', true,  'curated'),
     (tgt, 'zzz merge meta',   'sr', true,  'curated'),
     (tgt, 'zzz merge target', 'en', true,  'curated');
+
+  ---------------------------------------------------------------------------
+  -- A recipe line pointing at the source
+  ---------------------------------------------------------------------------
+  -- Until Phase 1c this section could not exist. recipe_ingredients had no
+  -- table, so the function's to_regclass-guarded repoint step was skipped and
+  -- the FK-coverage assertion at the end passed vacuously. Both are live now,
+  -- and the roadmap's "merge_ingredients correctly repoints rows" is finally
+  -- asserted against the row type the step was written for.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_a, 'role', 'authenticated')::text, true);
+
+  select create_household('zzz merge household') into hid;
+
+  insert into recipes (household_id, title, original_locale, source_type,
+                       created_by)
+  values (hid, 'zzz merge recipe', 'sr', 'manual', user_a)
+  returning id into rid;
+
+  insert into recipe_ingredients (recipe_id, position, raw_text, ingredient_id,
+                                  match_method, match_confidence)
+  values (rid, 0, 'zzz merge izvora', src, 'alias', 1.0);
+
+  perform set_config('role', 'postgres', true);
 
   ---------------------------------------------------------------------------
   -- Refusals, before anything has been changed
@@ -172,6 +204,26 @@ begin
     raise warning 'the source ingredient was not soft-deleted';
   end if;
 
+  -- The point of the whole function: a recipe line that referred to the
+  -- retired ingredient now refers to the surviving one.
+  select count(*) into n
+  from recipe_ingredients where recipe_id = rid and ingredient_id = tgt;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'the recipe line was not repointed onto the target';
+  end if;
+
+  -- ...and nothing about what the cook wrote, or about how the line was
+  -- matched, was rewritten along the way (rule 3, D7).
+  select count(*) into n
+  from recipe_ingredients
+  where recipe_id = rid and raw_text = 'zzz merge izvora'
+    and match_method = 'alias' and match_confidence = 1.0;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'the merge rewrote raw_text or the match provenance';
+  end if;
+
   -- Rule 4: soft delete, so the row is still there.
   select count(*) into n from ingredients where id = src;
   if n <> 1 then
@@ -238,6 +290,7 @@ begin
   -- Teardown
   ---------------------------------------------------------------------------
   delete from ingredient_merges where merged_by = user_a;
+  delete from households where created_by = user_a;
   update ingredients set parent_id = null where key like 'zzz\_merge\_%';
   delete from ingredient_names where ingredient_id in
     (select id from ingredients where key like 'zzz\_merge\_%');
