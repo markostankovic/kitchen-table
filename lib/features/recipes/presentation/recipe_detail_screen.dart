@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/error/app_failure.dart';
+import '../../../core/router/routes.dart';
 import '../../ingredients/domain/unit_catalog.dart';
 import '../application/recipe_providers.dart';
 import '../domain/recipe.dart';
@@ -30,6 +32,30 @@ class RecipeDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(detail.value?.recipe.title ?? 'Recipe'),
+        actions: <Widget>[
+          IconButton(
+            tooltip: 'Edit',
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: detail.hasValue
+                ? () => RecipeEditRoute(recipeId).go(context)
+                : null,
+          ),
+          // Delete sits behind an overflow rather than next to Edit: they are
+          // one tap apart and only one of them is reversible.
+          PopupMenuButton<_DetailAction>(
+            enabled: detail.hasValue,
+            onSelected: (_DetailAction action) => switch (action) {
+              _DetailAction.delete => _confirmDelete(context, ref),
+            },
+            itemBuilder: (BuildContext context) =>
+                const <PopupMenuEntry<_DetailAction>>[
+              PopupMenuItem<_DetailAction>(
+                value: _DetailAction.delete,
+                child: Text('Delete recipe'),
+              ),
+            ],
+          ),
+        ],
       ),
       body: detail.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -44,7 +70,50 @@ class RecipeDetailScreen extends ConsumerWidget {
       ),
     );
   }
+
+  /// Soft-deletes the recipe after a confirmation, then returns to the list.
+  ///
+  /// The row is not erased -- there are no hard deletes (rule 4) -- so the
+  /// copy says the recipe goes away rather than that it is destroyed.
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final bool confirmed = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext dialogContext) => AlertDialog(
+            title: const Text('Delete this recipe?'),
+            content: const Text(
+                'It will stop appearing in your household’s recipes.'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed || !context.mounted) return;
+
+    try {
+      await ref.read(recipeRepositoryProvider).softDelete(recipeId);
+      ref.invalidate(recipeListProvider);
+      if (!context.mounted) return;
+      const RecipesRoute().go(context);
+    } on AppFailure catch (e) {
+      if (!context.mounted) return;
+      // A snackbar rather than the forms' inline error: this screen has no
+      // field for the message to sit under, and the action is transient.
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
 }
+
+enum _DetailAction { delete }
 
 class _Body extends ConsumerWidget {
   const _Body({required this.detail});

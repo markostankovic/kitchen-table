@@ -17,6 +17,7 @@ import '../../features/households/presentation/household_screen.dart';
 import '../../features/households/presentation/join_household_screen.dart';
 import '../../features/meal_plan/presentation/meal_plan_screen.dart';
 import '../../features/recipes/presentation/recipe_detail_screen.dart';
+import '../../features/recipes/presentation/recipe_edit_screen.dart';
 import '../../features/recipes/presentation/recipe_list_screen.dart';
 import '../../features/shopping_list/presentation/shopping_list_screen.dart';
 import 'app_shell.dart';
@@ -81,7 +82,15 @@ class JoinHouseholdRoute extends GoRouteData with $JoinHouseholdRoute {
         TypedGoRoute<RecipesRoute>(
           path: RecipesRoute.path,
           routes: <TypedRoute<RouteData>>[
-            TypedGoRoute<RecipeDetailRoute>(path: ':recipeId'),
+            // `new` is declared BEFORE `:recipeId` deliberately -- see the
+            // comment on RecipeDetailRoute.
+            TypedGoRoute<RecipeNewRoute>(path: 'new'),
+            TypedGoRoute<RecipeDetailRoute>(
+              path: ':recipeId',
+              routes: <TypedRoute<RouteData>>[
+                TypedGoRoute<RecipeEditRoute>(path: 'edit'),
+              ],
+            ),
           ],
         ),
       ],
@@ -146,6 +155,21 @@ class RecipesRoute extends GoRouteData with $RecipesRoute {
       const RecipeListScreen();
 }
 
+/// The editor with no recipe behind it yet.
+///
+/// Declared before [RecipeDetailRoute] in the branch above, because go_router
+/// matches in order: after it, `/recipes/new` would load a recipe whose id is
+/// "new".
+class RecipeNewRoute extends GoRouteData with $RecipeNewRoute {
+  const RecipeNewRoute();
+
+  static const String path = '/recipes/new';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const RecipeEditScreen();
+}
+
 /// Nested under the recipes tab, so it keeps the bottom nav and the back
 /// stack.
 ///
@@ -162,6 +186,20 @@ class RecipeDetailRoute extends GoRouteData with $RecipeDetailRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       RecipeDetailScreen(recipeId: recipeId);
+}
+
+/// The editor over an existing recipe, nested under its detail page so Back
+/// returns there.
+class RecipeEditRoute extends GoRouteData with $RecipeEditRoute {
+  const RecipeEditRoute(this.recipeId);
+
+  final String recipeId;
+
+  static const String path = '/recipes/:recipeId/edit';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      RecipeEditScreen(recipeId: recipeId);
 }
 
 class MealPlanRoute extends GoRouteData with $MealPlanRoute {

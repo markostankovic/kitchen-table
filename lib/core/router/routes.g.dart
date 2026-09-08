@@ -137,9 +137,21 @@ RouteBase get $appShellRoute => StatefulShellRouteData.$route(
           factory: $RecipesRoute._fromState,
           routes: [
             GoRouteData.$route(
+              path: 'new',
+              hasOverriddenOnExit: false,
+              factory: $RecipeNewRoute._fromState,
+            ),
+            GoRouteData.$route(
               path: ':recipeId',
               hasOverriddenOnExit: false,
               factory: $RecipeDetailRoute._fromState,
+              routes: [
+                GoRouteData.$route(
+                  path: 'edit',
+                  hasOverriddenOnExit: false,
+                  factory: $RecipeEditRoute._fromState,
+                ),
+              ],
             ),
           ],
         ),
@@ -206,6 +218,27 @@ mixin $RecipesRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
+mixin $RecipeNewRoute on GoRouteData {
+  static RecipeNewRoute _fromState(GoRouterState state) =>
+      const RecipeNewRoute();
+
+  @override
+  String get location => GoRouteData.$location('/recipes/new');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
 mixin $RecipeDetailRoute on GoRouteData {
   static RecipeDetailRoute _fromState(GoRouterState state) =>
       RecipeDetailRoute(state.pathParameters['recipeId']!);
@@ -215,6 +248,31 @@ mixin $RecipeDetailRoute on GoRouteData {
   @override
   String get location =>
       GoRouteData.$location('/recipes/${Uri.encodeComponent(_self.recipeId)}');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $RecipeEditRoute on GoRouteData {
+  static RecipeEditRoute _fromState(GoRouterState state) =>
+      RecipeEditRoute(state.pathParameters['recipeId']!);
+
+  RecipeEditRoute get _self => this as RecipeEditRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/recipes/${Uri.encodeComponent(_self.recipeId)}/edit',
+  );
 
   @override
   void go(BuildContext context) => context.go(location);

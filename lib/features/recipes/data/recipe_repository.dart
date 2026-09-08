@@ -107,11 +107,17 @@ recipe_steps(id, position, text, timer_seconds)''')
         );
       });
 
-  /// Creates a recipe and returns its id.
+  /// Creates a recipe and returns the row that was written.
   ///
   /// Unlike `create_household`, this is a plain insert: `recipes` has an INSERT
   /// policy and there is nothing to make atomic, so an RPC would be ceremony.
-  Future<String> create({
+  ///
+  /// The whole row comes back rather than just the id because the caller needs
+  /// the fields it did not send -- `household_id`, `created_by` -- in order to
+  /// issue an update afterwards. A first save is this call followed by
+  /// `saveLines`, and if the second half fails the editor retries against the
+  /// recipe this returned instead of creating a second one (D37).
+  Future<Recipe> create({
     required String title,
     required String originalLocale,
     String? description,
@@ -149,10 +155,10 @@ recipe_steps(id, position, text, timer_seconds)''')
               'tags': tags,
               'created_by': userId,
             })
-            .select('id')
+            .select(_recipeColumns)
             .single();
 
-        return row['id'] as String;
+        return _toRecipe(row);
       });
 
   /// Saves the editable fields of an existing recipe.

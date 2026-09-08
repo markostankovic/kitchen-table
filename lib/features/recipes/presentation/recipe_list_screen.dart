@@ -49,6 +49,11 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Recipes')),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => const RecipeNewRoute().go(context),
+        tooltip: 'New recipe',
+        child: const Icon(Icons.add),
+      ),
       body: Column(
         children: <Widget>[
           Padding(
