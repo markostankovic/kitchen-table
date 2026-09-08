@@ -402,6 +402,12 @@ verify_jwt = true
 [functions.redeem-invite]
 verify_jwt = true
 
+[functions.import-text]
+verify_jwt = true
+
+[functions.match-ingredients]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

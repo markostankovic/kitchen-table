@@ -4,6 +4,7 @@
     "jsr:@std/assert@1": "1.0.19",
     "jsr:@std/internal@^1.0.12": "1.0.14",
     "npm:@anthropic-ai/sdk@0.124": "0.124.0_zod@4.5.4",
+    "npm:@supabase/functions-js@2": "2.115.0",
     "npm:@supabase/supabase-js@2": "2.115.0",
     "npm:zod@^4.5.4": "4.5.4"
   },

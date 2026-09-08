@@ -27,16 +27,29 @@ raw_text: "2 šolje glatkog brašna, prosejano"
    │
    ├─ 4. LLM         batched: ALL unresolved lines of a recipe in ONE call
    │                 → 'llm', confidence from the model's own signal
+   │                 Chooses from catalog candidates, so it cannot invent an
+   │                 ingredient id. Never auto-accepts (D42).
    │
    └─ 5. CREATE      new ingredient, is_verified = false
                      → 'llm' or 'manual' depending on origin
+                     Only ever fired by a human on the confirm screen (D42);
+                     the import path never reaches this tier.
 ```
 
-**Every resolution writes back.** When tier 3, 4, or 5 resolves a string that
-wasn't already an alias, insert an `ingredient_names` row for it. That string
-now resolves at tier 2 forever, for every household. The cost curve drops fast
-because ingredient strings are Zipf-distributed — a few hundred strings cover
-most of everything anyone will ever write.
+**Every resolution writes back — but only once a human has agreed (D42).**
+When tier 3, 4, or 5 resolves a string that wasn't already an alias, an
+`ingredient_names` row is inserted for it. That string then resolves at tier 2
+forever, for every household. The cost curve drops fast because ingredient
+strings are Zipf-distributed — a few hundred strings cover most of everything
+anyone will ever write.
+
+The write happens on the confirm screen, not in the matcher. Phase 1d part 2
+settled this: a machine tier writing back at import time would make a guess
+global and permanent (D28: one string, one ingredient, forever) before anyone
+had looked at it, and tier 5 would enter `za posluživanje` into the catalog as
+food. Since the confirm screen accepts by default, the write still happens on
+the first import of a new string — one tap later. `match-ingredients` reads the
+catalog and writes nothing but the job draft.
 
 **The confirm screen is tier 0 in effect.** When a human accepts or corrects a
 line (D8), write the alias with `source = 'user'`, `match_method = 'manual'`,

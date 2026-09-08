@@ -114,7 +114,7 @@ Edge Functions:
 | `import-url` | fetches third-party pages, then may call an LLM |
 | `import-photo` | vision model, API key |
 | `import-text` | LLM parse of pasted text |
-| `match-ingredients` | LLM tier of matching; writes global alias rows |
+| `match-ingredients` | LLM tier of matching; costs money and holds the key |
 | `translate-recipe` | LLM, API key |
 | `suggest-meals` | LLM, API key (Phase 4) |
 | `create-invite` / `redeem-invite` | must be trusted; writes membership |
@@ -134,8 +134,9 @@ Ambiguous cases and the call:
 
 - **Shopping list aggregation → client.** Deterministic and offline-friendly.
 - **Ingredient matching → split.** Exact/fuzzy tiers on the client for
-  autocomplete responsiveness; the LLM tier server-side because it writes
-  global rows and costs money.
+  autocomplete responsiveness; the LLM tier server-side because it costs money
+  and needs the model key. It does *not* write global alias rows: that moved to
+  the confirm screen in 1d part 2, where a human has agreed (D42).
 - **Invites → server.** Anything that grants access to household data is not
   client logic.
 
@@ -151,7 +152,15 @@ _shared/
   usage.ts       # checkQuota(householdId) + recordUsage(...)
   normalize.ts   # same normalization as Postgres/Dart (for matching)
   parse_line.ts  # same line parse as Dart, against the same fixture (D31)
+  jobs.ts        # the import_jobs lifecycle, shared by all three importers
+  match.ts       # tiers 1-4 over a whole recipe, in-process for the importers
 ```
+
+`jobs.ts` and `match.ts` were added in 1d part 2 and are not in the original
+list. `match.ts` is in `_shared/` rather than inside `match-ingredients/`
+because the importers need the pipeline in the same isolate — the alternative
+was an HTTP hop from one function to a sibling, paying a round trip and a
+second auth check to run code already loaded.
 
 The first three exist as of Phase 1a; the other five arrived with Phase 1d
 part 1. `normalize.ts` and `parse_line.ts` are each one side of a contract whose

@@ -34,6 +34,34 @@ export function serviceClient(): SupabaseClient {
 }
 
 /**
+ * A client carrying the caller's JWT, so RLS sees the caller.
+ *
+ * Needed by anything that calls a `security invoker` function on the caller's
+ * behalf. `search_ingredients` is the live example (D31): run on the service
+ * client it bypasses RLS and returns EVERY household's private aliases, which
+ * is a cross-household leak that looks like a working search. Run on this one
+ * it returns the caller's, which is what the function was written to do.
+ *
+ * Throws a 401 if there is no Authorization header at all. It does NOT verify
+ * the token -- [requireCaller] does that, and every handler calls it first.
+ */
+export function callerClient(req: Request): SupabaseClient {
+  const authorization = req.headers.get("Authorization");
+  if (!authorization) {
+    throw new HttpError(401, "unauthenticated", "Please sign in again.");
+  }
+
+  return createClient(
+    requireEnv("SUPABASE_URL"),
+    requireEnv("SUPABASE_ANON_KEY"),
+    {
+      auth: { persistSession: false },
+      global: { headers: { Authorization: authorization } },
+    },
+  );
+}
+
+/**
  * The calling user's id, or a 401.
  *
  * Goes through `auth.getUser()`, which round-trips to the Auth server and
@@ -42,19 +70,7 @@ export function serviceClient(): SupabaseClient {
  * which household somebody joins.
  */
 export async function requireCaller(req: Request): Promise<string> {
-  const authorization = req.headers.get("Authorization");
-  if (!authorization) {
-    throw new HttpError(401, "unauthenticated", "Please sign in again.");
-  }
-
-  const caller = createClient(
-    requireEnv("SUPABASE_URL"),
-    requireEnv("SUPABASE_ANON_KEY"),
-    {
-      auth: { persistSession: false },
-      global: { headers: { Authorization: authorization } },
-    },
-  );
+  const caller = callerClient(req);
 
   const { data, error } = await caller.auth.getUser();
   if (error || !data.user) {

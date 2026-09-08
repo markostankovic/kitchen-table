@@ -115,8 +115,8 @@ working rather than failing.
 
 ### 1d. Import
 
-**Status: part 1 of several complete.** The substrate is in; nothing
-user-visible ships on it yet. Decisions taken so far: D38–D41.
+**Status: parts 1 and 2 complete.** The server side works end to end; there is
+no client yet. Decisions taken so far: D38–D42.
 
 Part 1 built `import_jobs`, `ai_usage` and `household_ai_limits` with their RLS
 and SQL tests, all five remaining `_shared/` modules, and `make types` for
@@ -128,6 +128,31 @@ that mean "not now" rather than "not ever" — an exhausted AI allowance or an
 upstream rate limit. A `ValidationFailure` would have told the cook to change
 what they sent, which is the opposite of the right advice.
 
+Part 2 built the server half of text import: `_shared/match.ts` (tiers 1–4 over
+a whole recipe), `_shared/jobs.ts` (the `import_jobs` lifecycle), and the
+`import-text` and `match-ingredients` functions. `import-text` answers with a
+job id in 202 and does the work on `EdgeRuntime.waitUntil`, which is what D14's
+queue actually looks like in code.
+
+**D42, taken here: no machine tier writes to the catalog.** `docs/INGREDIENTS.md`
+says every resolution writes an alias back, and it is right about why — that is
+what stops the LLM tier being paid for twice. The disagreement is only about
+*when*. Writing back during import makes a machine guess global and permanent
+(D28: one string, one ingredient, forever) before any human has seen it, and
+D8 exists precisely because a human sees every import. Tier 5 is worse still:
+`za posluživanje` is a real line in the fixture, and creating an ingredient for
+it at import time would enter "for serving" into the catalog as food. So the
+write-back moves one screen later, to the confirm screen, which accepts by
+default and already calls `link_ingredient_alias` (D34) — a function that
+already writes `source = 'user'` and already means a human agreed. The cost
+curve still drops on the first import of a new string; it drops after somebody
+nodded at it.
+
+That also removed a smaller problem rather than solving it:
+`link_ingredient_alias` hardcodes `source = 'user'` and needs a non-null
+`auth.uid()`, so a machine tier calling it would have meant either lying about
+provenance — the thing D7 exists to prevent — or a migration to widen it.
+
 The bullets below are the whole phase; the ones part 1 finished are marked.
 
 - `import_jobs` table — **done**, with `ai_usage` and `household_ai_limits`
@@ -135,9 +160,12 @@ The bullets below are the whole phase; the ones part 1 finished are marked.
 - `_shared/schema.ts` — Zod `ParsedRecipe`; `make types` producing Dart —
   **done**. Two schemas, not one: `ModelRecipe` is what a model is asked for,
   `ParsedRecipe` is what the job stores (see D41)
-- Edge Functions `import-url` (JSON-LD first, LLM fallback), `import-text`,
-  `import-photo` (vision model, structured output)
-- `match-ingredients` Edge Function — the LLM tier, batched per recipe
+- Edge Functions `import-url` (JSON-LD first, LLM fallback), `import-text`
+  (**done**), `import-photo` (vision model, structured output)
+- `match-ingredients` Edge Function — the LLM tier, batched per recipe —
+  **done**. One call per recipe, choosing from candidates the catalog produced,
+  so the model cannot invent an ingredient id. Also a standalone re-matching
+  entry point for a job whose unmatched lines the catalog has since learned
 - `_shared/usage.ts` quota check + `ai_usage` recording — **done**, along with
   `ai.ts`, `normalize.ts` and `parse_line.ts`, which ARCHITECTURE.md listed for
   1d and this bullet list never did
