@@ -6,7 +6,14 @@ plugins {
 
 android {
     namespace = "com.kitchentable.kitchen_table"
-    compileSdk = flutter.compileSdkVersion
+    // Pinned rather than `flutter.compileSdkVersion`, which is 36 as of this
+    // Flutter. receive_sharing_intent 1.9.0 compiles against 37, and an app
+    // may not compile against less than a library it depends on -- the build
+    // fails in checkDebugAarMetadata with exactly that message.
+    //
+    // Raising compileSdk only allows newer APIs to be used; it does not change
+    // runtime behaviour, which is targetSdk's job, and that is left alone.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="kitchen_table"
+        android:label="Kitchen Table"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -23,6 +23,18 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Share a recipe link or a block of text into the importer
+                 (Phase 1d part 6). text/plain is what Chrome's share sheet
+                 sends for a page, and what a notes app sends for a selection.
+
+                 The activity is singleTop above, which is what makes a share
+                 arriving at an already-running app reach this instance rather
+                 than stacking a second one. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

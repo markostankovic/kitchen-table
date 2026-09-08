@@ -175,7 +175,8 @@ The bullets below are the whole phase; the ones part 1 finished are marked.
   save it. The confirm screen reuses the 1c line editor unchanged, which is
   what D43 moved to `core/` to allow, and it is where D42's alias write-back
   now happens — the only place the catalog grows
-- `receive_sharing_intent` on both platforms
+- `receive_sharing_intent` on both platforms — **Android done**; iOS
+  deferred, see below
 
 **Done when:** you can share a recipe URL from a browser into the app, review
 what it found, and save it; and photograph a cookbook page and get a usable
@@ -246,10 +247,36 @@ as `manual`, a recipe the app believes somebody typed out by hand. D16's
 household-only rule hangs off that column. The mapping moved to
 `ImportKind.sourceTypeFor` in the domain, where it is unit-tested.
 
-Still open, and named here so it is not rediscovered: the share-intent package
-(rule 8), and nothing yet prunes an import photo once its job is done or
-dismissed — keeping it is deliberate so a failed job can be re-run, but the
-lifecycle belongs with Phase 2's Storage work.
+**Part 6 added share intents on Android.** Share a recipe page from Chrome and
+the app opens the link importer with the URL already in it; share prose and it
+opens the paste importer instead, keeping any link as attribution. Prefilled
+rather than auto-submitted: sharing the wrong page should cost a tap, not a
+model call.
+
+A share can arrive before the app can act on it — the router's redirect sends
+every location to `/sign-in` or `/create-household` and returns a bare path,
+carrying no destination — so a received share is parked in a `keepAlive`
+provider and delivered once the same two gates the redirect checks have passed.
+Verified on the emulator by sharing while signed out, then signing in: the URL
+survived and landed.
+
+**The iOS half is not done**, and two things the next person needs rather than
+has to discover. Swift Package Manager is already enabled here and there has
+never been a Podfile, so the package (which is SPM-only) fits without changing
+the build. And this project uses the *scene* lifecycle
+(`UIApplicationSceneManifest` + `SceneDelegate.swift`), so any README telling
+you to add an `AppDelegate` override describes a hook that will never fire.
+What is missing is a Share Extension target, an app group and the entitlements —
+Xcode work `flutter pub get` cannot do.
+
+`receive_sharing_intent` compiles against Android SDK 37, which forced the app
+to pin `compileSdk = 37` rather than inheriting Flutter's default of 36. That
+only allows newer APIs; `targetSdk` is untouched.
+
+Still open, and named here so it is not rediscovered: the iOS share extension,
+and nothing yet prunes an import photo once its job is done or dismissed —
+keeping it is deliberate so a failed job can be re-run, but the lifecycle
+belongs with Phase 2's Storage work.
 
 ---
 

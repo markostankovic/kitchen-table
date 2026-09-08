@@ -43,6 +43,7 @@ dependencies:
   # Camera and gallery, for import-photo (Phase 1d part 5). A new
   # dependency under rule 8, asked for and approved.
   image_picker: ^1.2.3
+  receive_sharing_intent: ^1.9.0
 
 dev_dependencies:
   flutter_test:

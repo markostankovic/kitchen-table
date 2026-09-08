@@ -11,14 +11,19 @@ import '../application/import_providers.dart';
 /// server: the URL is vetted before anything is fetched (D45), and a page that
 /// publishes schema.org JSON-LD is read without a model call at all.
 class ImportUrlScreen extends ConsumerStatefulWidget {
-  const ImportUrlScreen({super.key});
+  const ImportUrlScreen({this.initialUrl, super.key});
+
+  /// Set when another app shared a link into the importer. The cook still
+  /// presses the button -- prefilled, not auto-submitted.
+  final String? initialUrl;
 
   @override
   ConsumerState<ImportUrlScreen> createState() => _ImportUrlScreenState();
 }
 
 class _ImportUrlScreenState extends ConsumerState<ImportUrlScreen> {
-  final TextEditingController _url = TextEditingController();
+  late final TextEditingController _url =
+      TextEditingController(text: widget.initialUrl ?? '');
 
   bool _submitting = false;
   String? _error;
@@ -65,7 +70,9 @@ class _ImportUrlScreenState extends ConsumerState<ImportUrlScreen> {
             controller: _url,
             keyboardType: TextInputType.url,
             autocorrect: false,
-            autofocus: true,
+            // Not autofocused when a share prefilled it: the keyboard would
+            // cover the button the cook is being asked to press.
+            autofocus: widget.initialUrl == null,
             onSubmitted: (_) => _submitting ? null : _submit(),
             decoration: const InputDecoration(
               border: OutlineInputBorder(),

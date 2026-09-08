@@ -193,24 +193,33 @@ class RecipeNewRoute extends GoRouteData with $RecipeNewRoute {
 /// Declared before [RecipeDetailRoute], for the same reason [RecipeNewRoute]
 /// is: `/recipes/import` would otherwise load a recipe whose id is "import".
 class ImportPasteRoute extends GoRouteData with $ImportPasteRoute {
-  const ImportPasteRoute();
+  const ImportPasteRoute({this.text, this.sourceUrl});
+
+  /// Carried as query parameters so a share from another app can arrive
+  /// prefilled. Both null when the cook opened the screen themselves.
+  final String? text;
+  final String? sourceUrl;
 
   static const String path = '/recipes/import';
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      const ImportPasteScreen();
+      ImportPasteScreen(initialText: text, initialSourceUrl: sourceUrl);
 }
 
 /// Paste a link and let the server read the page behind it (Phase 1d).
 class ImportUrlRoute extends GoRouteData with $ImportUrlRoute {
-  const ImportUrlRoute();
+  const ImportUrlRoute({this.url});
+
+  /// Carried as a query parameter, so a link shared from a browser arrives
+  /// prefilled. Null when the cook opened the screen themselves.
+  final String? url;
 
   static const String path = '/recipes/import-link';
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      const ImportUrlScreen();
+      ImportUrlScreen(initialUrl: url);
 }
 
 /// Photograph a cookbook page and let a vision model read it (Phase 1d, D15).

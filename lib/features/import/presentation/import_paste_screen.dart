@@ -11,7 +11,13 @@ import '../application/import_providers.dart';
 /// hang beside it (D14 gives all three the same queue), which is why this
 /// screen does one thing and navigates away rather than owning the flow.
 class ImportPasteScreen extends ConsumerStatefulWidget {
-  const ImportPasteScreen({super.key});
+  const ImportPasteScreen({this.initialText, this.initialSourceUrl, super.key});
+
+  /// Set when another app shared prose into the importer. `initialSourceUrl`
+  /// is the link that came with it, if any -- attribution rather than
+  /// something to fetch.
+  final String? initialText;
+  final String? initialSourceUrl;
 
   @override
   ConsumerState<ImportPasteScreen> createState() => _ImportPasteScreenState();
@@ -21,8 +27,10 @@ class _ImportPasteScreenState extends ConsumerState<ImportPasteScreen> {
   // A controller here, unlike the recipe editor's rows: this is one field with
   // a fixed lifetime, which is the case the editor's doc comment says a
   // controller is right for.
-  final TextEditingController _text = TextEditingController();
-  final TextEditingController _sourceUrl = TextEditingController();
+  late final TextEditingController _text =
+      TextEditingController(text: widget.initialText ?? '');
+  late final TextEditingController _sourceUrl =
+      TextEditingController(text: widget.initialSourceUrl ?? '');
 
   bool _submitting = false;
   String? _error;

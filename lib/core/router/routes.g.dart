@@ -260,11 +260,21 @@ mixin $RecipeNewRoute on GoRouteData {
 }
 
 mixin $ImportPasteRoute on GoRouteData {
-  static ImportPasteRoute _fromState(GoRouterState state) =>
-      const ImportPasteRoute();
+  static ImportPasteRoute _fromState(GoRouterState state) => ImportPasteRoute(
+    text: state.uri.queryParameters['text'],
+    sourceUrl: state.uri.queryParameters['source-url'],
+  );
+
+  ImportPasteRoute get _self => this as ImportPasteRoute;
 
   @override
-  String get location => GoRouteData.$location('/recipes/import');
+  String get location => GoRouteData.$location(
+    '/recipes/import',
+    queryParams: {
+      if (_self.text != null) 'text': _self.text,
+      if (_self.sourceUrl != null) 'source-url': _self.sourceUrl,
+    },
+  );
 
   @override
   void go(BuildContext context) => context.go(location);
@@ -282,10 +292,15 @@ mixin $ImportPasteRoute on GoRouteData {
 
 mixin $ImportUrlRoute on GoRouteData {
   static ImportUrlRoute _fromState(GoRouterState state) =>
-      const ImportUrlRoute();
+      ImportUrlRoute(url: state.uri.queryParameters['url']);
+
+  ImportUrlRoute get _self => this as ImportUrlRoute;
 
   @override
-  String get location => GoRouteData.$location('/recipes/import-link');
+  String get location => GoRouteData.$location(
+    '/recipes/import-link',
+    queryParams: {if (_self.url != null) 'url': _self.url},
+  );
 
   @override
   void go(BuildContext context) => context.go(location);
