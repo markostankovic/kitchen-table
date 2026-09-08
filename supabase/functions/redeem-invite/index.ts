@@ -92,8 +92,8 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
       throw new HttpError(
         409,
         "already_in_household",
-        "This account is already in a household. Sign in with a different "
-          + "account to join this one.",
+        "This account is already in a household. Sign in with a different " +
+          "account to join this one.",
       );
     }
   }

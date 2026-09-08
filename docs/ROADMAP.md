@@ -114,12 +114,33 @@ intact and its unit still parsed -- structure without a match, which is rule 3
 working rather than failing.
 
 ### 1d. Import
-- `import_jobs` table
-- `_shared/schema.ts` — Zod `ParsedRecipe`; `make types` producing Dart
+
+**Status: part 1 of several complete.** The substrate is in; nothing
+user-visible ships on it yet. Decisions taken so far: D38–D41.
+
+Part 1 built `import_jobs`, `ai_usage` and `household_ai_limits` with their RLS
+and SQL tests, all five remaining `_shared/` modules, and `make types` for
+real — plus `make test-functions` and `make lint-functions`, which the Makefile
+had been asking for since Phase 0 and which `make check` now runs.
+
+It also added a seventh `AppFailure` variant, `QuotaFailure`, for the codes
+that mean "not now" rather than "not ever" — an exhausted AI allowance or an
+upstream rate limit. A `ValidationFailure` would have told the cook to change
+what they sent, which is the opposite of the right advice.
+
+The bullets below are the whole phase; the ones part 1 finished are marked.
+
+- `import_jobs` table — **done**, with `ai_usage` and `household_ai_limits`
+  alongside it (D17 wanted them from day one, and they are the same migration)
+- `_shared/schema.ts` — Zod `ParsedRecipe`; `make types` producing Dart —
+  **done**. Two schemas, not one: `ModelRecipe` is what a model is asked for,
+  `ParsedRecipe` is what the job stores (see D41)
 - Edge Functions `import-url` (JSON-LD first, LLM fallback), `import-text`,
   `import-photo` (vision model, structured output)
 - `match-ingredients` Edge Function — the LLM tier, batched per recipe
-- `_shared/usage.ts` quota check + `ai_usage` recording
+- `_shared/usage.ts` quota check + `ai_usage` recording — **done**, along with
+  `ai.ts`, `normalize.ts` and `parse_line.ts`, which ARCHITECTURE.md listed for
+  1d and this bullet list never did
 - Client: create job, poll, **confirm screen** (this is the important one —
   fast accept-all, edit the odd line, writes `manual` aliases)
 - `receive_sharing_intent` on both platforms
@@ -127,6 +148,20 @@ working rather than failing.
 **Done when:** you can share a recipe URL from a browser into the app, review
 what it found, and save it; and photograph a cookbook page and get a usable
 draft.
+
+Sequencing settled during part 1: text and URL import come next, and photo
+import is last. Photo needs a Storage bucket, `storage.objects` policies and a
+picker package — the slice D35 moved to Phase 2 — so it gets its own decision
+rather than being dragged in behind a column that already exists.
+
+Still open, and named here so they are not rediscovered: `import-url` fetches
+attacker-supplied URLs while the handler holds the service role, and no
+document has said anything about SSRF; `search_ingredients` is `security
+invoker` (D31), so `match-ingredients` must call it as the caller and not on
+the service client, or it will see every household's aliases; and
+`features/import/` will be the third consumer of the ingredient catalog, which
+`ingredient_catalog_datasource.dart` names as the trigger to reopen D33 rather
+than write a third copy.
 
 ---
 

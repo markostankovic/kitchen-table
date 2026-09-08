@@ -153,10 +153,12 @@ _shared/
   parse_line.ts  # same line parse as Dart, against the same fixture (D31)
 ```
 
-The first three exist as of Phase 1a; the rest arrive with Phase 1d.
-`normalize.ts` and `parse_line.ts` are each one side of a contract whose other
-sides already exist — `test/fixtures/normalization.json` and
-`test/fixtures/ingredient_lines.json`. Neither may be written freehand.
+The first three exist as of Phase 1a; the other five arrived with Phase 1d
+part 1. `normalize.ts` and `parse_line.ts` are each one side of a contract whose
+other sides already existed — `test/fixtures/normalization.json` and
+`test/fixtures/ingredient_lines.json`. Neither was written freehand; both are
+ports, and `make test-functions` holds them to the same fixtures the Dart and
+SQL sides are held to.
 
 Every function runs **two clients**. A caller-scoped one, carrying the request's
 `Authorization` header, does exactly one thing: `auth.getUser()`, which verifies
@@ -169,16 +171,25 @@ handler, not the database.
 
 ```
 supabase/functions/_shared/schema.ts   (Zod, source of truth)
-        │  zod-to-json-schema
+        │  z.toJSONSchema
         ▼
 build/schema.json
-        │  quicktype --lang dart --freezed
+        │  quicktype --lang dart --use-freezed
         ▼
 lib/features/import/domain/parsed_recipe.dart
 ```
 
-Run via `make types`. Never hand-edit the generated Dart. If the AI parse
-contract changes, it changes in `schema.ts` and nowhere else.
+Run via `make types`, which is `tool/gen_types.ts` end to end. Never hand-edit
+the generated Dart. If the AI parse contract changes, it changes in `schema.ts`
+and nowhere else.
+
+Two details the diagram does not show, both settled in 1d part 1. The first
+step is Zod 4's own `z.toJSONSchema` rather than the `zod-to-json-schema`
+package, which only existed because Zod 3 could not do it — same transformation,
+one fewer dependency. And every schema carries an explicit `title`, because
+quicktype otherwise names Dart classes after property names and produces
+`Quantity` and `MatchMethod`, which collide with the real domain types in
+`features/ingredients/domain/`.
 
 ## Offline (Phase 2)
 

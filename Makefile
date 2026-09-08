@@ -4,8 +4,9 @@
 
 DART_DEFINE := --dart-define-from-file=env/local.json
 
-.PHONY: help gen watch lint test test-sql seed seed-check db-reset db-start \
-	db-stop types check functions-serve functions-deploy
+.PHONY: help gen watch lint lint-functions test test-functions test-sql seed \
+	seed-check db-reset db-start db-stop types check functions-serve \
+	functions-deploy run run-android
 
 help:
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -42,7 +43,7 @@ test-sql: ## Regenerate generated SQL, then run every test in supabase/tests/
 # (CLAUDE.md) -- so the only thing that can catch an edited CSV with no
 # migration behind it is an explicit check. Different guarantees, different
 # targets.
-check: lint test seed-check test-sql ## Everything CI would run
+check: lint lint-functions test test-functions seed-check test-sql ## Everything CI would run
 
 seed: ## Emit a new catalog seed migration from supabase/seeds/*.csv
 	dart run tool/gen_ingredient_seed.dart --new-migration
@@ -59,13 +60,25 @@ db-stop: ## Stop the local Supabase stack
 db-reset: ## Rebuild the local database from migrations
 	supabase db reset
 
-# Deliberately not wired into `check`: there is no deno on this machine yet
-# (see the `types` target), so a deno lint/test step would fail for everyone.
-# Phase 1d installs deno for `make types`; add `test-functions` then.
+# NOTE: every deno invocation passes --config explicitly. Deno resolves its
+# import map from the nearest deno.json to the CWD, and these run from the repo
+# root, which has none -- without the flag `import { z } from "zod"` is simply
+# "not a dependency".
+DENO_CONFIG := --config supabase/functions/deno.json
+
+test-functions: ## Deno tests for the shared Edge Function modules
+	deno test $(DENO_CONFIG) --allow-read supabase/functions/_shared/
+
+lint-functions: ## Typecheck, lint and format-check the Edge Functions
+	deno check $(DENO_CONFIG) supabase/functions/_shared/*.ts \
+		supabase/functions/*/index.ts
+	deno lint $(DENO_CONFIG) supabase/functions/
+	deno fmt $(DENO_CONFIG) --check supabase/functions/
+
 functions-serve: ## Serve the Edge Functions locally, with hot reload
 	supabase functions serve
 
-functions-deploy: ## Deploy the invite Edge Functions to the linked project
+functions-deploy: ## Deploy the Edge Functions to the linked project
 	supabase functions deploy create-invite redeem-invite
 
 run: ## Run the app on iOS/desktop (requires env/local.json)
@@ -76,16 +89,11 @@ run: ## Run the app on iOS/desktop (requires env/local.json)
 run-android: ## Run the app on the Android emulator (requires env/android.json)
 	flutter run --dart-define-from-file=env/android.json
 
-types: ## Regenerate Dart models from the Zod schemas (Phase 1d)
-	@echo "make types is not wired up yet."
-	@echo ""
-	@echo "It generates lib/features/import/domain/parsed_recipe.dart from"
-	@echo "supabase/functions/_shared/schema.ts via zod-to-json-schema +"
-	@echo "quicktype (docs/ARCHITECTURE.md, 'Type flow')."
-	@echo ""
-	@echo "Blocked until Phase 1d, which is when schema.ts first exists."
-	@echo "It also needs deno and quicktype, neither of which is installed."
-	@echo ""
-	@echo "This target fails on purpose rather than silently doing nothing:"
-	@echo "a no-op here would look like a successful regeneration."
-	@exit 1
+types: ## Regenerate Dart models from the Zod schemas
+	@# docs/ARCHITECTURE.md, "Type flow". schema.ts is the source of truth for
+	@# every AI-facing shape (D18); the Dart below is generated and must never
+	@# be hand-edited.
+	deno run $(DENO_CONFIG) --allow-read --allow-write --allow-run=quicktype \
+		tool/gen_types.ts
+	dart format lib/features/import/domain/parsed_recipe.dart
+	dart run build_runner build

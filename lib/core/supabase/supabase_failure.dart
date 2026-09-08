@@ -100,6 +100,20 @@ AppFailure _fromFunction(FunctionException e) {
     case 'method_not_allowed':
       return ValidationFailure(
           message: message ?? 'That code was not accepted.', cause: e);
+    // Phase 1d. All three mean "not now" rather than "not ever", so they carry
+    // the server's own sentence: `quota_exceeded` has to say whose allowance
+    // ran out, and no default here can.
+    case 'quota_exceeded':
+    case 'quota_unavailable':
+    case 'ai_rate_limited':
+      return QuotaFailure(
+          message: message ?? 'That is unavailable right now. Try again later.',
+          cause: e);
+    // The model answered, but not with a recipe. Nothing the cook sent is
+    // wrong and retrying may well work, so this is not a ValidationFailure.
+    case 'ai_failed':
+      return UnknownFailure(
+          message: message ?? 'Could not read that recipe.', cause: e);
     default:
       return UnknownFailure(cause: e);
   }

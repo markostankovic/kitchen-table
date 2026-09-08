@@ -10,11 +10,7 @@
  * might not belong to.
  */
 
-import {
-  HttpError,
-  jsonResponse,
-  withHttp,
-} from "../_shared/http.ts";
+import { HttpError, jsonResponse, withHttp } from "../_shared/http.ts";
 import {
   requireCaller,
   resolveHousehold,

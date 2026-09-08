@@ -68,6 +68,20 @@ final class ValidationFailure extends AppFailure {
   const ValidationFailure({required super.message, super.cause});
 }
 
+/// The request was refused for now, not for good: an exhausted AI allowance
+/// (D17), or an upstream rate limit.
+///
+/// A seventh variant rather than a [ValidationFailure] with a nicer message,
+/// because the two call for opposite things from a screen. Validation means
+/// "change what you sent"; this means "send exactly this again later", and a
+/// retry affordance is only correct for one of them.
+final class QuotaFailure extends AppFailure {
+  const QuotaFailure({
+    super.message = 'That is unavailable right now. Try again later.',
+    super.cause,
+  });
+}
+
 /// Anything not otherwise classified. Always log [cause].
 final class UnknownFailure extends AppFailure {
   const UnknownFailure({

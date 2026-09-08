@@ -375,8 +375,15 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+# The model API key (Phase 1d). CLAUDE.md rule 2: no AI provider key ever
+# reaches the client, so this is the only place it is named and
+# supabase/functions/_shared/ai.ts is the only file that reads it.
+#
+# Locally it comes from supabase/.env.local, which is gitignored -- copy
+# supabase/.env.local.example and paste a key. In the hosted project it is set
+# with `supabase secrets set ANTHROPIC_API_KEY=...`, never committed.
+[edge_runtime.secrets]
+ANTHROPIC_API_KEY = "env(ANTHROPIC_API_KEY)"
 
 # Both invite functions verify the caller's JWT at the gateway AND again inside
 # the function via auth.getUser(). verify_jwt = true is already the default; it
