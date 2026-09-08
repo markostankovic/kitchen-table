@@ -3,15 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/error/app_failure.dart';
-import '../../../../core/text/text_normalizer.dart';
-import '../../../ingredients/domain/ingredient_line_parser.dart';
-import '../../../ingredients/domain/ingredient_match.dart';
-import '../../../ingredients/domain/parsed_ingredient_line.dart';
-import '../../../ingredients/domain/unit.dart';
-import '../../../ingredients/domain/unit_catalog.dart';
-import '../../application/recipe_providers.dart';
-import '../../domain/recipe_draft.dart';
+import '../../error/app_failure.dart';
+import '../../text/text_normalizer.dart';
+import '../../../features/ingredients/domain/ingredient_line_parser.dart';
+import '../../../features/ingredients/domain/ingredient_match.dart';
+import '../../../features/ingredients/domain/parsed_ingredient_line.dart';
+import '../../../features/ingredients/domain/unit.dart';
+import '../../../features/ingredients/domain/unit_catalog.dart';
+import '../ingredient_catalog_providers.dart';
+import '../../../features/recipes/domain/recipe_draft.dart';
 import 'ingredient_match_chip.dart';
 import 'ingredient_picker_sheet.dart';
 
@@ -75,9 +75,9 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
   @override
   Widget build(BuildContext context) {
     final IngredientLineParser? parser =
-        ref.watch(recipeLineParserProvider).value;
+        ref.watch(lineParserProvider).value;
     final UnitCatalog units =
-        ref.watch(recipeUnitCatalogProvider).value ?? UnitCatalog.empty();
+        ref.watch(unitCatalogProvider).value ?? UnitCatalog.empty();
 
     final AsyncValue<List<IngredientMatch>> matches =
         ref.watch(ingredientMatchesProvider(_query, locale: widget.locale));
@@ -261,7 +261,7 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
 
     try {
       await ref
-          .read(ingredientCatalogDatasourceProvider)
+          .read(ingredientCatalogProvider)
           .linkAlias(match.ingredientId, name, locale: widget.locale);
     } on AppFailure catch (e) {
       _report(e.message);
@@ -273,14 +273,14 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
     // new ingredient is measured in. `other` is not a legal argument, and the
     // datasource already maps it to null.
     final UnitCatalog units =
-        ref.read(recipeUnitCatalogProvider).value ?? UnitCatalog.empty();
+        ref.read(unitCatalogProvider).value ?? UnitCatalog.empty();
     final String? unitCode = widget.line.unitCode;
     final UnitFamily? family =
         unitCode == null ? null : units.byCode(unitCode)?.family;
 
     try {
       final String ingredientId = await ref
-          .read(ingredientCatalogDatasourceProvider)
+          .read(ingredientCatalogProvider)
           .createIngredient(name, locale: widget.locale, unitFamily: family);
       if (!mounted) return;
       _applyManual(ingredientId: ingredientId, displayName: name);

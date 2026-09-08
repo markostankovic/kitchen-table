@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../ingredients/domain/ingredient_match.dart';
-import '../../../ingredients/domain/unit_catalog.dart';
-import '../../domain/recipe_draft.dart';
+import '../../../features/ingredients/domain/ingredient_match.dart';
+import '../../../features/ingredients/domain/unit_catalog.dart';
+import '../../../features/recipes/domain/recipe_draft.dart';
 import 'quantity_format.dart';
 
 /// What the app made of one ingredient line, shown under the field the cook

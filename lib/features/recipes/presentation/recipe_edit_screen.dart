@@ -7,7 +7,7 @@ import '../../../core/router/routes.dart';
 import '../application/recipe_editor.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_draft.dart';
-import 'widgets/ingredient_line_field.dart';
+import '../../../core/ingredients/widgets/ingredient_line_field.dart';
 
 /// Create or edit one recipe.
 ///

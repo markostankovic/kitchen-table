@@ -6,7 +6,7 @@
 /// a cup; printing it as `0.33` would give that away at the last step.
 library;
 
-import '../../../ingredients/domain/quantity.dart';
+import '../../../features/ingredients/domain/quantity.dart';
 
 /// The single-character forms Unicode has. Anything else falls back to `n/d`,
 /// which reads perfectly well.

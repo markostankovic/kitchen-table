@@ -4,12 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/router/routes.dart';
 import '../../ingredients/domain/unit_catalog.dart';
+import '../../../core/ingredients/ingredient_catalog_providers.dart';
 import '../application/recipe_providers.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_detail.dart';
 import '../domain/recipe_ingredient.dart';
 import '../domain/recipe_step.dart';
-import 'widgets/quantity_format.dart';
+import '../../../core/ingredients/widgets/quantity_format.dart';
 
 /// One recipe, read-only.
 ///
@@ -128,7 +129,7 @@ class _Body extends ConsumerWidget {
     // Until it arrives, lines render with the unit code instead of its
     // Serbian spelling -- readable, and better than withholding the recipe.
     final UnitCatalog units =
-        ref.watch(recipeUnitCatalogProvider).value ?? UnitCatalog.empty();
+        ref.watch(unitCatalogProvider).value ?? UnitCatalog.empty();
 
     final List<String> meta = <String>[
       if (recipe.servings != null) '${recipe.servings} servings',

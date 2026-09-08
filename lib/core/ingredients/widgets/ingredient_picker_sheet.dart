@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../ingredients/domain/ingredient_match.dart';
-import '../../application/recipe_providers.dart';
+import '../../../features/ingredients/domain/ingredient_match.dart';
+import '../ingredient_catalog_providers.dart';
 
 /// What the cook decided about one ingredient line.
 ///

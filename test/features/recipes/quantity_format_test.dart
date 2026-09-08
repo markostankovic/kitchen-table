@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/features/ingredients/domain/quantity.dart';
-import 'package:kitchen_table/features/recipes/presentation/widgets/quantity_format.dart';
+import 'package:kitchen_table/core/ingredients/widgets/quantity_format.dart';
 
 /// A recipe writes `1½`, not `1.5`. Rule 5 keeps quantities exact all the way
 /// through the database and the domain; this is the last step, where getting

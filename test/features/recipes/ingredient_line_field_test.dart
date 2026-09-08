@@ -5,9 +5,9 @@ import 'package:kitchen_table/features/ingredients/domain/ingredient_line_parser
 import 'package:kitchen_table/features/ingredients/domain/ingredient_match.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit_catalog.dart';
-import 'package:kitchen_table/features/recipes/application/recipe_providers.dart';
+import 'package:kitchen_table/core/ingredients/ingredient_catalog_providers.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_draft.dart';
-import 'package:kitchen_table/features/recipes/presentation/widgets/ingredient_line_field.dart';
+import 'package:kitchen_table/core/ingredients/widgets/ingredient_line_field.dart';
 
 /// The line editor's three states, driven through the real parser with the
 /// catalog stubbed by provider override -- no mocking package (rule 8).
@@ -73,8 +73,8 @@ Future<void> _pump(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        recipeUnitCatalogProvider.overrideWith((Ref ref) async => _units),
-        recipeLineParserProvider
+        unitCatalogProvider.overrideWith((Ref ref) async => _units),
+        lineParserProvider
             .overrideWith((Ref ref) async => IngredientLineParser(_units)),
         ingredientMatchesProvider.overrideWith(
           (Ref ref, (String, {String locale}) arg) async {

@@ -5,6 +5,7 @@ import 'package:kitchen_table/features/ingredients/domain/ingredient_match.dart'
 import 'package:kitchen_table/features/ingredients/domain/quantity.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit_catalog.dart';
+import 'package:kitchen_table/core/ingredients/ingredient_catalog_providers.dart';
 import 'package:kitchen_table/features/recipes/application/recipe_providers.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_detail.dart';
@@ -117,7 +118,7 @@ Future<void> _pumpDetail(WidgetTester tester, RecipeDetail detail) async {
     ProviderScope(
       overrides: [
         recipeDetailProvider('r1').overrideWith((Ref ref) async => detail),
-        recipeUnitCatalogProvider.overrideWith((Ref ref) async => _units),
+        unitCatalogProvider.overrideWith((Ref ref) async => _units),
       ],
       child: const MaterialApp(
         home: RecipeDetailScreen(recipeId: 'r1'),
