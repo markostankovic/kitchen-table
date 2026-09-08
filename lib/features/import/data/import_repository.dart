@@ -55,6 +55,25 @@ class ImportRepository {
         return data['jobId'] as String;
       });
 
+  /// Starts an import from a web page and returns the job id.
+  ///
+  /// The URL is vetted server-side before a job row exists, so an unusable
+  /// link comes back as a synchronous `invalid_url` or `url_not_allowed`
+  /// rather than as a job that fails a moment later (D45).
+  Future<String> createFromUrl(String url) => runGuarded(() async {
+        final FunctionResponse res = await _client.functions.invoke(
+          'import-url',
+          body: <String, dynamic>{'url': url.trim()},
+        );
+
+        final Object? data = res.data;
+        if (data is! Map<String, dynamic>) {
+          throw const UnknownFailure(
+              message: 'The server sent an unexpected reply.');
+        }
+        return data['jobId'] as String;
+      });
+
   Future<ImportJob> fetch(String jobId) => runGuarded(() async {
         final Map<String, dynamic> row = await _client
             .from('import_jobs')

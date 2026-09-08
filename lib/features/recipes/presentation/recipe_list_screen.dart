@@ -67,6 +67,11 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
             child: const Text('New recipe'),
           ),
           MenuItemButton(
+            leadingIcon: const Icon(Icons.link_outlined),
+            onPressed: () => const ImportUrlRoute().go(context),
+            child: const Text('Import from a link'),
+          ),
+          MenuItemButton(
             leadingIcon: const Icon(Icons.content_paste_outlined),
             onPressed: () => const ImportPasteRoute().go(context),
             child: const Text('Paste a recipe'),

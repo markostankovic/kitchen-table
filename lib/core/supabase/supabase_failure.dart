@@ -105,6 +105,13 @@ AppFailure _fromFunction(FunctionException e) {
     // ran out, and no default here can.
     // Phase 1d import-text. Without these the server's own sentence -- which
     // says WHAT was wrong with the paste -- is lost to UnknownFailure.
+    // Phase 1d import-url. `url_not_allowed` is the SSRF guard refusing a
+    // link (D45); it deliberately says nothing about WHY, so the server's own
+    // sentence is the whole message.
+    case 'invalid_url':
+    case 'url_not_allowed':
+      return ValidationFailure(
+          message: message ?? 'That link cannot be imported.', cause: e);
     case 'empty_input':
     case 'input_too_large':
       return ValidationFailure(
@@ -112,6 +119,7 @@ AppFailure _fromFunction(FunctionException e) {
     case 'quota_exceeded':
     case 'quota_unavailable':
     case 'ai_rate_limited':
+    case 'ai_unavailable':
       return QuotaFailure(
           message: message ?? 'That is unavailable right now. Try again later.',
           cause: e);

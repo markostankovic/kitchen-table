@@ -405,6 +405,9 @@ verify_jwt = true
 [functions.import-text]
 verify_jwt = true
 
+[functions.import-url]
+verify_jwt = true
+
 [functions.match-ingredients]
 verify_jwt = true
 

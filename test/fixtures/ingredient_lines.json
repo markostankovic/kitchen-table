@@ -14,6 +14,14 @@
 
   {"raw": "200 g šargarepe", "qty": [200, 1], "unit": "g", "name": "šargarepe"},
 
+  {"_comment": "Unspaced quantity and unit. Found by importing real recipe pages, which write it this way far more often than not -- `500g beef mince` parsed to no quantity at all before this."},
+
+  {"raw": "500g beef mince", "qty": [500, 1], "unit": "g", "name": "beef mince"},
+  {"raw": "1kg krompira", "qty": [1, 1], "unit": "kg", "name": "krompira"},
+  {"raw": "200ml mleka", "qty": [200, 1], "unit": "ml", "name": "mleka"},
+  {"raw": "1,5dl vode", "qty": [3, 2], "unit": "dl", "name": "vode"},
+  {"raw": "2kašike ulja", "qty": [2, 1], "unit": "tbsp", "name": "ulja"},
+
   {"raw": "2-3 kašike ulja",
    "qty": [2, 1], "qtyMax": [3, 1], "unit": "tbsp", "name": "ulja"},
 

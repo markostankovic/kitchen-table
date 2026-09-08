@@ -115,9 +115,9 @@ working rather than failing.
 
 ### 1d. Import
 
-**Status: parts 1, 2 and 3 complete.** Text import works end to end, in the
-app. `import-url` and `import-photo` are what remain. Decisions taken so far:
-D38–D44.
+**Status: parts 1–4 complete.** Text and URL import both work end to end, in
+the app. `import-photo` and share intents are what remain. Decisions taken so
+far: D38–D45.
 
 Part 1 built `import_jobs`, `ai_usage` and `household_ai_limits` with their RLS
 and SQL tests, all five remaining `_shared/` modules, and `make types` for
@@ -161,8 +161,8 @@ The bullets below are the whole phase; the ones part 1 finished are marked.
 - `_shared/schema.ts` — Zod `ParsedRecipe`; `make types` producing Dart —
   **done**. Two schemas, not one: `ModelRecipe` is what a model is asked for,
   `ParsedRecipe` is what the job stores (see D41)
-- Edge Functions `import-url` (JSON-LD first, LLM fallback), `import-text`
-  (**done**), `import-photo` (vision model, structured output)
+- Edge Functions `import-url` (JSON-LD first, LLM fallback) — **done**;
+  `import-text` — **done**; `import-photo` (vision model, structured output)
 - `match-ingredients` Edge Function — the LLM tier, batched per recipe —
   **done**. One call per recipe, choosing from candidates the catalog produced,
   so the model cannot invent an ingredient id. Also a standalone re-matching
@@ -199,14 +199,31 @@ import is last. Photo needs a Storage bucket, `storage.objects` policies and a
 picker package — the slice D35 moved to Phase 2 — so it gets its own decision
 rather than being dragged in behind a column that already exists.
 
-Still open, and named here so they are not rediscovered: `import-url` fetches
-attacker-supplied URLs while the handler holds the service role, and no
-document has said anything about SSRF; `search_ingredients` is `security
-invoker` (D31), so `match-ingredients` must call it as the caller and not on
-the service client, or it will see every household's aliases; and
-`features/import/` will be the third consumer of the ingredient catalog, which
-`ingredient_catalog_datasource.dart` names as the trigger to reopen D33 rather
-than write a third copy.
+**D45, taken in part 4: the SSRF policy.** `import-url` is the only place in
+the project that opens a connection to a host somebody else chose, and it does
+so from inside Supabase's network holding the service role key. The ruling
+lives in `supabase/functions/_shared/url_guard.ts`: http/https only, no
+credentials in the URL, no non-standard port, a denylist covering every private
+and reserved IPv4 and IPv6 range (including `169.254.169.254`), every
+single-label hostname (which is what stops `http://kong:8000` without a list of
+service names to maintain), a DNS resolution check on every hostname, redirects
+followed by hand with each hop re-vetted, a 10-second timeout, a 2 MB ceiling
+counted from the bytes that actually arrive, and a Content-Type check. What it
+does NOT stop is DNS rebinding between the check and the connect; Deno's
+`fetch` cannot pin a resolved address, and that is written down in the file
+rather than left to be discovered.
+
+Part 4 also made **tier 4 best-effort**. It used to be able to sink a whole
+import: a recipe read perfectly from JSON-LD would fail because an optional
+improvement to its ingredient matching was unavailable. Tiers 1–3 are
+deterministic and already done by that point, so a tier 4 failure now logs,
+records any tokens it spent, and returns the deterministic matches. The cook
+gets a draft with more lines to confirm by hand, which is the confirm screen's
+job anyway.
+
+Still open, and named here so they are not rediscovered: `features/import/` was
+the third consumer of the ingredient catalog and D43 closed that; what remains
+is `import-photo`'s Storage bucket and the share-intent package, both rule 8.
 
 ---
 

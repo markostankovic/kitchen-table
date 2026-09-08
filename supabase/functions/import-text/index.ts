@@ -30,7 +30,7 @@ import {
   resolveHousehold,
   serviceClient,
 } from "../_shared/auth.ts";
-import { AiFailure, callStructured, MODELS } from "../_shared/ai.ts";
+import { AiFailure } from "../_shared/ai.ts";
 import { checkQuota, recordUsage } from "../_shared/usage.ts";
 import {
   createJob,
@@ -38,36 +38,13 @@ import {
   markNeedsReview,
   markProcessing,
 } from "../_shared/jobs.ts";
-import { loadUnitLexicon, matchRecipeLines } from "../_shared/match.ts";
-import { ModelRecipe, type ParsedRecipeT } from "../_shared/schema.ts";
+import { enrich, readRecipeFromContent } from "../_shared/read_recipe.ts";
 
 /**
  * Long enough for a two-column cookbook page typed out, short enough that a
  * paste of somebody's entire clipboard is refused before it is paid for.
  */
 const MAX_INPUT_CHARS = 40_000;
-
-const SYSTEM = `You read a block of text containing a recipe and return it as \
-structured data.
-
-The text may be Serbian or English, and may be messy -- pasted from a web page \
-with navigation and comments around it, or typed from a book. Find the recipe \
-in it and ignore the rest.
-
-Rules:
-- Return ingredient lines EXACTLY as written, including the quantity and unit, \
-in one string each. Do not reformat "2 šolje" into a number and a unit, do not \
-translate, and do not split one line into two. The quantity is parsed \
-separately by code that is better at it than you are.
-- If the ingredient list has headings ("Za fil", "For the sauce"), set each \
-line's section to the heading above it. Otherwise leave section null.
-- Steps are the method, one step per instruction, in the recipe's own language.
-- originalLocale is the language the recipe is WRITTEN in, not the language of \
-this instruction. Serbian in Latin or Cyrillic script is both "sr".
-- Set sourceAttribution when the text credits a book, author or site. Do not \
-invent one.
-- Do not add ingredients or steps that are not in the text. A short recipe is \
-a correct answer to a short text.`;
 
 Deno.serve(withHttp(async (req: Request): Promise<Response> => {
   const userId = await requireCaller(req);
@@ -149,16 +126,12 @@ async function process(job: Job): Promise<void> {
   try {
     await markProcessing(service, jobId);
 
-    // Tier 0: the model reads prose and returns lines. It is not asked for
-    // quantities, units or ingredient ids -- parse_line.ts and
-    // search_ingredients produce those exactly, and asking for them again
-    // would replace exact work with a guess (D41).
-    const parse = await callStructured({
-      model: MODELS.PROSE,
-      schema: ModelRecipe,
-      system: SYSTEM,
-      content: [{ type: "text", text: job.text }],
-    });
+    // Tier 0. The prompt, the model and the enrichment are in
+    // _shared/read_recipe.ts because import-url's fallback and import-photo
+    // need all three unchanged.
+    const parse = await readRecipeFromContent([
+      { type: "text", text: job.text },
+    ]);
 
     await recordUsage(service, {
       ...parse.usage,
@@ -167,32 +140,16 @@ async function process(job: Job): Promise<void> {
       functionName: "import-text",
     });
 
-    const lexicon = await loadUnitLexicon(caller);
-    const matched = await matchRecipeLines(
-      caller,
-      parse.value.ingredients.map((line) => ({
-        rawText: line.rawText,
-        section: line.section ?? null,
-      })),
-      parse.value.originalLocale,
-      lexicon,
-    );
+    const { result, usage } = await enrich(caller, parse.value, job.sourceUrl);
 
-    if (matched.usage) {
+    if (usage) {
       await recordUsage(service, {
-        ...matched.usage,
+        ...usage,
         householdId,
         userId,
         functionName: "match-ingredients",
       });
     }
-
-    const result: ParsedRecipeT = {
-      ...parse.value,
-      sourceUrl: job.sourceUrl,
-      ingredients: matched.lines,
-      steps: parse.value.steps,
-    };
 
     await markNeedsReview(service, jobId, result);
   } catch (e) {

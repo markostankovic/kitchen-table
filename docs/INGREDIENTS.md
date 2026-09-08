@@ -29,6 +29,9 @@ raw_text: "2 šolje glatkog brašna, prosejano"
    │                 → 'llm', confidence from the model's own signal
    │                 Chooses from catalog candidates, so it cannot invent an
    │                 ingredient id. Never auto-accepts (D42).
+   │                 BEST EFFORT: if it is unavailable the import still
+   │                 succeeds with the tier 2/3 matches, because tiers 1-3 are
+   │                 already done and free.
    │
    └─ 5. CREATE      new ingredient, is_verified = false
                      → 'llm' or 'manual' depending on origin

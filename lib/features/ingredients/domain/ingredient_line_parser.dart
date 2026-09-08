@@ -64,6 +64,10 @@ class IngredientLineParser {
   static final RegExp _parenthesised = RegExp(r'\(([^)]*)\)');
   static final RegExp _whitespace = RegExp(r'\s+');
 
+  /// A number followed immediately by letters: `500g`, `1,5dl`.
+  static final RegExp _numberUnit =
+      RegExp(r'^(\d+(?:[.,]\d+)?)([^\d\s]+)$');
+
   ParsedIngredientLine parse(String rawText) {
     final List<String> notes = <String>[];
 
@@ -101,8 +105,18 @@ class IngredientLineParser {
 
     // 4. Tokenise once. Originals are kept alongside their normalized forms so
     //    the name comes back as written -- the parser does not de-inflect (D6).
-    final List<String> tokens =
-        work.isEmpty ? <String>[] : work.split(_whitespace);
+    final List<String> tokens = <String>[];
+    for (final String token
+        in work.isEmpty ? <String>[] : work.split(_whitespace)) {
+      final (String, String)? split = _splitNumberUnit(token);
+      if (split == null) {
+        tokens.add(token);
+      } else {
+        tokens
+          ..add(split.$1)
+          ..add(split.$2);
+      }
+    }
     final List<String> normalized =
         tokens.map(TextNormalizer.normalize).toList();
 
@@ -152,6 +166,30 @@ class IngredientLineParser {
       note: notes.isEmpty ? null : notes.join(', '),
       isOptional: isOptional,
     );
+  }
+
+  /// Splits `500g` into `500` and `g`, or null if [token] is not that shape.
+  ///
+  /// Real recipe pages write the quantity and the unit as one word far more
+  /// often than not -- `500g beef mince`, `200ml mleka` -- and before this the
+  /// whole line parsed to no quantity and no unit at all. Found by importing
+  /// actual pages in Phase 1d part 4, which is exactly the case
+  /// `test/fixtures/ingredient_lines.json` asks to be told about.
+  ///
+  /// Only splits when the tail IS a known unit. Unconditional splitting would
+  /// be shorter and would also invent a quantity out of any ingredient whose
+  /// first word happened to start with a digit. The digit-free tail is what
+  /// keeps `1/2`, `2-3` and `1½` out of here -- each of those has a digit or a
+  /// vulgar fraction after the number, and each is already handled below.
+  (String, String)? _splitNumberUnit(String token) {
+    final RegExpMatch? m = _numberUnit.firstMatch(token);
+    if (m == null) return null;
+
+    final String number = m.group(1)!;
+    final String tail = m.group(2)!;
+    if (units.resolveCode(tail) == null) return null;
+
+    return (number, tail);
   }
 
   /// Reads a quantity starting at [start]. Returns it with the index of the

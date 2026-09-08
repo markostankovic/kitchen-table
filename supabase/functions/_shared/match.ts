@@ -43,6 +43,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { IngredientLineParser, type UnitLexicon } from "./parse_line.ts";
 import { normalizeText } from "./normalize.ts";
 import {
+  AiFailure,
   type AiUsage,
   callStructured,
   type ContentBlock,
@@ -357,5 +358,30 @@ export async function matchRecipeLines(
 ): Promise<{ lines: ParsedIngredientLineT[]; usage: AiUsage | null }> {
   const parsed = parseLines(rawLines, lexicon);
   const fromCatalog = await matchFromCatalog(caller, parsed, locale);
-  return await matchWithModel(caller, fromCatalog, locale);
+
+  // Tier 4 is BEST EFFORT, and this try/catch is the load-bearing part of that
+  // sentence.
+  //
+  // Tiers 1-3 are deterministic, free and already done by the time we get
+  // here. Tier 4 is an enhancement on top of them in exactly the way the
+  // structured columns are an enhancement on top of raw_text (rule 3) -- so
+  // losing a recipe that was read perfectly well, because an optional
+  // improvement to its ingredient matching was unavailable, is the wrong
+  // trade every time.
+  //
+  // The cook sees a draft with more lines to confirm by hand. That is the
+  // confirm screen's whole job (D8), and it is a far better outcome than a
+  // failed import.
+  //
+  // Usage is still returned when the failure carried some: a call that spent
+  // tokens and produced nothing is exactly the one the cap must see.
+  try {
+    return await matchWithModel(caller, fromCatalog, locale);
+  } catch (e) {
+    console.error("tier 4 unavailable; keeping the deterministic matches", e);
+    return {
+      lines: fromCatalog,
+      usage: e instanceof AiFailure ? e.usage : null,
+    };
+  }
 }

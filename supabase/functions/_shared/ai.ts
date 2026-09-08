@@ -239,12 +239,38 @@ async function withRetry<T>(call: () => Promise<T>): Promise<T> {
     }
   }
 
-  if (lastError instanceof Anthropic.APIError && lastError.status === 429) {
-    throw new HttpError(
-      429,
-      "ai_rate_limited",
-      "The recipe service is busy. Try again in a minute.",
-    );
+  if (lastError instanceof Anthropic.APIError) {
+    if (lastError.status === 429) {
+      throw new HttpError(
+        429,
+        "ai_rate_limited",
+        "The recipe service is busy. Try again in a minute.",
+      );
+    }
+
+    // 400/401/403 from the provider: a rejected key, an exhausted credit
+    // balance, or a request this code built wrongly. None of them is the
+    // cook's doing and none is fixable by retrying, so they get a distinct
+    // code rather than falling through to `internal_error` -- which should
+    // mean "unexpected", and a provider that is switched off is not.
+    //
+    // The provider's own message goes to the log in full and never to the
+    // client: "Your credit balance is too low" is an operator's sentence, and
+    // it names the operator's account.
+    if (
+      lastError.status === 400 || lastError.status === 401 ||
+      lastError.status === 403
+    ) {
+      console.error(
+        `model provider refused the request (${lastError.status})`,
+        lastError,
+      );
+      throw new HttpError(
+        503,
+        "ai_unavailable",
+        "The recipe reader is unavailable right now.",
+      );
+    }
   }
   throw lastError;
 }

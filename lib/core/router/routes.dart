@@ -18,6 +18,7 @@ import '../../features/households/presentation/join_household_screen.dart';
 import '../../features/meal_plan/presentation/meal_plan_screen.dart';
 import '../../features/import/presentation/import_paste_screen.dart';
 import '../../features/import/presentation/import_review_screen.dart';
+import '../../features/import/presentation/import_url_screen.dart';
 import '../../features/recipes/presentation/recipe_detail_screen.dart';
 import '../../features/recipes/presentation/recipe_edit_screen.dart';
 import '../../features/recipes/presentation/recipe_list_screen.dart';
@@ -84,15 +85,18 @@ class JoinHouseholdRoute extends GoRouteData with $JoinHouseholdRoute {
         TypedGoRoute<RecipesRoute>(
           path: RecipesRoute.path,
           routes: <TypedRoute<RouteData>>[
-            // `new` and `import` are declared BEFORE `:recipeId`
+            // Every literal segment is declared BEFORE `:recipeId`
             // deliberately -- see the comment on RecipeDetailRoute.
+            //
+            // The three import routes are SIBLINGS rather than a nest. Review
+            // used to sit under paste, which meant Back from a review returned
+            // to a form that had already started a job -- the thing the paste
+            // screen's own comment says it is avoiding. As siblings, Back from
+            // a review goes to the recipe list, whichever screen started it.
             TypedGoRoute<RecipeNewRoute>(path: 'new'),
-            TypedGoRoute<ImportPasteRoute>(
-              path: 'import',
-              routes: <TypedRoute<RouteData>>[
-                TypedGoRoute<ImportReviewRoute>(path: ':jobId'),
-              ],
-            ),
+            TypedGoRoute<ImportPasteRoute>(path: 'import'),
+            TypedGoRoute<ImportUrlRoute>(path: 'import-link'),
+            TypedGoRoute<ImportReviewRoute>(path: 'import-review/:jobId'),
             TypedGoRoute<RecipeDetailRoute>(
               path: ':recipeId',
               routes: <TypedRoute<RouteData>>[
@@ -196,17 +200,29 @@ class ImportPasteRoute extends GoRouteData with $ImportPasteRoute {
       const ImportPasteScreen();
 }
 
+/// Paste a link and let the server read the page behind it (Phase 1d).
+class ImportUrlRoute extends GoRouteData with $ImportUrlRoute {
+  const ImportUrlRoute();
+
+  static const String path = '/recipes/import-link';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const ImportUrlScreen();
+}
+
 /// The confirm screen (D8): what the server found, before anything is saved.
 ///
 /// Keyed on the job rather than on a recipe, because there is no recipe yet --
-/// that is the whole point of the screen. Nested under [ImportPasteRoute] so
-/// Back returns to the paste box.
+/// that is the whole point of the screen. A sibling of the two input screens
+/// rather than a child of one: an import can be started from either, and Back
+/// should return to the recipe list either way.
 class ImportReviewRoute extends GoRouteData with $ImportReviewRoute {
   const ImportReviewRoute(this.jobId);
 
   final String jobId;
 
-  static const String path = '/recipes/import/:jobId';
+  static const String path = '/recipes/import-review/:jobId';
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>

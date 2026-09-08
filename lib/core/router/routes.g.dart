@@ -145,13 +145,16 @@ RouteBase get $appShellRoute => StatefulShellRouteData.$route(
               path: 'import',
               hasOverriddenOnExit: false,
               factory: $ImportPasteRoute._fromState,
-              routes: [
-                GoRouteData.$route(
-                  path: ':jobId',
-                  hasOverriddenOnExit: false,
-                  factory: $ImportReviewRoute._fromState,
-                ),
-              ],
+            ),
+            GoRouteData.$route(
+              path: 'import-link',
+              hasOverriddenOnExit: false,
+              factory: $ImportUrlRoute._fromState,
+            ),
+            GoRouteData.$route(
+              path: 'import-review/:jobId',
+              hasOverriddenOnExit: false,
+              factory: $ImportReviewRoute._fromState,
             ),
             GoRouteData.$route(
               path: ':recipeId',
@@ -272,6 +275,27 @@ mixin $ImportPasteRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
+mixin $ImportUrlRoute on GoRouteData {
+  static ImportUrlRoute _fromState(GoRouterState state) =>
+      const ImportUrlRoute();
+
+  @override
+  String get location => GoRouteData.$location('/recipes/import-link');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
 mixin $ImportReviewRoute on GoRouteData {
   static ImportReviewRoute _fromState(GoRouterState state) =>
       ImportReviewRoute(state.pathParameters['jobId']!);
@@ -280,7 +304,7 @@ mixin $ImportReviewRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location(
-    '/recipes/import/${Uri.encodeComponent(_self.jobId)}',
+    '/recipes/import-review/${Uri.encodeComponent(_self.jobId)}',
   );
 
   @override
