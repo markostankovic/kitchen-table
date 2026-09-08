@@ -16,6 +16,8 @@ import '../../features/households/presentation/create_household_screen.dart';
 import '../../features/households/presentation/household_screen.dart';
 import '../../features/households/presentation/join_household_screen.dart';
 import '../../features/meal_plan/presentation/meal_plan_screen.dart';
+import '../../features/import/presentation/import_paste_screen.dart';
+import '../../features/import/presentation/import_review_screen.dart';
 import '../../features/recipes/presentation/recipe_detail_screen.dart';
 import '../../features/recipes/presentation/recipe_edit_screen.dart';
 import '../../features/recipes/presentation/recipe_list_screen.dart';
@@ -82,9 +84,15 @@ class JoinHouseholdRoute extends GoRouteData with $JoinHouseholdRoute {
         TypedGoRoute<RecipesRoute>(
           path: RecipesRoute.path,
           routes: <TypedRoute<RouteData>>[
-            // `new` is declared BEFORE `:recipeId` deliberately -- see the
-            // comment on RecipeDetailRoute.
+            // `new` and `import` are declared BEFORE `:recipeId`
+            // deliberately -- see the comment on RecipeDetailRoute.
             TypedGoRoute<RecipeNewRoute>(path: 'new'),
+            TypedGoRoute<ImportPasteRoute>(
+              path: 'import',
+              routes: <TypedRoute<RouteData>>[
+                TypedGoRoute<ImportReviewRoute>(path: ':jobId'),
+              ],
+            ),
             TypedGoRoute<RecipeDetailRoute>(
               path: ':recipeId',
               routes: <TypedRoute<RouteData>>[
@@ -170,12 +178,48 @@ class RecipeNewRoute extends GoRouteData with $RecipeNewRoute {
       const RecipeEditScreen();
 }
 
+/// Paste a block of text and let the server read it (Phase 1d).
+///
+/// Under the recipes tab rather than a tab of its own: an import is a way of
+/// creating a recipe, and the roadmap frames it as sharing something INTO the
+/// app, which is an action rather than a destination.
+///
+/// Declared before [RecipeDetailRoute], for the same reason [RecipeNewRoute]
+/// is: `/recipes/import` would otherwise load a recipe whose id is "import".
+class ImportPasteRoute extends GoRouteData with $ImportPasteRoute {
+  const ImportPasteRoute();
+
+  static const String path = '/recipes/import';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const ImportPasteScreen();
+}
+
+/// The confirm screen (D8): what the server found, before anything is saved.
+///
+/// Keyed on the job rather than on a recipe, because there is no recipe yet --
+/// that is the whole point of the screen. Nested under [ImportPasteRoute] so
+/// Back returns to the paste box.
+class ImportReviewRoute extends GoRouteData with $ImportReviewRoute {
+  const ImportReviewRoute(this.jobId);
+
+  final String jobId;
+
+  static const String path = '/recipes/import/:jobId';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ImportReviewScreen(jobId: jobId);
+}
+
 /// Nested under the recipes tab, so it keeps the bottom nav and the back
 /// stack.
 ///
-/// When a literal segment is added under `/recipes` -- `new`, for the edit
-/// screen -- it must be declared BEFORE this one, or go_router matches
-/// `/recipes/new` here and tries to load a recipe whose id is "new".
+/// When a literal segment is added under `/recipes` -- `new` for the editor,
+/// `import` for the importer -- it must be declared BEFORE this one, or
+/// go_router matches `/recipes/new` here and tries to load a recipe whose id
+/// is "new".
 class RecipeDetailRoute extends GoRouteData with $RecipeDetailRoute {
   const RecipeDetailRoute(this.recipeId);
 

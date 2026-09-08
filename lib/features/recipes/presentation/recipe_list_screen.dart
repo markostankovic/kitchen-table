@@ -49,10 +49,29 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Recipes')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => const RecipeNewRoute().go(context),
-        tooltip: 'New recipe',
-        child: const Icon(Icons.add),
+      // A menu rather than a single action, because there is now more than one
+      // way to get a recipe in. `import-url` and `import-photo` are the rest
+      // of Phase 1d and hang here beside Paste without another redesign.
+      floatingActionButton: MenuAnchor(
+        builder: (BuildContext context, MenuController controller, Widget? _) =>
+            FloatingActionButton(
+          onPressed: () =>
+              controller.isOpen ? controller.close() : controller.open(),
+          tooltip: 'Add a recipe',
+          child: const Icon(Icons.add),
+        ),
+        menuChildren: <Widget>[
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.edit_outlined),
+            onPressed: () => const RecipeNewRoute().go(context),
+            child: const Text('New recipe'),
+          ),
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.content_paste_outlined),
+            onPressed: () => const ImportPasteRoute().go(context),
+            child: const Text('Paste a recipe'),
+          ),
+        ],
       ),
       body: Column(
         children: <Widget>[

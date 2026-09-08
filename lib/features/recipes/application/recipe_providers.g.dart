@@ -57,12 +57,18 @@ String _$recipeRepositoryHash() => r'a8f584a947472af7a2164d18c8ce8d827dafeaab';
 
 /// Not `keepAlive`: one entry per query string, and the family would grow
 /// without bound as somebody types. The screen debounces.
+///
+/// Watches [recipesRevisionProvider] so that any feature can invalidate this
+/// without importing it -- which `features/import/` cannot do.
 
 @ProviderFor(recipeList)
 final recipeListProvider = RecipeListFamily._();
 
 /// Not `keepAlive`: one entry per query string, and the family would grow
 /// without bound as somebody types. The screen debounces.
+///
+/// Watches [recipesRevisionProvider] so that any feature can invalidate this
+/// without importing it -- which `features/import/` cannot do.
 
 final class RecipeListProvider
     extends
@@ -74,6 +80,9 @@ final class RecipeListProvider
     with $FutureModifier<List<Recipe>>, $FutureProvider<List<Recipe>> {
   /// Not `keepAlive`: one entry per query string, and the family would grow
   /// without bound as somebody types. The screen debounces.
+  ///
+  /// Watches [recipesRevisionProvider] so that any feature can invalidate this
+  /// without importing it -- which `features/import/` cannot do.
   RecipeListProvider._({
     required RecipeListFamily super.from,
     required String super.argument,
@@ -118,10 +127,13 @@ final class RecipeListProvider
   }
 }
 
-String _$recipeListHash() => r'89abb8396f288e1c3d4390d76b25977a67396acc';
+String _$recipeListHash() => r'354cdb3736d2169451bfafb94db4c28d78f38f44';
 
 /// Not `keepAlive`: one entry per query string, and the family would grow
 /// without bound as somebody types. The screen debounces.
+///
+/// Watches [recipesRevisionProvider] so that any feature can invalidate this
+/// without importing it -- which `features/import/` cannot do.
 
 final class RecipeListFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Recipe>>, String> {
@@ -136,6 +148,9 @@ final class RecipeListFamily extends $Family
 
   /// Not `keepAlive`: one entry per query string, and the family would grow
   /// without bound as somebody types. The screen debounces.
+  ///
+  /// Watches [recipesRevisionProvider] so that any feature can invalidate this
+  /// without importing it -- which `features/import/` cannot do.
 
   RecipeListProvider call({String query = ''}) =>
       RecipeListProvider._(argument: query, from: this);

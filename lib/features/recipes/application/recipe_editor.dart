@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/refresh/data_revision.dart';
 import '../data/recipe_repository.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_detail.dart';
@@ -143,7 +144,7 @@ class RecipeEditor extends _$RecipeEditor {
       steps: saved.toSteps(),
     );
 
-    ref.invalidate(recipeListProvider);
+    ref.read(recipesRevisionProvider.notifier).bump();
     ref.invalidate(recipeDetailProvider(recipeId));
     return recipeId;
   }

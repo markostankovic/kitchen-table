@@ -103,6 +103,12 @@ AppFailure _fromFunction(FunctionException e) {
     // Phase 1d. All three mean "not now" rather than "not ever", so they carry
     // the server's own sentence: `quota_exceeded` has to say whose allowance
     // ran out, and no default here can.
+    // Phase 1d import-text. Without these the server's own sentence -- which
+    // says WHAT was wrong with the paste -- is lost to UnknownFailure.
+    case 'empty_input':
+    case 'input_too_large':
+      return ValidationFailure(
+          message: message ?? 'That text could not be imported.', cause: e);
     case 'quota_exceeded':
     case 'quota_unavailable':
     case 'ai_rate_limited':

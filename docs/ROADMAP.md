@@ -115,8 +115,9 @@ working rather than failing.
 
 ### 1d. Import
 
-**Status: parts 1 and 2 complete.** The server side works end to end; there is
-no client yet. Decisions taken so far: D38–D42.
+**Status: parts 1, 2 and 3 complete.** Text import works end to end, in the
+app. `import-url` and `import-photo` are what remain. Decisions taken so far:
+D38–D44.
 
 Part 1 built `import_jobs`, `ai_usage` and `household_ai_limits` with their RLS
 and SQL tests, all five remaining `_shared/` modules, and `make types` for
@@ -169,13 +170,29 @@ The bullets below are the whole phase; the ones part 1 finished are marked.
 - `_shared/usage.ts` quota check + `ai_usage` recording — **done**, along with
   `ai.ts`, `normalize.ts` and `parse_line.ts`, which ARCHITECTURE.md listed for
   1d and this bullet list never did
-- Client: create job, poll, **confirm screen** (this is the important one —
-  fast accept-all, edit the odd line, writes `manual` aliases)
+- Client: create job, poll, **confirm screen** — **done**. Paste a recipe from
+  the recipe list's FAB menu, watch it being read, review what came back and
+  save it. The confirm screen reuses the 1c line editor unchanged, which is
+  what D43 moved to `core/` to allow, and it is where D42's alias write-back
+  now happens — the only place the catalog grows
 - `receive_sharing_intent` on both platforms
 
 **Done when:** you can share a recipe URL from a browser into the app, review
 what it found, and save it; and photograph a cookbook page and get a usable
 draft.
+
+Part 3 took two more decisions. **D43** put the ingredient catalog in `core/`,
+closing D33: the confirm screen was the third caller D33 said should reopen it,
+and the duplicated datasource is deleted rather than tripled. **D44** added
+`save_imported_recipe`, which is D37's flagged revisit arriving exactly where
+it said it would — manual entry can create-then-save-lines because the draft
+keeps its id, but an import has a third step (marking the job done) and no such
+anchor, so a retry would have made a second recipe from the same import.
+
+Part 3 also added `core/refresh/data_revision.dart`. `ref.invalidate(recipeListProvider)`
+worked while recipes was the only feature that wrote a recipe; the confirm
+screen is the second, and it may not name that provider. A counter in `core/`
+is the channel both writers share.
 
 Sequencing settled during part 1: text and URL import come next, and photo
 import is last. Photo needs a Storage bucket, `storage.objects` policies and a

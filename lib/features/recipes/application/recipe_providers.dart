@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/refresh/data_revision.dart';
 import '../../../core/supabase/supabase_client.dart';
 import '../data/recipe_repository.dart';
 import '../domain/recipe.dart';
@@ -13,9 +14,14 @@ RecipeRepository recipeRepository(Ref ref) =>
 
 /// Not `keepAlive`: one entry per query string, and the family would grow
 /// without bound as somebody types. The screen debounces.
+///
+/// Watches [recipesRevisionProvider] so that any feature can invalidate this
+/// without importing it -- which `features/import/` cannot do.
 @riverpod
-Future<List<Recipe>> recipeList(Ref ref, {String query = ''}) =>
-    ref.watch(recipeRepositoryProvider).search(query);
+Future<List<Recipe>> recipeList(Ref ref, {String query = ''}) {
+  ref.watch(recipesRevisionProvider);
+  return ref.watch(recipeRepositoryProvider).search(query);
+}
 
 /// One recipe with its lines and steps, names resolved from the catalog.
 @riverpod

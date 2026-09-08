@@ -142,6 +142,18 @@ RouteBase get $appShellRoute => StatefulShellRouteData.$route(
               factory: $RecipeNewRoute._fromState,
             ),
             GoRouteData.$route(
+              path: 'import',
+              hasOverriddenOnExit: false,
+              factory: $ImportPasteRoute._fromState,
+              routes: [
+                GoRouteData.$route(
+                  path: ':jobId',
+                  hasOverriddenOnExit: false,
+                  factory: $ImportReviewRoute._fromState,
+                ),
+              ],
+            ),
+            GoRouteData.$route(
               path: ':recipeId',
               hasOverriddenOnExit: false,
               factory: $RecipeDetailRoute._fromState,
@@ -224,6 +236,52 @@ mixin $RecipeNewRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/recipes/new');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ImportPasteRoute on GoRouteData {
+  static ImportPasteRoute _fromState(GoRouterState state) =>
+      const ImportPasteRoute();
+
+  @override
+  String get location => GoRouteData.$location('/recipes/import');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ImportReviewRoute on GoRouteData {
+  static ImportReviewRoute _fromState(GoRouterState state) =>
+      ImportReviewRoute(state.pathParameters['jobId']!);
+
+  ImportReviewRoute get _self => this as ImportReviewRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/recipes/import/${Uri.encodeComponent(_self.jobId)}',
+  );
 
   @override
   void go(BuildContext context) => context.go(location);

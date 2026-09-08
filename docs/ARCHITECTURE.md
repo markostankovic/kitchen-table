@@ -12,6 +12,8 @@ lib/
     router/            # go_router config, typed routes
     theme/
     text/              # TextNormalizer (mirrors Postgres normalize_text)
+    ingredients/       # the catalog: providers + the line editor (D43)
+    refresh/           # cross-feature "this changed" counters
     widgets/           # generic, feature-agnostic
   features/
     auth/
@@ -56,6 +58,10 @@ presentation ──▶ application ──▶ data ──▶ (Supabase | Drift)
 - `presentation/` must never import `data/`.
 - Cross-feature imports go through `domain/` only. `meal_plan` may import
   `recipes/domain/recipe.dart`. It may not import `recipes/data/...`.
+- `core/` is outside that rule and may depend on features — the checker derives
+  layer and feature from `lib/features/<x>/<layer>/` and nothing else. That is
+  the sanctioned way to share: when a second feature needs something, it moves
+  to `core/` rather than being duplicated or reached across (D43).
 
 ### Why this boundary specifically
 
