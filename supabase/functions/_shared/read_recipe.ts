@@ -39,13 +39,21 @@ import {
  *   a prompt in English asking about a Serbian recipe otherwise gets "en".
  * - Do not invent attribution. A standing rule says source_attribution is
  *   stored and displayed for every import, which only works if it is true.
+ * - The layout rules at the end exist because of D15. It sends a cookbook page
+ *   straight to a vision model rather than OCR-then-parse on the grounds that
+ *   the hard part of a printed page is LAYOUT -- two columns, sidebar
+ *   ingredient lists, headnotes mixed with method. Having argued that, the
+ *   prompt has to actually say so; a vision model given no layout guidance
+ *   reads a two-column spread straight across.
  */
-export const RECIPE_SYSTEM_PROMPT = `You read a block of text containing a \
-recipe and return it as structured data.
+export const RECIPE_SYSTEM_PROMPT = `You read a recipe and return it as \
+structured data. What you are given is either a block of text or a photograph \
+of a printed page.
 
-The text may be Serbian or English, and may be messy -- pasted from a web page \
-with navigation and comments around it, or typed from a book. Find the recipe \
-in it and ignore the rest.
+It may be Serbian or English, and it may be messy -- pasted from a web page \
+with navigation and comments around it, typed from a book, or photographed \
+with the facing page and somebody's thumb in shot. Find the recipe and ignore \
+the rest.
 
 Rules:
 - Return ingredient lines EXACTLY as written, including the quantity and unit, \
@@ -59,8 +67,21 @@ line's section to the heading above it. Otherwise leave section null.
 this instruction. Serbian in Latin or Cyrillic script is both "sr".
 - Set sourceAttribution when the text credits a book, author or site. Do not \
 invent one.
-- Do not add ingredients or steps that are not in the text. A short recipe is \
-a correct answer to a short text.`;
+- Do not add ingredients or steps that are not there. A short recipe is a \
+correct answer to a short source.
+
+When the source is a photograph of a page:
+- Read a two-column layout in READING ORDER -- down the first column, then \
+down the second. Reading straight across interleaves two unrelated sentences \
+and produces a method nobody can follow.
+- An ingredient list set in a sidebar or a tinted box belongs to the recipe \
+beside it. So does a list under a subheading like "Za fil".
+- A headnote -- the paragraph of prose before the method, about where the dish \
+comes from -- is the description, not the first step.
+- If the page holds more than one recipe, return the one the ingredient list \
+belongs to, not a merge of both.
+- Ignore page numbers, running heads, and captions on photographs of the \
+finished dish.`;
 
 /** Tier 0: content in, structure out. */
 export function readRecipeFromContent(

@@ -152,6 +152,11 @@ RouteBase get $appShellRoute => StatefulShellRouteData.$route(
               factory: $ImportUrlRoute._fromState,
             ),
             GoRouteData.$route(
+              path: 'import-photo',
+              hasOverriddenOnExit: false,
+              factory: $ImportPhotoRoute._fromState,
+            ),
+            GoRouteData.$route(
               path: 'import-review/:jobId',
               hasOverriddenOnExit: false,
               factory: $ImportReviewRoute._fromState,
@@ -281,6 +286,27 @@ mixin $ImportUrlRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/recipes/import-link');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ImportPhotoRoute on GoRouteData {
+  static ImportPhotoRoute _fromState(GoRouterState state) =>
+      const ImportPhotoRoute();
+
+  @override
+  String get location => GoRouteData.$location('/recipes/import-photo');
 
   @override
   void go(BuildContext context) => context.go(location);

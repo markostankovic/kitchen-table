@@ -408,6 +408,9 @@ verify_jwt = true
 [functions.import-url]
 verify_jwt = true
 
+[functions.import-photo]
+verify_jwt = true
+
 [functions.match-ingredients]
 verify_jwt = true
 

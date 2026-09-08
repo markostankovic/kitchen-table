@@ -40,6 +40,9 @@ dependencies:
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
   supabase_flutter: ^2.17.2
+  # Camera and gallery, for import-photo (Phase 1d part 5). A new
+  # dependency under rule 8, asked for and approved.
+  image_picker: ^1.2.3
 
 dev_dependencies:
   flutter_test:

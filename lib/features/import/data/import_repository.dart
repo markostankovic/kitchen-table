@@ -11,6 +11,8 @@
 /// time.
 library;
 
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/error/app_failure.dart';
@@ -94,6 +96,7 @@ class ImportRepository {
   /// anchor, and a retry would create a second recipe from the same import.
   Future<String> saveImported(
     String jobId, {
+    required ImportKind kind,
     required String title,
     required String originalLocale,
     required List<RecipeIngredient> ingredients,
@@ -118,12 +121,7 @@ class ImportRepository {
               'prep_minutes': prepMinutes,
               'cook_minutes': cookMinutes,
               'original_locale': originalLocale,
-              // The D41 mapping: import_jobs.kind has three values and
-              // recipes.source_type has four. A paste that carried a URL came
-              // off the web; one that did not is somebody typing.
-              'source_type': sourceUrl == null || sourceUrl.trim().isEmpty
-                  ? 'manual'
-                  : 'url_import',
+              'source_type': kind.sourceTypeFor(sourceUrl),
               'source_url': sourceUrl,
               'source_attribution': sourceAttribution,
               'tags': tags,
@@ -142,6 +140,58 @@ class ImportRepository {
           'dismiss_import_job',
           params: <String, dynamic>{'job': jobId},
         );
+      });
+
+  /// Uploads a photographed page and returns its object path.
+  ///
+  /// The path is `{household_id}/{uuid}.{ext}`, and that prefix is the access
+  /// control rather than a filing convention -- every policy on the
+  /// `import-uploads` bucket reads it (D46). The household id is the one the
+  /// caller can actually see, so RLS on `households` is what makes it true.
+  Future<String> uploadImportPhoto(
+    Uint8List bytes, {
+    required String contentType,
+    required String extension,
+  }) =>
+      runGuarded(() async {
+        final List<Map<String, dynamic>> rows = await _client
+            .from('households')
+            .select('id')
+            .isFilter('deleted_at', null)
+            .order('created_at')
+            .limit(1);
+
+        if (rows.isEmpty) {
+          throw const NotFoundFailure(
+              message: 'You are not in a household yet.');
+        }
+
+        final String householdId = rows.first['id'] as String;
+        final String path =
+            '$householdId/${DateTime.now().microsecondsSinceEpoch}.$extension';
+
+        await _client.storage.from('import-uploads').uploadBinary(
+              path,
+              bytes,
+              fileOptions: FileOptions(contentType: contentType),
+            );
+
+        return path;
+      });
+
+  /// Starts an import from a photograph already in Storage.
+  Future<String> createFromPhoto(String storagePath) => runGuarded(() async {
+        final FunctionResponse res = await _client.functions.invoke(
+          'import-photo',
+          body: <String, dynamic>{'storagePath': storagePath},
+        );
+
+        final Object? data = res.data;
+        if (data is! Map<String, dynamic>) {
+          throw const UnknownFailure(
+              message: 'The server sent an unexpected reply.');
+        }
+        return data['jobId'] as String;
       });
 
   ImportJob _toJob(Map<String, dynamic> row) {

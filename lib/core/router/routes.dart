@@ -17,6 +17,7 @@ import '../../features/households/presentation/household_screen.dart';
 import '../../features/households/presentation/join_household_screen.dart';
 import '../../features/meal_plan/presentation/meal_plan_screen.dart';
 import '../../features/import/presentation/import_paste_screen.dart';
+import '../../features/import/presentation/import_photo_screen.dart';
 import '../../features/import/presentation/import_review_screen.dart';
 import '../../features/import/presentation/import_url_screen.dart';
 import '../../features/recipes/presentation/recipe_detail_screen.dart';
@@ -96,6 +97,7 @@ class JoinHouseholdRoute extends GoRouteData with $JoinHouseholdRoute {
             TypedGoRoute<RecipeNewRoute>(path: 'new'),
             TypedGoRoute<ImportPasteRoute>(path: 'import'),
             TypedGoRoute<ImportUrlRoute>(path: 'import-link'),
+            TypedGoRoute<ImportPhotoRoute>(path: 'import-photo'),
             TypedGoRoute<ImportReviewRoute>(path: 'import-review/:jobId'),
             TypedGoRoute<RecipeDetailRoute>(
               path: ':recipeId',
@@ -209,6 +211,17 @@ class ImportUrlRoute extends GoRouteData with $ImportUrlRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       const ImportUrlScreen();
+}
+
+/// Photograph a cookbook page and let a vision model read it (Phase 1d, D15).
+class ImportPhotoRoute extends GoRouteData with $ImportPhotoRoute {
+  const ImportPhotoRoute();
+
+  static const String path = '/recipes/import-photo';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const ImportPhotoScreen();
 }
 
 /// The confirm screen (D8): what the server found, before anything is saved.

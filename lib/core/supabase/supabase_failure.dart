@@ -108,6 +108,14 @@ AppFailure _fromFunction(FunctionException e) {
     // Phase 1d import-url. `url_not_allowed` is the SSRF guard refusing a
     // link (D45); it deliberately says nothing about WHY, so the server's own
     // sentence is the whole message.
+    // Phase 1d import-photo. `invalid_storage_path` means the client named a
+    // path outside its own household -- a bug or an attempt, never something
+    // the cook did.
+    case 'invalid_storage_path':
+    case 'image_not_found':
+    case 'not_an_image':
+      return ValidationFailure(
+          message: message ?? 'That photo could not be imported.', cause: e);
     case 'invalid_url':
     case 'url_not_allowed':
       return ValidationFailure(

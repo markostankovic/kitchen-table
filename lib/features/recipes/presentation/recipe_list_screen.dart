@@ -76,6 +76,11 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
             onPressed: () => const ImportPasteRoute().go(context),
             child: const Text('Paste a recipe'),
           ),
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.photo_camera_outlined),
+            onPressed: () => const ImportPhotoRoute().go(context),
+            child: const Text('Photograph a page'),
+          ),
         ],
       ),
       body: Column(

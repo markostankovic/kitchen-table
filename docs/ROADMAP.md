@@ -115,9 +115,8 @@ working rather than failing.
 
 ### 1d. Import
 
-**Status: parts 1–4 complete.** Text and URL import both work end to end, in
-the app. `import-photo` and share intents are what remain. Decisions taken so
-far: D38–D45.
+**Status: parts 1–5 complete.** All three importers are built. Share intents
+are the only bullet left. Decisions taken so far: D38–D46.
 
 Part 1 built `import_jobs`, `ai_usage` and `household_ai_limits` with their RLS
 and SQL tests, all five remaining `_shared/` modules, and `make types` for
@@ -162,7 +161,8 @@ The bullets below are the whole phase; the ones part 1 finished are marked.
   **done**. Two schemas, not one: `ModelRecipe` is what a model is asked for,
   `ParsedRecipe` is what the job stores (see D41)
 - Edge Functions `import-url` (JSON-LD first, LLM fallback) — **done**;
-  `import-text` — **done**; `import-photo` (vision model, structured output)
+  `import-text` — **done**; `import-photo` (vision model, structured output) —
+  **done**
 - `match-ingredients` Edge Function — the LLM tier, batched per recipe —
   **done**. One call per recipe, choosing from candidates the catalog produced,
   so the model cannot invent an ingredient id. Also a standalone re-matching
@@ -221,9 +221,35 @@ records any tokens it spent, and returns the deterministic matches. The cook
 gets a draft with more lines to confirm by hand, which is the confirm screen's
 job anyway.
 
-Still open, and named here so they are not rediscovered: `features/import/` was
-the third consumer of the ingredient catalog and D43 closed that; what remains
-is `import-photo`'s Storage bucket and the share-intent package, both rule 8.
+**D46, taken in part 5: the `import-uploads` bucket.** The first Storage bucket
+and the first `storage.objects` policies in the project. Paths are
+`import-uploads/{household_id}/{uuid}.jpg`, and that prefix is not a filing
+convention — it is the access control, read by every policy. Private (D16: a
+cookbook page is somebody else's copyrighted prose and there is no public path
+to it), 10 MB, images only. Insert, select and delete are scoped by
+`is_household_member`; there is deliberately no update, because a photographed
+page is immutable and re-photographing writes a new object.
+
+The policies delegate to `storage_path_household(text)`, which returns null
+rather than raising on a path that does not start with a uuid. That is the
+whole reason it exists: a bare `::uuid` cast inside a policy turns a denied
+upload into a 500 instead of a refusal.
+
+D35 still stands for the recipe's own picture. The photograph of a page is an
+*input* to an import, not a picture of the dish, and `recipes.image_path`
+remains untouched and Phase 2's business.
+
+Part 5 also fixed a bug that would have been silent forever:
+`ImportRepository.saveImported` derived `source_type` from whether a source URL
+was present, so a photographed page — which has none — would have been recorded
+as `manual`, a recipe the app believes somebody typed out by hand. D16's
+household-only rule hangs off that column. The mapping moved to
+`ImportKind.sourceTypeFor` in the domain, where it is unit-tested.
+
+Still open, and named here so it is not rediscovered: the share-intent package
+(rule 8), and nothing yet prunes an import photo once its job is done or
+dismissed — keeping it is deliberate so a failed job can be re-run, but the
+lifecycle belongs with Phase 2's Storage work.
 
 ---
 

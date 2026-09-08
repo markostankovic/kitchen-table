@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- image_picker, for photographing a cookbook page (Phase 1d part 5).
+	     These are not optional: iOS terminates the app on first access to the
+	     camera or the photo library if the matching string is absent, and the
+	     App Store rejects a build without them. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Kitchen Table uses the camera so you can photograph a recipe from a cookbook and import it.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kitchen Table needs your photo library so you can import a recipe from a picture you already took.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

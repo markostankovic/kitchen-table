@@ -74,7 +74,7 @@ final class ImportConfirmProvider
   }
 }
 
-String _$importConfirmHash() => r'd2aab617192175d369216a7abe73cff706655d63';
+String _$importConfirmHash() => r'a641ab07ae78fe23190ce8fcf40a301aff72b4b6';
 
 /// The confirm screen's state (D8).
 ///

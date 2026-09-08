@@ -28,6 +28,10 @@ class ImportConfirm extends _$ImportConfirm {
   /// rather than to anything the cook edits here.
   ParsedRecipe? _parsed;
 
+  /// How the import arrived, kept for the same reason: `recipes.source_type`
+  /// is derived from it, and D16's household-only rule is derived from that.
+  ImportKind? _kind;
+
   @override
   Future<ImportReview> build(String jobId) async {
     // Waits on the poller rather than fetching once: entering the screen
@@ -48,6 +52,7 @@ class ImportConfirm extends _$ImportConfirm {
     }
 
     _parsed = result;
+    _kind = job.kind;
     // The attention set travels IN the state rather than beside it. A notifier
     // with a public getter is a second channel the UI has to remember to read,
     // and riverpod_lint says so.
@@ -103,6 +108,7 @@ class ImportConfirm extends _$ImportConfirm {
     final String recipeId =
         await ref.read(importRepositoryProvider).saveImported(
               jobId,
+              kind: _kind ?? ImportKind.text,
               title: current.title,
               originalLocale: current.originalLocale,
               description: current.description,
