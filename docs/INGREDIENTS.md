@@ -43,12 +43,21 @@ line (D8), write the alias with `source = 'user'`, `match_method = 'manual'`,
 confidence 1.0. Human-confirmed links are never overwritten by a later
 re-matching pass.
 
+As of Phase 1c this is live for manual entry, not just for import: the
+ingredient line editor is the confirm screen. Picking an existing ingredient
+calls `link_ingredient_alias`, "create new" calls `create_ingredient` (D34),
+and either way the line is written `manual` at confidence 1.0. An editor
+keystroke can retire a match when the *name* changes, but no machine pass ever
+overwrites one.
+
 ## Line parsing
 
 **Implemented in `lib/features/ingredients/domain/ingredient_line_parser.dart`,
 in pure Dart (D31).** Not in Postgres: it touches no data, and a round trip per
 line would cost the 1c line editor its responsiveness and break offline entry
-in Phase 2. Phase 1d adds `supabase/functions/_shared/parse_line.ts` for the
+in Phase 2. That editor now exists and is the caller —
+`lib/features/recipes/presentation/widgets/ingredient_line_field.dart` parses
+on every keystroke and debounces only the search. Phase 1d adds `supabase/functions/_shared/parse_line.ts` for the
 importers, asserted against the same fixture.
 
 `test/fixtures/ingredient_lines.json` is the contract, in exactly the role

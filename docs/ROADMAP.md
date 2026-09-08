@@ -76,14 +76,42 @@ including both refusals, the grant, and an FK-coverage assertion that will fail
 in 1c if `recipe_ingredients` is added without being handled.
 
 ### 1c. Manual recipe entry
-- `recipes`, `recipe_ingredients`, `recipe_steps` + RLS
-- Recipe list (search by `title_normalized`), detail, create/edit
-- Ingredient line editor with autocomplete over `ingredient_names`, "create new"
-  as the last option, and fraction-aware quantity input
-- Photo upload to Storage
+
+**Status: complete.** Decisions taken during it: D33-D37.
+
+- `recipes`, `recipe_ingredients`, `recipe_steps` + RLS, plus
+  `replace_recipe_lines` and `ingredient_display_names`
+- Recipe list (search by `title_normalized`), detail, create/edit, soft delete
+- `create_ingredient` and `link_ingredient_alias` -- the narrow catalog write
+  path D32 deferred to this phase
+- Ingredient line editor: local parse on every keystroke, debounced
+  `search_ingredients`, a chip showing quantity / unit / matched name,
+  "create new" as the last option in the picker, and alias write-back on a
+  human decision
+- ~~Photo upload to Storage~~ -- moved to Phase 2 (D35). `recipes.image_path`
+  ships in the 1c migration so that slice is a feature and not a migration
+  against existing rows.
 
 **Done when:** you can type in a recipe you know by heart, in Serbian, and
 every ingredient line either matched or deliberately created a new ingredient.
+-- Met. Fraction-aware quantity input is there but not as a separate field:
+lines are raw-text-first, one field holding what the cook typed, and the
+quantity is parsed out of it and shown back as an exact fraction on the chip
+(`1½`, never `1.5`). That is rule 3 expressed as UI, and it is what lets an
+unparsed line still save and still render.
+
+The two things Phase 1b built and never exercised now have callers:
+`search_ingredients` is the line editor's autocomplete, and
+`merge_ingredients` has a real `recipe_ingredients` table to repoint.
+
+Verified end to end on the emulator against the local stack, not only in
+tests. Typing `200 g sargarepe` -- no diacritics, genitive -- auto-accepted to
+*šargarepa* and saved `match_method = 'alias'` at confidence 1.0 with
+`qty_num/qty_den = 200/1`; the detail page renders the catalog's word rather
+than the one typed (D1). A line the seed answers only weakly showed as a
+suggestion rather than being applied, and saved unmatched with its `raw_text`
+intact and its unit still parsed -- structure without a match, which is rule 3
+working rather than failing.
 
 ### 1d. Import
 - `import_jobs` table
@@ -104,6 +132,9 @@ draft.
 
 ## Phase 2 — Meal plan, shopping list, offline cache
 
+- Recipe photo upload: a Storage bucket, `storage.objects` policies scoped by
+  household, a path convention, and a picker package (rule 8 — ask first).
+  Moved here from 1c; the `recipes.image_path` column already exists (D35).
 - `meal_plans`, `meal_plan_entries` + RLS
 - Week grid, 7 days × 4 slots, drag recipes in
 - Leftover entries pointing at their source entry

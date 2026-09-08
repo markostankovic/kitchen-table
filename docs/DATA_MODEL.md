@@ -318,6 +318,37 @@ merge_ingredients(source_ingredient uuid, target_ingredient uuid,
                   actor uuid default auth.uid()) returns void
 ```
 
+Added in Phase 1c. The catalog's only client write path (D34), plus the set
+wrapper the recipe read path needs (D36's migration).
+
+```sql
+-- The set form of ingredient_display_name, so recipe detail resolves every
+-- matched line in one round trip and the fallback chain keeps one definition.
+ingredient_display_names(ids uuid[], loc text default 'sr')
+  returns table (ingredient_id uuid, display_name text)
+
+-- "Create a new ingredient" from the line editor. Returns the id of the
+-- ingredient that already answers to the string rather than making a second
+-- one; that guard is why this is a function and not an INSERT policy.
+-- security definer. Locale-scoped only, deliberately (D34).
+create_ingredient(ingredient_name text,
+                  loc text default 'sr',
+                  unit_family text default null) returns uuid
+
+-- Tier-2 write-back on a human decision (D8). Global rows, never
+-- household-scoped. Returns FALSE, without raising, when the string is
+-- already a live alias for a different ingredient.
+link_ingredient_alias(ingredient uuid, alias_name text,
+                      loc text default 'sr') returns boolean
+
+-- Replaces a recipe's ingredient lines and steps in one transaction and
+-- touches the parent's updated_at. security invoker -- RLS still decides.
+-- position comes from array order, not from the JSON (D36).
+replace_recipe_lines(recipe uuid,
+                     ingredient_lines jsonb default '[]'::jsonb,
+                     steps jsonb default '[]'::jsonb) returns void
+```
+
 `match_method` is `exact` (the ingredient's display name matched), `alias`
 (any other spelling or translation matched), or `fuzzy`. `auto_accept` applies
 the 0.75 line from `docs/INGREDIENTS.md` server-side, so no client holds a copy

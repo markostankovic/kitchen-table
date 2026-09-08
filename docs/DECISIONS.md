@@ -602,6 +602,121 @@ visibility rules all exist today.
 - Shipping `create_ingredient()` now — builds 1c's feature a phase early,
   before there is a screen to tell us what it needs.
 
+## D33 — Cross-feature access stays `domain`-only, and `recipes` pays for it
+
+**Decided.** `tool/check_layers.dart` allows a cross-feature import only into
+another feature's `domain/`, and that rule was kept when Phase 1c needed things
+that live behind `features/ingredients/` and `features/households/`. `recipes`
+therefore carries its own copy of catalog access
+(`lib/features/recipes/data/ingredient_catalog_datasource.dart`) and its own
+household lookup (`RecipeRepository._currentHouseholdId`).
+
+**What it costs.** The `search_ingredients` RPC contract exists twice. So does
+the unit-catalog fetch, the `numeric`-arrives-as-`String` handling, and the
+`households` select that `HouseholdRepository.fetchCurrent` already does. Three
+duplications, all small, all in `data/`.
+
+**Why.** The alternative was to relax the checker so `recipes/data` could import
+`ingredients/data`, and the checker is the only thing making the layering real
+— `docs/ARCHITECTURE.md` says "enforced by lint, not by documentation". A rule
+that gets an exception the first time it costs anything is not a rule. The
+duplication is also honest about what it is: the copy lives in its own file with
+a header saying so, rather than smeared through the repository.
+
+**Revisit when** a third feature needs `search_ingredients`. Phase 2's shopping
+list is the likely one. That is the signal to reopen this and pull the catalog
+into a shared place — not to write a third copy.
+
+## D34 — `create_ingredient` and `link_ingredient_alias` are RPCs, not policies
+
+**Decided.** The narrow write path D32 promised, delivered in Phase 1c.
+`create_ingredient(ingredient_name, loc, unit_family) returns uuid` and
+`link_ingredient_alias(ingredient, alias_name, loc) returns boolean`, both
+`security definer`, both granted to `authenticated` and `service_role` with
+`anon` explicitly revoked. Rows they write get `is_verified = false` and
+`key = null` — keys belong to the seed (D27).
+
+**Why a function.** `create_ingredient` returns the id of the ingredient that
+already answers to the string rather than making a second one, and that guard is
+the entire reason this is not an INSERT policy. The guard mirrors
+`ingredient_names_unique` exactly: narrower and it raises a constraint violation
+instead of returning a row, wider and it refuses creations that would have been
+fine.
+
+**Why `boolean`, not `void`.** A string can already be a live global alias for a
+different ingredient, and hijacking it would silently change what that word
+means for every household. So `link_ingredient_alias` refuses — but it must not
+raise, or one household's unusual wording would fail somebody's recipe save. It
+returns false, the line still saves, and only the global write-back is declined.
+
+**Known gap, deliberate.** Neither looks across locales. Widening them would
+assert that a string naming an ingredient in one language names the same one in
+the other, which is false often enough to matter — Serbian *pita* is a pie,
+English *pita* is bread. Cross-locale duplicates are what `merge_ingredients` is
+for, and `docs/INGREDIENTS.md` is explicit that merging is routine. The SQL test
+asserts the gap, so closing it later is a visible change.
+
+**Rejected.** An INSERT policy on `ingredient_names` — see D32, which rejected
+the same thing a phase earlier for the same reason.
+
+## D35 — Photo upload moves to Phase 2; `recipes.image_path` ships now
+
+**Decided.** Phase 1c builds no Storage bucket, no policies on
+`storage.objects`, and no picker. The `image_path` column ships in the recipes
+migration anyway, and is written by nothing and displayed by nothing.
+
+**Why.** Photo upload is a genuinely separate slice — a bucket, RLS on
+`storage.objects` scoped by household, a path convention, and a new third-party
+package (rule 8) — and none of it is needed for the sentence that defines the
+phase: type in a recipe you know by heart and have every line match or
+deliberately create an ingredient. Shipping the column now means that slice is a
+feature later rather than a migration against existing rows.
+
+`docs/ROADMAP.md` listed photo upload under 1c until this was written down.
+
+## D36 — `replace_recipe_lines`, because PostgREST has no transaction
+
+**Decided.** Saving a recipe's lines and steps goes through one
+`security invoker` plpgsql function that deletes both child lists and reinserts
+them, then touches the parent's `updated_at`.
+
+**Why.** It is four statements, and PostgREST offers the client no way to run
+them in one transaction. A failed save would otherwise leave a recipe with its
+old lines deleted and its new ones missing, which is worse than a save that did
+not happen. `security invoker` so RLS still decides who may write — the function
+is atomicity, not authority.
+
+`position` is derived from array order inside the function rather than read from
+the JSON. The client already sends the lines in the order it displays them, so
+deriving the column here makes a duplicated or missing position unexpressible.
+
+The parameter is `recipe`, not `recipe_id`: `recipe_id` is a column of both
+child tables, and a plpgsql parameter sharing a name with a column in the same
+statement is an ambiguity error (D30, learned the hard way).
+
+## D37 — A new recipe is `create()` then `saveLines()`, and the draft keeps the id
+
+**Decided.** The first save of a recipe is two calls: a plain insert into
+`recipes`, then `replace_recipe_lines`. There is no `create_recipe` RPC.
+`RecipeRepository.create` returns the whole row rather than just the id, and
+`RecipeEditor.save` writes it into the draft **between** the two calls.
+
+**Why not one RPC.** `recipes` has an INSERT policy and the insert alone has
+nothing to make atomic, so D36's argument does not extend to it. An RPC would be
+a second recipe write path to keep in sync with the first, plus a migration and
+a SQL test, bought against a failure window of one round trip.
+
+**Why the assignment between them matters.** It is what makes the pair safe. If
+`saveLines` fails, the draft is already pointing at the recipe that was created,
+so pressing Save again updates that one instead of creating a second. The worst
+case is a titled recipe with no lines, sitting in the list, editable — a retry,
+not a duplicate. Returning the whole row is also what lets the second save issue
+an update at all: `household_id` and `created_by` are not the editor's to
+invent.
+
+**Revisit if** import (1d) needs to write a recipe and its lines as one unit
+from the server side, where the argument is different.
+
 ## Open / deferred
 
 - **Client vs Edge Function split** — rule of thumb written in
