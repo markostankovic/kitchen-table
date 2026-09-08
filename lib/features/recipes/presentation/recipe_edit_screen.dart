@@ -7,16 +7,17 @@ import '../../../core/router/routes.dart';
 import '../application/recipe_editor.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_draft.dart';
+import 'widgets/ingredient_line_field.dart';
 
 /// Create or edit one recipe.
 ///
 /// The same screen for both: [recipeId] is null for a recipe that does not
 /// exist yet, and that null is also the editor provider's family key.
 ///
-/// Ingredient lines are raw text and nothing else at this slice. One field per
-/// line holding exactly what the cook typed, saved as `raw_text` with every
-/// structured field null -- rule 3 standing on its own, before any matching UI
-/// exists to complicate it. The line editor replaces the field in place.
+/// Ingredient lines are raw-text-first. The field holds exactly what the cook
+/// typed and that is what `raw_text` stores; quantity, unit and a matched
+/// ingredient are worked out from it and are all allowed to come back empty
+/// (rule 3). See [IngredientLineField] for how. Steps are plain text.
 ///
 /// Text fields are seeded with `initialValue` and report through `onChanged`
 /// rather than each owning a `TextEditingController`, which is a departure
@@ -204,13 +205,12 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
             children: <Widget>[
               for (final (int index, RecipeDraftLine line)
                   in draft.lines.indexed)
-                _EditableRow(
+                IngredientLineField(
                   key: ValueKey<int>(line.localId),
                   index: index,
-                  initialValue: line.rawText,
-                  hintText: '2 šolje glatkog brašna',
-                  onChanged: (String value) =>
-                      _editor.setLineText(line.localId, value),
+                  line: line,
+                  locale: draft.originalLocale,
+                  onChanged: _editor.replaceLine,
                   onRemove: () => _editor.removeLine(line.localId),
                 ),
             ],
