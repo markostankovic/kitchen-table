@@ -115,8 +115,20 @@ working rather than failing.
 
 ### 1d. Import
 
-**Status: parts 1–5 complete.** All three importers are built. Share intents
-are the only bullet left. Decisions taken so far: D38–D46.
+**Status: complete** (parts 1–6). Decisions taken during it: D38–D46.
+
+Every bullet below is done, with one deliberate exception noted at the end:
+share intents work on Android and not on iOS.
+
+**What is NOT verified, stated here rather than left for someone to assume.**
+No model call has ever run in this repository. The Anthropic account has no
+credit balance, so tier 0 — reading prose or a photographed page — and tier 4 —
+the batched ingredient matcher — have never executed. The key path itself is
+verified (requests reach the provider and authenticate); the prompts and request
+shapes are not. Everything either side of the model is verified against the
+running stack: the JSON-LD path end to end on real recipe sites, the SSRF guard
+against every blocked class, the storage policies through the real Storage API,
+the job lifecycle, the confirm screen, and the save.
 
 Part 1 built `import_jobs`, `ai_usage` and `household_ai_limits` with their RLS
 and SQL tests, all five remaining `_shared/` modules, and `make types` for
@@ -180,7 +192,11 @@ The bullets below are the whole phase; the ones part 1 finished are marked.
 
 **Done when:** you can share a recipe URL from a browser into the app, review
 what it found, and save it; and photograph a cookbook page and get a usable
-draft.
+draft. — Met on Android, with the caveat above. Sharing a link from Chrome
+opens the importer prefilled, and the JSON-LD path produces a reviewable draft
+without a model call at all; the review screen and the save are verified on real
+data. Photographing a page reaches the vision model and stops there, for want of
+credits rather than code.
 
 Part 3 took two more decisions. **D43** put the ingredient catalog in `core/`,
 closing D33: the confirm screen was the third caller D33 said should reopen it,

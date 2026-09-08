@@ -717,6 +717,243 @@ invent.
 **Revisit if** import (1d) needs to write a recipe and its lines as one unit
 from the server side, where the argument is different.
 
+## D38 — `ai_usage` is an append-only ledger, with no lifecycle columns
+
+**Decided.** `ai_usage` carries `household_id` and therefore falls under rule 4
+as written, but gets neither `updated_at` nor `deleted_at`. A row is inserted
+once by the service role immediately after a model call and never touched
+again.
+
+**Why.** The same shape of exception as D25, for a different reason. A ledger
+whose rows can be updated is not a ledger, and a tombstoned cost row is a hole
+in a cost audit that still bills. D17 put usage limits in from day one so that
+an OCR retry loop cannot quietly burn money; a ledger that can be edited or
+hidden would give that mechanism nothing solid to stand on.
+
+**Consequence, stated so it is a choice rather than a surprise.** There is no
+way to correct a mis-recorded row and no way to hide one. Both are correct for
+money. If usage ever needs resetting per billing period, that is a column
+recording the period, not a delete.
+
+`household_ai_limits` does get `updated_at` — caps are meant to be tuned — and
+no `deleted_at`, because its primary key *is* the household id and it cascades.
+
+## D39 — Clients never write `import_jobs`
+
+**Decided.** RLS on `import_jobs`, `ai_usage` and `household_ai_limits` grants
+`SELECT` and nothing else. No INSERT policy, no UPDATE policy, no DELETE
+policy. The job row is created by the import Edge Function on the service role,
+and the client's entire write surface is two `security definer` functions,
+`finish_import_job` and `dismiss_import_job`.
+
+**Why.** RLS cannot restrict which *columns* an update touches. A policy
+permissive enough to let the confirm screen set `recipe_id` is permissive enough
+to let any client set `status = 'needs_review'` with a hand-written `result` —
+which would turn the import queue into an arbitrary-JSON store that the confirm
+screen renders and a human is then asked to trust.
+
+Creating the row server-side also means the household is resolved from the
+caller's membership rather than named by the client, which is the same argument
+`create-invite` makes.
+
+**Consequence.** Those two functions are `security definer` and therefore
+bypass RLS, so each writes its membership check out by hand — the rule
+`_shared/auth.ts` states for the service-role client, applied in SQL. Note this
+is the opposite choice from D36's `replace_recipe_lines`, which could be
+`security invoker` precisely because `recipe_ingredients` *has* write policies.
+
+## D40 — Every household gets its AI limits row from a trigger
+
+**Decided.** A trigger on `households` inserts a `household_ai_limits` row, and
+the migration backfills existing households idempotently.
+
+**Why.** So the column defaults are the only definition of what the caps start
+at. The alternative was `coalesce(limits.cap, 500)` in `_shared/usage.ts`,
+which is a second copy of a number that must agree with the first — and the
+kind that disagrees silently, six months later, in the direction of spending
+more.
+
+A trigger rather than an edit to `create_household()`: that function is in an
+applied migration and applied migrations are not edited, and a trigger also
+catches the paths `create_household()` is not on.
+
+## D41 — Two Zod schemas: `ModelRecipe` is asked for, `ParsedRecipe` is stored
+
+**Decided.** `_shared/schema.ts` defines both. `ModelRecipe` is what a model is
+asked to return — prose and raw ingredient lines. `ParsedRecipe` is
+`ModelRecipe` enriched by `parse_line.ts` and `match-ingredients`, and is what
+`import_jobs.result` holds and what `make types` generates Dart from.
+
+**Why.** A model asked for quantities and `units.code` values will happily
+invent both. It does not need to: `parse_line.ts` produces integer fractions
+deterministically and is held to `test/fixtures/ingredient_lines.json`, and
+`search_ingredients` produces matches and is held to the SQL tests. Asking a
+model to redo exact work is how the exact work gets quietly replaced by a guess.
+
+**Consequence.** `ParsedIngredientLine.matchMethod` has no `manual` value and
+must not gain one — a machine pass cannot produce a human decision (D7), and
+only the confirm screen promotes a line to `manual`.
+
+Also recorded here because it has no better home: `import_jobs.kind` has three
+values and `recipes.source_type` has four. `url` maps to `url_import`, `photo`
+to `ocr`, and `text` to `url_import` when the paste carried a URL and `manual`
+when it did not. That mapping lives in `ImportKind.sourceTypeFor`. It was wrong
+for photos until Phase 1d part 5 — derived from whether a source URL was
+present, which a photograph never has — and a photographed cookbook page was
+being recorded as a recipe somebody typed out by hand. D16's household-only rule
+hangs off that column.
+
+## D42 — No machine tier writes to the catalog
+
+**Decided.** Tiers 3, 4 and 5 write no `ingredient_names` rows and create no
+ingredients during an import. The write-back happens on the confirm screen,
+when a human accepts a line, through `link_ingredient_alias` (D34).
+
+**Why.** `docs/INGREDIENTS.md` says every resolution writes back, and it is
+right about why: ingredient strings are Zipf-distributed, so a few hundred
+aliases cover most of what anyone will ever write, and that is what stops the
+LLM tier being paid for twice. The disagreement is only about *when*.
+
+Writing back during import makes a machine guess global and permanent (D28: one
+string, one ingredient, forever) before any human has seen it — and D8 exists
+precisely because a human sees every import. Tier 5 would be worse: `za
+posluživanje` is a real line in the fixture, and creating an ingredient for it
+at import time would enter "for serving" into the catalog as food.
+
+Since the confirm screen accepts by default, the cost curve still drops on the
+first import of a new string. It drops one tap later.
+
+**Consequence.** The confirm screen is now the *only* thing that grows the
+catalog, which raises the stakes on D8 rather than lowering them. It also
+removed a smaller problem rather than solving it: `link_ingredient_alias`
+hardcodes `source = 'user'` and needs a non-null `auth.uid()`, so a machine
+tier calling it would have meant either lying about provenance — the thing D7
+exists to prevent — or a migration to widen it.
+
+**And tier 4 is best effort.** It could originally sink a whole import: a
+recipe read perfectly from JSON-LD would fail because an optional improvement to
+its ingredient matching was unavailable. Tiers 1–3 are deterministic and already
+done by then, so a tier 4 failure now logs, records any tokens it spent, and
+returns the deterministic matches. The cook gets a draft with more lines to
+confirm by hand, which is the confirm screen's job anyway. Same shape as rule 3:
+structure is an enhancement on `raw_text`, and the LLM tier is an enhancement on
+the tiers below it.
+
+## D43 — One ingredient catalog, in `core/` — closing D33
+
+**Decided.** `features/ingredients/data/ingredient_repository.dart` is the only
+catalog access in the codebase. Its providers and the ingredient line editor
+live in `lib/core/ingredients/`. `features/recipes/data/ingredient_catalog_datasource.dart`
+is deleted.
+
+**Why.** D33 chose duplication over relaxing the layer rule when Phase 1c needed
+`search_ingredients` from the recipes feature, and said what should happen next:
+"If a third caller appears, that is the signal to reopen D33 rather than to
+write a third copy." Phase 1d's confirm screen is that third caller, arriving
+before the predicted one — it needs the line editor, and `features/import/` may
+not import `features/recipes/presentation/`.
+
+`core/` is outside the feature rule entirely: `tool/check_layers.dart` derives
+layer and feature from `lib/features/<x>/<layer>/` and nothing else. That is not
+a loophole being exploited — `core/supabase/` already holds
+`currentUserIdProvider` for exactly this reason.
+
+**Why the datasource itself did not move.** `supabase_flutter` is importable
+only in `data/` or `core/supabase/` (rule 1). The providers construct the
+repository from `supabaseClientProvider` without ever naming a Supabase type,
+which is the same move `recipe_providers.dart` already made.
+
+**Compromise worth naming.** `IngredientLineField` still operates on
+`RecipeDraftLine`, so `core/` now depends on `features/recipes/domain/`. Legal,
+and better than inventing a core-owned line type — that would be a second model
+of the same thing to satisfy a naming instinct.
+
+**Consequence.** A second cross-feature channel appeared for the same reason:
+`ref.invalidate(recipeListProvider)` worked while recipes was the only feature
+that wrote a recipe, and the confirm screen is the second. Both writers now bump
+a counter in `core/refresh/data_revision.dart`.
+
+## D44 — `save_imported_recipe`, the atomicity D37 said to revisit
+
+**Decided.** One `security definer` function creates the recipe, writes its
+lines and steps, and marks the job done — in one transaction. It composes
+`replace_recipe_lines` (D36) and `finish_import_job` rather than reimplementing
+either.
+
+**Why, and why it does not contradict D37.** D37 ruled that a new recipe is
+`create()` then `saveLines()` from the client, and ended: "Revisit if import
+(1d) needs to write a recipe and its lines as one unit from the server side,
+where the argument is different." It does, and it is. Manual entry is safe as
+two steps because the draft keeps the id it was given, so a failed second step
+is fixed by pressing Save again. An import has a **third** step — marking the
+job done — and no such anchor: a failure between them leaves an orphan recipe
+*and* a job still in `needs_review`, so pressing Save again creates a second
+recipe from the same import.
+
+**Consequence.** `household_id` comes from the job, never from the payload, and
+`status` is forced to `draft` rather than read — anything AI-produced is draft
+until a human marks it tested. The status guard runs *before* the insert, so a
+job in the wrong state is refused rather than rolled back.
+
+## D45 — The SSRF policy for `import-url`
+
+**Decided.** `supabase/functions/_shared/url_guard.ts`. http/https only, no
+credentials in the URL, no non-standard port, a denylist covering every private
+and reserved IPv4 and IPv6 range, every single-label hostname, a DNS resolution
+check on every hostname, redirects followed by hand with each hop re-vetted, a
+10-second timeout, a 2 MB ceiling counted from bytes that actually arrive, and
+a Content-Type check. The URL is vetted before a job row exists, so a refusal is
+a synchronous 400.
+
+**Why.** `import-url` is the only place in the project that opens a connection
+to a host somebody else chose, and it does so from inside Supabase's network
+holding the service role key. Unguarded it reaches `http://kong:8000`,
+`http://db:5432` and, on a cloud host, `http://169.254.169.254/` — which is how
+a recipe importer becomes a credential exfiltration tool.
+
+**Why single-label hostnames as a class.** Inside Docker and inside Supabase's
+network, services are reachable by bare name. Enumerating them would be a list
+to maintain; refusing every name with no dot in it is the same protection with
+nothing to keep up to date, and no real recipe site is reachable that way.
+
+**Why the helper returns null rather than raising.** An exception inside a
+policy or a guard is not a refusal. `storage_path_household` (D46) makes the
+same choice for the same reason.
+
+**What it does not stop.** DNS rebinding between the check and the connect.
+Deno's `fetch` cannot pin a resolved address. Written in the file rather than
+left to be discovered.
+
+## D46 — The `import-uploads` bucket, where the path is the access control
+
+**Decided.** One private bucket, 10 MB, images only. Paths are
+`import-uploads/{household_id}/{uuid}.jpg`, and every `storage.objects` policy
+reads that first segment through `storage_path_household(text)`. Insert, select
+and delete are scoped by `is_household_member`. There is no update policy.
+
+**Why private.** A photographed cookbook page is somebody else's copyrighted
+prose, and D16 says there is no public path to it.
+
+**Why no update.** An uploaded page is immutable; re-photographing writes a new
+object. The same instinct as D38.
+
+**Why a helper function.** `(storage.foldername(name))[1]::uuid` raises on
+anything that is not a uuid, and an exception inside a policy is a 500 rather
+than a denial — a client could turn a denied upload into a server error by
+naming `hello/world.jpg`. The helper swallows the cast failure and returns null,
+which `is_household_member` already treats as false.
+
+**Consequence, and a limit on its test.** Supabase refuses direct INSERT and
+DELETE on `storage.objects` even for `postgres`, so a SQL test cannot set up the
+fixture. `supabase/tests/rls_storage_test.sql` asserts what SQL can see — the
+bucket's configuration, the policy set, and every branch of the helper — and
+says in its header that the policies themselves are exercised against the real
+Storage API instead.
+
+D35 still stands for the recipe's own picture: the photograph of a page is an
+*input* to an import, not a picture of the dish, and `recipes.image_path`
+remains Phase 2's business.
+
 ## Open / deferred
 
 - **Client vs Edge Function split** — rule of thumb written in
@@ -727,6 +964,20 @@ from the server side, where the argument is different.
   Phase 1–3.
 - **Cross-family unit conversion** — deferred, see D9.
 - **Handwritten card OCR quality** — unknown until there's a real card to test.
+- **No model call has ever run.** Phase 1d ships three importers, and tier 0
+  (reading prose or a page) and tier 4 (batched matching) have never executed:
+  the Anthropic account has no credit balance. Everything either side of them is
+  verified against the running stack — the JSON-LD path, the SSRF guard, the
+  storage policies, the job lifecycle, the confirm screen, the save. The prompts
+  and the request shapes are not.
+- **The iOS share extension** — see the 1d notes in `docs/ROADMAP.md`. Android
+  shares work; iOS needs a Share Extension target, an app group and
+  entitlements. SPM is already enabled and the project uses the scene lifecycle,
+  both of which matter to whoever does it.
+- **Import photos are never pruned.** A completed or dismissed job leaves its
+  object in `import-uploads`. Keeping it is deliberate — a failed job can be
+  re-run against the same photograph — but nothing collects them. Belongs with
+  Phase 2's Storage work, which has to think about lifecycle anyway.
 - **`to_taste` is seeded as a unit but the parser never emits it** — see D31.
   Where recipes actually write `po ukusu`, at the end of a line, it is a note
   and an optional marker, which is what lets `so po ukusu` resolve to *so*.
