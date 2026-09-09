@@ -21,6 +21,7 @@ _Recipe _$RecipeFromJson(Map<String, dynamic> json) => _Recipe(
   sourceUrl: json['sourceUrl'] as String?,
   sourceAttribution: json['sourceAttribution'] as String?,
   imagePath: json['imagePath'] as String?,
+  imageUrl: json['imageUrl'] as String?,
   tags:
       (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const <String>[],
@@ -47,6 +48,7 @@ Map<String, dynamic> _$RecipeToJson(_Recipe instance) => <String, dynamic>{
   'sourceUrl': instance.sourceUrl,
   'sourceAttribution': instance.sourceAttribution,
   'imagePath': instance.imagePath,
+  'imageUrl': instance.imageUrl,
   'tags': instance.tags,
   'updatedAt': instance.updatedAt?.toIso8601String(),
   'deletedAt': instance.deletedAt?.toIso8601String(),

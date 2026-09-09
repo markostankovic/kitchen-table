@@ -44,6 +44,13 @@ abstract class RecipeDraft with _$RecipeDraft {
     @Default('sr') String originalLocale,
     @Default(RecipeStatus.draft) RecipeStatus status,
     @Default(<String>[]) List<String> tags,
+
+    /// A Storage object path already written to `recipe-images`, or null for
+    /// no photo. This is the *persisted* path -- a photo just picked and not
+    /// yet uploaded lives in the screen's own state as a `RecipeImageUpload`
+    /// and is not reflected here until `RecipeEditor.save()` uploads it and
+    /// calls [RecipeEditor.setImagePath] (D48).
+    String? imagePath,
     @Default(<RecipeDraftLine>[]) List<RecipeDraftLine> lines,
     @Default(<RecipeDraftStep>[]) List<RecipeDraftStep> steps,
   }) = _RecipeDraft;
@@ -71,6 +78,7 @@ abstract class RecipeDraft with _$RecipeDraft {
       originalLocale: recipe.originalLocale,
       status: recipe.status,
       tags: recipe.tags,
+      imagePath: recipe.imagePath,
       lines: <RecipeDraftLine>[
         for (final (int index, RecipeIngredient line)
             in detail.ingredients.indexed)
@@ -148,6 +156,7 @@ abstract class RecipeDraft with _$RecipeDraft {
       originalLocale: originalLocale,
       status: status,
       tags: tags,
+      imagePath: imagePath,
     );
   }
 

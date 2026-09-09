@@ -1,12 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/router/routes.dart';
 import '../application/recipe_editor.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_draft.dart';
+import '../domain/recipe_image_upload.dart';
 import '../../../core/ingredients/widgets/ingredient_line_field.dart';
 
 /// Create or edit one recipe.
@@ -37,13 +41,63 @@ class RecipeEditScreen extends ConsumerStatefulWidget {
 
 class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final ImagePicker _picker = ImagePicker();
   bool _saving = false;
   String? _error;
+
+  /// A photo picked but not yet uploaded. Held here, not on the draft (D48):
+  /// nothing is written to Storage until `_submit()` calls `save(image: ...)`,
+  /// so abandoning this screen after picking leaves no orphan object.
+  RecipeImageUpload? _pickedImage;
+
+  /// Sized for a photo that is only ever looked at, never read by a model --
+  /// smaller than `ImportPhotoScreen`'s 1600/85, which was chosen for a vision
+  /// model's recommended long edge.
+  static const double _maxEdge = 1200;
+  static const int _quality = 85;
 
   bool get _isNew => widget.recipeId == null;
 
   RecipeEditor get _editor =>
       ref.read(recipeEditorProvider(widget.recipeId).notifier);
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? file = await _picker.pickImage(
+        source: source,
+        maxWidth: _maxEdge,
+        maxHeight: _maxEdge,
+        imageQuality: _quality,
+      );
+      if (file == null || !mounted) return;
+
+      final Uint8List bytes = await file.readAsBytes();
+      if (!mounted) return;
+
+      setState(() {
+        // image_picker re-encodes to JPEG whenever it resizes, which it
+        // always does here -- so the extension follows what was asked for
+        // rather than what came off the camera. A HEIC from an iPhone
+        // arrives as JPEG.
+        _pickedImage = RecipeImageUpload(
+          bytes: bytes,
+          contentType: 'image/jpeg',
+          extension: 'jpg',
+        );
+      });
+    } on Exception catch (e) {
+      if (!mounted) return;
+      setState(() => _error = 'That photo could not be opened. ($e)');
+    }
+  }
+
+  /// Clears the photo. Immediate rather than deferred to save: it updates
+  /// [RecipeDraft.imagePath] on the spot, so the preview and a save that
+  /// happens without touching the photo again both agree there is none.
+  void _removeImage() {
+    setState(() => _pickedImage = null);
+    _editor.setImagePath(null);
+  }
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
@@ -54,7 +108,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
     });
 
     try {
-      final String recipeId = await _editor.save();
+      final String recipeId = await _editor.save(image: _pickedImage);
       if (!mounted) return;
       // A brand-new recipe has no page to go back to, so open the one that was
       // just written. An edit returns to the detail page it came from, which
@@ -100,6 +154,14 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: <Widget>[
+          _PhotoField(
+            pickedImage: _pickedImage,
+            existingImageUrl:
+                draft.imagePath == null ? null : draft.source?.imageUrl,
+            onPick: _pickImage,
+            onRemove: _removeImage,
+          ),
+          const SizedBox(height: 16),
           TextFormField(
             initialValue: draft.title,
             textCapitalization: TextCapitalization.sentences,
@@ -296,6 +358,86 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
       .map((String tag) => tag.trim())
       .where((String tag) => tag.isNotEmpty)
       .toList(growable: false);
+}
+
+/// The recipe's photo: pick from camera or gallery, preview, remove.
+///
+/// [pickedImage] takes priority over [existingImageUrl] -- a photo just
+/// picked has not reached the server yet, so there is no signed URL for it,
+/// and showing the in-memory bytes is the only way to preview it at all.
+class _PhotoField extends StatelessWidget {
+  const _PhotoField({
+    required this.pickedImage,
+    required this.existingImageUrl,
+    required this.onPick,
+    required this.onRemove,
+  });
+
+  final RecipeImageUpload? pickedImage;
+  final String? existingImageUrl;
+  final ValueChanged<ImageSource> onPick;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final Uint8List? bytes = pickedImage?.bytes;
+    final bool hasPhoto = bytes != null || existingImageUrl != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (hasPhoto)
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: bytes != null
+                  ? Image.memory(bytes, fit: BoxFit.cover)
+                  : Image.network(
+                      existingImageUrl!,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (BuildContext context, Widget child,
+                              ImageChunkEvent? progress) =>
+                          progress == null
+                              ? child
+                              : const Center(
+                                  child: CircularProgressIndicator()),
+                      errorBuilder: (_, _, _) => const Center(
+                          child: Icon(Icons.broken_image_outlined)),
+                    ),
+            ),
+          ),
+        if (hasPhoto) const SizedBox(height: 8),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => onPick(ImageSource.camera),
+                icon: const Icon(Icons.camera_alt_outlined),
+                label: const Text('Camera'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => onPick(ImageSource.gallery),
+                icon: const Icon(Icons.photo_library_outlined),
+                label: const Text('Gallery'),
+              ),
+            ),
+            if (hasPhoto) ...<Widget>[
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Remove photo',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: onRemove,
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
 }
 
 /// One draggable, removable row of the ingredient or step list.

@@ -2,6 +2,8 @@
 /// (CLAUDE.md rule 1).
 library;
 
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/error/app_failure.dart';
@@ -20,6 +22,13 @@ const String _recipeColumns = '''
 id, household_id, title, description, servings, prep_minutes, cook_minutes,
 original_locale, source_type, source_url, source_attribution, status,
 image_path, tags, created_by, updated_at, deleted_at''';
+
+/// The `recipe-images` bucket is private (D48), so [Recipe.imagePath] alone is
+/// not fetchable -- every read signs it. An hour outlives any single screen:
+/// neither `recipeListProvider` nor `recipeDetailProvider` is `keepAlive`, and
+/// both `RefreshIndicator` and a `recipesRevisionProvider` bump re-read rather
+/// than reuse a stale value, so nothing here needs its own refresh timer.
+const int _signedUrlTtlSeconds = 3600;
 
 class RecipeRepository {
   const RecipeRepository(this._client);
@@ -58,7 +67,7 @@ class RecipeRepository {
         final List<Map<String, dynamic>> rows =
             await filter.order('created_at', ascending: false);
 
-        return rows.map(_toRecipe).toList();
+        return _withImageUrls(rows.map(_toRecipe).toList());
       });
 
   /// One recipe with its lines and steps, with ingredient names resolved from
@@ -100,8 +109,11 @@ recipe_steps(id, position, text, timer_seconds)''')
               ..sort((RecipeStep a, RecipeStep b) =>
                   a.position.compareTo(b.position));
 
+        final List<Recipe> withImage =
+            await _withImageUrls(<Recipe>[_toRecipe(row)]);
+
         return RecipeDetail(
-          recipe: _toRecipe(row),
+          recipe: withImage.single,
           ingredients: await _withDisplayNames(lines, locale),
           steps: steps,
         );
@@ -129,6 +141,7 @@ recipe_steps(id, position, text, timer_seconds)''')
     RecipeStatus status = RecipeStatus.draft,
     String? sourceUrl,
     String? sourceAttribution,
+    String? imagePath,
   }) =>
       runGuarded(() async {
         final String householdId = await _currentHouseholdId();
@@ -154,11 +167,14 @@ recipe_steps(id, position, text, timer_seconds)''')
               'status': status.name,
               'tags': tags,
               'created_by': userId,
+              'image_path': imagePath,
             })
             .select(_recipeColumns)
             .single();
 
-        return _toRecipe(row);
+        final List<Recipe> withImage =
+            await _withImageUrls(<Recipe>[_toRecipe(row)]);
+        return withImage.single;
       });
 
   /// Saves the editable fields of an existing recipe.
@@ -179,6 +195,7 @@ recipe_steps(id, position, text, timer_seconds)''')
           'source_attribution': _blankToNull(recipe.sourceAttribution),
           'status': recipe.status.name,
           'tags': recipe.tags,
+          'image_path': recipe.imagePath,
         }).eq('id', recipe.id);
       });
 
@@ -202,6 +219,42 @@ recipe_steps(id, position, text, timer_seconds)''')
             'steps': steps.map(_stepPayload).toList(growable: false),
           },
         );
+      });
+
+  /// Uploads a picked photo to the `recipe-images` bucket and returns the
+  /// object path.
+  ///
+  /// Only the upload -- writing that path onto the recipe row is
+  /// `RecipeEditor.save()`'s job, and it is the one that decides WHEN this
+  /// runs (D48: only as part of a save, never at pick time, so an abandoned
+  /// editor leaves no orphan object).
+  Future<String> uploadImage(
+    Uint8List bytes, {
+    required String contentType,
+    required String extension,
+  }) =>
+      runGuarded(() async {
+        final String householdId = await _currentHouseholdId();
+        final String path =
+            '$householdId/${DateTime.now().microsecondsSinceEpoch}.$extension';
+
+        await _client.storage.from('recipe-images').uploadBinary(
+              path,
+              bytes,
+              fileOptions: FileOptions(contentType: contentType),
+            );
+
+        return path;
+      });
+
+  /// Removes a photo from the `recipe-images` bucket.
+  ///
+  /// Called after replacing or clearing a recipe's photo, once the row that
+  /// pointed at it no longer does. Best-effort by design: the caller swallows
+  /// a failure here rather than surface it, because the recipe itself already
+  /// saved successfully and a leftover blob is not the cook's problem (D48).
+  Future<void> deleteImage(String path) => runGuarded(() async {
+        await _client.storage.from('recipe-images').remove(<String>[path]);
       });
 
   /// Soft-deletes a recipe. There is no hard delete (rule 4).
@@ -270,6 +323,37 @@ recipe_steps(id, position, text, timer_seconds)''')
     return lines
         .map((RecipeIngredient line) => line.copyWith(
             displayName: names[line.ingredientId ?? '']))
+        .toList(growable: false);
+  }
+
+  /// Fills in [Recipe.imageUrl] for every recipe with an [Recipe.imagePath],
+  /// in one round trip.
+  ///
+  /// `createSignedUrlsResult`, not the deprecated `createSignedUrls`: it
+  /// returns one [SignedUrlResult] per path rather than throwing on the first
+  /// one that fails, so a recipe whose object has gone missing renders
+  /// without a picture instead of failing the whole list -- rule 3's instinct
+  /// applied to a photo instead of an ingredient line.
+  Future<List<Recipe>> _withImageUrls(List<Recipe> recipes) async {
+    final List<String> paths = recipes
+        .map((Recipe r) => r.imagePath)
+        .whereType<String>()
+        .toSet()
+        .toList(growable: false);
+
+    if (paths.isEmpty) return recipes;
+
+    final List<SignedUrlResult> results = await _client.storage
+        .from('recipe-images')
+        .createSignedUrlsResult(paths, _signedUrlTtlSeconds);
+
+    final Map<String, String> urls = <String, String>{
+      for (final SignedUrlResult result in results)
+        if (result is SignedUrlSuccess) result.path: result.signedUrl,
+    };
+
+    return recipes
+        .map((Recipe r) => r.copyWith(imageUrl: urls[r.imagePath ?? '']))
         .toList(growable: false);
   }
 

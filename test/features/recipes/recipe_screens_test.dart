@@ -166,6 +166,28 @@ void main() {
       expect(find.text('Pita sa sirom'), findsOneWidget);
       expect(find.text('Šargarepa torta'), findsNothing);
     });
+
+    testWidgets('a recipe with a photo shows a thumbnail',
+        (WidgetTester tester) async {
+      final Recipe withPhoto =
+          _torta.copyWith(imageUrl: 'https://example.test/thumb.jpg');
+      await _pumpList(tester, recipes: <Recipe>[withPhoto, _pita]);
+
+      expect(
+        find.byWidgetPredicate((Widget w) =>
+            w is Image &&
+            w.image is NetworkImage &&
+            (w.image as NetworkImage).url == 'https://example.test/thumb.jpg'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a recipe with no photo shows no thumbnail, unchanged',
+        (WidgetTester tester) async {
+      await _pumpList(tester, recipes: <Recipe>[_torta, _pita]);
+
+      expect(find.byType(Image), findsNothing);
+    });
   });
 
   group('recipe detail', () {
@@ -217,6 +239,31 @@ void main() {
 
       expect(find.text('1½'), findsOneWidget);
       expect(find.textContaining('1.5'), findsNothing);
+    });
+
+    testWidgets('renders the recipe photo when the recipe has one',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          recipe: _torta.copyWith(imageUrl: 'https://example.test/torta.jpg'),
+        ),
+      );
+
+      expect(
+        find.byWidgetPredicate((Widget w) =>
+            w is Image &&
+            w.image is NetworkImage &&
+            (w.image as NetworkImage).url == 'https://example.test/torta.jpg'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('renders unchanged when the recipe has no photo',
+        (WidgetTester tester) async {
+      await _pumpDetail(tester, _detail);
+
+      expect(find.byType(Image), findsNothing);
     });
   });
 }

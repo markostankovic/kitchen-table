@@ -231,5 +231,28 @@ void main() {
         'r1',
       );
     });
+
+    test('imagePath survives fromDetail and reaches toRecipe unchanged', () {
+      final Recipe withPhoto =
+          _torta.copyWith(imagePath: 'h1/123.jpg', imageUrl: 'https://x/1');
+      final RecipeDraft draft =
+          RecipeDraft.fromDetail(RecipeDetail(recipe: withPhoto));
+
+      expect(draft.imagePath, 'h1/123.jpg');
+
+      final Recipe updated = draft.toRecipe();
+      expect(updated.imagePath, 'h1/123.jpg');
+    });
+
+    test('clearing imagePath reaches toRecipe as null -- removing a photo '
+        'must actually reach the wire', () {
+      final Recipe withPhoto = _torta.copyWith(imagePath: 'h1/123.jpg');
+      final RecipeDraft draft = RecipeDraft.fromDetail(
+        RecipeDetail(recipe: withPhoto),
+      ).copyWith(imagePath: null);
+
+      final Recipe updated = draft.toRecipe();
+      expect(updated.imagePath, isNull);
+    });
   });
 }

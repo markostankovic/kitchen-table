@@ -301,9 +301,44 @@ belongs with Phase 2's Storage work.
 
 ## Phase 2 — Meal plan, shopping list, offline cache
 
-- Recipe photo upload: a Storage bucket, `storage.objects` policies scoped by
-  household, a path convention, and a picker package (rule 8 — ask first).
-  Moved here from 1c; the `recipes.image_path` column already exists (D35).
+### Part 1 — Recipe photo upload
+
+**Status: complete.** Decisions taken during it: D48.
+
+A Storage bucket, `storage.objects` policies scoped by household, a path
+convention, and a picker package (rule 8 — no new package needed;
+`image_picker` was already approved in 1d part 5). Moved here from 1c; the
+`recipes.image_path` column had shipped empty since migration 8 (D35).
+
+- `recipe-images` bucket: private, 5 MB, images only, at
+  `{household_id}/{name}.jpg` — the same shape as `import-uploads` (D46),
+  reusing `storage_path_household(text)` rather than a second copy of it
+- `RecipeRepository.uploadImage` / `deleteImage`, and `_withImageUrls`
+  resolving `Recipe.imageUrl` from `Recipe.imagePath` via
+  `createSignedUrlsResult` — one round trip per list page, the same shape as
+  `_withDisplayNames`
+- `RecipeEditor.save({image})`: the upload happens first, inside the save,
+  never at pick time — an abandoned editor writes nothing to Storage. Replacing
+  or clearing a photo deletes the old object once the row no longer points at
+  it, best-effort
+- The photo card in the edit screen (Camera / Gallery / Remove, 1200px/85%),
+  the hero image on the detail screen, and the list thumbnail
+
+**Done when:** you can photograph a dish (or pick one from the gallery) while
+editing a recipe, save, and see it on the recipe detail screen and as a
+thumbnail in the list — on a second device in the same household, and not from
+another household. — **Met**, verified end to end on the Android emulator
+against the local stack: created a recipe with a photo (the `create()` path),
+confirmed the object landed at `recipe-images/<household_id>/…` and the
+thumbnail rendered in the list; replaced the photo and confirmed the old
+object was gone; removed the photo and confirmed `image_path` went null and
+the object was deleted; picked a photo and abandoned the editor without saving
+and confirmed no object was ever written; and confirmed directly against
+`is_household_member(storage_path_household(...))` that a second household's
+member is refused the first household's object path.
+
+### Still to build
+
 - `meal_plans`, `meal_plan_entries` + RLS
 - Week grid, 7 days × 4 slots, drag recipes in
 - Leftover entries pointing at their source entry

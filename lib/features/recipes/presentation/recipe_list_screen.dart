@@ -151,6 +151,20 @@ class _RecipeTile extends StatelessWidget {
     ];
 
     return ListTile(
+      leading: recipe.imageUrl == null
+          ? null
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: Image.network(
+                recipe.imageUrl!,
+                width: 56,
+                height: 56,
+                fit: BoxFit.cover,
+                // A stale or since-invalidated signed URL falls back to no
+                // thumbnail rather than a broken-image icon in every row.
+                errorBuilder: (_, _, _) => const SizedBox(width: 56),
+              ),
+            ),
       title: Text(recipe.title),
       subtitle: meta.isEmpty ? null : Text(meta.join(' · ')),
       // A draft is a recipe nobody has vouched for yet -- the standing rule

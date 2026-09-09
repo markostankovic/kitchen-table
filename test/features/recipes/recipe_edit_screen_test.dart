@@ -142,4 +142,58 @@ void main() {
       expect(find.text('Zagrej rernu.'), findsOneWidget);
     });
   });
+
+  group('photo', () {
+    testWidgets('a recipe with no photo offers Camera and Gallery, no Remove',
+        (WidgetTester tester) async {
+      await _pump(tester, draft: RecipeDraft.empty());
+
+      expect(find.widgetWithText(OutlinedButton, 'Camera'), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, 'Gallery'), findsOneWidget);
+      expect(find.byTooltip('Remove photo'), findsNothing);
+      expect(find.byType(Image), findsNothing);
+    });
+
+    testWidgets('a recipe that already has a photo shows it and offers '
+        'Remove', (WidgetTester tester) async {
+      final Recipe withPhoto = _torta.copyWith(
+        imagePath: 'h1/existing.jpg',
+        imageUrl: 'https://example.test/existing.jpg',
+      );
+      await _pump(
+        tester,
+        recipeId: 'r1',
+        draft: RecipeDraft.fromDetail(_detail.copyWith(recipe: withPhoto)),
+      );
+
+      expect(find.byTooltip('Remove photo'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate((Widget w) =>
+            w is Image &&
+            w.image is NetworkImage &&
+            (w.image as NetworkImage).url ==
+                'https://example.test/existing.jpg'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('tapping Remove clears the preview and the Remove button',
+        (WidgetTester tester) async {
+      final Recipe withPhoto = _torta.copyWith(
+        imagePath: 'h1/existing.jpg',
+        imageUrl: 'https://example.test/existing.jpg',
+      );
+      await _pump(
+        tester,
+        recipeId: 'r1',
+        draft: RecipeDraft.fromDetail(_detail.copyWith(recipe: withPhoto)),
+      );
+
+      await tester.tap(find.byTooltip('Remove photo'));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Remove photo'), findsNothing);
+      expect(find.byType(Image), findsNothing);
+    });
+  });
 }

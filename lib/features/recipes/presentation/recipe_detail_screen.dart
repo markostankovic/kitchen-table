@@ -140,6 +140,30 @@ class _Body extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: <Widget>[
+        if (recipe.imageUrl != null) ...<Widget>[
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                recipe.imageUrl!,
+                fit: BoxFit.cover,
+                loadingBuilder: (BuildContext context, Widget child,
+                        ImageChunkEvent? progress) =>
+                    progress == null
+                        ? child
+                        : const Center(child: CircularProgressIndicator()),
+                // A signed URL can outlive its TTL, or the object can have
+                // been replaced since this page loaded. Either way the recipe
+                // still renders without its picture (rule 3), not an error
+                // screen over a working recipe.
+                errorBuilder: (_, _, _) =>
+                    const Center(child: Icon(Icons.broken_image_outlined)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         if (recipe.status == RecipeStatus.draft)
           const Padding(
             padding: EdgeInsets.only(bottom: 8),

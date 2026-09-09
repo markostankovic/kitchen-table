@@ -380,7 +380,7 @@ create table recipes (
   status text not null default 'draft' check (status in ('draft','tested')),
   visibility text not null default 'household'
     check (visibility in ('household')),   -- D16: no public path, yet
-  image_path text,                  -- Supabase Storage
+  image_path text,                  -- Supabase Storage, recipe-images bucket
   tags text[] not null default '{}',
   created_by uuid not null references profiles(id),
   created_at timestamptz not null default now(),

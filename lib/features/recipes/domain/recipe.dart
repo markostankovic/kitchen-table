@@ -69,10 +69,17 @@ abstract class Recipe with _$Recipe {
     String? sourceUrl,
     String? sourceAttribution,
 
-    /// A Supabase Storage object path. Always null in Phase 1c -- the bucket
-    /// and the picker are Phase 2 (D35). The field ships now so that slice
-    /// adds a screen rather than a migration.
+    /// A Supabase Storage object path in the `recipe-images` bucket, or null
+    /// for a recipe with no photo (D48, Phase 2 part 1).
     String? imagePath,
+
+    /// A signed URL for [imagePath], resolved at read time and never
+    /// persisted -- the bucket is private, so [imagePath] alone is not
+    /// fetchable. Null whenever [imagePath] is null, and also null (rather
+    /// than throwing) when the object behind a set [imagePath] could not be
+    /// signed, which is rule 3's instinct applied to a photo instead of an
+    /// ingredient line: a recipe still renders without its picture.
+    String? imageUrl,
     @Default(<String>[]) List<String> tags,
     DateTime? updatedAt,
     DateTime? deletedAt,

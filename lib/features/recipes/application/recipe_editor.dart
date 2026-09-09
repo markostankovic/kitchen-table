@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/refresh/data_revision.dart';
@@ -5,6 +7,7 @@ import '../data/recipe_repository.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_detail.dart';
 import '../domain/recipe_draft.dart';
+import '../domain/recipe_image_upload.dart';
 import 'recipe_providers.dart';
 
 part 'recipe_editor.g.dart';
@@ -63,6 +66,12 @@ class RecipeEditor extends _$RecipeEditor {
   void setTags(List<String> value) =>
       _update((RecipeDraft d) => d.copyWith(tags: value));
 
+  /// Sets or clears the persisted photo path directly, bypassing an upload.
+  /// `save()` calls this itself once a picked [RecipeImageUpload] has been
+  /// written to Storage; the screen's Remove action calls it with `null`.
+  void setImagePath(String? value) =>
+      _update((RecipeDraft d) => d.copyWith(imagePath: value));
+
   // ---------------------------------------------------------------------
   // Lines and steps
   // ---------------------------------------------------------------------
@@ -106,8 +115,14 @@ class RecipeEditor extends _$RecipeEditor {
   /// created, so pressing Save again updates it. The worst case is a titled
   /// recipe with no lines, sitting in the list, editable.
   ///
+  /// [image] is a photo picked but not yet uploaded. When present it is
+  /// uploaded FIRST, before the recipe row is touched (D48) -- the slow step
+  /// happens under the cook's finger, the same order `ImportPhotoScreen`
+  /// uses. A draft abandoned before calling `save()` therefore never writes to
+  /// Storage, because nothing here runs until this method is called.
+  ///
   /// Failures propagate as [AppFailure] for the screen to render.
-  Future<String> save() async {
+  Future<String> save({RecipeImageUpload? image}) async {
     final RecipeDraft? current = state.value;
     if (current == null) {
       throw StateError('save() before the draft finished loading');
@@ -115,25 +130,37 @@ class RecipeEditor extends _$RecipeEditor {
 
     final RecipeRepository repository = ref.read(recipeRepositoryProvider);
     final Recipe? existing = current.source;
+    final String? previousImagePath = existing?.imagePath;
+
+    RecipeDraft draft = current;
+    if (image != null) {
+      final String uploaded = await repository.uploadImage(
+        image.bytes,
+        contentType: image.contentType,
+        extension: image.extension,
+      );
+      draft = draft.copyWith(imagePath: uploaded);
+    }
 
     late final RecipeDraft saved;
     if (existing == null) {
       final Recipe created = await repository.create(
-        title: current.title.trim(),
-        originalLocale: current.originalLocale,
-        description: current.description,
-        servings: current.servings,
-        prepMinutes: current.prepMinutes,
-        cookMinutes: current.cookMinutes,
-        tags: current.tags,
-        status: current.status,
+        title: draft.title.trim(),
+        originalLocale: draft.originalLocale,
+        description: draft.description,
+        servings: draft.servings,
+        prepMinutes: draft.prepMinutes,
+        cookMinutes: draft.cookMinutes,
+        tags: draft.tags,
+        status: draft.status,
+        imagePath: draft.imagePath,
       );
-      saved = current.copyWith(source: created);
+      saved = draft.copyWith(source: created);
       state = AsyncData<RecipeDraft>(saved);
     } else {
-      final Recipe updated = current.toRecipe();
+      final Recipe updated = draft.toRecipe();
       await repository.update(updated);
-      saved = current.copyWith(source: updated);
+      saved = draft.copyWith(source: updated);
       state = AsyncData<RecipeDraft>(saved);
     }
 
@@ -143,6 +170,23 @@ class RecipeEditor extends _$RecipeEditor {
       ingredients: saved.toIngredients(),
       steps: saved.toSteps(),
     );
+
+    // The old object is deleted only now that the row pointing at it has
+    // actually been overwritten -- and only if it changed. Best-effort: a
+    // failed delete leaks a blob, it must not undo an otherwise-successful
+    // save (D48), so the failure is logged rather than rethrown.
+    if (previousImagePath != null && previousImagePath != saved.imagePath) {
+      try {
+        await repository.deleteImage(previousImagePath);
+      } on Object catch (error, stackTrace) {
+        developer.log(
+          'Could not delete replaced recipe image',
+          name: 'RecipeEditor',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
 
     ref.read(recipesRevisionProvider.notifier).bump();
     ref.invalidate(recipeDetailProvider(recipeId));
