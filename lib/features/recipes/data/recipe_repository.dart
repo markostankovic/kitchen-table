@@ -130,6 +130,7 @@ recipe_steps(id, position, text, timer_seconds)''')
   /// `saveLines`, and if the second half fails the editor retries against the
   /// recipe this returned instead of creating a second one (D37).
   Future<Recipe> create({
+    required String householdId,
     required String title,
     required String originalLocale,
     String? description,
@@ -144,7 +145,6 @@ recipe_steps(id, position, text, timer_seconds)''')
     String? imagePath,
   }) =>
       runGuarded(() async {
-        final String householdId = await _currentHouseholdId();
         final String? userId = _client.auth.currentUser?.id;
         if (userId == null) {
           throw const UnauthorizedFailure(
@@ -230,11 +230,11 @@ recipe_steps(id, position, text, timer_seconds)''')
   /// editor leaves no orphan object).
   Future<String> uploadImage(
     Uint8List bytes, {
+    required String householdId,
     required String contentType,
     required String extension,
   }) =>
       runGuarded(() async {
-        final String householdId = await _currentHouseholdId();
         final String path =
             '$householdId/${DateTime.now().microsecondsSinceEpoch}.$extension';
 
@@ -270,28 +270,6 @@ recipe_steps(id, position, text, timer_seconds)''')
   // ---------------------------------------------------------------------
   // Internals
   // ---------------------------------------------------------------------
-
-  /// The caller's current household.
-  ///
-  /// This duplicates `HouseholdRepository.fetchCurrent` on purpose. `recipes`
-  /// may not import another feature's `data/` or `application/` layer -- only
-  /// its `domain/` -- and that boundary was kept rather than relaxed (D33).
-  /// The cost is this query, in two places. If a third feature needs it, that
-  /// is the signal to revisit D33 rather than to write a third copy.
-  Future<String> _currentHouseholdId() async {
-    final List<Map<String, dynamic>> rows = await _client
-        .from('households')
-        .select('id')
-        .isFilter('deleted_at', null)
-        .order('created_at')
-        .limit(1);
-
-    if (rows.isEmpty) {
-      throw const NotFoundFailure(
-          message: 'You are not in a household yet.');
-    }
-    return rows.first['id'] as String;
-  }
 
   /// Fills in [RecipeIngredient.displayName] for every matched line, in one
   /// round trip.

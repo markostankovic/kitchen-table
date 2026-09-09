@@ -2,6 +2,8 @@ import 'dart:developer' as developer;
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/error/app_failure.dart';
+import '../../../core/household/current_household.dart';
 import '../../../core/refresh/data_revision.dart';
 import '../data/recipe_repository.dart';
 import '../domain/recipe.dart';
@@ -132,10 +134,22 @@ class RecipeEditor extends _$RecipeEditor {
     final Recipe? existing = current.source;
     final String? previousImagePath = existing?.imagePath;
 
+    // Only a new recipe or a fresh photo touches household_id -- editing an
+    // existing recipe's text fields never needs it.
+    String? householdId;
+    if (image != null || existing == null) {
+      householdId = await ref.read(currentHouseholdIdProvider.future);
+      if (householdId == null) {
+        throw const NotFoundFailure(
+            message: 'You are not in a household yet.');
+      }
+    }
+
     RecipeDraft draft = current;
     if (image != null) {
       final String uploaded = await repository.uploadImage(
         image.bytes,
+        householdId: householdId!,
         contentType: image.contentType,
         extension: image.extension,
       );
@@ -145,6 +159,7 @@ class RecipeEditor extends _$RecipeEditor {
     late final RecipeDraft saved;
     if (existing == null) {
       final Recipe created = await repository.create(
+        householdId: householdId!,
         title: draft.title.trim(),
         originalLocale: draft.originalLocale,
         description: draft.description,

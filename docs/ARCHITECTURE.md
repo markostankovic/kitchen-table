@@ -13,6 +13,8 @@ lib/
     theme/
     text/              # TextNormalizer (mirrors Postgres normalize_text)
     ingredients/       # the catalog: providers + the line editor (D43)
+    household/         # currentHouseholdIdProvider, closing D33 (D52)
+    recipes/           # the meal plan's recipe picker, reading recipes/data/ (D53)
     refresh/           # cross-feature "this changed" counters
     widgets/           # generic, feature-agnostic
   features/

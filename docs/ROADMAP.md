@@ -337,12 +337,62 @@ and confirmed no object was ever written; and confirmed directly against
 `is_household_member(storage_path_household(...))` that a second household's
 member is refused the first household's object path.
 
+### Part 2 — The meal plan
+
+**Status: complete.** Decisions taken during it: D49–D54.
+
+`meal_plans` + `meal_plan_entries` with RLS, a week grid replacing the
+`PlaceholderScreen` the Plan tab has shown since Phase 0, and the ability to
+add, move and remove a recipe or a note in any of a week's 28 slots.
+**Leftover entries and the snack variety check are explicitly out** —
+`leftover_of_entry_id` and `'leftover'` ship in the migration, unreachable,
+the same way `recipes.image_path` shipped empty under D35.
+
+- `meal_plans` (one row per household per week, created lazily on the first
+  write — D50) and `meal_plan_entries` (a child table in the D24 sense: no
+  lifecycle columns of its own, hard delete allowed — D49), plus
+  `ensure_meal_plan()`, `meal_plan_entries_before_write()` (position
+  assignment, the week-boundary guard, the leftover visibility guard) and
+  `meal_plan_entries_touch_plan()` (keeps the plan's `updated_at` current for
+  the Phase 2 delta fetch, however entries change)
+- `MealPlanRepository`: `fetchWeek`, `addRecipeEntry`, `addNoteEntry`,
+  `moveEntry`, `removeEntry` — every write lands immediately, no draft, no
+  Save (D54)
+- `VisibleWeek` (the one week on screen) and `MealPlanEditor`
+  (`AsyncNotifier`, not a family) in `application/`; `plan_week.dart` in
+  `domain/` is the one file in the feature that does date arithmetic
+- The recipe picker moved to `core/recipes/`, alongside `core/ingredients/`
+  (D43) — the second time a feature needed to reach `recipes/` read paths
+  without importing its `application/` layer (D53)
+- `currentHouseholdId` closed D33's open note: a derived provider in
+  `core/household/`, not a third copy of the query (D52)
+
+**Done when:** you can open the Plan tab, walk to any week, put recipes and
+notes into that week's 28 slots, move them between slots, take them out, and
+see the same week on a second device in the same household. — **Met**,
+verified end to end on the Android emulator against the local stack, not
+only in the 26-assertion SQL suite (`rls_meal_plans_test.sql`) and the 31
+Dart tests it sits beside. Browsing several weeks back and forward wrote
+`meal_plans`.count = **0** the whole time (D50). Adding a recipe created
+exactly one plan row for the week regardless of how many entries later
+landed in it; two recipes added to the same slot got `position` 0 and 1 from
+the server, never the client. A note was added, then moved to a different
+day via the entry's "Move to…" action — its `entry_date`/`slot` changed and
+`position` was recomputed at the new slot's tail, and `meal_plans.updated_at`
+moved on that write, live over the wire (not just inside the SQL suite's own
+frozen-transaction workaround for it). Removing an entry was a real row
+deletion, confirmed by a shrinking count, not a tombstone. Force-stopping and
+relaunching the app showed the identical week untouched — nothing here is
+client-only. Household isolation is covered by the SQL suite's own
+non-member assertions rather than repeated with a second device, the same
+call D48's verification note makes for the recipe-images bucket.
+
 ### Still to build
 
-- `meal_plans`, `meal_plan_entries` + RLS
-- Week grid, 7 days × 4 slots, drag recipes in
-- Leftover entries pointing at their source entry
+- Leftover entries actually pointing at their source entry (D51: the column
+  and the `'leftover'` vocabulary already exist, unreachable)
 - Variety check on the snack slot (client query, 14-day window, warn at 2+)
+- Within-slot reordering (D49 names the RPC it would need)
 - `shopping_lists`, `shopping_list_items`
 - Client-side aggregation: group, scale by servings, sum within unit family,
   split across families, suppress pantry staples

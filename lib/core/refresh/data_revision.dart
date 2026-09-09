@@ -28,3 +28,19 @@ class RecipesRevision extends _$RecipesRevision {
 
   void bump() => state = state + 1;
 }
+
+/// Bumped whenever a meal plan entry is added, moved, edited or removed.
+///
+/// One consumer today -- `MealPlanEditor` re-reading the visible week after
+/// its own writes -- but the reason this lives here rather than inside
+/// `features/meal_plan/application/` is the same one `RecipesRevision` was
+/// moved here for: a later Phase 2 part's shopping list aggregates a week's
+/// entries and will need to know when that week has changed, and
+/// `features/shopping_list/` may not import `features/meal_plan/application/`.
+@Riverpod(keepAlive: true)
+class MealPlanRevision extends _$MealPlanRevision {
+  @override
+  int build() => 0;
+
+  void bump() => state = state + 1;
+}

@@ -442,15 +442,24 @@ render from the catalog, which is the whole point of D1.
 
 ## Meal planning
 
+Built in Phase 2 part 2 (D49–D51); this block is what actually shipped, not
+the original sketch. Two corrections from that sketch, both explained in
+D49: `meal_plans` gained `created_by` (every other household-scoped table has
+it), and `meal_plan_entries` lost `updated_at` -- it is a child table in the
+D24 sense (no `household_id`, cascades with its plan), and the sketch's
+`updated_at`-but-no-`deleted_at` shape was neither rule-4-compliant nor
+consistent with every other child table in this document.
+
 ```sql
 create table meal_plans (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references households(id) on delete cascade,
   week_start date not null,            -- Monday
+  created_by uuid not null references profiles(id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   deleted_at timestamptz,
-  unique (household_id, week_start)
+  unique (household_id, week_start)    -- total, not partial (D50)
 );
 
 create table meal_plan_entries (
@@ -458,30 +467,56 @@ create table meal_plan_entries (
   meal_plan_id uuid not null references meal_plans(id) on delete cascade,
   entry_date date not null,
   slot text not null check (slot in ('breakfast','lunch','dinner','snack')),
-  position int not null default 0,
+  position int not null,               -- no default -- see meal_plan_entries_
+                                        -- before_write below
   entry_kind text not null check (entry_kind in ('recipe','leftover','note')),
   recipe_id uuid references recipes(id),
-  leftover_of_entry_id uuid references meal_plan_entries(id),
+  leftover_of_entry_id uuid references meal_plan_entries(id) on delete cascade,
   note text,
-  servings int,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
+  servings int check (servings is null or servings > 0),
+  -- The three branches are EXCLUSIVE (a 'note' row may not also carry a
+  -- recipe_id), except 'leftover', deliberately loose -- see D51.
   check (
-    (entry_kind = 'recipe'   and recipe_id is not null) or
-    (entry_kind = 'leftover' and leftover_of_entry_id is not null) or
-    (entry_kind = 'note'     and note is not null)
+    case entry_kind
+      when 'recipe' then recipe_id is not null
+                          and leftover_of_entry_id is null and note is null
+      when 'note'   then note is not null and length(trim(note)) > 0
+                          and recipe_id is null and leftover_of_entry_id is null
+      when 'leftover' then leftover_of_entry_id is not null
+    end
   )
 );
 create index on meal_plan_entries (meal_plan_id, entry_date, slot);
 ```
 
-Leftover entries point at the entry they came from, so the shopping list can
-skip them (no ingredients bought twice) and the variety check can still see
-what was eaten.
+No `created_at` or `updated_at` on `meal_plan_entries` (D24, D49): it
+cascades with its plan and carries no lifecycle of its own. Two triggers
+carry the invariants a `check` constraint cannot reach:
 
-**Variety check** is a client-side query, not a table: for a candidate recipe in
-a `snack` slot, count entries for the same `recipe_id` in that slot across the
-last N days (default 14). Warn above a threshold (default 2).
+- `meal_plan_entries_before_write` (`before insert or update`) assigns
+  `position` at the tail of its `(meal_plan_id, entry_date, slot)` group,
+  refuses an `entry_date` outside the plan's week, and refuses a
+  `leftover_of_entry_id` the caller cannot see.
+- `meal_plan_entries_touch_plan` (`after insert or update or delete`) sets
+  `meal_plans.updated_at = now()`, so a week whose entries changed does not
+  look untouched to the Phase 2 delta fetch -- the trigger equivalent of what
+  `replace_recipe_lines` does by hand for a recipe's lines.
+
+`ensure_meal_plan(household uuid, week date) returns uuid` creates a
+household's plan for a week on the first write into it and resurrects one
+that was soft-deleted; nothing calls it from a read path (D50).
+
+Leftover entries ship in this migration, unreachable (D51): the column, its
+self-FK (`on delete cascade`) and the `'leftover'` check branch all exist,
+but no client writes them yet. Once that later slice lands, leftover entries
+will point at the entry they came from, so the shopping list can skip them
+(no ingredients bought twice) and the variety check can still see what was
+eaten.
+
+**Variety check** (not yet built) will be a client-side query, not a table:
+for a candidate recipe in a `snack` slot, count entries for the same
+`recipe_id` in that slot across the last N days (default 14). Warn above a
+threshold (default 2).
 
 ---
 

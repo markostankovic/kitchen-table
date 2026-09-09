@@ -1029,6 +1029,192 @@ shape and uses `createSignedUrlsResult` rather than the deprecated
 `createSignedUrls` specifically so one missing object degrades to no picture
 (rule 3) instead of failing the whole list.
 
+## D49 — `meal_plan_entries` is a child table in the D24 sense, and its invariants live in triggers
+
+**Decided.** No `created_at`, no `updated_at`, no `deleted_at`; hard delete
+allowed; four RLS policies scoped through `meal_plans`, the same shape as
+`recipe_ingredients` / `recipe_steps`. An `after insert or update or delete`
+trigger (`meal_plan_entries_touch_plan`) touches `meal_plans.updated_at`. A
+`before insert or update` trigger (`meal_plan_entries_before_write`) derives
+`position` at the tail of its `(meal_plan_id, entry_date, slot)` group,
+refuses an `entry_date` outside its plan's week, and refuses a
+`leftover_of_entry_id` the caller cannot see.
+
+**Why.** `docs/DATA_MODEL.md`'s original sketch gave this table `created_at`
+and `updated_at` but no `deleted_at` — the only child table in that document
+shaped that way, and not rule-4-compliant on its own terms either. It was an
+inconsistency in the sketch, not a considered exception, and D24 governs: no
+`household_id`, it cascades with its plan, and a removed entry is genuinely
+gone. What the Phase 2 delta fetch actually needs is a *week* whose
+`updated_at` moves when anything inside it changes — `replace_recipe_lines`
+already does this by hand for a recipe's lines; here it is a trigger because,
+unlike a recipe save, there is no single funnel: add, move and remove are
+three separate statements, and a later part adds a fourth (leftovers).
+`position` is assigned server-side for the same reason D36 gave for
+`recipe_ingredients.position` — a client-computed `max()+1` is a
+read-then-write race and a second definition of ordering; deriving it here
+means a duplicate or missing position is not expressible. `position` has no
+column default deliberately: a default is applied *before* a `BEFORE`
+trigger runs, so a default of `0` would make "the client didn't say" and "the
+client said 0" indistinguishable, and the trigger needs to tell them apart.
+
+**Rejected.** Transcribing `docs/DATA_MODEL.md` literally — it would have
+bought two columns nothing reads on a table that is neither child-shaped nor
+rule-4-shaped. A `move_meal_plan_entry` RPC per mutation, when one trigger
+covers add, move, and (later) leftover creation uniformly. A unique index on
+`(meal_plan_id, entry_date, slot, position)` — it would turn two people
+adding to the same empty slot at once into a spurious "already exists".
+
+**Consequence.** Within-slot reordering is not expressible by this trigger —
+every insert and every move lands at the tail. An explicit reorder RPC is a
+later part's problem, when the UI actually offers it.
+
+## D50 — The week row is written on the first write, never on a view
+
+**Decided.** `ensure_meal_plan(household uuid, week date) returns uuid`,
+`security invoker`, guarded by `is_household_member(household)` raising
+`42501` before anything else runs. `insert into meal_plans ... on conflict
+(household_id, week_start) do update set deleted_at = null returning id`. The
+unique index stays total (not partial on `deleted_at is null`). Called only
+from `MealPlanRepository`'s write methods, never from `fetchWeek`.
+
+**Why.** The grid must open on any week without writing a row for it —
+browsing a year of weeks nobody planned must not insert 52 empty rows.
+`do update` rather than `do nothing`: `on conflict do nothing returning id`
+returns **no row** on conflict, which is the common case here (most writes
+land in a week that already has a plan), so the RPC would return `NULL`
+exactly when it matters most. `do update` guarantees a row every time, and as
+a consequence also resurrects a soft-deleted week into its same row rather
+than being blocked by it — a bonus, not the main reason. The membership guard
+comes first so that a non-member is refused with `42501`, not with `23505`
+from falling through to the unique constraint on a row they cannot see — the
+wrong error code would read as "that already exists" instead of "you are not
+allowed here". The `household` parameter is passed in rather than resolved
+inside the function because no `current_household()` exists anywhere in this
+schema; the only definition of "your household" is the client's own query
+(`HouseholdRepository.fetchCurrent`, D52), and this function is not the place
+to invent a second one.
+
+**Rejected.** Creating the plan row on first *view* — a write hiding behind a
+read, and a year of browsing would still write 52 rows. A partial unique
+index `where deleted_at is null` — only usable as an `on conflict` arbiter if
+every statement repeats the predicate, and it would let a live and a dead row
+coexist for the same week, handing the Phase 2 delta fetch an ambiguous key
+for the entity D23 exists to let it evict.
+
+## D51 — `leftover_of_entry_id` and the `leftover` vocabulary ship now, unreachable
+
+**Decided.** The column, its self-FK (`on delete cascade`), its index, and
+`'leftover'` in the `entry_kind` check all ship in migration 14. No client
+writes them until a later part builds the leftover feature. The `recipe` and
+`note` branches of the check constraint are made mutually exclusive; the
+`leftover` branch requires only its own pointer, deliberately looser.
+
+**Why.** The same argument D35 made for `recipes.image_path`: shipping the
+column now means the leftover feature is a feature, not a migration against
+existing rows, when it arrives. The `leftover` branch stays permissive
+because a later part may want `recipe_id` denormalised onto a leftover row so
+the snack variety check can count it without a join, and this migration will
+be unwritable by then (CLAUDE.md: never edit an applied migration). Being
+loose on the one branch with no client yet is honest; being loose on the two
+branches that already have one would just be sloppy.
+
+**Rejected.** Deferring the column entirely to the part that needs it — the
+migration-against-existing-rows problem D35 already named. Deciding the
+leftover-to-source relationship rule now, with no client yet to check it
+against.
+
+## D52 — "The caller's current household id" becomes one derived provider in `core/`, closing D33's last copy
+
+**Decided.** `lib/core/household/current_household.dart` exposes
+`currentHouseholdIdProvider`, a `Future<String?>` derived from
+`currentHouseholdProvider`. `RecipeRepository._currentHouseholdId` is
+deleted; `RecipeRepository.create` and `.uploadImage` now take `householdId`
+as a parameter, resolved once in `RecipeEditor.save()`. `MealPlanRepository`
+takes it the same way.
+
+**Why.** `_currentHouseholdId`'s own comment named this exact moment: "if a
+third feature needs it, that is the signal to revisit D33 rather than to
+write a third copy." `meal_plan` is that third feature. D43 already
+established the shape for this situation — the thing moves to `core/`, which
+`tool/check_layers.dart` exempts from the cross-feature rule entirely, and
+the duplicate is deleted rather than relocated. Deriving from
+`currentHouseholdProvider` rather than adding a second `households` query:
+that provider is already `keepAlive` and is already the one definition of
+"which household" (`HouseholdRepository.fetchCurrent` — oldest undeleted
+household the caller belongs to); a repository-level helper would have been
+a second definition of that tiebreak, and would have cost a round trip on
+every write this id feeds. Riverpod's own caching makes deriving it free.
+
+**Rejected.** Moving the *query* itself into `core/supabase/` rather than
+deriving a provider — that would centralise the duplicate instead of
+removing it, keep `HouseholdRepository.fetchCurrent` as a second definition
+of the same tiebreak, and still pay a round trip per write. Exposing
+`currentHouseholdProvider` itself from `core/` — the `Household` model (its
+name, who created it) is the households feature's business; only the id is
+cross-feature currency, the same split `core/ingredients/` keeps between the
+catalog's providers and `Ingredient` itself.
+
+## D53 — The meal plan reads recipes through `core/recipes/`, and an entry carries a title, not a `Recipe`
+
+**Decided.** The slot picker watches `plannableRecipesProvider` in
+`lib/core/recipes/recipe_picker_providers.dart`, built over a second
+`RecipeRepository` instance rather than the recipes feature's own
+`application/` provider. `MealPlanEntry` carries `recipeTitle` /
+`recipeServings`, resolved from a PostgREST embed at read time and never
+persisted.
+
+**Why.** The alternative was a recipe search method on `MealPlanRepository`,
+which would have duplicated `title_normalized ilike`, the `deleted_at`
+filter, and the `TextNormalizer` hop — D33's mistake, repeated one phase
+after D43 undid it for the ingredient catalog. `core/` is exempt from the
+cross-feature rule for the same reason `core/ingredients/` is (D43): a second
+feature needed a first feature's read path, and the sanctioned move is
+`core/`, not a duplicate. A `Recipe` built from a two-column embed would need
+placeholder values for `householdId`, `originalLocale`, `sourceType`,
+`status` and `createdBy` — a lie the type system would carry forward exactly
+the way `Recipe.imageUrl` and `RecipeIngredient.displayName` already show is
+unnecessary: a resolved display field is the established pattern for "read
+this from an embed, never write it back."
+
+**Consequence.** The picker gets recipe thumbnails for free from
+`_withImageUrls`; the week grid's own tiles deliberately do not carry one —
+a second copy of the signed-URL logic is what moving `_withImageUrls` to
+`core/` would be for, and no second caller needs it yet.
+
+**Rejected.** Moving `recipeListProvider` itself to `core/` wholesale — a
+bigger blast radius than one consumer justifies; if a third caller for the
+*list* provider specifically ever appears, that is the signal to revisit,
+the same way D33 named for the datasource.
+
+## D54 — One visible week, a non-family provider, and every write lands immediately
+
+**Decided.** `visibleWeekProvider` (`VisibleWeek`) holds the one week
+currently on screen — not a family keyed on the week. `MealPlanEditor`
+(`AsyncNotifier`, not a family either) watches it and `mealPlanRevisionProvider`,
+resolves the household id, and fetches. There is no Save: `addRecipe`,
+`addNote`, `moveEntry` and `removeEntry` all write immediately and then bump
+`mealPlanRevisionProvider`, which is the only refresh — `build()` re-runs
+because of the bump, so an extra `invalidateSelf()` would refetch twice.
+
+**Why.** There is exactly one visible week at a time, the same way there is
+exactly one signed-in user — a family would have modelled something that
+does not exist, and a family keyed on `PlanWeek.of(DateTime.now())` would
+have been clock-dependent to override in a test. `RecipeEditor` is
+draft-then-save because a recipe is one document being composed and an
+abandoned editor must write nothing (D37); a meal plan is not a document —
+each entry is independent, and putting a recipe in Thursday lunch is
+complete the moment it happens. D12 already rules out an offline draft
+buying anything here. A failed write therefore has to be loud: the screen
+catches `AppFailure` and shows it in a `SnackBar`, and because no action
+mutates `state` directly, a failure never leaves a phantom entry behind —
+the next successful bump is what the grid actually shows.
+
+**Rejected.** A family provider keyed on the visible week (see above). An
+offline-friendly draft for the week grid, mirroring `RecipeEditor` — nothing
+here is composed as one unit the way a recipe's title-and-lines are, so the
+draft would only add a way to lose changes to a back gesture.
+
 ## Open / deferred
 
 - **Client vs Edge Function split** — rule of thumb written in
@@ -1078,3 +1264,10 @@ shape and uses `createSignedUrlsResult` rather than the deprecated
   partial index, in one migration. Not in Phase 1a.
 - **Invite redemption rate limiting** — see D26. Deferred deliberately, with
   the upgrade path named there.
+- **Leftover entries and the snack variety check** — see D51. The column and
+  the `leftover` vocabulary ship in migration 14; nothing writes them and no
+  client counts them yet. Also deferred: within-slot reordering (D49 names
+  the RPC it would need), thumbnails on the week grid's own tiles (D53), and
+  copying or clearing a whole week — which is where `meal_plans.deleted_at`
+  gets its first human-triggered writer and D50's resurrection path gets
+  exercised outside the SQL suite.
