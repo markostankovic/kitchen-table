@@ -10,7 +10,7 @@
  */
 
 import { assertEquals } from "jsr:@std/assert@1";
-import { costMicros, MODELS, PRICING } from "./ai.ts";
+import { costMicros, MODEL_CAPABILITIES, MODELS, PRICING } from "./ai.ts";
 
 Deno.test("every model the code can select has a price", () => {
   // The guard that matters when a model id changes: an unpriced model records
@@ -20,6 +20,25 @@ Deno.test("every model the code can select has a price", () => {
       throw new Error(`MODELS.${model} has no entry in PRICING`);
     }
   }
+});
+
+Deno.test("every model the code can select declares its capabilities", () => {
+  // The guard that would have caught tier 4 being broken from the day it was
+  // written. `callStructured` used to send `thinking: adaptive` to every
+  // model; Haiku 4.5 answers that with a 400, and the best-effort catch above
+  // tier 4 turned the 400 into a silent degradation that lasted three parts.
+  for (const model of Object.values(MODELS)) {
+    if (!MODEL_CAPABILITIES[model]) {
+      throw new Error(`MODELS.${model} has no entry in CAPABILITIES`);
+    }
+  }
+});
+
+Deno.test("Haiku 4.5 is not sent adaptive thinking", () => {
+  // Named explicitly rather than left to the loop above, because this exact
+  // pairing is the bug.
+  assertEquals(MODEL_CAPABILITIES[MODELS.MATCHING].adaptiveThinking, false);
+  assertEquals(MODEL_CAPABILITIES[MODELS.PROSE].adaptiveThinking, true);
 });
 
 Deno.test("Opus 5 at one million tokens each way", () => {

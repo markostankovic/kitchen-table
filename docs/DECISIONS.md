@@ -954,6 +954,38 @@ D35 still stands for the recipe's own picture: the photograph of a page is an
 *input* to an import, not a picture of the dish, and `recipes.image_path`
 remains Phase 2's business.
 
+## D47 — Model options are per-model, in a table
+
+**Decided.** `_shared/ai.ts` carries a `CAPABILITIES` table beside `MODELS` and
+`PRICING`, and `callStructured` adds `thinking` and `fallbacks` only for models
+that accept them. Opus 5 gets adaptive thinking and a server-side refusal
+fallback; Haiku 4.5 gets neither.
+
+**Why.** `callStructured` used to send `thinking: {type: "adaptive"}` for every
+model. Haiku 4.5 predates adaptive thinking and answers it with a 400 —
+`adaptive thinking is not supported on this model` — so **tier 4 never worked,
+from the day it was written in part 2 until credits made it observable in
+part 6.**
+
+What kept it hidden is worth recording, because the mechanism was working as
+designed. D42 made tier 4 best-effort: tiers 1-3 are deterministic and already
+done, so a tier 4 failure logs, records any tokens spent, and returns the
+deterministic matches rather than sinking the import. That is still the right
+call — losing a read recipe because an optional improvement was unavailable
+would be the wrong trade. But best-effort turns a hard failure into a silent
+degradation, and a permanent bug then looks exactly like an occasional one. The
+only symptom was that no `match-ingredients` row ever appeared in `ai_usage`,
+and nothing was watching for its absence.
+
+**Consequence.** `ai_test.ts` now asserts that every model in `MODELS` has a
+`CAPABILITIES` entry, and names the Haiku/adaptive pairing explicitly — the
+same shape as the existing "every model has a price" guard. Adding a model is a
+row in two tables and a failing test if you forget either.
+
+**The general lesson, since it will recur.** A best-effort path needs something
+that notices it is always failing. The absence of a ledger row is a fact the
+database already has; Phase 2's admin screen is the natural place to surface it.
+
 ## Open / deferred
 
 - **Client vs Edge Function split** — rule of thumb written in
@@ -988,6 +1020,10 @@ remains Phase 2's business.
   Irrelevant at a few hundred aliases. Revisit if the catalog reaches the tens
   of thousands, at which point the change is `set_limit()` plus dropping
   `STABLE`, not a new index.
+- **Nothing notices a permanently-failing best-effort path** — see D47. Tier 4
+  failed silently for three parts because the only symptom was a row that never
+  appeared in `ai_usage`. Phase 2's admin screen already plans to show
+  `match_method` distribution; a tier that stops appearing in it is the signal.
 - **Phase 2's admin screen needs two grants that do not exist** — a read policy
   on `ingredient_merges` (D32 gives it none) and, if merges are to be triggered
   from the app, `grant execute on merge_ingredients to authenticated` (D30

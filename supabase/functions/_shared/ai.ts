@@ -41,12 +41,41 @@ export const MODELS = {
 export type ModelId = typeof MODELS[keyof typeof MODELS];
 
 /**
+ * What each model actually accepts.
+ *
+ * Adaptive thinking is NOT universal. Haiku 4.5 predates it and answers
+ * `adaptive thinking is not supported on this model` with a 400 -- which is
+ * how tier 4 came to be broken from the day it was written and stay broken
+ * for three parts: `callStructured` sent `thinking: adaptive` for every model,
+ * and part 4's best-effort catch then swallowed the failure and returned the
+ * deterministic matches. It logged, and nothing else went wrong, so nothing
+ * asked why.
+ *
+ * A table rather than an `if` at the call site, so adding a model is a row
+ * here and `ai_test.ts` fails if a selectable model has no entry.
+ */
+const CAPABILITIES: Record<
+  string,
+  { adaptiveThinking: boolean; refusalFallback: boolean }
+> = {
+  // Reasoning about a page's layout is what this model is for, and a
+  // classifier refusal on a cookbook page should degrade rather than fail.
+  "claude-opus-5": { adaptiveThinking: true, refusalFallback: true },
+  // Pre-4.6: no adaptive thinking, and no server-side fallback either. It is
+  // also the right instrument without thinking -- picking one of eight
+  // candidates is not a reasoning problem.
+  "claude-haiku-4-5": { adaptiveThinking: false, refusalFallback: false },
+};
+
+/**
  * US dollars per million tokens, as micro-dollars per token.
  *
  * Written as the published per-MTok price divided by 1e6 rather than as a
  * pre-computed constant, so checking it against the pricing page is reading
  * two numbers instead of trusting one.
  */
+export const MODEL_CAPABILITIES = CAPABILITIES;
+
 export const PRICING: Record<
   string,
   { inPerMTok: number; outPerMTok: number }
@@ -134,6 +163,11 @@ export async function callStructured<S extends z.ZodType>(
 ): Promise<AiResult<z.infer<S>>> {
   const { model, schema, system, content, maxTokens = 16_000 } = options;
 
+  // Not every model takes every option -- see CAPABILITIES. Sending one a
+  // model does not support is a 400, not a warning.
+  const can = CAPABILITIES[model] ??
+    { adaptiveThinking: false, refusalFallback: false };
+
   // client.beta.messages, not client.messages: `fallbacks` exists only on the
   // beta surface. Sending it on the plain endpoint typechecks -- `parse` is
   // generic over its params, so excess-property checking does not fire -- and
@@ -148,12 +182,18 @@ export async function callStructured<S extends z.ZodType>(
       // Adaptive thinking: the model decides how much reasoning a page needs.
       // A two-ingredient card and a two-column spread arrive on the same
       // endpoint and should not cost the same.
-      thinking: { type: "adaptive" },
+      ...(can.adaptiveThinking
+        ? { thinking: { type: "adaptive" as const } }
+        : {}),
       // A safety classifier can decline a request. Without a fallback that is
       // a failed import; with one it is a slightly weaker answer. An imported
       // recipe is reviewed by a human before it is saved either way (D8).
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
+      ...(can.refusalFallback
+        ? {
+          betas: ["server-side-fallback-2026-07-01"],
+          fallbacks: "default" as const,
+        }
+        : {}),
     })
   );
 
