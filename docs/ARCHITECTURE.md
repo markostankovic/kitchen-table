@@ -9,6 +9,8 @@ lib/
   core/
     env/               # compile-time config, --dart-define
     supabase/          # client init only
+    db/                # the Drift cache database, shared across features (D64)
+    net/               # NetworkStatus -- reachability, derived from NetworkFailure (D67)
     router/            # go_router config, typed routes
     theme/
     text/              # TextNormalizer (mirrors Postgres normalize_text)
@@ -34,7 +36,7 @@ features/recipes/
   data/
     recipe_repository.dart
     remote_recipe_datasource.dart      # Supabase
-    local_recipe_datasource.dart       # Drift (Phase 2)
+    local_recipe_datasource.dart       # Drift (Phase 2 part 6)
     dto/                               # wire shapes, *_dto.dart
   domain/
     recipe.dart                        # freezed, pure Dart
@@ -47,6 +49,14 @@ features/recipes/
     widgets/
 ```
 
+`features/shopping_list/data/` is the first feature actually built this way
+(Phase 2 part 5) — `shopping_list_repository.dart` composes
+`remote_shopping_list_datasource.dart` and `local_shopping_list_datasource.dart`
+rather than talking to Supabase or Drift itself, and `dto/shopping_list_dto.dart`
+is the shared wire decoder both halves read. `features/ingredients/data/`
+caches only `fetchUnitCatalog()` this way, deliberately not split into a full
+Remote/Local pair — see D70.
+
 ### Dependency direction
 
 ```
@@ -56,7 +66,10 @@ presentation ──▶ application ──▶ data ──▶ (Supabase | Drift)
 ```
 
 - `domain/` imports nothing but `freezed` / `json_annotation`.
-- `data/` is the only place `supabase_flutter` or `drift` may appear.
+- `data/` is the only place `supabase_flutter` or `drift` may appear, except
+  `supabase_flutter` may also appear in `core/supabase/` and `drift` may also
+  appear in `core/db/` — each the one sanctioned place a client shared across
+  features is allowed to live (D64).
 - `presentation/` must never import `data/`.
 - Cross-feature imports go through `domain/` only. `meal_plan` may import
   `recipes/domain/recipe.dart`. It may not import `recipes/data/...`.
@@ -211,25 +224,55 @@ quicktype otherwise names Dart classes after property names and produces
 ## Offline (Phase 2)
 
 Cache-then-network reads only. Drift is a cache, Supabase is the truth, never
-the reverse.
+the reverse. Built in part 5 (D64–D71) and proven on the shopping list and the
+unit catalog; recipes, meal plans and the ingredient name catalog follow the
+same shape in a later part.
 
 ```
-RecipeRepository
-  ├─ RemoteRecipeDataSource (Supabase)
-  ├─ LocalRecipeDataSource  (Drift)
-  └─ watch(): emit cached immediately → fetch → upsert cache → emit fresh
+ShoppingListRepository
+  ├─ RemoteShoppingListDataSource (Supabase)
+  ├─ LocalShoppingListDataSource  (Drift, core/db/)
+  └─ watchLatest(): emit cached immediately → fetch → upsert cache → emit fresh
 ```
+
+`AppDatabase` lives in `core/db/` (D64), not any one feature's `data/` — a
+single SQLite file is inherently shared, and `tool/check_layers.dart`'s drift
+rule allows it there on the same exemption `core/supabase/` has for
+`supabase_flutter`.
 
 Cache schema is deliberately not a mirror of Postgres. One row per entity with
-a `data` JSON column plus extracted columns needed for querying
-(`title_normalized`, `household_id`, `updated_at`, `deleted_at`). Mirroring the
-full relational schema locally is the maintenance burden worth avoiding.
+a `data` JSON column plus extracted columns needed for querying — the exact
+map a network response produces, not a rebuilt-and-re-serialized domain
+object (D65). Mirroring the full relational schema locally is the maintenance
+burden worth avoiding, and the columns a table extracts vary by what the
+entity actually is: `ShoppingListCache` carries `householdId` and `updatedAt`
+for a household-scoped snapshot; `UnitCatalogCache` carries neither, because
+`units`/`unit_names` have no household and no `updated_at` to begin with.
 
-Delta fetch uses `updated_at > last_sync_at` per table, with `deleted_at` rows
-removing entries from the cache. Both columns exist from migration 1 for
-exactly this reason.
+**No `deleted_at` in the cache** (D68, a deliberate narrowing of the
+original sketch above). A row a network read no longer returns is deleted
+locally, not tombstoned — the cache's job is to answer "what would the
+server show me right now", and a soft-deleted server row is never shown to
+the UI in the first place (D23 keeps it visible to the *repository* only, so
+a later delta fetch can evict it).
+
+Delta fetch (`updated_at > last_sync_at` per table) is not built yet (D71) —
+the shopping list's own read is `.limit(1)` on one row, with nothing to
+delta-fetch against, and every household-scoped cache column is already
+populated truthfully so a later watermark has something honest to compare
+against. `AppDatabase.schemaVersion` is `1`; `onUpgrade` drops every table
+and recreates it rather than migrating — the cache is disposable by
+construction, so that is a property to build on, not a shortcut.
+
+A cache failure never fails the surrounding read or write (D69):
+`cacheOrElse`/`cacheWrite` in `core/db/cache_guard.dart` log and fall back
+rather than letting a drift exception reach `runGuarded`.
 
 Writes are online-only and fail loudly with a "you're offline" message.
+Reachability itself is `core/net/network_status.dart`'s `NetworkStatus`
+(D67) — derived from the same `NetworkFailure` `runGuarded` already
+produces, not a separate connectivity check (`connectivity_plus` was asked
+about and rejected).
 
 ## Enforcement
 
@@ -243,9 +286,10 @@ Conventions in a document get ignored around session forty. These fail the build
 - Import boundary check: a `tool/check_layers.dart` script that fails if
   `presentation/` imports `data/`, or if `supabase_flutter` appears outside
   `data/` and `core/supabase/`. Run in CI and pre-commit. It also enforces the
-  rest of rule 1 — `drift` confined to `data/`, no Flutter imports in
-  `domain/`, cross-feature imports through `domain/` only, and no raw maps or
-  Postgrest/Auth exceptions escaping `data/` (D21 exempts `fromJson`/`toJson`).
+  rest of rule 1 — `drift` confined to `data/` and `core/db/` (D64), no
+  Flutter imports in `domain/`, cross-feature imports through `domain/` only,
+  and no raw maps or Postgrest/Auth exceptions escaping `data/` (D21 exempts
+  `fromJson`/`toJson`).
   `test/tool/check_layers_test.dart` plants each violation and asserts the
   checker rejects it.
 - `dart analyze` must be clean before any commit.

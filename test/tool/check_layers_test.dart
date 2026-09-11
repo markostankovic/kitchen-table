@@ -68,6 +68,25 @@ void main() {
     expect(result.output, contains('supabase_flutter'));
   });
 
+  test('rejects drift outside data/ and core/db/', () {
+    final result = runChecker(<String, String>{
+      'lib/features/shopping_list/application/shopping_list_providers.dart':
+          "import 'package:drift/drift.dart';\n",
+    });
+    expect(result.exitCode, 1);
+    expect(result.output, contains('drift may only be imported in data/'));
+  });
+
+  test('allows drift in data/ and core/db/', () {
+    final result = runChecker(<String, String>{
+      'lib/features/shopping_list/data/local_shopping_list_datasource.dart':
+          "import 'package:drift/drift.dart';\n",
+      'lib/core/db/app_database.dart':
+          "import 'package:drift/drift.dart';\n",
+    });
+    expect(result.exitCode, 0, reason: result.output);
+  });
+
   test('rejects Flutter imports in domain/ (rule 7)', () {
     final result = runChecker(<String, String>{
       'lib/features/recipes/domain/recipe.dart':

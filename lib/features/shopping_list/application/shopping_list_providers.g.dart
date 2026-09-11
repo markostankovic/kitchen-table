@@ -55,7 +55,7 @@ final class ShoppingListRepositoryProvider
 }
 
 String _$shoppingListRepositoryHash() =>
-    r'ad4bf7d438385fe5a5a03587a609edc99282e73a';
+    r'39a9cbee48c7bbc804884395561c083fb82d422f';
 
 /// The date range the next list will cover.
 ///
@@ -172,10 +172,19 @@ abstract class _$ShoppingRange
 
 /// The household's current list, and the actions that change it.
 ///
-/// `build()` returns null rather than constructing a repository call when
+/// `build()` yields null rather than constructing a repository call when
 /// there is no household, so a household-less caller never touches
 /// `Supabase.instance.client` -- the shell's tab loop relies on exactly this
 /// to render the List tab under test.
+///
+/// A `Stream`, not a `Future` (Phase 2 part 5, D67): `watchLatest` emits a
+/// cache hit immediately, then the network's answer, and a `StreamNotifier`
+/// is what lets the second emission be part of the provider's own lifecycle
+/// -- cancelled on dispose, routed into `AsyncValue` with no hand-rolled
+/// `state = ...` after `build()` returns. The provider's value type is
+/// unchanged (`ShoppingList?`), so every existing consumer of
+/// `AsyncValue<ShoppingList?>` -- the screen, its test -- is untouched in
+/// shape; staleness is a separate signal, `networkStatusProvider`.
 ///
 /// Watches [mealPlanRevisionProvider] as well as its own: a list is a snapshot
 /// of a plan, and the plan changing is the single most useful reason to tell
@@ -186,22 +195,40 @@ final currentShoppingListProvider = CurrentShoppingListProvider._();
 
 /// The household's current list, and the actions that change it.
 ///
-/// `build()` returns null rather than constructing a repository call when
+/// `build()` yields null rather than constructing a repository call when
 /// there is no household, so a household-less caller never touches
 /// `Supabase.instance.client` -- the shell's tab loop relies on exactly this
 /// to render the List tab under test.
+///
+/// A `Stream`, not a `Future` (Phase 2 part 5, D67): `watchLatest` emits a
+/// cache hit immediately, then the network's answer, and a `StreamNotifier`
+/// is what lets the second emission be part of the provider's own lifecycle
+/// -- cancelled on dispose, routed into `AsyncValue` with no hand-rolled
+/// `state = ...` after `build()` returns. The provider's value type is
+/// unchanged (`ShoppingList?`), so every existing consumer of
+/// `AsyncValue<ShoppingList?>` -- the screen, its test -- is untouched in
+/// shape; staleness is a separate signal, `networkStatusProvider`.
 ///
 /// Watches [mealPlanRevisionProvider] as well as its own: a list is a snapshot
 /// of a plan, and the plan changing is the single most useful reason to tell
 /// the cook their list is out of date.
 final class CurrentShoppingListProvider
-    extends $AsyncNotifierProvider<CurrentShoppingList, ShoppingList?> {
+    extends $StreamNotifierProvider<CurrentShoppingList, ShoppingList?> {
   /// The household's current list, and the actions that change it.
   ///
-  /// `build()` returns null rather than constructing a repository call when
+  /// `build()` yields null rather than constructing a repository call when
   /// there is no household, so a household-less caller never touches
   /// `Supabase.instance.client` -- the shell's tab loop relies on exactly this
   /// to render the List tab under test.
+  ///
+  /// A `Stream`, not a `Future` (Phase 2 part 5, D67): `watchLatest` emits a
+  /// cache hit immediately, then the network's answer, and a `StreamNotifier`
+  /// is what lets the second emission be part of the provider's own lifecycle
+  /// -- cancelled on dispose, routed into `AsyncValue` with no hand-rolled
+  /// `state = ...` after `build()` returns. The provider's value type is
+  /// unchanged (`ShoppingList?`), so every existing consumer of
+  /// `AsyncValue<ShoppingList?>` -- the screen, its test -- is untouched in
+  /// shape; staleness is a separate signal, `networkStatusProvider`.
   ///
   /// Watches [mealPlanRevisionProvider] as well as its own: a list is a snapshot
   /// of a plan, and the plan changing is the single most useful reason to tell
@@ -226,21 +253,30 @@ final class CurrentShoppingListProvider
 }
 
 String _$currentShoppingListHash() =>
-    r'62f6b78c290cddb9af95e6277dcf32509cf3987f';
+    r'56fee1da34151ff23108715826d844f3750074c9';
 
 /// The household's current list, and the actions that change it.
 ///
-/// `build()` returns null rather than constructing a repository call when
+/// `build()` yields null rather than constructing a repository call when
 /// there is no household, so a household-less caller never touches
 /// `Supabase.instance.client` -- the shell's tab loop relies on exactly this
 /// to render the List tab under test.
+///
+/// A `Stream`, not a `Future` (Phase 2 part 5, D67): `watchLatest` emits a
+/// cache hit immediately, then the network's answer, and a `StreamNotifier`
+/// is what lets the second emission be part of the provider's own lifecycle
+/// -- cancelled on dispose, routed into `AsyncValue` with no hand-rolled
+/// `state = ...` after `build()` returns. The provider's value type is
+/// unchanged (`ShoppingList?`), so every existing consumer of
+/// `AsyncValue<ShoppingList?>` -- the screen, its test -- is untouched in
+/// shape; staleness is a separate signal, `networkStatusProvider`.
 ///
 /// Watches [mealPlanRevisionProvider] as well as its own: a list is a snapshot
 /// of a plan, and the plan changing is the single most useful reason to tell
 /// the cook their list is out of date.
 
-abstract class _$CurrentShoppingList extends $AsyncNotifier<ShoppingList?> {
-  FutureOr<ShoppingList?> build();
+abstract class _$CurrentShoppingList extends $StreamNotifier<ShoppingList?> {
+  Stream<ShoppingList?> build();
   @$mustCallSuper
   @override
   WhenComplete runBuild() {

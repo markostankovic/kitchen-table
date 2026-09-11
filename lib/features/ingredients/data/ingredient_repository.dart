@@ -17,11 +17,21 @@ import '../../../core/supabase/supabase_failure.dart';
 import '../domain/ingredient_match.dart';
 import '../domain/unit.dart';
 import '../domain/unit_catalog.dart';
+import 'dto/unit_catalog_dto.dart';
+import 'local_ingredient_datasource.dart';
 
 class IngredientRepository {
-  const IngredientRepository(this._client);
+  const IngredientRepository(this._client, this._local);
 
   final SupabaseClient _client;
+
+  /// The offline cache for [fetchUnitCatalog] (Phase 2 part 5). Only this
+  /// one method of the six here is cached today -- `search`,
+  /// `createIngredient` and `linkAlias` all reach a live catalog by design
+  /// and would be churn part 6 redoes anyway when it caches ingredient names
+  /// properly, so this feature deliberately does not get the full
+  /// Remote/Local datasource split `ShoppingListRepository` got this part.
+  final LocalIngredientDataSource _local;
 
   /// Candidate ingredients for [query], best match first.
   ///
@@ -55,37 +65,44 @@ class IngredientRepository {
         return rows.map(_toMatch).toList();
       });
 
-  /// The whole unit lexicon, in one round trip.
+  /// The whole unit lexicon, in one round trip -- network first, the cache
+  /// as a fallback (Phase 2 part 5, D70).
   ///
   /// Twenty-odd units and a hundred-odd names, fetched once per session and
-  /// handed to `IngredientLineParser`. That is what keeps parsing local: no
-  /// request while somebody types, and it still works offline once Phase 2
-  /// caches it.
-  Future<UnitCatalog> fetchUnitCatalog() => runGuarded(() async {
-        final List<Map<String, dynamic>> unitRows = await _client
-            .from('units')
-            .select('code, family, to_base, is_metric')
-            .order('code');
+  /// handed to `IngredientLineParser`. Network-first rather than
+  /// cache-then-network like the shopping list: this is two dozen immutable
+  /// reference rows with no `updated_at` of their own to go stale, so there
+  /// is nothing to gain from showing a cached answer before a fresh one a
+  /// moment later, and a network-first read means one emission, not two, for
+  /// a value nothing here treats as a stream.
+  ///
+  /// Only a [NetworkFailure] falls back to the cache -- a server that
+  /// answers with something else wrong is not a reason to serve a stale
+  /// lexicon, the same policy `ShoppingListRepository.watchLatest` applies.
+  Future<UnitCatalog> fetchUnitCatalog() async {
+    try {
+      final UnitCatalogRows rows = await _fetchUnitCatalogRows();
+      await _local.writeUnitCatalog(rows);
+      return unitCatalogFromRows(rows);
+    } on NetworkFailure {
+      final UnitCatalogRows? cached = await _local.readUnitCatalog();
+      if (cached == null) rethrow;
+      return unitCatalogFromRows(cached);
+    }
+  }
 
-        final List<Map<String, dynamic>> nameRows = await _client
-            .from('unit_names')
-            .select('unit_code, name, locale, is_display_name');
+  Future<UnitCatalogRows> _fetchUnitCatalogRows() => runGuarded(() async {
+    final List<Map<String, dynamic>> unitRows = await _client
+        .from('units')
+        .select('code, family, to_base, is_metric')
+        .order('code');
 
-        return UnitCatalog(
-          units: unitRows.map(_toUnit).toList(),
-          aliases: <String, String>{
-            for (final Map<String, dynamic> row in nameRows)
-              row['name'] as String: row['unit_code'] as String,
-          },
-          // The is_display_name rows, keyed by code and locale. Already in
-          // the response -- both columns were being selected and dropped.
-          displayNames: <String, String>{
-            for (final Map<String, dynamic> row in nameRows)
-              if (row['is_display_name'] as bool? ?? false)
-                '${row['unit_code']}|${row['locale']}': row['name'] as String,
-          },
-        );
-      });
+    final List<Map<String, dynamic>> nameRows = await _client
+        .from('unit_names')
+        .select('unit_code, name, locale, is_display_name');
+
+    return (unitRows: unitRows, nameRows: nameRows);
+  });
 
   /// Creates a new ingredient and returns its id, or returns the id of the
   /// one that already answers to [name] in [locale].
@@ -144,19 +161,6 @@ class IngredientRepository {
         );
         return written as bool? ?? false;
       });
-
-  Unit _toUnit(Map<String, dynamic> row) => Unit(
-        code: row['code'] as String,
-        family: UnitFamily.values.byName(row['family'] as String),
-        // numeric arrives as num or String depending on the value's precision,
-        // so it is normalised here rather than trusted.
-        toBase: _toDouble(row['to_base']),
-        // The same value, untouched. The shopping list reads it back as an
-        // exact rational (rule 5), which the double above can no longer give
-        // it -- see Unit.toBaseExact.
-        toBaseExact: row['to_base']?.toString(),
-        isMetric: row['is_metric'] as bool? ?? false,
-      );
 
   IngredientMatch _toMatch(Map<String, dynamic> row) => IngredientMatch(
         ingredientId: row['ingredient_id'] as String,

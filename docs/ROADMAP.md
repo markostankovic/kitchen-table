@@ -526,24 +526,132 @@ never compared against the plan it came from.** Changing the week after
 generating leaves a list that is quietly stale, and the only signal is the
 `Generated <date>` line. `CurrentShoppingList` already watches
 `mealPlanRevisionProvider`, so the hook is there; what to *show* is a design
-question, not a plumbing one.
+question, not a plumbing one. Unrelated to, and not resolved by, part 5's
+offline signal below — that is about whether the phone can reach the server,
+not whether the plan has moved on since the list was generated.
+
+### Part 5 — The Drift read cache, proven on the shopping list
+
+**Status: complete.** Decisions taken during it: D64–D71.
+
+The airplane-mode half of part 4's "Done when" — a week's plan produces a
+correct list, *and that list is readable in airplane mode*. Everything in the
+tree had been arranged for this in advance and was sitting unused:
+`tool/check_layers.dart` already refused `drift` outside `data/`, D23 already
+kept tombstones visible so a delta fetch could see them, D59 already put
+`updated_at` on `shopping_lists` naming this exact part, and
+`IngredientRepository.fetchUnitCatalog`'s own doc comment already said "it
+still works offline once Phase 2 caches it." Built on the shopping list and
+the unit catalog only — the roadmap's own argument for going first: one row,
+no write path, no tombstone churn, and the reason the cache exists at all
+(D12). The unit catalog joined it out of necessity, not scope creep: without
+it, an offline list renders `1200 g` and `3 clove` instead of `1.2 kg` and
+`3 čen`, because `formatItemQuantity` finds no `kg`/`l` rung and
+`UnitCatalog.displayName` falls back to a raw code on an empty catalog —
+exactly what `shopping_list_screen.dart`'s old
+`ref.watch(unitCatalogProvider).value ?? UnitCatalog.empty()` fallback
+produced the moment the network failed.
+
+- `drift`, `drift_flutter`, `path_provider` (rule 8, asked and approved);
+  `sqlite3_flutter_libs` was the package actually approved, but its own
+  pub.dev listing now reads "Not used anymore, update to version 3.x of
+  package:sqlite3 instead" — `drift_flutter` is what drift's own setup guide
+  replaced it with, and it also removes the hand-written platform opener.
+  `connectivity_plus` was asked about and rejected: `NetworkFailure` already
+  exists and `runGuarded` already produces it from a `SocketException`, a
+  `TimeoutException`, or `FunctionException(status: 0)`
+- `lib/core/db/app_database.dart`: one `AppDatabase`, two tables
+  (`ShoppingListCache`, `UnitCatalogCache`), `schemaVersion = 1` with
+  drop-and-recreate as the whole migration strategy (D71) — `core/db/`
+  because a single SQLite file is inherently shared, on the same
+  `tool/check_layers.dart` exemption `core/supabase/` already has (D64).
+  `lib/core/db/cache_guard.dart`'s `cacheOrElse`/`cacheWrite` are what keep a
+  corrupt cache file from ever reaching `runGuarded` and rendering as
+  "Something went wrong" (D69)
+- `RemoteShoppingListDataSource`/`LocalShoppingListDataSource`, the first
+  actual instance of the Remote/Local split `docs/ARCHITECTURE.md` had only
+  sketched, composed by a much smaller `ShoppingListRepository`; one shared
+  wire decoder, `dto/shopping_list_dto.dart`, reads a PostgREST row and a
+  cache blob identically (D65). `ShoppingList` gains `updatedAt`, populated
+  truthfully from day one even with no delta fetch yet to read it (D71).
+  `LocalShoppingListDataSource.upsertLatest` deletes the household's row
+  before inserting the new one, found necessary by the first test written
+  against it — a plain `insertOnConflictUpdate` only resolves against the
+  primary key, so a regenerated list (a new id) would otherwise try to
+  insert a second row (D66)
+- `watchLatest()`: cache emission, then the network's answer, over a
+  `CurrentShoppingList` that is now a `StreamNotifier` rather than an
+  `AsyncNotifier` — the provider's value type is unchanged
+  (`AsyncValue<ShoppingList?>`), so every existing screen and test kept its
+  shape. A cache hit outlives a `NetworkFailure`; a cold cache does not, and
+  says so in its own sentence rather than rendering an empty state that
+  implies nothing was ever generated. Reachability is
+  `lib/core/net/network_status.dart`'s `NetworkStatus`, reported through
+  plain callbacks so the repository stays a `data/` file that has never heard
+  of Riverpod (D67)
+- `IngredientRepository.fetchUnitCatalog()`: network-first, the cache only as
+  a `NetworkFailure` fallback — the opposite read order from the shopping
+  list, because two dozen immutable reference rows have no `updated_at` to go
+  stale between sessions, so there is nothing to gain from showing a cached
+  answer before a fresh one a moment later (D70). Deliberately not split into
+  a full Remote/Local pair: this is one cached method out of six, and the
+  other five reach a live catalog by design
+- Sign-out wipes the household-scoped cache and deliberately leaves the unit
+  catalog alone — global reference data, readable by any authenticated user,
+  and wiping it would put `3 clove` back on the very next person's first
+  offline session (D70)
+- `_ListBody` no longer treats "the catalog is still loading" as "the catalog
+  is empty" — a real gap the old `?? UnitCatalog.empty()` fallback had online
+  too, just imperceptibly; `_GeneratedAt` gains one line, "Showing your saved
+  copy — no connection.", exactly where a cache hit is being shown. A global
+  offline banner is still a later part's job
+
+**Done when:** a week's plan produces a correct list, and that list is
+readable in airplane mode. — **Met**, verified end to end on the Android
+emulator against the local stack, not only in the 18 new Dart tests (a
+round-trip test proving the cache preserves an exact `Rational` — 280 ml from
+`2 dl` + `⅓ šolje`, 200 + 80 exactly — and `prstohvat soli`'s raw text with no
+quantity; a repository-level test proving a warm cache survives a
+`NetworkFailure` quietly while a cold one rethrows honestly; a unit-catalog
+round-trip test proving `to_base` survives as the string `28.349523125`, not
+a rounded double). Generated a list online for a week naming a mass total
+over 1 kg and a `veza peršuna`; confirmed on screen as `1.2 kg` and `1 veza`.
+Enabled airplane mode, force-stopped and relaunched cold: the full list
+rendered from the cache with no network at all, quantities and count units
+identical to the online render, with "Showing your saved copy — no
+connection." under the generated line. Tapping *Regenerate* offline produced
+a snackbar and left the on-screen list untouched — writes stayed online-only
+(D12). Disabling airplane mode and pulling to refresh cleared the saved-copy
+line and re-rendered from the network. Regenerating online, then going
+offline again, served the *new* list, not the retired one — the D59 case this
+cache exists to get right, and the case D66's delete-then-insert fix made
+correct in the first place. Signing out and reading the on-device cache file
+directly showed the household's `shopping_list_cache` row gone and the
+`unit_catalog_cache` row untouched; signing back in and going straight to
+airplane mode without generating anything rendered no list (correct) with
+count units still in Serbian (correct, D70's argument holding).
 
 ### Still to build
 
 - ~~`shopping_lists`, `shopping_list_items`, `household_pantry_prefs`~~ — done
   in part 4
 - ~~Client-side aggregation~~ — done in part 4
-- Drift read cache (cache-then-network) for recipes, meal plans, shopping lists,
-  ingredients; delta fetch on `updated_at`, honour `deleted_at`
-- Offline banner; writes fail loudly
+- ~~Drift read cache foundation, proven on the shopping list and unit
+  catalog~~ — done in part 5
+- Drift read cache for recipes, meal plans and the ingredient name catalog;
+  `last_sync_at` delta fetch on `updated_at`, honouring `deleted_at` — D71
+  deferred this deliberately until a real multi-row fetch exists to design it
+  against
+- A global offline banner (distinct from part 5's per-screen "showing your
+  saved copy" line); writes fail loudly everywhere, not just on the list
 - Small admin screen: unverified ingredient count, unmatched line count,
-  match_method distribution
+  match_method distribution, and a place for D47's "nothing notices a
+  permanently-failing best-effort path" to surface
 
-**Done when:** a week's plan produces a correct list, and that list is readable
-in airplane mode. — First half met in part 4; the airplane-mode half is the
-Drift cache, still to build. A generated list is the easiest entity in the app
-to cache and the reason the cache exists at all (D12): one row, no write path,
-no tombstone churn, because D13 made it a snapshot.
+**Done when:** every entity in `docs/ARCHITECTURE.md`'s offline list — recipes,
+meal plans, the shopping list, the ingredient catalog — is readable offline,
+with a global signal saying so. Part 5 met this for the shopping list and the
+unit catalog specifically; the rest is what remains.
 
 ---
 

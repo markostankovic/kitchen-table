@@ -17,16 +17,20 @@ library;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../features/ingredients/data/ingredient_repository.dart';
+import '../../features/ingredients/data/local_ingredient_datasource.dart';
 import '../../features/ingredients/domain/ingredient_line_parser.dart';
 import '../../features/ingredients/domain/ingredient_match.dart';
 import '../../features/ingredients/domain/unit_catalog.dart';
+import '../db/app_database.dart';
 import '../supabase/supabase_client.dart';
 
 part 'ingredient_catalog_providers.g.dart';
 
 @Riverpod(keepAlive: true)
-IngredientRepository ingredientCatalog(Ref ref) =>
-    IngredientRepository(ref.watch(supabaseClientProvider));
+IngredientRepository ingredientCatalog(Ref ref) => IngredientRepository(
+  ref.watch(supabaseClientProvider),
+  LocalIngredientDataSource(ref.watch(appDatabaseProvider)),
+);
 
 /// The unit lexicon, fetched once per session.
 ///

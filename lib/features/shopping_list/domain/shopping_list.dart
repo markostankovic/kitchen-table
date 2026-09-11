@@ -22,6 +22,13 @@ abstract class ShoppingList with _$ShoppingList {
     required DateTime dateTo,
     required String locale,
     required DateTime generatedAt,
+
+    /// From the `shopping_lists` row. Not read by anything in this part --
+    /// the shopping list has no delta fetch, its "sync" is `.limit(1)` on
+    /// one row -- but every household-scoped cache table carries this
+    /// truthfully from day one (D71) so a later delta fetch has something to
+    /// compare against instead of a field that has always lied.
+    required DateTime updatedAt,
     String? mealPlanId,
     @Default(<ShoppingItem>[]) List<ShoppingItem> items,
   }) = _ShoppingList;

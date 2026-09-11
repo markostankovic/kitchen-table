@@ -122,9 +122,10 @@ void _checkImport({
   }
 
   if (uri.startsWith('package:drift')) {
-    if (layer != 'data') {
+    final bool allowed = layer == 'data' || fromPath.startsWith('lib/core/db/');
+    if (!allowed) {
       violations.add(Violation(
-          fromPath, lineNo, 'drift may only be imported in data/'));
+          fromPath, lineNo, 'drift may only be imported in data/ or core/db/'));
     }
   }
 

@@ -32,7 +32,9 @@ class _StubList extends CurrentShoppingList {
   final AppFailure? failure;
 
   @override
-  Future<ShoppingList?> build() async => initial;
+  Stream<ShoppingList?> build() async* {
+    yield initial;
+  }
 
   @override
   Future<void> generate() async {
@@ -104,6 +106,7 @@ ShoppingList _list(List<ShoppingItem> items) => ShoppingList(
       dateTo: DateTime(2026, 7, 12),
       locale: 'sr',
       generatedAt: DateTime(2026, 7, 5),
+      updatedAt: DateTime(2026, 7, 5),
       items: items,
     );
 

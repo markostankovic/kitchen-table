@@ -1,8 +1,10 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/db/app_database.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/household/current_household.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
+import '../../../core/net/network_status.dart';
 import '../../../core/recipes/recipe_picker_providers.dart';
 import '../../../core/refresh/data_revision.dart';
 import '../../../core/supabase/supabase_client.dart';
@@ -10,6 +12,8 @@ import '../../ingredients/domain/unit_catalog.dart';
 import '../../meal_plan/domain/meal_plan_entry.dart';
 import '../../meal_plan/domain/plan_week.dart';
 import '../../recipes/domain/recipe_ingredient.dart';
+import '../data/local_shopping_list_datasource.dart';
+import '../data/remote_shopping_list_datasource.dart';
 import '../data/shopping_list_repository.dart';
 import '../domain/aggregate_shopping_list.dart';
 import '../domain/shopping_item.dart';
@@ -18,8 +22,10 @@ import '../domain/shopping_list.dart';
 part 'shopping_list_providers.g.dart';
 
 @Riverpod(keepAlive: true)
-ShoppingListRepository shoppingListRepository(Ref ref) =>
-    ShoppingListRepository(ref.watch(supabaseClientProvider));
+ShoppingListRepository shoppingListRepository(Ref ref) => ShoppingListRepository(
+  RemoteShoppingListDataSource(ref.watch(supabaseClientProvider)),
+  LocalShoppingListDataSource(ref.watch(appDatabaseProvider)),
+);
 
 /// The date range the next list will cover.
 ///
@@ -53,10 +59,19 @@ class ShoppingRange extends _$ShoppingRange {
 
 /// The household's current list, and the actions that change it.
 ///
-/// `build()` returns null rather than constructing a repository call when
+/// `build()` yields null rather than constructing a repository call when
 /// there is no household, so a household-less caller never touches
 /// `Supabase.instance.client` -- the shell's tab loop relies on exactly this
 /// to render the List tab under test.
+///
+/// A `Stream`, not a `Future` (Phase 2 part 5, D67): `watchLatest` emits a
+/// cache hit immediately, then the network's answer, and a `StreamNotifier`
+/// is what lets the second emission be part of the provider's own lifecycle
+/// -- cancelled on dispose, routed into `AsyncValue` with no hand-rolled
+/// `state = ...` after `build()` returns. The provider's value type is
+/// unchanged (`ShoppingList?`), so every existing consumer of
+/// `AsyncValue<ShoppingList?>` -- the screen, its test -- is untouched in
+/// shape; staleness is a separate signal, `networkStatusProvider`.
 ///
 /// Watches [mealPlanRevisionProvider] as well as its own: a list is a snapshot
 /// of a plan, and the plan changing is the single most useful reason to tell
@@ -64,18 +79,26 @@ class ShoppingRange extends _$ShoppingRange {
 @riverpod
 class CurrentShoppingList extends _$CurrentShoppingList {
   @override
-  Future<ShoppingList?> build() async {
+  Stream<ShoppingList?> build() async* {
     ref.watch(shoppingListRevisionProvider);
     ref.watch(mealPlanRevisionProvider);
 
     final String? householdId = await ref.watch(
       currentHouseholdIdProvider.future,
     );
-    if (householdId == null) return null;
+    if (householdId == null) {
+      yield null;
+      return;
+    }
 
-    return ref
+    final NetworkStatus status = ref.read(networkStatusProvider.notifier);
+    yield* ref
         .watch(shoppingListRepositoryProvider)
-        .fetchLatest(householdId: householdId);
+        .watchLatest(
+          householdId: householdId,
+          onReachable: status.reportReachable,
+          onUnreachable: status.reportUnreachable,
+        );
   }
 
   /// Generates a list for the current range, retiring whatever it replaces.

@@ -1490,6 +1490,272 @@ shop is worse than one that is slightly out of date and says so.
 sometimes needs. Rewriting the on-screen list when an override is recorded —
 turns a snapshot into a live document, which is the thing D13 ruled out.
 
+## D64 — The Drift database lives in `core/db/`, and `check_layers.dart` gets a second `core/` exemption for it
+
+**Decided.** `lib/core/db/app_database.dart` holds `AppDatabase`, its two
+tables and the `appDatabaseProvider` that constructs it. `tool/check_layers.dart`'s
+drift rule (`if (uri.startsWith('package:drift'))`) gains a `lib/core/db/`
+arm, exactly parallel to the `lib/core/supabase/` arm `supabase_flutter`
+already has.
+
+**Why.** One SQLite file is inherently shared, and Phase 2's remaining parts
+put three more features on it (recipes, meal plans, the ingredient name
+catalog). D33's "duplicate until a second caller shows up, then move to
+`core/`" rhythm assumes the intermediate shape — the thing living in one
+feature's `data/` while a second feature needs it — is legal. It is not,
+here: `features/recipes/data/local_recipe_datasource.dart` importing
+`features/shopping_list/data/app_database.dart` is exactly the cross-feature
+import `_checkImport` refuses. The second, third and fourth callers are
+already known, so paying the `core/` move now is not shipping ahead of a
+need — it is the same move D43 made for the ingredient catalog and D52 made
+for `currentHouseholdIdProvider`, on the same schedule those were made.
+
+**Rejected.**
+- One SQLite file per feature — four openers, four `schemaVersion`s, four
+  things to wipe on sign-out, for a library whose whole idiom is one database.
+- Deferring the move to Phase 2's next part, on the D33 precedent — the
+  precedent does not apply; see above.
+- Constructing `AppDatabase` from `core/` without ever naming a drift type
+  (the D43 move) as the *whole* answer — it is still used at the boundary
+  (`ingredient_catalog_providers.dart` and `shopping_list_providers.dart` name
+  `AppDatabase`/`LocalShoppingListDataSource`, never `package:drift`), but the
+  `@DriftDatabase`-annotated class itself has to import `package:drift`
+  somewhere, and that somewhere needs its own sanctioned home.
+
+## D65 — The cache stores the server's own wire shape in one JSON column; `ShoppingList` gains `updatedAt`, not `deletedAt`
+
+**Decided.** `ShoppingListCache.data` and `UnitCatalogCache.data` hold exactly
+the map a network response would otherwise produce and discard —
+`ShoppingListWire.toWire()` / `shoppingListFromWire()` in
+`features/shopping_list/data/dto/shopping_list_dto.dart` serve a Supabase row
+and a cache blob with the one decoder, and `unitCatalogRowsToWire()` /
+`unitCatalogRowsFromWire()` do the same for the two raw row arrays
+`fetchUnitCatalog()` used to build and discard. `ShoppingList` gains a
+required `updatedAt` field (`shopping_list_repository.dart`'s old
+`_listColumns` already selected `updated_at` and threw it away); it gains no
+`deletedAt` — see D68.
+
+**Why.** One definition of "what a shopping list looks like on the wire" is
+rule 6's own argument (one definition per side, verified against a shared
+fixture) applied to a wire shape instead of a normalization function. The
+alternative — building `ShoppingList`/`UnitCatalog` and re-serializing the
+built object — cannot even be done honestly for the unit catalog:
+`UnitCatalog._byAlias` and `_displayNames` are private with no getters, so a
+built catalog cannot be re-serialized without widening its API for a reason
+that has nothing to do with what the catalog is for. Caching the raw rows
+instead also keeps `units.to_base` as the exact string PostgREST sent, which
+is the whole of D60's guarantee — a second encode/decode through
+`UnitCatalog`'s own `toBase` `double` would round it twice.
+
+`updatedAt` is added truthfully now, on no live consumer yet, because a
+household-scoped cache row with a column that has always lied is worse than
+not having the column — see D71 for why this is not the same shipping-ahead
+argument D35/D51 made.
+
+**Rejected.**
+- A second, generated serialization of `ShoppingList`/`UnitCatalog` (freezed
+  `toJson`/`fromJson`) — would need a `Rational` converter for one and cannot
+  be written for the other at all (see above), and would be a second
+  definition of the wire shape to keep in step with the first.
+- A `deletedAt` field on `ShoppingList`, "for symmetry" with `updatedAt` — it
+  would be null in every instance the app can ever hold; see D68.
+
+## D66 — Writing the cached list is delete-then-insert, scoped to the household, not `insertOnConflictUpdate` alone
+
+**Decided.** `LocalShoppingListDataSource.upsertLatest` deletes whatever row
+the household already has, then inserts the new one, in one transaction.
+`ShoppingListCache` also carries a `uniqueKeys` constraint on `householdId`,
+as a defensive backstop.
+
+**Why.** Found by the first test written against it, not by reading:
+`insertOnConflictUpdate`'s conflict target is the PRIMARY KEY, which is the
+list's own `id` — so writing a *regenerated* list (a new `id` for a household
+that already has a cached row under the old one, the ordinary case
+`ShoppingListRepository.watchLatest` writes through on every successful
+network read once anything has ever been cached) is a plain INSERT against
+that key, not an update of the existing row. Without the fix, that INSERT
+either leaves two rows for one household or — once the `uniqueKeys`
+constraint below is added — trips it and gets silently swallowed by
+`cacheWrite`, leaving the stale row in place forever. Delete-then-insert
+makes "one row per household" this method's own guarantee rather than a
+discipline every caller (`watchLatest`'s write-through, `generate()`,
+`discard()`) has to independently get right.
+
+The `uniqueKeys` constraint stays even though `upsertLatest` alone now makes
+it unreachable through any real code path: it is what turns "a household
+only ever has one live list at a time" from a claim several doc comments make
+into something the schema itself refuses to violate, and it is what keeps a
+future bug that writes around `upsertLatest` from corrupting
+`readLatest`'s `getSingleOrNull` instead of failing loudly (well, quietly —
+see D69) at the point of the bad write.
+
+**Rejected.** `insertOnConflictUpdate` alone, trusting every caller to evict
+first — this is exactly the assumption the first test written against it
+disproved.
+
+## D67 — A cached read is a two-emission `Stream`; reachability is a side-channel, not folded into the provider's value
+
+**Decided.** `ShoppingListRepository.watchLatest` returns `Stream<ShoppingList?>`
+— a cache hit (if any), then the network's answer — and `CurrentShoppingList`
+is a `StreamNotifier`, not an `AsyncNotifier`. The provider's value type is
+unchanged (`ShoppingList?`), so `ShoppingListScreen`'s `AsyncValue<ShoppingList?>.when`
+and its test are untouched in shape. Every completed network attempt —
+including one whose `NetworkFailure` is swallowed because a cache hit already
+went out — reports through `onReachable`/`onUnreachable` callback parameters
+to `lib/core/net/network_status.dart`'s `NetworkStatus`, a `keepAlive`
+`Reachability` notifier `ShoppingListScreen`'s `_GeneratedAt` reads to show
+"Showing your saved copy — no connection."
+
+**Why.** `docs/ARCHITECTURE.md`'s own shape is "emit cached immediately ->
+fetch -> upsert cache -> emit fresh", and `StreamNotifier` is the one shape
+where the second emission is part of the provider's own lifecycle —
+cancelled on dispose, routed into `AsyncValue` with no hand-rolled
+`state = ...` after `build()` returns, which an `AsyncNotifier` would need
+and which `unawaited_futures` (an error here) would force through
+`unawaited()` with no cancellation to show for it.
+
+Reachability could have ridden along on the stream's own value — a record
+`({ShoppingList? list, bool stale})` — but that changes the provider's public
+type to carry one screen's one sentence, for every present and future
+consumer of `currentShoppingListProvider`. A plain callback keeps
+`ShoppingListRepository` a `data/` file that knows nothing about Riverpod (it
+takes `void Function()?` parameters, not a `core/net/` import), and a
+side-channel `keepAlive` notifier is the same shape `data_revision.dart`
+already uses for "something changed, watch here" — except this is "something
+about the network changed", which is D47's "a best-effort path needs
+something that notices it is always failing" made concrete, and it is
+exactly what a later offline banner needs, built once rather than per screen.
+
+**Rejected.**
+- An `AsyncNotifier` setting `state` a second time after `build()` returns —
+  a detached, unawaited continuation.
+- `({ShoppingList? list, bool stale})` as the provider's value — see above.
+- `connectivity_plus` (asked about, rejected before this part started) — a
+  radio that is on but cannot reach Supabase is offline for our purposes, and
+  `NetworkFailure` is already the signal `runGuarded` produces from a
+  `SocketException`, a `TimeoutException`, or `FunctionException(status: 0)`.
+  A second, independent connectivity check would disagree with that signal
+  exactly when it matters (a captive portal answers a radio check and nothing
+  else).
+
+## D68 — The cache carries no `deleted_at`; a server tombstone is a hard delete locally
+
+**Decided.** `ShoppingListCache` has no lifecycle column of its own. A row is
+either the household's current list, or it is gone.
+
+**Why.** D23 keeps a soft-deleted `shopping_lists` row visible to the
+*repository* so a later delta fetch can evict it — it is never visible to the
+*screen*, because `RemoteShoppingListDataSource.fetchLatest` already filters
+`deleted_at is null`. The cache's job is to answer "what would the server
+show me right now", which never includes a tombstone, so the cache has
+nothing to remember once a row is retired — only somewhere to stop having it.
+`ShoppingListRepository.softDelete` evicts the local row in the same call
+that soft-deletes it remotely; `watchLatest` evicts on the household's behalf
+when a fresh network read comes back with nothing a cache hit had promised.
+
+**Rejected.** A `deletedAt` column mirroring the server's, "for completeness"
+— it would need a value nothing ever writes (an evicted row is deleted, not
+marked), and it is the thing D65 explicitly declined to add to `ShoppingList`
+for the same reason.
+
+## D69 — A cache failure is never a read failure or a write failure
+
+**Decided.** `lib/core/db/cache_guard.dart` holds `cacheOrElse` (reads: log
+and return a fallback) and `cacheWrite` (writes: log and do nothing further).
+Every method on `LocalShoppingListDataSource` and `LocalIngredientDataSource`
+is wrapped in one of the two. Nothing from `package:drift` — a
+`SqliteException` from a corrupt file, a `FormatException` from a blob an
+older build wrote in a shape this one no longer decodes — is allowed to reach
+`runGuarded`.
+
+**Why.** `runGuarded`'s bare `catch` maps anything unrecognised to
+`UnknownFailure` — "Something went wrong" — which is the worst possible
+outcome for a cache failure: it reports a local, disposable problem as a
+server problem. A failed cache read is a miss and falls through to the
+network exactly as if nothing had ever been cached; a failed cache write
+costs a round trip next time and nothing else. Per D47, this does not swallow
+silently: both functions log under the `AppDatabase` name, the same
+best-effort-and-log shape `RecipeEditor`'s orphaned-image cleanup already
+uses. Nothing reads that log yet — naming a consumer for it is part of a
+later part's admin screen, not this one.
+
+**Consequence worth knowing.** `cacheOrElse`/`cacheWrite` also absorb the
+`MissingPluginException` that `path_provider` throws under `flutter test`,
+which is what lets every existing widget test go on not knowing the cache
+exists: they see a permanent cache miss and behave exactly as they did before
+this part.
+
+**Rejected.** Letting a drift exception fall through to `runGuarded`'s bare
+`catch` — the `UnknownFailure` mislabelling above.
+
+## D70 — Two kinds of cached row, and only one of them reads cache-first or dies with the session
+
+**Decided.** The shopping list cache is household-scoped
+(`ShoppingListCache.householdId`), read cache-then-network, and wiped by
+`AppDatabase.clearHouseholdCache()` on sign-out
+(`SettingsScreen._signOut`, before `AuthRepository.signOut()`). The unit
+catalog cache (`UnitCatalogCache`, always exactly one row, key
+`unitCatalogCacheKey`) is global, read network-first with the cache only as a
+fallback on `NetworkFailure`, and is never touched by the sign-out wipe.
+
+**Why.** A shopping list left on a shared device after sign-out is a privacy
+question; `units`/`unit_names` carry no `household_id` at all
+(`docs/DATA_MODEL.md`: "two dozen immutable reference rows that only a
+migration writes"), are readable by any authenticated caller, and wiping them
+would put `3 clove` back on the very first offline session after the next
+person signs in — the exact bug this part exists to fix
+(`shopping_list_screen.dart`'s old `ref.watch(unitCatalogProvider).value ??
+UnitCatalog.empty()` fallback, and `formatItemQuantity`'s `_scaled()` finding
+no `kg`/`l` rung on an empty catalog).
+
+The read order differs for the same reason. The shopping list is a
+household's own data that changes on someone else's say-so (a second device
+regenerating it) and is worth showing stale rather than not at all — the
+whole of D12's argument. The unit catalog is reference data with no
+`updated_at` of its own to go stale between one session and the next, so
+there is nothing to gain from showing a cached answer before a fresh one a
+moment later, and network-first means `fetchUnitCatalog()` stays one
+emission, a plain `Future<UnitCatalog>`, for a value nothing here treats as a
+stream.
+
+**Rejected.** Wiping the whole cache indiscriminately on sign-out — see above.
+Cache-then-network for the unit catalog, matching the shopping list "for
+consistency" — the two entities do not share the property (staleness has a
+size) that makes cache-then-network worth its extra emission.
+
+## D71 — No `last_sync_at` / delta-fetch machinery yet, and D35/D51's "ship ahead of the consumer" precedent does not transfer
+
+**Decided.** Neither cache table carries a sync watermark. `AppDatabase.schemaVersion`
+is `1`, and `MigrationStrategy.onUpgrade` drops every table and calls
+`createAll()` rather than writing an actual migration.
+
+**Why.** D35 shipped `recipes.image_path` empty, and D51 shipped
+`'leftover'` unreachable, because both live in a Postgres migration — and an
+applied migration is never edited (CLAUDE.md), so the cost of adding either
+column later would have been a second migration telling two stories about
+one column's history. A Drift table is the opposite: it is a *cache*, and
+Supabase remains the only truth (D12), so the honest migration strategy is
+drop-and-refetch, not a migration history for data that is disposable by
+construction. Adding a `last_sync_at` mechanism in a later part costs a
+`schemaVersion` bump and nothing else — there is no irreversibility here for
+"ship it now" to be an argument against.
+
+The shopping list also gives a delta fetch nothing real to be right about:
+its read is `.limit(1)` on one row, so there is no multi-row delta to
+express yet. The decisions that matter for one — per-table or
+per-household-per-table watermark, advancing it from the `max(updated_at)`
+of rows actually received rather than a local clock (the only version that
+does not silently drop rows under clock skew) — are only answerable with a
+real multi-row fetch (recipes, meal plan weeks) in front of them. What does
+carry forward from this part: every household-scoped cache column set
+(`householdId`, `updatedAt`) is populated truthfully from day one (D65), so a
+later watermark has something honest to compare against instead of a field
+that has always lied.
+
+**Rejected.** Adding a `last_sync_at` table now, on the D35/D51 precedent —
+the precedent's premise (irreversibility) does not hold for local cache DDL;
+see above.
+
 ## Open / deferred
 
 - **Client vs Edge Function split** — rule of thumb written in
@@ -1551,3 +1817,16 @@ turns a snapshot into a live document, which is the thing D13 ruled out.
   exercised outside the SQL suite — still unbuilt after Phase 2 part 3, which
   closed the other three items this note used to list (leftover entries,
   the snack variety check, within-slot reordering — D55–D58).
+- **The rest of the Drift cache** — see D64–D71. Recipes, meal plans and the
+  ingredient name catalog are not cached yet, only the shopping list and the
+  unit lexicon; none of the three has the `last_sync_at` delta-fetch
+  machinery D71 deliberately deferred, because none of them exists yet to
+  need it. The offline banner (a global "you're offline", distinct from the
+  shopping list screen's own "showing your saved copy") and the admin
+  screen's `match_method`/cache-health surfacing are both still unbuilt.
+- **A generated list is never compared against the plan it came from** — see
+  Phase 2 part 4's own closing note, unchanged by this part. Editing the week
+  after generating still leaves a list that is quietly stale on the server
+  side of the question; this part only made the *client* side of staleness
+  (no connection, showing a saved copy) visible, which is a different
+  question answered a different way.

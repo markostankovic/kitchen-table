@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
+import '../../../core/net/network_status.dart';
 import '../../ingredients/domain/unit_catalog.dart';
 import '../../meal_plan/domain/plan_week.dart';
 import '../application/shopping_list_providers.dart';
@@ -180,8 +181,19 @@ class _ListBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final UnitCatalog units =
-        ref.watch(unitCatalogProvider).value ?? UnitCatalog.empty();
+    final AsyncValue<UnitCatalog> catalogAsync = ref.watch(
+      unitCatalogProvider,
+    );
+    // A loading catalog with no value yet is not the same as an empty one
+    // (rule 3): the former is "still finding out", the latter renders every
+    // quantity unscaled and every count unit in its raw code (`3 clove`
+    // instead of `3 čen`). `unitCatalogProvider` only ever settles into
+    // `UnitCatalog.empty()`'s territory once both the network and the cache
+    // have genuinely come up with nothing (Phase 2 part 5).
+    if (catalogAsync.isLoading && !catalogAsync.hasValue) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final UnitCatalog units = catalogAsync.value ?? UnitCatalog.empty();
 
     final List<ShoppingItem> toBuy = list.toBuy;
     final List<ShoppingItem> staples = list.probablyHave;
@@ -249,15 +261,40 @@ class _GeneratedAt extends ConsumerWidget {
 
   final ShoppingList list;
 
+  /// Only this widget speaks to offline-ness, and only in the one case it is
+  /// true for: it renders exclusively when a list is on screen, which is
+  /// exactly the "cache hit" half of `ShoppingListRepository.watchLatest`
+  /// (Phase 2 part 5). A global "you're offline" banner is part 7's job, not
+  /// this one -- this is a narrower and more useful statement, "this is not
+  /// what the server has right now", said once, where the list already
+  /// states its own provenance.
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-    child: Text(
-      'Generated ${shortDateLabel(list.generatedAt)} '
-      'for ${shortDateLabel(list.dateFrom)} – ${shortDateLabel(list.dateTo)}',
-      style: Theme.of(context).textTheme.bodySmall,
-    ),
-  );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bool offline =
+        ref.watch(networkStatusProvider) == Reachability.offline;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Generated ${shortDateLabel(list.generatedAt)} '
+            'for ${shortDateLabel(list.dateFrom)} – '
+            '${shortDateLabel(list.dateTo)}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          if (offline)
+            Text(
+              'Showing your saved copy — no connection.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _CategoryHeading extends StatelessWidget {

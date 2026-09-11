@@ -54,7 +54,7 @@ final class IngredientCatalogProvider
   }
 }
 
-String _$ingredientCatalogHash() => r'f67a87d85570f4ecfb3916817269b1fdad08809e';
+String _$ingredientCatalogHash() => r'60c5c8c0bb9f97b67253e252dac6f7015a34f263';
 
 /// The unit lexicon, fetched once per session.
 ///

@@ -44,6 +44,17 @@ dependencies:
   # dependency under rule 8, asked for and approved.
   image_picker: ^1.2.3
   receive_sharing_intent: ^1.9.0
+  # Phase 2 part 5: the offline read cache (D12, D64-D70). A new dependency
+  # under rule 8, asked for and approved -- `sqlite3_flutter_libs` was the
+  # package approved, but its own pub.dev listing now reads "Not used
+  # anymore, update to version 3.x of package:sqlite3 instead"; `drift_flutter`
+  # is what drift's own setup guide replaced it with, and it removes the need
+  # to hand-write the platform-specific database opener besides.
+  # `connectivity_plus` was asked about and explicitly rejected -- see
+  # `lib/core/net/network_status.dart`.
+  drift: ^2.35.0
+  path_provider: ^2.1.6
+  drift_flutter: ^0.3.1
 
 dev_dependencies:
   flutter_test:
@@ -61,6 +72,7 @@ dev_dependencies:
   go_router_builder: ^4.5.0
   freezed: ^4.0.1
   json_serializable: ^6.14.1
+  drift_dev: ^2.35.0 # Phase 2 part 5, generates lib/core/db/app_database.g.dart.
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

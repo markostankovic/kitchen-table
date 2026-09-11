@@ -15,7 +15,12 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ShoppingList {
 
- String get id; DateTime get dateFrom; DateTime get dateTo; String get locale; DateTime get generatedAt; String? get mealPlanId; List<ShoppingItem> get items;
+ String get id; DateTime get dateFrom; DateTime get dateTo; String get locale; DateTime get generatedAt;/// From the `shopping_lists` row. Not read by anything in this part --
+/// the shopping list has no delta fetch, its "sync" is `.limit(1)` on
+/// one row -- but every household-scoped cache table carries this
+/// truthfully from day one (D71) so a later delta fetch has something to
+/// compare against instead of a field that has always lied.
+ DateTime get updatedAt; String? get mealPlanId; List<ShoppingItem> get items;
 /// Create a copy of ShoppingList
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -27,20 +32,20 @@ $ShoppingListCopyWith<ShoppingList> get copyWith => _$ShoppingListCopyWithImpl<S
 @override
 bool operator ==(Object other) {
   final _this = this as ShoppingList;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShoppingList&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.dateFrom, _this.dateFrom) || other.dateFrom == _this.dateFrom)&&(identical(other.dateTo, _this.dateTo) || other.dateTo == _this.dateTo)&&(identical(other.locale, _this.locale) || other.locale == _this.locale)&&(identical(other.generatedAt, _this.generatedAt) || other.generatedAt == _this.generatedAt)&&(identical(other.mealPlanId, _this.mealPlanId) || other.mealPlanId == _this.mealPlanId)&&const DeepCollectionEquality().equals(other.items, _this.items));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShoppingList&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.dateFrom, _this.dateFrom) || other.dateFrom == _this.dateFrom)&&(identical(other.dateTo, _this.dateTo) || other.dateTo == _this.dateTo)&&(identical(other.locale, _this.locale) || other.locale == _this.locale)&&(identical(other.generatedAt, _this.generatedAt) || other.generatedAt == _this.generatedAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt)&&(identical(other.mealPlanId, _this.mealPlanId) || other.mealPlanId == _this.mealPlanId)&&const DeepCollectionEquality().equals(other.items, _this.items));
 }
 
 
 @override
 int get hashCode {
   final _this = this as ShoppingList;
-  return Object.hash(runtimeType,_this.id,_this.dateFrom,_this.dateTo,_this.locale,_this.generatedAt,_this.mealPlanId,const DeepCollectionEquality().hash(_this.items));
+  return Object.hash(runtimeType,_this.id,_this.dateFrom,_this.dateTo,_this.locale,_this.generatedAt,_this.updatedAt,_this.mealPlanId,const DeepCollectionEquality().hash(_this.items));
 }
 
 @override
 String toString() {
   final _this = this as ShoppingList;
-  return 'ShoppingList(id: ${_this.id}, dateFrom: ${_this.dateFrom}, dateTo: ${_this.dateTo}, locale: ${_this.locale}, generatedAt: ${_this.generatedAt}, mealPlanId: ${_this.mealPlanId}, items: ${_this.items})';
+  return 'ShoppingList(id: ${_this.id}, dateFrom: ${_this.dateFrom}, dateTo: ${_this.dateTo}, locale: ${_this.locale}, generatedAt: ${_this.generatedAt}, updatedAt: ${_this.updatedAt}, mealPlanId: ${_this.mealPlanId}, items: ${_this.items})';
 }
 
 
@@ -51,7 +56,7 @@ abstract mixin class $ShoppingListCopyWith<$Res>  {
   factory $ShoppingListCopyWith(ShoppingList value, $Res Function(ShoppingList) _then) = _$ShoppingListCopyWithImpl;
 @useResult
 $Res call({
- String id, DateTime dateFrom, DateTime dateTo, String locale, DateTime generatedAt, String? mealPlanId, List<ShoppingItem> items
+ String id, DateTime dateFrom, DateTime dateTo, String locale, DateTime generatedAt, DateTime updatedAt, String? mealPlanId, List<ShoppingItem> items
 });
 
 
@@ -68,13 +73,14 @@ class _$ShoppingListCopyWithImpl<$Res>
 
 /// Create a copy of ShoppingList
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? dateFrom = null,Object? dateTo = null,Object? locale = null,Object? generatedAt = null,Object? mealPlanId = freezed,Object? items = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? dateFrom = null,Object? dateTo = null,Object? locale = null,Object? generatedAt = null,Object? updatedAt = null,Object? mealPlanId = freezed,Object? items = null,}) {
   return _then(ShoppingList(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,dateFrom: null == dateFrom ? _self.dateFrom : dateFrom // ignore: cast_nullable_to_non_nullable
 as DateTime,dateTo: null == dateTo ? _self.dateTo : dateTo // ignore: cast_nullable_to_non_nullable
 as DateTime,locale: null == locale ? _self.locale : locale // ignore: cast_nullable_to_non_nullable
 as String,generatedAt: null == generatedAt ? _self.generatedAt : generatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,mealPlanId: freezed == mealPlanId ? _self.mealPlanId : mealPlanId // ignore: cast_nullable_to_non_nullable
 as String?,items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
 as List<ShoppingItem>,
@@ -162,10 +168,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime dateFrom,  DateTime dateTo,  String locale,  DateTime generatedAt,  String? mealPlanId,  List<ShoppingItem> items)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime dateFrom,  DateTime dateTo,  String locale,  DateTime generatedAt,  DateTime updatedAt,  String? mealPlanId,  List<ShoppingItem> items)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ShoppingList() when $default != null:
-return $default(_that.id,_that.dateFrom,_that.dateTo,_that.locale,_that.generatedAt,_that.mealPlanId,_that.items);case _:
+return $default(_that.id,_that.dateFrom,_that.dateTo,_that.locale,_that.generatedAt,_that.updatedAt,_that.mealPlanId,_that.items);case _:
   return orElse();
 
 }
@@ -183,10 +189,10 @@ return $default(_that.id,_that.dateFrom,_that.dateTo,_that.locale,_that.generate
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime dateFrom,  DateTime dateTo,  String locale,  DateTime generatedAt,  String? mealPlanId,  List<ShoppingItem> items)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime dateFrom,  DateTime dateTo,  String locale,  DateTime generatedAt,  DateTime updatedAt,  String? mealPlanId,  List<ShoppingItem> items)  $default,) {final _that = this;
 switch (_that) {
 case _ShoppingList():
-return $default(_that.id,_that.dateFrom,_that.dateTo,_that.locale,_that.generatedAt,_that.mealPlanId,_that.items);case _:
+return $default(_that.id,_that.dateFrom,_that.dateTo,_that.locale,_that.generatedAt,_that.updatedAt,_that.mealPlanId,_that.items);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +209,10 @@ return $default(_that.id,_that.dateFrom,_that.dateTo,_that.locale,_that.generate
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime dateFrom,  DateTime dateTo,  String locale,  DateTime generatedAt,  String? mealPlanId,  List<ShoppingItem> items)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime dateFrom,  DateTime dateTo,  String locale,  DateTime generatedAt,  DateTime updatedAt,  String? mealPlanId,  List<ShoppingItem> items)?  $default,) {final _that = this;
 switch (_that) {
 case _ShoppingList() when $default != null:
-return $default(_that.id,_that.dateFrom,_that.dateTo,_that.locale,_that.generatedAt,_that.mealPlanId,_that.items);case _:
+return $default(_that.id,_that.dateFrom,_that.dateTo,_that.locale,_that.generatedAt,_that.updatedAt,_that.mealPlanId,_that.items);case _:
   return null;
 
 }
@@ -218,7 +224,7 @@ return $default(_that.id,_that.dateFrom,_that.dateTo,_that.locale,_that.generate
 
 
 class _ShoppingList extends ShoppingList {
-  const _ShoppingList({required this.id, required this.dateFrom, required this.dateTo, required this.locale, required this.generatedAt, this.mealPlanId,  List<ShoppingItem> items = const <ShoppingItem>[]}): _items = items,super._();
+  const _ShoppingList({required this.id, required this.dateFrom, required this.dateTo, required this.locale, required this.generatedAt, required this.updatedAt, this.mealPlanId,  List<ShoppingItem> items = const <ShoppingItem>[]}): _items = items,super._();
   
 
 @override final  String id;
@@ -226,6 +232,12 @@ class _ShoppingList extends ShoppingList {
 @override final  DateTime dateTo;
 @override final  String locale;
 @override final  DateTime generatedAt;
+/// From the `shopping_lists` row. Not read by anything in this part --
+/// the shopping list has no delta fetch, its "sync" is `.limit(1)` on
+/// one row -- but every household-scoped cache table carries this
+/// truthfully from day one (D71) so a later delta fetch has something to
+/// compare against instead of a field that has always lied.
+@override final  DateTime updatedAt;
 @override final  String? mealPlanId;
  final  List<ShoppingItem> _items;
 @override@JsonKey() List<ShoppingItem> get items {
@@ -245,18 +257,18 @@ _$ShoppingListCopyWith<_ShoppingList> get copyWith => __$ShoppingListCopyWithImp
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShoppingList&&(identical(other.id, id) || other.id == id)&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.locale, locale) || other.locale == locale)&&(identical(other.generatedAt, generatedAt) || other.generatedAt == generatedAt)&&(identical(other.mealPlanId, mealPlanId) || other.mealPlanId == mealPlanId)&&const DeepCollectionEquality().equals(other.items, _items));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShoppingList&&(identical(other.id, id) || other.id == id)&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.locale, locale) || other.locale == locale)&&(identical(other.generatedAt, generatedAt) || other.generatedAt == generatedAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mealPlanId, mealPlanId) || other.mealPlanId == mealPlanId)&&const DeepCollectionEquality().equals(other.items, _items));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,dateFrom,dateTo,locale,generatedAt,mealPlanId,const DeepCollectionEquality().hash(_items));
+    return Object.hash(runtimeType,id,dateFrom,dateTo,locale,generatedAt,updatedAt,mealPlanId,const DeepCollectionEquality().hash(_items));
 }
 
 @override
 String toString() {
-    return 'ShoppingList(id: $id, dateFrom: $dateFrom, dateTo: $dateTo, locale: $locale, generatedAt: $generatedAt, mealPlanId: $mealPlanId, items: $items)';
+    return 'ShoppingList(id: $id, dateFrom: $dateFrom, dateTo: $dateTo, locale: $locale, generatedAt: $generatedAt, updatedAt: $updatedAt, mealPlanId: $mealPlanId, items: $items)';
 }
 
 
@@ -267,7 +279,7 @@ abstract mixin class _$ShoppingListCopyWith<$Res> implements $ShoppingListCopyWi
   factory _$ShoppingListCopyWith(_ShoppingList value, $Res Function(_ShoppingList) _then) = __$ShoppingListCopyWithImpl;
 @override @useResult
 $Res call({
- String id, DateTime dateFrom, DateTime dateTo, String locale, DateTime generatedAt, String? mealPlanId, List<ShoppingItem> items
+ String id, DateTime dateFrom, DateTime dateTo, String locale, DateTime generatedAt, DateTime updatedAt, String? mealPlanId, List<ShoppingItem> items
 });
 
 
@@ -284,13 +296,14 @@ class __$ShoppingListCopyWithImpl<$Res>
 
 /// Create a copy of ShoppingList
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? dateFrom = null,Object? dateTo = null,Object? locale = null,Object? generatedAt = null,Object? mealPlanId = freezed,Object? items = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? dateFrom = null,Object? dateTo = null,Object? locale = null,Object? generatedAt = null,Object? updatedAt = null,Object? mealPlanId = freezed,Object? items = null,}) {
   return _then(_ShoppingList(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,dateFrom: null == dateFrom ? _self.dateFrom : dateFrom // ignore: cast_nullable_to_non_nullable
 as DateTime,dateTo: null == dateTo ? _self.dateTo : dateTo // ignore: cast_nullable_to_non_nullable
 as DateTime,locale: null == locale ? _self.locale : locale // ignore: cast_nullable_to_non_nullable
 as String,generatedAt: null == generatedAt ? _self.generatedAt : generatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,mealPlanId: freezed == mealPlanId ? _self.mealPlanId : mealPlanId // ignore: cast_nullable_to_non_nullable
 as String?,items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
 as List<ShoppingItem>,
