@@ -28,6 +28,9 @@ _RecipeIngredient _$RecipeIngredientFromJson(Map<String, dynamic> json) =>
       matchedAt: json['matchedAt'] == null
           ? null
           : DateTime.parse(json['matchedAt'] as String),
+      recipeId: json['recipeId'] as String?,
+      isPantryStaple: json['isPantryStaple'] as bool? ?? false,
+      category: json['category'] as String?,
     );
 
 Map<String, dynamic> _$RecipeIngredientToJson(_RecipeIngredient instance) =>
@@ -45,6 +48,9 @@ Map<String, dynamic> _$RecipeIngredientToJson(_RecipeIngredient instance) =>
       'matchMethod': _$MatchMethodEnumMap[instance.matchMethod],
       'matchConfidence': instance.matchConfidence,
       'matchedAt': instance.matchedAt?.toIso8601String(),
+      'recipeId': instance.recipeId,
+      'isPantryStaple': instance.isPantryStaple,
+      'category': instance.category,
     };
 
 const _$MatchMethodEnumMap = {

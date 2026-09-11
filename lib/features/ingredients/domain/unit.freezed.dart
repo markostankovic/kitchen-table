@@ -23,7 +23,19 @@ mixin _$Unit {
 /// ounce is 28.349523125 g and no fraction expresses that honestly. The
 /// rule exists so a recipe's `1/3 šolje` never becomes 0.3333; nothing
 /// here is a recipe's number.
- double get toBase;/// True only for the metric system proper. Only consulted for mass and
+ double get toBase;/// The same constant as [toBase], exactly as Postgres wrote it.
+///
+/// `units.to_base` is a `numeric`, and every value in it is an exact
+/// decimal -- `28.349523125` is `28349523125 / 10^9`, not an irrational.
+/// [toBase] has already lost that by the time it is a `double`, which is
+/// fine for the parser and the line editor and is not fine for the
+/// shopping list, where a week of thirds has to sum to a whole (rule 5).
+/// Keeping the text is what lets `Rational.parseDecimal` read it back
+/// exactly.
+///
+/// Nullable because a [UnitCatalog] built in a test may not bother; the
+/// aggregator falls back to [toBase] when it is absent.
+ String? get toBaseExact;/// True only for the metric system proper. Only consulted for mass and
 /// volume, where the shopping list uses it to choose a display unit.
  bool get isMetric;
 /// Create a copy of Unit
@@ -39,20 +51,20 @@ $UnitCopyWith<Unit> get copyWith => _$UnitCopyWithImpl<Unit>(this as Unit, _$ide
 @override
 bool operator ==(Object other) {
   final _this = this as Unit;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Unit&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.family, _this.family) || other.family == _this.family)&&(identical(other.toBase, _this.toBase) || other.toBase == _this.toBase)&&(identical(other.isMetric, _this.isMetric) || other.isMetric == _this.isMetric));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Unit&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.family, _this.family) || other.family == _this.family)&&(identical(other.toBase, _this.toBase) || other.toBase == _this.toBase)&&(identical(other.toBaseExact, _this.toBaseExact) || other.toBaseExact == _this.toBaseExact)&&(identical(other.isMetric, _this.isMetric) || other.isMetric == _this.isMetric));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as Unit;
-  return Object.hash(runtimeType,_this.code,_this.family,_this.toBase,_this.isMetric);
+  return Object.hash(runtimeType,_this.code,_this.family,_this.toBase,_this.toBaseExact,_this.isMetric);
 }
 
 @override
 String toString() {
   final _this = this as Unit;
-  return 'Unit(code: ${_this.code}, family: ${_this.family}, toBase: ${_this.toBase}, isMetric: ${_this.isMetric})';
+  return 'Unit(code: ${_this.code}, family: ${_this.family}, toBase: ${_this.toBase}, toBaseExact: ${_this.toBaseExact}, isMetric: ${_this.isMetric})';
 }
 
 
@@ -63,7 +75,7 @@ abstract mixin class $UnitCopyWith<$Res>  {
   factory $UnitCopyWith(Unit value, $Res Function(Unit) _then) = _$UnitCopyWithImpl;
 @useResult
 $Res call({
- String code, UnitFamily family, double toBase, bool isMetric
+ String code, UnitFamily family, double toBase, String? toBaseExact, bool isMetric
 });
 
 
@@ -80,12 +92,13 @@ class _$UnitCopyWithImpl<$Res>
 
 /// Create a copy of Unit
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? family = null,Object? toBase = null,Object? isMetric = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? family = null,Object? toBase = null,Object? toBaseExact = freezed,Object? isMetric = null,}) {
   return _then(Unit(
 code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,family: null == family ? _self.family : family // ignore: cast_nullable_to_non_nullable
 as UnitFamily,toBase: null == toBase ? _self.toBase : toBase // ignore: cast_nullable_to_non_nullable
-as double,isMetric: null == isMetric ? _self.isMetric : isMetric // ignore: cast_nullable_to_non_nullable
+as double,toBaseExact: freezed == toBaseExact ? _self.toBaseExact : toBaseExact // ignore: cast_nullable_to_non_nullable
+as String?,isMetric: null == isMetric ? _self.isMetric : isMetric // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -171,10 +184,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String code,  UnitFamily family,  double toBase,  bool isMetric)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String code,  UnitFamily family,  double toBase,  String? toBaseExact,  bool isMetric)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Unit() when $default != null:
-return $default(_that.code,_that.family,_that.toBase,_that.isMetric);case _:
+return $default(_that.code,_that.family,_that.toBase,_that.toBaseExact,_that.isMetric);case _:
   return orElse();
 
 }
@@ -192,10 +205,10 @@ return $default(_that.code,_that.family,_that.toBase,_that.isMetric);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String code,  UnitFamily family,  double toBase,  bool isMetric)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String code,  UnitFamily family,  double toBase,  String? toBaseExact,  bool isMetric)  $default,) {final _that = this;
 switch (_that) {
 case _Unit():
-return $default(_that.code,_that.family,_that.toBase,_that.isMetric);case _:
+return $default(_that.code,_that.family,_that.toBase,_that.toBaseExact,_that.isMetric);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -212,10 +225,10 @@ return $default(_that.code,_that.family,_that.toBase,_that.isMetric);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String code,  UnitFamily family,  double toBase,  bool isMetric)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String code,  UnitFamily family,  double toBase,  String? toBaseExact,  bool isMetric)?  $default,) {final _that = this;
 switch (_that) {
 case _Unit() when $default != null:
-return $default(_that.code,_that.family,_that.toBase,_that.isMetric);case _:
+return $default(_that.code,_that.family,_that.toBase,_that.toBaseExact,_that.isMetric);case _:
   return null;
 
 }
@@ -227,7 +240,7 @@ return $default(_that.code,_that.family,_that.toBase,_that.isMetric);case _:
 @JsonSerializable()
 
 class _Unit implements Unit {
-  const _Unit({required this.code, required this.family, required this.toBase, this.isMetric = false});
+  const _Unit({required this.code, required this.family, required this.toBase, this.toBaseExact, this.isMetric = false});
   factory _Unit.fromJson(Map<String, dynamic> json) => _$UnitFromJson(json);
 
 @override final  String code;
@@ -240,6 +253,19 @@ class _Unit implements Unit {
 /// rule exists so a recipe's `1/3 šolje` never becomes 0.3333; nothing
 /// here is a recipe's number.
 @override final  double toBase;
+/// The same constant as [toBase], exactly as Postgres wrote it.
+///
+/// `units.to_base` is a `numeric`, and every value in it is an exact
+/// decimal -- `28.349523125` is `28349523125 / 10^9`, not an irrational.
+/// [toBase] has already lost that by the time it is a `double`, which is
+/// fine for the parser and the line editor and is not fine for the
+/// shopping list, where a week of thirds has to sum to a whole (rule 5).
+/// Keeping the text is what lets `Rational.parseDecimal` read it back
+/// exactly.
+///
+/// Nullable because a [UnitCatalog] built in a test may not bother; the
+/// aggregator falls back to [toBase] when it is absent.
+@override final  String? toBaseExact;
 /// True only for the metric system proper. Only consulted for mass and
 /// volume, where the shopping list uses it to choose a display unit.
 @override@JsonKey() final  bool isMetric;
@@ -257,18 +283,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Unit&&(identical(other.code, code) || other.code == code)&&(identical(other.family, family) || other.family == family)&&(identical(other.toBase, toBase) || other.toBase == toBase)&&(identical(other.isMetric, isMetric) || other.isMetric == isMetric));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Unit&&(identical(other.code, code) || other.code == code)&&(identical(other.family, family) || other.family == family)&&(identical(other.toBase, toBase) || other.toBase == toBase)&&(identical(other.toBaseExact, toBaseExact) || other.toBaseExact == toBaseExact)&&(identical(other.isMetric, isMetric) || other.isMetric == isMetric));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,code,family,toBase,isMetric);
+    return Object.hash(runtimeType,code,family,toBase,toBaseExact,isMetric);
 }
 
 @override
 String toString() {
-    return 'Unit(code: $code, family: $family, toBase: $toBase, isMetric: $isMetric)';
+    return 'Unit(code: $code, family: $family, toBase: $toBase, toBaseExact: $toBaseExact, isMetric: $isMetric)';
 }
 
 
@@ -279,7 +305,7 @@ abstract mixin class _$UnitCopyWith<$Res> implements $UnitCopyWith<$Res> {
   factory _$UnitCopyWith(_Unit value, $Res Function(_Unit) _then) = __$UnitCopyWithImpl;
 @override @useResult
 $Res call({
- String code, UnitFamily family, double toBase, bool isMetric
+ String code, UnitFamily family, double toBase, String? toBaseExact, bool isMetric
 });
 
 
@@ -296,12 +322,13 @@ class __$UnitCopyWithImpl<$Res>
 
 /// Create a copy of Unit
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? family = null,Object? toBase = null,Object? isMetric = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? family = null,Object? toBase = null,Object? toBaseExact = freezed,Object? isMetric = null,}) {
   return _then(_Unit(
 code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,family: null == family ? _self.family : family // ignore: cast_nullable_to_non_nullable
 as UnitFamily,toBase: null == toBase ? _self.toBase : toBase // ignore: cast_nullable_to_non_nullable
-as double,isMetric: null == isMetric ? _self.isMetric : isMetric // ignore: cast_nullable_to_non_nullable
+as double,toBaseExact: freezed == toBaseExact ? _self.toBaseExact : toBaseExact // ignore: cast_nullable_to_non_nullable
+as String?,isMetric: null == isMetric ? _self.isMetric : isMetric // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

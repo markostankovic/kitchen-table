@@ -267,7 +267,7 @@ class _SlotRow extends ConsumerWidget {
       );
 }
 
-enum _EntryAction { open, leftovers, move, up, down, remove }
+enum _EntryAction { open, servings, leftovers, move, up, down, remove }
 
 class _EntryChip extends ConsumerWidget {
   const _EntryChip({
@@ -297,6 +297,15 @@ class _EntryChip extends ConsumerWidget {
                 leading: const Icon(Icons.open_in_new),
                 title: const Text('Open recipe'),
                 onTap: () => Navigator.of(context).pop(_EntryAction.open),
+              ),
+            if (entry.entryKind == MealEntryKind.recipe)
+              ListTile(
+                leading: const Icon(Icons.people_outline),
+                title: const Text('Cooking for...'),
+                subtitle: Text(entry.servings == null
+                    ? 'As the recipe says'
+                    : '${entry.servings}'),
+                onTap: () => Navigator.of(context).pop(_EntryAction.servings),
               ),
             if (entry.entryKind == MealEntryKind.recipe)
               ListTile(
@@ -335,6 +344,8 @@ class _EntryChip extends ConsumerWidget {
     switch (action) {
       case _EntryAction.open:
         RecipeDetailRoute(entry.recipeId!).go(context);
+      case _EntryAction.servings:
+        await _showServingsDialog(context, ref);
       case _EntryAction.leftovers:
         await _showLeftoverDialog(context, ref);
       case _EntryAction.move:
@@ -345,6 +356,80 @@ class _EntryChip extends ConsumerWidget {
         await _reorder(context, ref, index + 1);
       case _EntryAction.remove:
         await _remove(context, ref);
+    }
+  }
+
+  /// How many people this one planned meal is for (D62).
+  ///
+  /// `meal_plan_entries.servings` has been readable since migration 14 and
+  /// nothing ever wrote it, which quietly made `docs/DATA_MODEL.md`'s "scale
+  /// by servings" step a no-op. This is what makes the shopping list's
+  /// scaling reachable from the app rather than only from a unit test.
+  ///
+  /// "As the recipe says" clears the override rather than storing the
+  /// recipe's own number: copying it would freeze a value that should follow
+  /// the recipe if the recipe is later corrected.
+  Future<void> _showServingsDialog(BuildContext context, WidgetRef ref) async {
+    final int? recipeServings = entry.recipeServings;
+    int? selected = entry.servings;
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) => AlertDialog(
+          title: const Text('Cooking for'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              DropdownButtonFormField<int?>(
+                initialValue: selected,
+                decoration: const InputDecoration(labelText: 'Servings'),
+                items: <DropdownMenuItem<int?>>[
+                  DropdownMenuItem<int?>(
+                    child: Text(recipeServings == null
+                        ? 'As the recipe says'
+                        : 'As the recipe says ($recipeServings)'),
+                  ),
+                  for (int n = 1; n <= 20; n++)
+                    DropdownMenuItem<int?>(value: n, child: Text('$n')),
+                ],
+                onChanged: (int? value) => setState(() => selected = value),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                recipeServings == null
+                    ? 'This recipe does not say how many it serves, so the '
+                        'shopping list cannot scale it.'
+                    : 'The shopping list scales this meal\'s ingredients to '
+                        'match.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ref
+          .read(mealPlanEditorProvider.notifier)
+          .setServings(entryId: entry.id, servings: selected);
+    } on AppFailure catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
     }
   }
 

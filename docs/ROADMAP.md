@@ -459,12 +459,80 @@ have" heading rather than hidden -- `household_pantry_prefs` stays a
 both-directions override on the flag, and nothing is ever missing from the
 snapshot itself.
 
+### Part 4 — The shopping list
+
+**Status: complete.** Decisions taken during it: D59–D63.
+
+The List tab has shown `PlaceholderScreen` since Phase 0. A week's plan now
+aggregates into a saved, correct list.
+
+- Migration 16: `shopping_lists` (household-scoped, so full rule 4 — D59's
+  correction to the sketch, which omitted `updated_at`), `shopping_list_items`
+  (a D24 child table, RLS through its parent) and `household_pantry_prefs`
+  (a join table, hard delete, on the `household_members` precedent migration 6
+  had already applied to it), plus `save_shopping_list` — the parent and its
+  items in one transaction, `security invoker` (D61, the third outing of D36's
+  argument)
+- `Rational` and `aggregate_shopping_list` in `domain/`, pure Dart, no I/O:
+  skip leftovers and notes, scale by servings, group by `ingredient_id` and
+  fall back to `normalize_text(raw_text)`, convert to the family's base unit
+  and sum within a family only (D9), flag staples with the household's
+  override winning both ways
+- **The sum is exact all the way through** (D60). `units.to_base` is read from
+  the `numeric` as text rather than through its `double`, because every value
+  in that column is an exact decimal; `quantities` stores an integer pair, not
+  a rounded number. `Quantity`'s own doc comment predicted this slice by name
+- `RecipeRepository.fetchLinesForRecipes` — one query for a whole week's lines
+  however many recipes it names, embedding the catalog's `is_pantry_staple`
+  and `category`, reusing the existing `_withDisplayNames`
+- *Cooking for…* on the meal plan entry's action sheet (D62). This is what
+  makes scaling real: `meal_plan_entries.servings` shipped in migration 14 and
+  **nothing had ever written it**, so the documented "scale by servings" step
+  was a no-op that only the real app could expose
+- Screen: range bar (this week / next / date picker), items grouped by
+  category with uncategorised last, two families side by side on one line,
+  unmatched lines verbatim beneath their group, and staples collapsed under
+  *Probably have* — collapsed, never hidden (D63). No checkboxes, and there
+  never will be (D13)
+
+**Done when:** a week's plan produces a correct list. — **Met**, verified end
+to end on the Android emulator against the local stack, not only in the 51
+Dart tests and the new SQL suite. A week holding two recipes that share an
+ingredient, one of them also planned as leftovers, produced: *brašno* 400 g
+from `250 g` + `150 g` across two recipes as a single line; *mleko* 280 ml
+from `2 dl` + `⅓ šolje` — 200 + 80 exactly, which is the exact-rational path
+doing the one thing a `double` gets wrong; *jaje* 2 kom; and **nothing at all
+from the leftover**, which would otherwise have added another 250 g. Setting
+that entry to 8 servings against the recipe's 4 and regenerating moved those
+to 650 g, 480 ml and 4 kom — the fraction scaled exactly, not approximately.
+`prstohvat soli` came back with no quantity and its raw text intact: the
+`other` family is carried as a note and never summed, which is rule 3 and
+migration 4's own comment agreeing. Regenerating soft-deleted each previous
+list rather than removing it (1 live, 3 tombstones by the end). Toggling
+*šećer* out of the cupboard wrote an `always_have = false` row, left the
+on-screen snapshot untouched on purpose, and moved the item into the pantry
+section on the next generation. A second household was confirmed to see
+neither the list nor its items.
+
+Two things the emulator caught that tests had not. An unmatched item rendered
+its own name twice — once as the title and once as its "unmatched line",
+because for an unmatched line those are the same string; the aggregator now
+drops an unmatched line equal to the item's name. And `480 ml` first rendered
+as `4.8 dl`: the display ladder had included decilitres, which is a recipe
+unit, not a shopping one — nothing on a shelf is labelled 4.8 dl.
+
+Still open, and named here so it is not rediscovered: **a generated list is
+never compared against the plan it came from.** Changing the week after
+generating leaves a list that is quietly stale, and the only signal is the
+`Generated <date>` line. `CurrentShoppingList` already watches
+`mealPlanRevisionProvider`, so the hook is there; what to *show* is a design
+question, not a plumbing one.
+
 ### Still to build
 
-- `shopping_lists`, `shopping_list_items`, `household_pantry_prefs`
-- Client-side aggregation: group, scale by servings, sum within unit family,
-  split across families, flag pantry staples (collapsed, not suppressed --
-  see Part 3's closing note above)
+- ~~`shopping_lists`, `shopping_list_items`, `household_pantry_prefs`~~ — done
+  in part 4
+- ~~Client-side aggregation~~ — done in part 4
 - Drift read cache (cache-then-network) for recipes, meal plans, shopping lists,
   ingredients; delta fetch on `updated_at`, honour `deleted_at`
 - Offline banner; writes fail loudly
@@ -472,7 +540,10 @@ snapshot itself.
   match_method distribution
 
 **Done when:** a week's plan produces a correct list, and that list is readable
-in airplane mode.
+in airplane mode. — First half met in part 4; the airplane-mode half is the
+Drift cache, still to build. A generated list is the easiest entity in the app
+to cache and the reason the cache exists at all (D12): one row, no write path,
+no tombstone churn, because D13 made it a snapshot.
 
 ---
 

@@ -119,6 +119,47 @@ recipe_steps(id, position, text, timer_seconds)''')
         );
       });
 
+  /// Every ingredient line of several recipes at once, with catalog names,
+  /// pantry flags and categories resolved.
+  ///
+  /// The shopping list's read path. [fetchDetail] cannot serve it: that is one
+  /// round trip per recipe, and a week's plan routinely names a dozen. This is
+  /// two round trips for the whole week regardless of how many recipes are in
+  /// it -- the lines, then one `ingredient_display_names` call -- which is the
+  /// same shape [fetchDetail] already uses, widened from one recipe to many.
+  ///
+  /// `ingredients(...)` is embedded rather than fetched separately because
+  /// `is_pantry_staple` and `category` are global catalog columns readable by
+  /// any authenticated caller (migration 4), so there is no household scoping
+  /// to get wrong and no second query to pay for.
+  ///
+  /// Returns lines carrying [RecipeIngredient.recipeId], which single-recipe
+  /// reads leave null: the caller has to know which recipe a line came from in
+  /// order to scale it by the servings of the entry that planned it.
+  Future<List<RecipeIngredient>> fetchLinesForRecipes(
+    List<String> recipeIds, {
+    String locale = 'sr',
+  }) =>
+      runGuarded(() async {
+        if (recipeIds.isEmpty) return const <RecipeIngredient>[];
+
+        final List<Map<String, dynamic>> rows = await _client
+            .from('recipe_ingredients')
+            .select('''
+id, recipe_id, position, section, raw_text, ingredient_id,
+qty_num, qty_den, qty_max_num, qty_max_den,
+unit_code, note, is_optional,
+match_method, match_confidence, matched_at,
+ingredients(is_pantry_staple, category)''')
+            .inFilter('recipe_id', recipeIds)
+            .order('position');
+
+        final List<RecipeIngredient> lines =
+            rows.map(_toIngredient).toList(growable: false);
+
+        return _withDisplayNames(lines, locale);
+      });
+
   /// Creates a recipe and returns the row that was written.
   ///
   /// Unlike `create_household`, this is a plain insert: `recipes` has an INSERT
@@ -355,8 +396,17 @@ recipe_steps(id, position, text, timer_seconds)''')
         deletedAt: _toDate(row['deleted_at']),
       );
 
-  RecipeIngredient _toIngredient(Map<String, dynamic> row) => RecipeIngredient(
+  RecipeIngredient _toIngredient(Map<String, dynamic> row) {
+    // Present only when `ingredients(...)` was embedded -- fetchDetail does
+    // not ask for it, because a recipe does not care whether an ingredient is
+    // a cupboard staple. fetchLinesForRecipes does.
+    final Map<String, dynamic>? catalog =
+        row['ingredients'] as Map<String, dynamic>?;
+    return RecipeIngredient(
         id: row['id'] as String?,
+        recipeId: row['recipe_id'] as String?,
+        isPantryStaple: catalog?['is_pantry_staple'] as bool? ?? false,
+        category: catalog?['category'] as String?,
         position: row['position'] as int,
         section: row['section'] as String?,
         rawText: row['raw_text'] as String,
@@ -371,6 +421,7 @@ recipe_steps(id, position, text, timer_seconds)''')
         matchConfidence: _toNullableDouble(row['match_confidence']),
         matchedAt: _toDate(row['matched_at']),
       );
+  }
 
   RecipeStep _toStep(Map<String, dynamic> row) => RecipeStep(
         id: row['id'] as String?,

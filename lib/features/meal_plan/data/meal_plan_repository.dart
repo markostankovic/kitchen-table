@@ -131,6 +131,25 @@ class MealPlanRepository {
         }).eq('id', entryId);
       });
 
+  /// Sets how many people one planned meal is for, or clears the override.
+  ///
+  /// `meal_plan_entries.servings` has existed since migration 14 and nothing
+  /// has ever written it, which made `docs/DATA_MODEL.md`'s "scale by
+  /// servings" step a no-op: the shopping list could read the column but the
+  /// cook could not fill it in. This is the writer (D62).
+  ///
+  /// Null clears the override, which is not the same as 1 -- it means "however
+  /// many the recipe says", and the aggregator then scales by nothing at all.
+  Future<void> setEntryServings({
+    required String entryId,
+    required int? servings,
+  }) =>
+      runGuarded(() async {
+        await _client
+            .from('meal_plan_entries')
+            .update(<String, dynamic>{'servings': servings}).eq('id', entryId);
+      });
+
   /// Removes an entry. A real delete, not a soft one -- `meal_plan_entries`
   /// carries no `deleted_at` of its own (D24, D49); it cascades with its
   /// plan, and this is the same removal a cascade would eventually do.

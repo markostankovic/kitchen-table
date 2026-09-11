@@ -1348,6 +1348,148 @@ reason above. Blocking the write outright — a warning that cannot be
 overridden would make "plan the same snack twice on purpose" impossible, and
 there is nothing wrong with that on occasion.
 
+## D59 — `shopping_lists` carries `updated_at`; `household_pantry_prefs` carries no lifecycle columns at all
+
+**Decided.** `shopping_lists` gets the full rule 4 treatment — `updated_at`
+with a `set_updated_at()` trigger, `deleted_at`, no DELETE policy — even
+though `docs/DATA_MODEL.md`'s sketch gave it only `deleted_at`.
+`shopping_list_items` is a D24 child table (no `household_id`, no lifecycle
+columns, cascades, hard delete, RLS through its parent).
+`household_pantry_prefs` carries a `household_id` and still gets no
+`deleted_at` and no `updated_at`, and clearing a preference is a hard delete.
+
+**Why.** Rule 4 is not a rule about which columns a table happens to need, it
+is a rule about every table carrying a `household_id` — the same correction
+D49 made to the `meal_plans` sketch. A snapshot is never edited after
+generation, but regenerating soft-deletes the previous list, and that write
+has to be visible to Phase 2's delta fetch or the Drift cache will keep
+serving a retired list in a supermarket.
+
+`household_pantry_prefs` is the exception, and this is not a fresh call:
+migration 6 already wrote the reasoning down when it taught
+`merge_ingredients` to reconcile the table — "a join table with no
+`deleted_at`, on the `household_members` precedent in D24, so the delete is a
+hard one". Clearing a preference is returning to the global default, not
+recording that you once held an opinion. This entry records that ruling where
+it can be found, rather than re-deciding it.
+
+**Consequence.** Creating these three tables made two `merge_ingredients`
+branches reachable for the first time since Phase 1b. They needed no changes —
+the `to_regclass()` guards and the `known` array in
+`merge_ingredients_test.sql` were written for this moment — but "the table is
+named" is not "the naming works", so `rls_shopping_lists_test.sql` asserts
+both branches positively rather than leaving the FK-coverage check to stand in
+for them.
+
+**Rejected.** Following the sketch literally and omitting `updated_at` — would
+hand the delta fetch a retired list it cannot tell is retired.
+
+## D60 — The sum is carried in exact rationals, and stored as an integer pair
+
+**Decided.** `lib/features/shopping_list/domain/rational.dart` is an exact
+rational type; the aggregation converts, scales and sums entirely in it, and
+rounds only when rendering. `units.to_base` is read through
+`Rational.parseDecimal` from `Unit.toBaseExact` — the `numeric` exactly as
+Postgres sent it — not through `Unit.toBase`'s `double`.
+`shopping_list_items.quantities` stores `amount_num` / `amount_den`, not
+`docs/DATA_MODEL.md`'s sketched single `amount`.
+
+**Why.** Rule 5, and `Quantity`'s own doc comment, which predicted this exact
+moment: "A shopping list that sums halves and thirds across a week has to land
+on exact numbers or it will quietly ask for 0.9999999 kg of flour." The thing
+that makes it affordable is that **no `to_base` value is irrational** —
+`28.349523125` is `28349523125 / 10^9` — so exactness costs a parse of a
+string that was already on the wire, not a new unit table. `⅓ šolje` three
+times is 240 ml, not 239.99998, and the emulator run confirmed the equivalent:
+`2 dl` plus `⅓ šolje` summed to exactly 280 ml.
+
+Storing the pair rather than a number keeps that guarantee across the wire. A
+rounded column would put a float back in the one place rule 5 was written to
+keep it out of, and a list that is regenerated or re-read would round twice.
+
+**Consequence.** `Unit` gains `toBaseExact`, nullable, beside the existing
+`toBase`. Two representations of one constant is a smell, but the alternative
+was changing `toBase` to a rational and rewriting the parser and line editor,
+which do not care about exactness and for which a `double` is the right type
+— the field's own doc already said so.
+
+**Rejected.** Summing in `double` and rounding at render — the rounding does
+hide most of the drift, which is exactly what makes it a bad trade: the bug
+would be invisible until a quantity was wrong in a shop. Making `Quantity` do
+the arithmetic — it models what a cook wrote, carries ranges and renders as
+`1½`; an intermediate sum is a different thing and does not want a range.
+
+## D61 — Generating a list is one `security invoker` RPC
+
+**Decided.** `save_shopping_list(household, plan, from_date, to_date, loc,
+items jsonb) returns uuid` writes the parent and every item in one
+transaction, assigning `position` from array order. `security invoker`, so RLS
+still decides; the membership check inside it exists only so a caller who
+cannot see the household gets a refusal instead of a successful no-op.
+
+**Why.** The third time this argument has been made — D36 for
+`replace_recipe_lines`, D44 for `save_imported_recipe`. An insert followed by
+an insert can fail between the two, and a headless shopping list is
+indistinguishable on screen from a week with nothing planned. `position` is
+derived rather than read from the JSON for the reason
+`replace_recipe_lines` gives: the client already sends items in display order,
+and deriving it makes a duplicated or missing position inexpressible.
+
+**Rejected.** Two inserts from the client — the failure mode is silent and
+looks like correct behaviour. `security definer` — the tables have real
+policies, so the function is atomicity, not authority (D36).
+
+## D62 — A planned meal can carry its own serving count, and the scale factor is `entry.servings / recipe.servings`
+
+**Decided.** The meal plan entry's action sheet gains *Cooking for…*, writing
+`meal_plan_entries.servings` through
+`MealPlanRepository.setEntryServings`. The aggregator scales each line by
+`entry.servings / recipe.servings` as an exact ratio, and by **1** whenever
+either side is null or non-positive. "As the recipe says" clears the override
+rather than storing the recipe's own number.
+
+**Why.** `meal_plan_entries.servings` shipped in migration 14 and nothing ever
+wrote it, which made `docs/DATA_MODEL.md`'s "scale by servings" step a no-op
+that no amount of unit testing would have caught — the column was readable,
+the aggregation was correct, and the factor was always 1 in the real app.
+Adding the writer is what makes the step reachable, and it is a few lines on
+an action sheet that already exists.
+
+Falling back to 1 rather than guessing matters: a recipe with no serving count
+of its own has nothing to scale *from*, and inventing a denominator would
+change quantities the cook never asked to change. Clearing rather than copying
+matters for the same reason — a copied number freezes a value that should
+follow the recipe if the recipe is later corrected.
+
+**Rejected.** Scaling by `entry.servings` alone — meaningless without knowing
+what the recipe's own count is. Storing the recipe's servings on the entry as
+a default — freezes a value that should track its source.
+
+## D63 — Pantry staples are collapsed under "Probably have", never hidden, and the override works both ways
+
+**Decided.** A flagged item renders inside a collapsed *Probably have*
+`ExpansionTile` with its quantity intact, never omitted from the snapshot.
+`household_pantry_prefs.always_have` overrides `ingredients.is_pantry_staple`
+in **both** directions. Long-pressing an item records the override and
+deliberately does **not** rewrite the list on screen; it says the change takes
+effect next time.
+
+**Why.** The first half was pre-decided in Phase 2 part 3's closing note and
+is written down here properly. Five ingredients are flagged globally by the
+seed (*so, ulje, šećer, voda, biber*) and every household disagrees with that
+list somewhere — a one-way override would make "we never actually have sugar
+in this house" unsayable. Hiding rather than collapsing would mean a cook who
+is out of salt has no way to see that this week needed any, and D13's snapshot
+is supposed to be a complete record of what the plan requires.
+
+Not rearranging the visible list is the same instinct: the list is a snapshot
+(D13), and a document that reorders itself while somebody is reading it in a
+shop is worse than one that is slightly out of date and says so.
+
+**Rejected.** Suppressing staples entirely — loses information the cook
+sometimes needs. Rewriting the on-screen list when an override is recorded —
+turns a snapshot into a live document, which is the thing D13 ruled out.
+
 ## Open / deferred
 
 - **Client vs Edge Function split** — rule of thumb written in
@@ -1356,7 +1498,11 @@ there is nothing wrong with that on occasion.
   Vercel against the same Supabase project, for public invite links and
   a shareable read-only recipe page. Not decided in detail. Do not build in
   Phase 1–3.
-- **Cross-family unit conversion** — deferred, see D9.
+- **Cross-family unit conversion** — deferred, see D9. `ingredients.density_g_per_ml`
+  and `piece_weight_g` still exist and are still never populated. Phase 2 part 4
+  shipped the shopping list without them, as D9 said it could: an ingredient
+  measured both by mass and by volume in one week renders as two entries on one
+  line, which is the documented behaviour, not a gap.
 - **Handwritten card OCR quality** — unknown until there's a real card to test.
 - **No model call has ever run.** Phase 1d ships three importers, and tier 0
   (reading prose or a page) and tier 4 (batched matching) have never executed:

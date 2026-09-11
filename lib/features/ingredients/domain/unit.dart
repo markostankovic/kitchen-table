@@ -27,6 +27,20 @@ abstract class Unit with _$Unit {
     /// here is a recipe's number.
     required double toBase,
 
+    /// The same constant as [toBase], exactly as Postgres wrote it.
+    ///
+    /// `units.to_base` is a `numeric`, and every value in it is an exact
+    /// decimal -- `28.349523125` is `28349523125 / 10^9`, not an irrational.
+    /// [toBase] has already lost that by the time it is a `double`, which is
+    /// fine for the parser and the line editor and is not fine for the
+    /// shopping list, where a week of thirds has to sum to a whole (rule 5).
+    /// Keeping the text is what lets `Rational.parseDecimal` read it back
+    /// exactly.
+    ///
+    /// Nullable because a [UnitCatalog] built in a test may not bother; the
+    /// aggregator falls back to [toBase] when it is absent.
+    String? toBaseExact,
+
     /// True only for the metric system proper. Only consulted for mass and
     /// volume, where the shopping list uses it to choose a display unit.
     @Default(false) bool isMetric,

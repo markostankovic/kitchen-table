@@ -44,3 +44,17 @@ class MealPlanRevision extends _$MealPlanRevision {
 
   void bump() => state = state + 1;
 }
+
+/// Bumped whenever a shopping list is generated, regenerated or discarded.
+///
+/// Here rather than in `features/shopping_list/application/` for the same
+/// reason as the two above, and for one more: a pantry override changes what a
+/// FUTURE list will flag, so the screen that toggles it and the screen that
+/// reads it are not always the same screen.
+@Riverpod(keepAlive: true)
+class ShoppingListRevision extends _$ShoppingListRevision {
+  @override
+  int build() => 0;
+
+  void bump() => state = state + 1;
+}

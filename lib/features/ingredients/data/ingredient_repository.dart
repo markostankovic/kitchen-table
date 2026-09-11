@@ -151,6 +151,10 @@ class IngredientRepository {
         // numeric arrives as num or String depending on the value's precision,
         // so it is normalised here rather than trusted.
         toBase: _toDouble(row['to_base']),
+        // The same value, untouched. The shopping list reads it back as an
+        // exact rational (rule 5), which the double above can no longer give
+        // it -- see Unit.toBaseExact.
+        toBaseExact: row['to_base']?.toString(),
         isMetric: row['is_metric'] as bool? ?? false,
       );
 

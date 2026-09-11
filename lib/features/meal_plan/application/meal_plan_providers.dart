@@ -97,6 +97,18 @@ class MealPlanEditor extends _$MealPlanEditor {
       _write((MealPlanRepository repo, String householdId, PlanWeek week) =>
           repo.moveEntry(entryId: entryId, entryDate: entryDate, slot: slot));
 
+  /// Sets how many people one planned meal is for, or clears the override.
+  ///
+  /// Goes through [_write] like every other action, so it bumps the meal plan
+  /// revision -- which the shopping list watches, because a changed serving
+  /// count changes what the next generated list asks the cook to buy (D62).
+  Future<void> setServings({
+    required String entryId,
+    required int? servings,
+  }) =>
+      _write((MealPlanRepository repo, String householdId, PlanWeek week) =>
+          repo.setEntryServings(entryId: entryId, servings: servings));
+
   Future<void> removeEntry(String entryId) =>
       _write((MealPlanRepository repo, String householdId, PlanWeek week) =>
           repo.removeEntry(entryId));

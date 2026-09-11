@@ -545,7 +545,13 @@ nothing here blocks a write.
 
 ## Shopping list
 
-Generate-and-view (D13). A snapshot, not a live document.
+Generate-and-view (D13). A snapshot, not a live document. Built in Phase 2
+part 4 (D59–D63); this block is what actually shipped, not the original
+sketch. Three corrections from that sketch, all explained in D59 and D60:
+`shopping_lists` gained `updated_at` (it carries a `household_id`, so rule 4
+applies in full — the same correction D49 made to `meal_plans`),
+`household_pantry_prefs` gained `created_at` but deliberately no `deleted_at`
+or `updated_at`, and `quantities` holds an integer pair rather than a number.
 
 ```sql
 create table shopping_lists (
@@ -557,7 +563,10 @@ create table shopping_lists (
   locale text not null check (locale in ('sr','en')),
   generated_at timestamptz not null default now(),
   created_by uuid not null references profiles(id),
-  deleted_at timestamptz
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),   -- D59
+  deleted_at timestamptz,
+  constraint shopping_lists_date_range check (date_to >= date_from)
 );
 
 create table shopping_list_items (
@@ -569,30 +578,63 @@ create table shopping_list_items (
   position int not null default 0,
   is_pantry_staple boolean not null default false,
   quantities jsonb not null default '[]',
-  -- [{ family:'mass', amount: 800, unit:'g' },
-  --  { family:'volume', amount: 480, unit:'ml' }]
-  unmatched_lines jsonb not null default '[]'  -- raw_text with no ingredient_id
+  -- One entry per unit family, never a single number (D9). The amount is an
+  -- integer pair for the same reason qty_num/qty_den are (rule 5, D60):
+  -- [{ family:'mass',   amount_num: 800, amount_den: 1, unit:'g' },
+  --  { family:'volume', amount_num: 480, amount_den: 1, unit:'ml' }]
+  unmatched_lines jsonb not null default '[]'  -- raw_text that produced no quantity
 );
 ```
 
-Aggregation runs on the client (see ARCHITECTURE, client/edge split):
+`shopping_list_items` is a child table in the D24 sense: no `household_id`, no
+lifecycle columns, cascades with its list, hard delete allowed, RLS scoped
+through its parent with an `exists` subquery. `shopping_lists` has no DELETE
+policy at all — retiring a list is a soft delete, and regenerating is exactly
+that followed by a new row.
 
-1. Collect `recipe_ingredients` for every non-leftover entry in range.
-2. Scale by `servings` where set.
-3. Group by `ingredient_id`; lines without one group by `normalize_text(raw_text)`.
-4. Within each group, convert to base unit per family and sum. Across families,
-   keep separate entries in `quantities` (D9).
+`display_name` is resolved from the catalog at generation time and stored, not
+joined at read time. That is what lets the list render with no catalog join,
+which is the whole point of the Drift cache (D12).
+
+`save_shopping_list(household uuid, plan uuid, from_date date, to_date date,
+loc text, items jsonb) returns uuid` (D61) writes the parent and every item in
+one transaction, assigning `position` from array order. `security invoker`, so
+RLS still decides.
+
+Aggregation runs on the client, in Dart (see ARCHITECTURE, client/edge split).
+`lib/features/shopping_list/domain/aggregate_shopping_list.dart`:
+
+1. Collect the lines of every entry in range that is **not** a leftover and
+   **not** a note. A leftover is a second serving of something already bought;
+   `MealPlanEntry.isLeftover` answers this with no join, because D55 derives a
+   leftover's `recipe_id` server-side.
+2. Scale by `entry.servings / recipe.servings`, and by 1 when either is absent
+   (D62). The entry's own count is written by *Cooking for…* on the meal plan.
+3. Group by `ingredient_id`; lines without one group by
+   `normalize_text(raw_text)` — `TextNormalizer` on this side, the same
+   definition (rule 6).
+4. Convert to the family's base unit and sum. Across families, keep separate
+   entries in `quantities` (D9). The whole chain is exact rationals (D60).
+   The `other` family (`prstohvat`, `po ukusu`) is **never summed** — migration
+   4 calls it "not a quantity"; it lands in `unmatched_lines`, as does any line
+   that failed to parse (rule 3).
 5. Mark items where the ingredient is a pantry staple globally, unless a
-   household override says otherwise.
+   household override says otherwise — in either direction.
 
 ```sql
 create table household_pantry_prefs (
   household_id uuid not null references households(id) on delete cascade,
   ingredient_id uuid not null references ingredients(id) on delete cascade,
   always_have boolean not null,          -- overrides the global flag both ways
+  created_at timestamptz not null default now(),
   primary key (household_id, ingredient_id)
 );
 ```
+
+A join table (D24, D59): hard delete, no `deleted_at`, no `updated_at`.
+Clearing a preference is returning to the global default. `merge_ingredients`
+has handled this table and `shopping_list_items` since migration 6, behind
+`to_regclass()` guards that only became live when these tables were created.
 
 ---
 

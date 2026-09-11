@@ -163,3 +163,82 @@ abstract class _$MealPlanRevision extends $Notifier<int> {
     return element.handleCreate(ref, build);
   }
 }
+
+/// Bumped whenever a shopping list is generated, regenerated or discarded.
+///
+/// Here rather than in `features/shopping_list/application/` for the same
+/// reason as the two above, and for one more: a pantry override changes what a
+/// FUTURE list will flag, so the screen that toggles it and the screen that
+/// reads it are not always the same screen.
+
+@ProviderFor(ShoppingListRevision)
+final shoppingListRevisionProvider = ShoppingListRevisionProvider._();
+
+/// Bumped whenever a shopping list is generated, regenerated or discarded.
+///
+/// Here rather than in `features/shopping_list/application/` for the same
+/// reason as the two above, and for one more: a pantry override changes what a
+/// FUTURE list will flag, so the screen that toggles it and the screen that
+/// reads it are not always the same screen.
+final class ShoppingListRevisionProvider
+    extends $NotifierProvider<ShoppingListRevision, int> {
+  /// Bumped whenever a shopping list is generated, regenerated or discarded.
+  ///
+  /// Here rather than in `features/shopping_list/application/` for the same
+  /// reason as the two above, and for one more: a pantry override changes what a
+  /// FUTURE list will flag, so the screen that toggles it and the screen that
+  /// reads it are not always the same screen.
+  ShoppingListRevisionProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'shoppingListRevisionProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$shoppingListRevisionHash();
+
+  @$internal
+  @override
+  ShoppingListRevision create() => ShoppingListRevision();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(int value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<int>(value),
+    );
+  }
+}
+
+String _$shoppingListRevisionHash() =>
+    r'd86de40f408b2ebb2938a6bd8b0017d591be1b57';
+
+/// Bumped whenever a shopping list is generated, regenerated or discarded.
+///
+/// Here rather than in `features/shopping_list/application/` for the same
+/// reason as the two above, and for one more: a pantry override changes what a
+/// FUTURE list will flag, so the screen that toggles it and the screen that
+/// reads it are not always the same screen.
+
+abstract class _$ShoppingListRevision extends $Notifier<int> {
+  int build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<int, int>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<int, int>,
+              int,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}

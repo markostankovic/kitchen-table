@@ -60,6 +60,25 @@ abstract class RecipeIngredient with _$RecipeIngredient {
     MatchMethod? matchMethod,
     double? matchConfidence,
     DateTime? matchedAt,
+
+    /// Which recipe this line belongs to.
+    ///
+    /// Null when the line is read as part of one recipe's own detail, where
+    /// the answer is the recipe being looked at. Set when lines for several
+    /// recipes arrive together, which is what the shopping list does -- it has
+    /// to scale each line by the servings of the entry that planned it, and
+    /// that is a per-recipe fact.
+    String? recipeId,
+
+    /// The catalog's `is_pantry_staple` and `category` for [ingredientId],
+    /// resolved at read time and never written back -- the same arrangement
+    /// as [displayName] above, and as `MealPlanEntry.recipeTitle` (D53).
+    ///
+    /// Only the shopping list reads these. A recipe does not care whether an
+    /// ingredient is a cupboard staple; a list of things to buy is the only
+    /// place the question means anything.
+    @Default(false) bool isPantryStaple,
+    String? category,
   }) = _RecipeIngredient;
 
   factory RecipeIngredient.fromJson(Map<String, dynamic> json) =>
