@@ -53,36 +53,74 @@ final class RecipeRepositoryProvider
   }
 }
 
-String _$recipeRepositoryHash() => r'a8f584a947472af7a2164d18c8ce8d827dafeaab';
+String _$recipeRepositoryHash() => r'b2d7549eaac252b13652e02791ce593c6c1ed62d';
 
-/// Not `keepAlive`: one entry per query string, and the family would grow
-/// without bound as somebody types. The screen debounces.
+/// The household's recipes, matching [query] -- cache immediately, then the
+/// network (Phase 2 part 6a, D67's shape widened from one row to many).
+///
+/// A `Stream`, not a `Future`, on `CurrentShoppingList`'s own precedent:
+/// `watchList` emits a cached list immediately, then the network's answer,
+/// and a `StreamNotifier` is what lets the second emission be part of the
+/// provider's own lifecycle. The value type consumers see
+/// (`AsyncValue<List<Recipe>>`) is unchanged from the old `Future`-based
+/// provider.
+///
+/// Still a family, and still not `keepAlive`: one entry per query string,
+/// disposed when nothing watches it, exactly as before -- the screen
+/// debounces.
 ///
 /// Watches [recipesRevisionProvider] so that any feature can invalidate this
-/// without importing it -- which `features/import/` cannot do.
+/// without importing it -- which `features/import/` cannot do. `build()`
+/// yields an empty list rather than reaching the repository at all when
+/// there is no household, so a household-less caller never touches
+/// `Supabase.instance.client` (the shell's tab loop relies on exactly this
+/// under test, `CurrentShoppingList`'s own reasoning).
 
-@ProviderFor(recipeList)
+@ProviderFor(RecipeList)
 final recipeListProvider = RecipeListFamily._();
 
-/// Not `keepAlive`: one entry per query string, and the family would grow
-/// without bound as somebody types. The screen debounces.
+/// The household's recipes, matching [query] -- cache immediately, then the
+/// network (Phase 2 part 6a, D67's shape widened from one row to many).
+///
+/// A `Stream`, not a `Future`, on `CurrentShoppingList`'s own precedent:
+/// `watchList` emits a cached list immediately, then the network's answer,
+/// and a `StreamNotifier` is what lets the second emission be part of the
+/// provider's own lifecycle. The value type consumers see
+/// (`AsyncValue<List<Recipe>>`) is unchanged from the old `Future`-based
+/// provider.
+///
+/// Still a family, and still not `keepAlive`: one entry per query string,
+/// disposed when nothing watches it, exactly as before -- the screen
+/// debounces.
 ///
 /// Watches [recipesRevisionProvider] so that any feature can invalidate this
-/// without importing it -- which `features/import/` cannot do.
-
+/// without importing it -- which `features/import/` cannot do. `build()`
+/// yields an empty list rather than reaching the repository at all when
+/// there is no household, so a household-less caller never touches
+/// `Supabase.instance.client` (the shell's tab loop relies on exactly this
+/// under test, `CurrentShoppingList`'s own reasoning).
 final class RecipeListProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<Recipe>>,
-          List<Recipe>,
-          FutureOr<List<Recipe>>
-        >
-    with $FutureModifier<List<Recipe>>, $FutureProvider<List<Recipe>> {
-  /// Not `keepAlive`: one entry per query string, and the family would grow
-  /// without bound as somebody types. The screen debounces.
+    extends $StreamNotifierProvider<RecipeList, List<Recipe>> {
+  /// The household's recipes, matching [query] -- cache immediately, then the
+  /// network (Phase 2 part 6a, D67's shape widened from one row to many).
+  ///
+  /// A `Stream`, not a `Future`, on `CurrentShoppingList`'s own precedent:
+  /// `watchList` emits a cached list immediately, then the network's answer,
+  /// and a `StreamNotifier` is what lets the second emission be part of the
+  /// provider's own lifecycle. The value type consumers see
+  /// (`AsyncValue<List<Recipe>>`) is unchanged from the old `Future`-based
+  /// provider.
+  ///
+  /// Still a family, and still not `keepAlive`: one entry per query string,
+  /// disposed when nothing watches it, exactly as before -- the screen
+  /// debounces.
   ///
   /// Watches [recipesRevisionProvider] so that any feature can invalidate this
-  /// without importing it -- which `features/import/` cannot do.
+  /// without importing it -- which `features/import/` cannot do. `build()`
+  /// yields an empty list rather than reaching the repository at all when
+  /// there is no household, so a household-less caller never touches
+  /// `Supabase.instance.client` (the shell's tab loop relies on exactly this
+  /// under test, `CurrentShoppingList`'s own reasoning).
   RecipeListProvider._({
     required RecipeListFamily super.from,
     required String super.argument,
@@ -106,15 +144,7 @@ final class RecipeListProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<Recipe>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<List<Recipe>> create(Ref ref) {
-    final argument = this.argument as String;
-    return recipeList(ref, query: argument);
-  }
+  RecipeList create() => RecipeList();
 
   @override
   bool operator ==(Object other) {
@@ -127,16 +157,38 @@ final class RecipeListProvider
   }
 }
 
-String _$recipeListHash() => r'354cdb3736d2169451bfafb94db4c28d78f38f44';
+String _$recipeListHash() => r'126f99b4ba574c289668069cd7396abf4dc8bbd9';
 
-/// Not `keepAlive`: one entry per query string, and the family would grow
-/// without bound as somebody types. The screen debounces.
+/// The household's recipes, matching [query] -- cache immediately, then the
+/// network (Phase 2 part 6a, D67's shape widened from one row to many).
+///
+/// A `Stream`, not a `Future`, on `CurrentShoppingList`'s own precedent:
+/// `watchList` emits a cached list immediately, then the network's answer,
+/// and a `StreamNotifier` is what lets the second emission be part of the
+/// provider's own lifecycle. The value type consumers see
+/// (`AsyncValue<List<Recipe>>`) is unchanged from the old `Future`-based
+/// provider.
+///
+/// Still a family, and still not `keepAlive`: one entry per query string,
+/// disposed when nothing watches it, exactly as before -- the screen
+/// debounces.
 ///
 /// Watches [recipesRevisionProvider] so that any feature can invalidate this
-/// without importing it -- which `features/import/` cannot do.
+/// without importing it -- which `features/import/` cannot do. `build()`
+/// yields an empty list rather than reaching the repository at all when
+/// there is no household, so a household-less caller never touches
+/// `Supabase.instance.client` (the shell's tab loop relies on exactly this
+/// under test, `CurrentShoppingList`'s own reasoning).
 
 final class RecipeListFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<Recipe>>, String> {
+    with
+        $ClassFamilyOverride<
+          RecipeList,
+          AsyncValue<List<Recipe>>,
+          List<Recipe>,
+          Stream<List<Recipe>>,
+          String
+        > {
   RecipeListFamily._()
     : super(
         retry: null,
@@ -146,11 +198,26 @@ final class RecipeListFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Not `keepAlive`: one entry per query string, and the family would grow
-  /// without bound as somebody types. The screen debounces.
+  /// The household's recipes, matching [query] -- cache immediately, then the
+  /// network (Phase 2 part 6a, D67's shape widened from one row to many).
+  ///
+  /// A `Stream`, not a `Future`, on `CurrentShoppingList`'s own precedent:
+  /// `watchList` emits a cached list immediately, then the network's answer,
+  /// and a `StreamNotifier` is what lets the second emission be part of the
+  /// provider's own lifecycle. The value type consumers see
+  /// (`AsyncValue<List<Recipe>>`) is unchanged from the old `Future`-based
+  /// provider.
+  ///
+  /// Still a family, and still not `keepAlive`: one entry per query string,
+  /// disposed when nothing watches it, exactly as before -- the screen
+  /// debounces.
   ///
   /// Watches [recipesRevisionProvider] so that any feature can invalidate this
-  /// without importing it -- which `features/import/` cannot do.
+  /// without importing it -- which `features/import/` cannot do. `build()`
+  /// yields an empty list rather than reaching the repository at all when
+  /// there is no household, so a household-less caller never touches
+  /// `Supabase.instance.client` (the shell's tab loop relies on exactly this
+  /// under test, `CurrentShoppingList`'s own reasoning).
 
   RecipeListProvider call({String query = ''}) =>
       RecipeListProvider._(argument: query, from: this);
@@ -159,12 +226,66 @@ final class RecipeListFamily extends $Family
   String toString() => r'recipeListProvider';
 }
 
+/// The household's recipes, matching [query] -- cache immediately, then the
+/// network (Phase 2 part 6a, D67's shape widened from one row to many).
+///
+/// A `Stream`, not a `Future`, on `CurrentShoppingList`'s own precedent:
+/// `watchList` emits a cached list immediately, then the network's answer,
+/// and a `StreamNotifier` is what lets the second emission be part of the
+/// provider's own lifecycle. The value type consumers see
+/// (`AsyncValue<List<Recipe>>`) is unchanged from the old `Future`-based
+/// provider.
+///
+/// Still a family, and still not `keepAlive`: one entry per query string,
+/// disposed when nothing watches it, exactly as before -- the screen
+/// debounces.
+///
+/// Watches [recipesRevisionProvider] so that any feature can invalidate this
+/// without importing it -- which `features/import/` cannot do. `build()`
+/// yields an empty list rather than reaching the repository at all when
+/// there is no household, so a household-less caller never touches
+/// `Supabase.instance.client` (the shell's tab loop relies on exactly this
+/// under test, `CurrentShoppingList`'s own reasoning).
+
+abstract class _$RecipeList extends $StreamNotifier<List<Recipe>> {
+  late final _$args = ref.$arg as String;
+  String get query => _$args;
+
+  Stream<List<Recipe>> build({String query = ''});
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<List<Recipe>>, List<Recipe>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<Recipe>>, List<Recipe>>,
+              AsyncValue<List<Recipe>>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, () => build(query: _$args));
+  }
+}
+
 /// One recipe with its lines and steps, names resolved from the catalog.
+///
+/// Stays a plain `Future` (D74): network-first with a cache fallback on
+/// `NetworkFailure`, the same one-emission shape
+/// `IngredientRepository.fetchUnitCatalog()` uses, not the two-emission
+/// stream [RecipeList] uses. See `RecipeRepository.fetchDetail`'s own doc
+/// comment for why a single recipe differs from the whole list.
 
 @ProviderFor(recipeDetail)
 final recipeDetailProvider = RecipeDetailFamily._();
 
 /// One recipe with its lines and steps, names resolved from the catalog.
+///
+/// Stays a plain `Future` (D74): network-first with a cache fallback on
+/// `NetworkFailure`, the same one-emission shape
+/// `IngredientRepository.fetchUnitCatalog()` uses, not the two-emission
+/// stream [RecipeList] uses. See `RecipeRepository.fetchDetail`'s own doc
+/// comment for why a single recipe differs from the whole list.
 
 final class RecipeDetailProvider
     extends
@@ -175,6 +296,12 @@ final class RecipeDetailProvider
         >
     with $FutureModifier<RecipeDetail>, $FutureProvider<RecipeDetail> {
   /// One recipe with its lines and steps, names resolved from the catalog.
+  ///
+  /// Stays a plain `Future` (D74): network-first with a cache fallback on
+  /// `NetworkFailure`, the same one-emission shape
+  /// `IngredientRepository.fetchUnitCatalog()` uses, not the two-emission
+  /// stream [RecipeList] uses. See `RecipeRepository.fetchDetail`'s own doc
+  /// comment for why a single recipe differs from the whole list.
   RecipeDetailProvider._({
     required RecipeDetailFamily super.from,
     required (String, {String locale}) super.argument,
@@ -222,6 +349,12 @@ final class RecipeDetailProvider
 String _$recipeDetailHash() => r'5bda84407446561151bbf8df28d1c1522c7cb359';
 
 /// One recipe with its lines and steps, names resolved from the catalog.
+///
+/// Stays a plain `Future` (D74): network-first with a cache fallback on
+/// `NetworkFailure`, the same one-emission shape
+/// `IngredientRepository.fetchUnitCatalog()` uses, not the two-emission
+/// stream [RecipeList] uses. See `RecipeRepository.fetchDetail`'s own doc
+/// comment for why a single recipe differs from the whole list.
 
 final class RecipeDetailFamily extends $Family
     with
@@ -239,6 +372,12 @@ final class RecipeDetailFamily extends $Family
       );
 
   /// One recipe with its lines and steps, names resolved from the catalog.
+  ///
+  /// Stays a plain `Future` (D74): network-first with a cache fallback on
+  /// `NetworkFailure`, the same one-emission shape
+  /// `IngredientRepository.fetchUnitCatalog()` uses, not the two-emission
+  /// stream [RecipeList] uses. See `RecipeRepository.fetchDetail`'s own doc
+  /// comment for why a single recipe differs from the whole list.
 
   RecipeDetailProvider call(String recipeId, {String locale = 'sr'}) =>
       RecipeDetailProvider._(argument: (recipeId, locale: locale), from: this);

@@ -17,6 +17,29 @@ import 'package:kitchen_table/features/recipes/presentation/recipe_list_screen.d
 /// Providers are overridden rather than mocked -- Riverpod's own override
 /// mechanism means no mocking package, so CLAUDE.md rule 8 is never triggered.
 
+/// A stub for the `StreamNotifier` family `recipeListProvider` became in
+/// Phase 2 part 6a -- on `shopping_list_screen_test.dart`'s `_StubList`
+/// precedent. Filters [recipes] by `query` itself, matching the old
+/// override's own inline logic, since [RecipeList.build] is never reached
+/// through a stub.
+class _StubRecipeList extends RecipeList {
+  _StubRecipeList(this.recipes);
+
+  final List<Recipe> recipes;
+
+  @override
+  Stream<List<Recipe>> build({String query = ''}) async* {
+    yield query.isEmpty
+        ? recipes
+        : recipes
+            .where(
+              (Recipe r) =>
+                  r.title.toLowerCase().contains(query.toLowerCase()),
+            )
+            .toList();
+  }
+}
+
 const Recipe _torta = Recipe(
   id: 'r1',
   householdId: 'h1',
@@ -98,14 +121,7 @@ Future<void> _pumpList(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        recipeListProvider.overrideWith(
-          (Ref ref, String query) async => query.isEmpty
-              ? recipes
-              : recipes
-                  .where((Recipe r) =>
-                      r.title.toLowerCase().contains(query.toLowerCase()))
-                  .toList(),
-        ),
+        recipeListProvider.overrideWith2((_) => _StubRecipeList(recipes)),
       ],
       child: const MaterialApp(home: RecipeListScreen()),
     ),

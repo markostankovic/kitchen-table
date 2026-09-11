@@ -631,6 +631,73 @@ directly showed the household's `shopping_list_cache` row gone and the
 airplane mode without generating anything rendered no list (correct) with
 count units still in Serbian (correct, D70's argument holding).
 
+### Part 6a — The delta fetch, and recipes and the ingredient catalog offline
+
+**Status: complete.** Decisions taken during it: D72–D74.
+
+D71's own deferral, closed: `last_sync_at`-style delta fetch, and the two
+entities it needed a real multi-row fetch to be designed against.
+
+- `SyncWatermarks` (`core/db/`) — one row per `(entity, scope)`, advanced
+  from the max `updated_at` of the rows a fetch actually received, never
+  `DateTime.now()` (D72). `AppDatabase.schemaVersion` moved to `2`
+- `DisplayNameChain` (`features/ingredients/domain/`) — `ingredient_display_name()`'s
+  fallback chain, ported to Dart against `test/fixtures/display_names.json`,
+  asserted on both sides the same way `normalize_text()`/`TextNormalizer`
+  already are (rule 6, D72). `tool/gen_display_name_sql.dart` generates the
+  Postgres half exactly as `gen_normalization_sql.dart` does
+- `RecipeCache` and `IngredientNameCache` (`core/db/`), and the Remote/Local
+  split's second and third outings: `RemoteRecipeDataSource`/
+  `LocalRecipeDataSource` compose into `RecipeRepository`, which now caches
+  the household's recipes AND the global ingredient name catalog — the
+  latter a deliberate ownership choice (D73) rather than an oversight:
+  `ingredient_display_names` has exactly one caller, and the layer boundary
+  (D33) forbids `recipes/data/` reaching `ingredients/data/` directly, so
+  the cache and its sync stay where the one caller is until a second exists
+- `watchList()` — cache-then-network for the whole recipe list, the same
+  shape `ShoppingListRepository.watchLatest` established; local search
+  matches the server's old `ilike` results exactly, since both compare the
+  same `normalize_text()`-derived value (rule 6). `fetchDetail()` stays
+  network-first with a cache fallback instead (D74) — closer to
+  `fetchUnitCatalog()`'s shape than the list's, because a single recipe
+  read on demand has little to gain from a stale-then-fresh emission
+- `recipeListProvider` is now a `StreamNotifier` family; `recipeDetailProvider`
+  is unchanged, a plain `Future` — D74's whole point, and the reason only
+  the list's screen test needed a stub rewritten
+- A recipe's own online detail read now also triggers a best-effort
+  background sync of the *whole* global name catalog, not just the ids that
+  recipe mentions — closing "every ingredient renders offline, including
+  ones never viewed"
+
+**Done when:** recipes and the ingredient catalog are readable offline, the
+same way the shopping list and unit catalog were in part 5. — **Met in
+tests and against the local Postgres stack, not verified on the emulator.**
+18 new Dart tests: the watermark advancing to the max `updated_at` received
+rather than `now()`; the recipe cache's household scoping and ordering; an
+id cached without embedded lines reading back as an honest detail-cache
+miss even though it is a list-cache hit; `DisplayNameChain` resolving a
+real cached row set through every clause of the fallback order; and
+`RecipeRepository.watchList`/`fetchDetail`'s cache-then-network and
+network-first-with-fallback behaviour respectively, including a
+soft-deleted row in a delta evicting its cached copy. Six
+`display_names.json` fixture cases pass identically in
+`display_name_chain_test.dart` and in `display_names_test.sql` run against
+the real `ingredient_display_name()` function — `make test-sql` in full,
+`make check` in full, `dart analyze` and `tool/check_layers.dart` both
+clean. **Not yet exercised on the Android emulator** — the actual "open a
+recipe online, go to airplane mode, force-stop, relaunch, see it render
+with Serbian catalog names on matched lines and a photo placeholder" walk
+every prior part in this phase closed with — is the one verification step
+still open, named here rather than left to be assumed.
+
+### Part 6b — Meal plan weeks offline
+
+**Status: not started.** The last entity on Phase 2's offline list.
+`SyncWatermarks` and the delta-fetch shape are already proven (part 6a); the
+new piece is a per-`(household_id, week_start)` scope rather than a
+per-household one, and `meal_plan_entries_touch_plan()` (migration 14)
+already maintains `meal_plans.updated_at` for exactly this trigger.
+
 ### Still to build
 
 - ~~`shopping_lists`, `shopping_list_items`, `household_pantry_prefs`~~ — done
@@ -638,10 +705,9 @@ count units still in Serbian (correct, D70's argument holding).
 - ~~Client-side aggregation~~ — done in part 4
 - ~~Drift read cache foundation, proven on the shopping list and unit
   catalog~~ — done in part 5
-- Drift read cache for recipes, meal plans and the ingredient name catalog;
-  `last_sync_at` delta fetch on `updated_at`, honouring `deleted_at` — D71
-  deferred this deliberately until a real multi-row fetch exists to design it
-  against
+- ~~Delta fetch (`last_sync_at`-style), recipes and the ingredient name
+  catalog offline~~ — done in part 6a
+- Meal plan weeks offline — part 6b
 - A global offline banner (distinct from part 5's per-screen "showing your
   saved copy" line); writes fail loudly everywhere, not just on the list
 - Small admin screen: unverified ingredient count, unmatched line count,
@@ -650,8 +716,8 @@ count units still in Serbian (correct, D70's argument holding).
 
 **Done when:** every entity in `docs/ARCHITECTURE.md`'s offline list — recipes,
 meal plans, the shopping list, the ingredient catalog — is readable offline,
-with a global signal saying so. Part 5 met this for the shopping list and the
-unit catalog specifically; the rest is what remains.
+with a global signal saying so. Parts 5 and 6a met this for everything except
+meal plans; part 6b is what remains.
 
 ---
 

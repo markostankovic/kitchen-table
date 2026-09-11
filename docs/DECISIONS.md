@@ -1756,6 +1756,147 @@ that has always lied.
 the precedent's premise (irreversibility) does not hold for local cache DDL;
 see above.
 
+## D72 — The delta-fetch watermark is per-(entity, scope), advanced from the max `updated_at` received, and the display-name chain is ported to Dart against a shared fixture
+
+**Decided.** `SyncWatermarks` (`entity`, `scope`, `syncedAt`) is the
+mechanism D71 deferred: one row per entity per scope (a household id, or
+`globalSyncScope` for reference data with no household of its own), so that
+syncing one household's recipes can never move the ingredient name
+catalog's watermark or vice versa. `SyncWatermarkStore.advance` takes the
+timestamp to advance to as a parameter — the caller computes it as the
+max(`updated_at`) of the rows a fetch actually received — and nothing in
+`core/db/` ever calls `DateTime.now()` for this. A missing watermark reads
+as null and means "fetch everything," which costs one refetch and is never
+wrong, the same tolerance D71 built the rest of the cache on.
+
+Reading offline also needs `ingredient_display_name()`'s fallback chain,
+and there is no RPC offline to ask. Migration 4's own comment rejected
+reimplementing it in Dart, "out of reach of the SQL tests" — true when
+there was no offline reader to serve. This narrows that call rather than
+reversing it outright: `DisplayNameChain` in
+`features/ingredients/domain/display_name_chain.dart` ports the chain's
+four-clause `order by` line for line, and `test/fixtures/display_names.json`
+is asserted on both sides — a Dart test over the fixture directly, and
+`tool/gen_display_name_sql.dart` generating `supabase/tests/
+display_names_test.sql` from the same file, on `normalize_text()`/
+`TextNormalizer`'s exact precedent (rule 6, D5). Change one, change both,
+regenerate the SQL, run `make test-sql`.
+
+**Why.** D71 named the two things a delta fetch needs that a single-row
+shopping list read could not exercise: a per-table (or per-household-per-
+table) watermark, and an answer to "advance from what, when a local clock
+and a server clock disagree." Recipes and the ingredient name catalog are
+the first two entities that give the design something real to be right
+about. Advancing from the max `updated_at` **received**, rather than the
+local wall clock, is the part that actually matters: a clock advanced to
+"now" on the phone would silently drop every row the server writes in the
+gap between the fetch starting and the phone's own clock reading it — clock
+skew is not paranoia here, it is the one bug a watermark exists to avoid.
+
+The display-name chain's fixture is deliberately not the same file
+`normalization.json` uses — it is a different contract (a fallback order
+over locale/display-flag/recency, not a text transform) — but it is
+governed by the identical rule: one definition per side, verified together,
+because two independently-written implementations of "which name wins"
+disagreeing is exactly the failure D1 exists to prevent, now duplicated
+across a network boundary that can be down.
+
+**Rejected.**
+- A single global watermark — would make syncing one entity reset every
+  other entity's progress, forcing a full refetch of everything whenever
+  anything changed.
+- Advancing the watermark to `DateTime.now()` at the end of a successful
+  fetch — the clock-skew bug above, and the reason this decision names the
+  computed-max requirement explicitly rather than leaving it to convention.
+- Leaving `ingredient_display_name()`'s chain RPC-only and showing raw
+  ingredient ids or bare `raw_text` offline for every matched line — passes
+  no test, and defeats the entire reason the ingredient catalog is on
+  Phase 2's offline list in `docs/ARCHITECTURE.md`.
+
+## D73 — The ingredient-name cache and its sync live in `features/recipes/data/`, not `features/ingredients/data/`, until a second caller exists
+
+**Decided.** `LocalRecipeDataSource` holds the read/write/resolve methods
+for `IngredientNameCache`, and `RemoteRecipeDataSource`/`RecipeRepository`
+hold the delta fetch of `ingredient_names` and the best-effort background
+sync that keeps it warm. `IngredientRepository` and
+`LocalIngredientDataSource` (`features/ingredients/data/`) are untouched by
+this part.
+
+**Why.** `ingredient_display_names` has exactly one caller in the whole
+codebase: `RecipeRepository`. Putting the offline version in
+`features/ingredients/data/` — the seemingly natural home — would need
+`RecipeRepository` to call into it, and `tool/check_layers.dart` forbids
+`features/recipes/data/` from importing `features/ingredients/data/`
+directly (D33): that is the exact wall Phase 1c hit before D43 moved the
+catalog to `core/ingredients/`. `core/` cannot absorb this instead: the
+checker restricts `package:drift` to `data/` and `core/db/`, and
+`package:supabase_flutter` to `data/` and `core/supabase/`, so a
+cross-feature `core/` helper could hold the cache *read* (drift only) but
+never the network *sync* (supabase_flutter) — splitting one round trip
+across two files and two owners, for a boundary with no second caller to
+justify it yet.
+
+D43's own precedent is the better fit, read literally: Phase 1c's ingredient
+catalog datasource was duplicated once, with a note that a third caller
+should reopen the decision. There has never been a first duplication here —
+only one caller has ever existed — so there is nothing to deduplicate yet.
+The moment a second feature needs `ingredient_display_names` (Phase 3's
+translated recipe view is the likely candidate), that is the signal to
+extract this into `core/ingredients/`, exactly as D43 describes, and not a
+moment before.
+
+**Rejected.**
+- Building the sync in `features/ingredients/data/` and having
+  `RecipeRepository` call it directly — the forbidden cross-feature `data/`
+  import D33 already ruled out.
+- A `core/ingredients/` helper split across a drift-only read and a
+  supabase-only write — legal per file, but two files and two owners for
+  one round trip nobody but recipes has ever asked for.
+- Waiting to build recipe-detail offline resolution until the ingredients
+  feature "properly" owns it — blocks a Phase 2 Done-when item on an
+  abstraction Phase 2 does not need yet.
+
+## D74 — A single recipe's detail reads network-first with a cache fallback; the whole list reads cache-then-network
+
+**Decided.** `RecipeRepository.fetchDetail` tries the network and falls
+back to the cache only on a `NetworkFailure` — one emission, the same shape
+`IngredientRepository.fetchUnitCatalog()` uses (D70). `RecipeRepository
+.watchList` (the whole household's recipes) is a two-emission stream, cache
+then network — the same shape `ShoppingListRepository.watchLatest` uses
+(D67). The two reads of the same underlying cache disagree on purpose.
+
+**Why.** D67's argument for cache-then-network is that a household's own
+data "changes on someone else's say-so" and is worth showing stale rather
+than not at all while a fresh answer is fetched in the background — true of
+the whole list (another device may have added a recipe moments ago) in
+exactly the way it is true of the shopping list. D70's argument for
+network-first is that showing a stale answer before a fresh one buys
+nothing when there is nothing to gain from the staleness. A single
+recipe's detail sits closer to D70's case than D67's: it is fetched
+on-demand exactly when the cook opens it, an edit to it while they are
+mid-read is rare, and Phase 2's actual requirement — readable with no
+network at all — is fully met by a fallback, not by an extra emission
+nobody is likely to see update.
+
+Network-first also keeps `recipeDetailProvider`'s public shape a plain
+`Future<RecipeDetail>`, unchanged since before this part: every existing
+override in `recipe_screens_test.dart` (`recipeDetailProvider('r1')
+.overrideWith((Ref ref) async => detail)`) keeps working verbatim.
+`recipeListProvider` becoming a `StreamNotifier` family did need a stub
+rewritten (`_StubRecipeList`, on `shopping_list_screen_test.dart`'s
+`_StubList` precedent) — a real, contained cost this decision avoids paying
+twice.
+
+**Rejected.**
+- A two-emission stream for `fetchDetail` too, for symmetry with
+  `watchList` — pays for a second emission and a provider-shape change with
+  no case in the app that benefits from seeing a stale detail before a
+  fresh one.
+- Network-first for `watchList` as well — the whole list is exactly the
+  entity D67 already argued should show stale data rather than none, and
+  reversing that for consistency with `fetchDetail` would undo D67's own
+  reasoning for no reason specific to recipes.
+
 ## Open / deferred
 
 - **Client vs Edge Function split** — rule of thumb written in
@@ -1817,13 +1958,16 @@ see above.
   exercised outside the SQL suite — still unbuilt after Phase 2 part 3, which
   closed the other three items this note used to list (leftover entries,
   the snack variety check, within-slot reordering — D55–D58).
-- **The rest of the Drift cache** — see D64–D71. Recipes, meal plans and the
-  ingredient name catalog are not cached yet, only the shopping list and the
-  unit lexicon; none of the three has the `last_sync_at` delta-fetch
-  machinery D71 deliberately deferred, because none of them exists yet to
-  need it. The offline banner (a global "you're offline", distinct from the
-  shopping list screen's own "showing your saved copy") and the admin
-  screen's `match_method`/cache-health surfacing are both still unbuilt.
+- **The rest of the Drift cache** — see D64–D74. Phase 2 part 6a added the
+  `last_sync_at`-style watermark D71 deferred (`SyncWatermarks`, D72) and
+  used it to cache recipes and the global ingredient name catalog
+  (D72–D74). **Meal plans are the one entity still uncached** — the same
+  watermark mechanism applies, keyed per `(household_id, week_start)` rather
+  than per household, since `meal_plan_entries_touch_plan()` already
+  maintains `meal_plans.updated_at` for exactly this. The offline banner (a
+  global "you're offline", distinct from the shopping list screen's own
+  "showing your saved copy") and the admin screen's
+  `match_method`/cache-health surfacing are both still unbuilt.
 - **A generated list is never compared against the plan it came from** — see
   Phase 2 part 4's own closing note, unchanged by this part. Editing the week
   after generating still leaves a list that is quietly stale on the server

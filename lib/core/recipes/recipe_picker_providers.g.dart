@@ -54,10 +54,15 @@ final class PlannableRecipeSourceProvider
 }
 
 String _$plannableRecipeSourceHash() =>
-    r'0542b81900bde91b9e76eb17edf6056b6847992c';
+    r'689cba907257e4df173a362e63af3c949c6cd72b';
 
 /// Recipes the cook can drop into a slot, searchable the same way the recipe
-/// list is -- diacritic- and case-insensitive, via `title_normalized`.
+/// list is -- diacritic- and case-insensitive, via `TextNormalizer`.
+///
+/// One answer, not two emissions (`RecipeRepository.searchOnce`): a bottom
+/// sheet has no "showing your saved copy" line to drive, and adding a
+/// recipe to a slot needs the network regardless (D54), so there is
+/// nothing here for a second, fresher emission to improve on mid-pick.
 ///
 /// Watches [recipesRevisionProvider] so a recipe created moments ago (from
 /// this screen or the recipes tab) shows up without a manual refresh.
@@ -66,7 +71,12 @@ String _$plannableRecipeSourceHash() =>
 final plannableRecipesProvider = PlannableRecipesFamily._();
 
 /// Recipes the cook can drop into a slot, searchable the same way the recipe
-/// list is -- diacritic- and case-insensitive, via `title_normalized`.
+/// list is -- diacritic- and case-insensitive, via `TextNormalizer`.
+///
+/// One answer, not two emissions (`RecipeRepository.searchOnce`): a bottom
+/// sheet has no "showing your saved copy" line to drive, and adding a
+/// recipe to a slot needs the network regardless (D54), so there is
+/// nothing here for a second, fresher emission to improve on mid-pick.
 ///
 /// Watches [recipesRevisionProvider] so a recipe created moments ago (from
 /// this screen or the recipes tab) shows up without a manual refresh.
@@ -80,7 +90,12 @@ final class PlannableRecipesProvider
         >
     with $FutureModifier<List<Recipe>>, $FutureProvider<List<Recipe>> {
   /// Recipes the cook can drop into a slot, searchable the same way the recipe
-  /// list is -- diacritic- and case-insensitive, via `title_normalized`.
+  /// list is -- diacritic- and case-insensitive, via `TextNormalizer`.
+  ///
+  /// One answer, not two emissions (`RecipeRepository.searchOnce`): a bottom
+  /// sheet has no "showing your saved copy" line to drive, and adding a
+  /// recipe to a slot needs the network regardless (D54), so there is
+  /// nothing here for a second, fresher emission to improve on mid-pick.
   ///
   /// Watches [recipesRevisionProvider] so a recipe created moments ago (from
   /// this screen or the recipes tab) shows up without a manual refresh.
@@ -128,10 +143,15 @@ final class PlannableRecipesProvider
   }
 }
 
-String _$plannableRecipesHash() => r'113da3079fdb9fff6ad29aefcb251af04d2476ba';
+String _$plannableRecipesHash() => r'93e27a0db27654fd53ffecae96718065ef716f60';
 
 /// Recipes the cook can drop into a slot, searchable the same way the recipe
-/// list is -- diacritic- and case-insensitive, via `title_normalized`.
+/// list is -- diacritic- and case-insensitive, via `TextNormalizer`.
+///
+/// One answer, not two emissions (`RecipeRepository.searchOnce`): a bottom
+/// sheet has no "showing your saved copy" line to drive, and adding a
+/// recipe to a slot needs the network regardless (D54), so there is
+/// nothing here for a second, fresher emission to improve on mid-pick.
 ///
 /// Watches [recipesRevisionProvider] so a recipe created moments ago (from
 /// this screen or the recipes tab) shows up without a manual refresh.
@@ -148,7 +168,12 @@ final class PlannableRecipesFamily extends $Family
       );
 
   /// Recipes the cook can drop into a slot, searchable the same way the recipe
-  /// list is -- diacritic- and case-insensitive, via `title_normalized`.
+  /// list is -- diacritic- and case-insensitive, via `TextNormalizer`.
+  ///
+  /// One answer, not two emissions (`RecipeRepository.searchOnce`): a bottom
+  /// sheet has no "showing your saved copy" line to drive, and adding a
+  /// recipe to a slot needs the network regardless (D54), so there is
+  /// nothing here for a second, fresher emission to improve on mid-pick.
   ///
   /// Watches [recipesRevisionProvider] so a recipe created moments ago (from
   /// this screen or the recipes tab) shows up without a manual refresh.

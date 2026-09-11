@@ -1,175 +1,200 @@
-/// Recipe data access. The only place in this feature that touches Supabase
-/// (CLAUDE.md rule 1).
+/// Recipe data access, composed from a Remote half (Supabase) and a Local
+/// half (the Drift cache) -- `docs/ARCHITECTURE.md`'s "Offline (Phase 2)"
+/// split, the third outing after the shopping list and the unit catalog
+/// (Phase 2 part 6a).
+///
+/// This file itself imports neither `supabase_flutter` nor `drift`: rule 1's
+/// "the only place `supabase_flutter` may be imported" now belongs to
+/// [RemoteRecipeDataSource], and [LocalRecipeDataSource] is the drift half.
+/// This class only orchestrates the two.
 library;
 
+import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:typed_data';
 
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../../../core/error/app_failure.dart';
-import '../../../core/supabase/supabase_failure.dart';
 import '../../../core/text/text_normalizer.dart';
-import '../../ingredients/domain/ingredient_match.dart';
-import '../../ingredients/domain/quantity.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_detail.dart';
 import '../domain/recipe_ingredient.dart';
 import '../domain/recipe_step.dart';
-
-/// The columns of `recipes` this feature reads. Written once so the list
-/// cannot drift between the search query and the detail query.
-const String _recipeColumns = '''
-id, household_id, title, description, servings, prep_minutes, cook_minutes,
-original_locale, source_type, source_url, source_attribution, status,
-image_path, tags, created_by, updated_at, deleted_at''';
-
-/// The `recipe-images` bucket is private (D48), so [Recipe.imagePath] alone is
-/// not fetchable -- every read signs it. An hour outlives any single screen:
-/// neither `recipeListProvider` nor `recipeDetailProvider` is `keepAlive`, and
-/// both `RefreshIndicator` and a `recipesRevisionProvider` bump re-read rather
-/// than reuse a stale value, so nothing here needs its own refresh timer.
-const int _signedUrlTtlSeconds = 3600;
+import 'dto/recipe_dto.dart';
+import 'local_recipe_datasource.dart';
+import 'remote_recipe_datasource.dart';
 
 class RecipeRepository {
-  const RecipeRepository(this._client);
+  const RecipeRepository(this._remote, this._local);
 
-  final SupabaseClient _client;
+  final RemoteRecipeDataSource _remote;
+  final LocalRecipeDataSource _local;
 
-  /// Recipes in the caller's household, newest first, excluding soft-deleted
-  /// ones.
+  /// The household's recipes, cache immediately then the network -- the same
+  /// shape `ShoppingListRepository.watchLatest` established (D67), widened
+  /// from one row to many.
   ///
-  /// The `deleted_at` filter is applied here and not in the RLS policy: the
-  /// policy has to keep returning tombstones so the Phase 2 delta fetch can
-  /// evict them from the cache (D23).
+  /// [query] is matched locally, against [TextNormalizer]-normalised titles,
+  /// on BOTH the cached emission and the post-sync emission -- there is no
+  /// separate server-side search any more. This produces identical results
+  /// to the old `ilike '%term%'` search (both sides compare the same
+  /// `normalize_text()`-derived value, rule 6), and it means every recipe
+  /// the household owns is a full sync away from being searchable offline,
+  /// not just the ones a query happened to match while still connected.
   ///
-  /// A non-empty [query] is normalised through [TextNormalizer] before it is
-  /// compared against `title_normalized`, which is a stored generated column
-  /// over Postgres' `normalize_text()`. Both sides of the comparison therefore
-  /// go through the same definition (rule 6) and `Šargarepa` finds a recipe
-  /// stored as `sargarepa`.
-  Future<List<Recipe>> search([String? query]) => runGuarded(() async {
-        final String term = TextNormalizer.normalize(query ?? '');
+  /// A cache hit outlives a [NetworkFailure]; a cold cache does not -- an
+  /// honest "no connection, and nothing saved yet" beats an empty list that
+  /// implies the household has no recipes at all (matches
+  /// `ShoppingListRepository.watchLatest`'s own rule).
+  Stream<List<Recipe>> watchList({
+    required String householdId,
+    String query = '',
+    void Function()? onReachable,
+    void Function()? onUnreachable,
+  }) async* {
+    final List<Recipe> cached =
+        await _local.readAll(householdId: householdId);
+    // A cold cache is empty, not null -- skip the emission the same way
+    // `ShoppingListRepository.watchLatest` skips a null one, so a
+    // NetworkFailure on a truly cold cache errors the stream outright
+    // rather than emitting an empty list moment before it.
+    if (cached.isNotEmpty) yield _filtered(cached, query);
 
-        PostgrestFilterBuilder<List<Map<String, dynamic>>> filter =
-            _client.from('recipes').select(_recipeColumns).isFilter(
-                  'deleted_at',
-                  null,
-                );
+    try {
+      final DateTime? since = await _local.readRecipesWatermark(householdId);
+      final List<Map<String, dynamic>> changed = await _remote
+          .fetchChangedSince(householdId: householdId, since: since);
 
-        if (term.isNotEmpty) {
-          // ilike rather than the trigram `%` operator: this is a substring
-          // search over a normalised column, and the user is still typing.
-          // Ranking by similarity is a search_ingredients concern, not a
-          // recipe-list one.
-          filter = filter.ilike('title_normalized', '%$term%');
-        }
+      if (changed.isNotEmpty) {
+        await _applyRecipeDelta(householdId, changed, since);
+      }
 
-        final List<Map<String, dynamic>> rows =
-            await filter.order('created_at', ascending: false);
+      onReachable?.call();
+      final List<Recipe> fresh =
+          await _local.readAll(householdId: householdId);
+      yield _filtered(fresh, query);
+    } on NetworkFailure {
+      onUnreachable?.call();
+      if (cached.isNotEmpty) return;
+      throw const NetworkFailure(
+        message: 'No connection, and no saved recipes on this phone yet.',
+      );
+    }
+  }
 
-        return _withImageUrls(rows.map(_toRecipe).toList());
-      });
-
-  /// One recipe with its lines and steps, with ingredient names resolved from
-  /// the catalog in [locale].
+  /// One recipe with its lines and steps, with ingredient names resolved
+  /// from the catalog in [locale].
   ///
-  /// Two round trips, not one: the lines come back embedded, and then a single
-  /// `ingredient_display_names` call resolves every matched id at once. The
-  /// alternative was embedding `ingredient_names` and picking a winner in
-  /// Dart, which would put a second definition of the display-name fallback
-  /// chain on this side of the wire, out of reach of the SQL tests.
-  Future<RecipeDetail> fetchDetail(String id, {String locale = 'sr'}) =>
-      runGuarded(() async {
-        final Map<String, dynamic> row = await _client
-            .from('recipes')
-            .select('''
-$_recipeColumns,
-recipe_ingredients(id, position, section, raw_text, ingredient_id,
-                   qty_num, qty_den, qty_max_num, qty_max_den,
-                   unit_code, note, is_optional,
-                   match_method, match_confidence, matched_at),
-recipe_steps(id, position, text, timer_seconds)''')
-            .eq('id', id)
-            .isFilter('deleted_at', null)
-            .single();
+  /// Network-first, the cache only as a [NetworkFailure] fallback -- D70's
+  /// read order, not D67's (D74). A single recipe is fetched on demand
+  /// exactly when the cook opens it, where showing a stale copy first and a
+  /// fresh one a moment later buys little; being correct with no network at
+  /// all is what Phase 2's Done-when actually asks for, and network-first
+  /// with a cache fallback gives that in one emission, matching
+  /// `IngredientRepository.fetchUnitCatalog()`'s own shape.
+  ///
+  /// The two paths resolve display names two different ways on purpose.
+  /// Online, this is still the `ingredient_display_names` RPC -- unchanged
+  /// -- and a successful read also triggers a best-effort background sync
+  /// of the global name cache, so OTHER ingredients (ones this recipe never
+  /// mentions) are covered for a later offline read, per the roadmap's
+  /// "every ingredient renders offline, including ones never viewed."
+  /// Offline, resolution reads whatever that sync has already collected,
+  /// through [DisplayNameChain] (D72/D73) -- the two must agree, and
+  /// `test/fixtures/display_names.json` is what proves it.
+  Future<RecipeDetail> fetchDetail(String id, {String locale = 'sr'}) async {
+    try {
+      final Map<String, dynamic> row = await _remote.fetchOne(id);
 
-        final List<RecipeIngredient> lines =
-            (row['recipe_ingredients'] as List<dynamic>? ?? <dynamic>[])
-                .cast<Map<String, dynamic>>()
-                .map(_toIngredient)
-                .toList()
-              ..sort((RecipeIngredient a, RecipeIngredient b) =>
-                  a.position.compareTo(b.position));
+      final List<Recipe> withImage =
+          await _withImageUrls(<Recipe>[recipeFromWire(row)]);
+      final List<RecipeIngredient> lines = recipeIngredientsFromWire(row);
+      final List<RecipeStep> steps = recipeStepsFromWire(row);
+      final List<RecipeIngredient> resolved = await _resolveOnline(
+        lines,
+        locale,
+      );
 
-        final List<RecipeStep> steps =
-            (row['recipe_steps'] as List<dynamic>? ?? <dynamic>[])
-                .cast<Map<String, dynamic>>()
-                .map(_toStep)
-                .toList()
-              ..sort((RecipeStep a, RecipeStep b) =>
-                  a.position.compareTo(b.position));
+      // Warms the cache for a later offline read of THIS recipe, even if
+      // the household-wide list sync (`watchList`) has never run -- a
+      // recipe opened straight from a deep link, say.
+      await _local.upsertMany(
+        householdId: row['household_id'] as String,
+        rows: <Map<String, dynamic>>[row],
+      );
 
-        final List<Recipe> withImage =
-            await _withImageUrls(<Recipe>[_toRecipe(row)]);
+      // Best-effort, awaited but never allowed to fail this already-
+      // successful read: extends the global name cache so ids this recipe
+      // never mentions are ALSO resolvable offline later.
+      await _syncNamesBestEffort();
 
-        return RecipeDetail(
-          recipe: withImage.single,
-          ingredients: await _withDisplayNames(lines, locale),
-          steps: steps,
-        );
-      });
+      return RecipeDetail(
+        recipe: withImage.single,
+        ingredients: resolved,
+        steps: steps,
+      );
+    } on NetworkFailure {
+      final Map<String, dynamic>? cached = await _local.readOne(id);
+      if (cached == null || !_hasEmbeddedLines(cached)) rethrow;
+
+      final Recipe recipe = recipeFromWire(cached); // imageUrl stays null
+      final List<RecipeIngredient> lines = recipeIngredientsFromWire(cached);
+      final List<RecipeStep> steps = recipeStepsFromWire(cached);
+      final List<RecipeIngredient> resolved = await _resolveOffline(
+        lines,
+        locale,
+      );
+
+      return RecipeDetail(recipe: recipe, ingredients: resolved, steps: steps);
+    }
+  }
+
+  /// A single best-available answer from [watchList] -- the fresh network
+  /// result when reachable, the cached one otherwise (or a [NetworkFailure]
+  /// with neither). For a caller that wants one list rather than two
+  /// emissions, such as the meal plan's recipe picker (`core/recipes/`),
+  /// which has no screen-level "showing your saved copy" line to drive.
+  Future<List<Recipe>> searchOnce({
+    required String householdId,
+    String query = '',
+  }) => watchList(householdId: householdId, query: query).last;
 
   /// Every ingredient line of several recipes at once, with catalog names,
-  /// pantry flags and categories resolved.
+  /// pantry flags and categories resolved -- the shopping list's read path.
   ///
-  /// The shopping list's read path. [fetchDetail] cannot serve it: that is one
-  /// round trip per recipe, and a week's plan routinely names a dozen. This is
-  /// two round trips for the whole week regardless of how many recipes are in
-  /// it -- the lines, then one `ingredient_display_names` call -- which is the
-  /// same shape [fetchDetail] already uses, widened from one recipe to many.
+  /// Unchanged in behaviour from before the Remote/Local split: `generate()`
+  /// always ends in an online `save()` RPC, so this has never needed a
+  /// cache and still goes straight to the network.
   ///
-  /// `ingredients(...)` is embedded rather than fetched separately because
-  /// `is_pantry_staple` and `category` are global catalog columns readable by
-  /// any authenticated caller (migration 4), so there is no household scoping
-  /// to get wrong and no second query to pay for.
+  /// `ingredients(...)` is embedded server-side rather than fetched
+  /// separately because `is_pantry_staple` and `category` are global
+  /// catalog columns readable by any authenticated caller (migration 4).
   ///
-  /// Returns lines carrying [RecipeIngredient.recipeId], which single-recipe
-  /// reads leave null: the caller has to know which recipe a line came from in
+  /// Returns lines carrying [RecipeIngredient.recipeId], which [fetchDetail]
+  /// leaves null: the caller has to know which recipe a line came from in
   /// order to scale it by the servings of the entry that planned it.
   Future<List<RecipeIngredient>> fetchLinesForRecipes(
     List<String> recipeIds, {
     String locale = 'sr',
-  }) =>
-      runGuarded(() async {
-        if (recipeIds.isEmpty) return const <RecipeIngredient>[];
-
-        final List<Map<String, dynamic>> rows = await _client
-            .from('recipe_ingredients')
-            .select('''
-id, recipe_id, position, section, raw_text, ingredient_id,
-qty_num, qty_den, qty_max_num, qty_max_den,
-unit_code, note, is_optional,
-match_method, match_confidence, matched_at,
-ingredients(is_pantry_staple, category)''')
-            .inFilter('recipe_id', recipeIds)
-            .order('position');
-
-        final List<RecipeIngredient> lines =
-            rows.map(_toIngredient).toList(growable: false);
-
-        return _withDisplayNames(lines, locale);
-      });
+  }) async {
+    final List<Map<String, dynamic>> rows =
+        await _remote.fetchLinesForRecipesRaw(recipeIds);
+    final List<RecipeIngredient> lines =
+        rows.map(recipeIngredientFromWire).toList(growable: false);
+    return _resolveOnline(lines, locale);
+  }
 
   /// Creates a recipe and returns the row that was written.
   ///
-  /// Unlike `create_household`, this is a plain insert: `recipes` has an INSERT
-  /// policy and there is nothing to make atomic, so an RPC would be ceremony.
+  /// Unlike `create_household`, this is a plain insert: `recipes` has an
+  /// INSERT policy and there is nothing to make atomic, so an RPC would be
+  /// ceremony.
   ///
-  /// The whole row comes back rather than just the id because the caller needs
-  /// the fields it did not send -- `household_id`, `created_by` -- in order to
-  /// issue an update afterwards. A first save is this call followed by
-  /// `saveLines`, and if the second half fails the editor retries against the
-  /// recipe this returned instead of creating a second one (D37).
+  /// The whole row comes back rather than just the id because the caller
+  /// needs the fields it did not send -- `household_id`, `created_by` -- in
+  /// order to issue an update afterwards. A first save is this call
+  /// followed by `saveLines`, and if the second half fails the editor
+  /// retries against the recipe this returned instead of creating a second
+  /// one (D37).
   Future<Recipe> create({
     required String householdId,
     required String title,
@@ -184,61 +209,48 @@ ingredients(is_pantry_staple, category)''')
     String? sourceUrl,
     String? sourceAttribution,
     String? imagePath,
-  }) =>
-      runGuarded(() async {
-        final String? userId = _client.auth.currentUser?.id;
-        if (userId == null) {
-          throw const UnauthorizedFailure(
-              message: 'You are not signed in any more.');
-        }
+  }) async {
+    final Map<String, dynamic> row = await _remote.create(
+      householdId: householdId,
+      title: title,
+      originalLocale: originalLocale,
+      description: description,
+      servings: servings,
+      prepMinutes: prepMinutes,
+      cookMinutes: cookMinutes,
+      tags: tags,
+      sourceTypeWire: sourceType.wireValue,
+      statusName: status.name,
+      sourceUrl: sourceUrl,
+      sourceAttribution: sourceAttribution,
+      imagePath: imagePath,
+    );
 
-        final Map<String, dynamic> row = await _client
-            .from('recipes')
-            .insert(<String, dynamic>{
-              'household_id': householdId,
-              'title': title.trim(),
-              'description': _blankToNull(description),
-              'servings': servings,
-              'prep_minutes': prepMinutes,
-              'cook_minutes': cookMinutes,
-              'original_locale': originalLocale,
-              'source_type': sourceType.wireValue,
-              'source_url': _blankToNull(sourceUrl),
-              'source_attribution': _blankToNull(sourceAttribution),
-              'status': status.name,
-              'tags': tags,
-              'created_by': userId,
-              'image_path': imagePath,
-            })
-            .select(_recipeColumns)
-            .single();
-
-        final List<Recipe> withImage =
-            await _withImageUrls(<Recipe>[_toRecipe(row)]);
-        return withImage.single;
-      });
+    final List<Recipe> withImage =
+        await _withImageUrls(<Recipe>[recipeFromWire(row)]);
+    return withImage.single;
+  }
 
   /// Saves the editable fields of an existing recipe.
   ///
-  /// `household_id`, `created_by` and `created_at` are deliberately not in the
-  /// payload: none of them is editable, and sending them would let a bug move
-  /// a recipe between households through a policy that only checks the row's
-  /// current owner.
-  Future<void> update(Recipe recipe) => runGuarded(() async {
-        await _client.from('recipes').update(<String, dynamic>{
-          'title': recipe.title.trim(),
-          'description': _blankToNull(recipe.description),
-          'servings': recipe.servings,
-          'prep_minutes': recipe.prepMinutes,
-          'cook_minutes': recipe.cookMinutes,
-          'original_locale': recipe.originalLocale,
-          'source_url': _blankToNull(recipe.sourceUrl),
-          'source_attribution': _blankToNull(recipe.sourceAttribution),
-          'status': recipe.status.name,
-          'tags': recipe.tags,
-          'image_path': recipe.imagePath,
-        }).eq('id', recipe.id);
-      });
+  /// `household_id`, `created_by` and `created_at` are deliberately not in
+  /// the payload: none of them is editable, and sending them would let a
+  /// bug move a recipe between households through a policy that only checks
+  /// the row's current owner.
+  Future<void> update(Recipe recipe) => _remote.update(
+    id: recipe.id,
+    title: recipe.title,
+    description: recipe.description,
+    servings: recipe.servings,
+    prepMinutes: recipe.prepMinutes,
+    cookMinutes: recipe.cookMinutes,
+    originalLocale: recipe.originalLocale,
+    sourceUrl: recipe.sourceUrl,
+    sourceAttribution: recipe.sourceAttribution,
+    statusName: recipe.status.name,
+    tags: recipe.tags,
+    imagePath: recipe.imagePath,
+  );
 
   /// Replaces a recipe's ingredient lines and steps.
   ///
@@ -249,110 +261,169 @@ ingredients(is_pantry_staple, category)''')
     String recipeId, {
     required List<RecipeIngredient> ingredients,
     required List<RecipeStep> steps,
-  }) =>
-      runGuarded(() async {
-        await _client.rpc<void>(
-          'replace_recipe_lines',
-          params: <String, dynamic>{
-            'recipe': recipeId,
-            'ingredient_lines':
-                ingredients.map(_ingredientPayload).toList(growable: false),
-            'steps': steps.map(_stepPayload).toList(growable: false),
-          },
-        );
-      });
+  }) => _remote.saveLines(
+    recipeId,
+    ingredientLines: ingredients.map(_ingredientPayload).toList(growable: false),
+    stepPayloads: steps.map(_stepPayload).toList(growable: false),
+  );
 
   /// Uploads a picked photo to the `recipe-images` bucket and returns the
   /// object path.
-  ///
-  /// Only the upload -- writing that path onto the recipe row is
-  /// `RecipeEditor.save()`'s job, and it is the one that decides WHEN this
-  /// runs (D48: only as part of a save, never at pick time, so an abandoned
-  /// editor leaves no orphan object).
   Future<String> uploadImage(
     Uint8List bytes, {
     required String householdId,
     required String contentType,
     required String extension,
-  }) =>
-      runGuarded(() async {
-        final String path =
-            '$householdId/${DateTime.now().microsecondsSinceEpoch}.$extension';
+  }) => _remote.uploadImage(
+    bytes,
+    householdId: householdId,
+    contentType: contentType,
+    extension: extension,
+  );
 
-        await _client.storage.from('recipe-images').uploadBinary(
-              path,
-              bytes,
-              fileOptions: FileOptions(contentType: contentType),
-            );
+  /// Removes a photo from the `recipe-images` bucket. Best-effort by
+  /// design -- see `RecipeEditor.save()` (D48).
+  Future<void> deleteImage(String path) => _remote.deleteImage(path);
 
-        return path;
-      });
-
-  /// Removes a photo from the `recipe-images` bucket.
-  ///
-  /// Called after replacing or clearing a recipe's photo, once the row that
-  /// pointed at it no longer does. Best-effort by design: the caller swallows
-  /// a failure here rather than surface it, because the recipe itself already
-  /// saved successfully and a leftover blob is not the cook's problem (D48).
-  Future<void> deleteImage(String path) => runGuarded(() async {
-        await _client.storage.from('recipe-images').remove(<String>[path]);
-      });
-
-  /// Soft-deletes a recipe. There is no hard delete (rule 4).
-  Future<void> softDelete(String id) => runGuarded(() async {
-        // The timestamp comes from the client because PostgREST cannot send
-        // `now()` in an update payload. Only ordering against other client
-        // writes could be affected, and nothing orders by deleted_at.
-        await _client.from('recipes').update(<String, dynamic>{
-          'deleted_at': DateTime.now().toUtc().toIso8601String(),
-        }).eq('id', id);
-      });
+  /// Soft-deletes a recipe. There is no hard delete (rule 4). The cache
+  /// eviction itself waits for the next `watchList` sync to see the
+  /// tombstone -- writes are online-only (D12) and nothing here needs to
+  /// race that.
+  Future<void> softDelete(String id) => _remote.softDelete(id);
 
   // ---------------------------------------------------------------------
   // Internals
   // ---------------------------------------------------------------------
 
-  /// Fills in [RecipeIngredient.displayName] for every matched line, in one
-  /// round trip.
-  Future<List<RecipeIngredient>> _withDisplayNames(
-    List<RecipeIngredient> lines,
-    String locale,
-  ) async {
-    final List<String> ids = lines
-        .map((RecipeIngredient line) => line.ingredientId)
-        .whereType<String>()
-        .toSet()
-        .toList(growable: false);
-
-    if (ids.isEmpty) return lines;
-
-    final List<Map<String, dynamic>> rows = await _client
-        .rpc<List<dynamic>>(
-          'ingredient_display_names',
-          params: <String, dynamic>{'ids': ids, 'loc': locale},
+  List<Recipe> _filtered(List<Recipe> recipes, String query) {
+    final String term = TextNormalizer.normalize(query);
+    if (term.isEmpty) return recipes;
+    return recipes
+        .where(
+          (Recipe r) => TextNormalizer.normalize(r.title).contains(term),
         )
-        .then((List<dynamic> rows) => rows.cast<Map<String, dynamic>>());
-
-    final Map<String, String> names = <String, String>{
-      for (final Map<String, dynamic> row in rows)
-        if (row['display_name'] != null)
-          row['ingredient_id'] as String: row['display_name'] as String,
-    };
-
-    return lines
-        .map((RecipeIngredient line) => line.copyWith(
-            displayName: names[line.ingredientId ?? '']))
         .toList(growable: false);
   }
 
+  bool _hasEmbeddedLines(Map<String, dynamic> row) =>
+      row.containsKey('recipe_ingredients');
+
+  Future<void> _applyRecipeDelta(
+    String householdId,
+    List<Map<String, dynamic>> changed,
+    DateTime? since,
+  ) async {
+    DateTime maxUpdated = since ?? DateTime.utc(1970);
+    final List<Map<String, dynamic>> alive = <Map<String, dynamic>>[];
+    final List<String> tombstoned = <String>[];
+
+    for (final Map<String, dynamic> row in changed) {
+      final DateTime updatedAt =
+          DateTime.parse(row['updated_at'] as String).toUtc();
+      if (updatedAt.isAfter(maxUpdated)) maxUpdated = updatedAt;
+
+      if (row['deleted_at'] != null) {
+        tombstoned.add(row['id'] as String);
+      } else {
+        alive.add(row);
+      }
+    }
+
+    if (alive.isNotEmpty) {
+      await _local.upsertMany(householdId: householdId, rows: alive);
+    }
+    for (final String id in tombstoned) {
+      await _local.evict(id);
+    }
+    await _local.advanceRecipesWatermark(householdId, maxUpdated);
+  }
+
+  Future<List<RecipeIngredient>> _resolveOnline(
+    List<RecipeIngredient> lines,
+    String locale,
+  ) async {
+    final List<String> ids = _ingredientIds(lines);
+    if (ids.isEmpty) return lines;
+    final Map<String, String> names =
+        await _remote.fetchDisplayNames(ids, locale);
+    return _withNames(lines, names);
+  }
+
+  Future<List<RecipeIngredient>> _resolveOffline(
+    List<RecipeIngredient> lines,
+    String locale,
+  ) async {
+    final List<String> ids = _ingredientIds(lines);
+    if (ids.isEmpty) return lines;
+    final Map<String, String> names =
+        await _local.resolveDisplayNames(ids, locale);
+    return _withNames(lines, names);
+  }
+
+  List<String> _ingredientIds(List<RecipeIngredient> lines) => lines
+      .map((RecipeIngredient line) => line.ingredientId)
+      .whereType<String>()
+      .toSet()
+      .toList(growable: false);
+
+  List<RecipeIngredient> _withNames(
+    List<RecipeIngredient> lines,
+    Map<String, String> names,
+  ) =>
+      lines
+          .map(
+            (RecipeIngredient line) =>
+                line.copyWith(displayName: names[line.ingredientId ?? '']),
+          )
+          .toList(growable: false);
+
+  /// Delta-syncs the global ingredient name cache. Best-effort and never
+  /// allowed to fail the read it rides in on (D69's philosophy, applied to
+  /// a background warm rather than a cache read/write) -- logged under this
+  /// class's name on `RecipeEditor`'s own precedent for a cleanup that must
+  /// not undo an otherwise-successful operation (D48).
+  Future<void> _syncNamesBestEffort() async {
+    try {
+      final DateTime? since = await _local.readNamesWatermark();
+      final List<Map<String, dynamic>> rows =
+          await _remote.fetchNamesSince(since);
+      if (rows.isEmpty) return;
+
+      DateTime maxUpdated = since ?? DateTime.utc(1970);
+      final List<Map<String, dynamic>> alive = <Map<String, dynamic>>[];
+      final List<String> tombstoned = <String>[];
+
+      for (final Map<String, dynamic> row in rows) {
+        final DateTime updatedAt =
+            DateTime.parse(row['updated_at'] as String).toUtc();
+        if (updatedAt.isAfter(maxUpdated)) maxUpdated = updatedAt;
+
+        if (row['deleted_at'] != null) {
+          tombstoned.add(row['id'] as String);
+        } else {
+          alive.add(row);
+        }
+      }
+
+      if (alive.isNotEmpty) await _local.upsertNames(alive);
+      for (final String id in tombstoned) {
+        await _local.evictName(id);
+      }
+      await _local.advanceNamesWatermark(maxUpdated);
+    } on Object catch (error, stackTrace) {
+      developer.log(
+        'Could not sync the ingredient name catalog',
+        name: 'RecipeRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   /// Fills in [Recipe.imageUrl] for every recipe with an [Recipe.imagePath],
-  /// in one round trip.
-  ///
-  /// `createSignedUrlsResult`, not the deprecated `createSignedUrls`: it
-  /// returns one [SignedUrlResult] per path rather than throwing on the first
-  /// one that fails, so a recipe whose object has gone missing renders
-  /// without a picture instead of failing the whole list -- rule 3's instinct
-  /// applied to a photo instead of an ingredient line.
+  /// in one round trip. Never called for a recipe served from the cache --
+  /// a cached recipe keeps `imagePath` and a null `imageUrl`, a state the
+  /// UI already renders as a placeholder (signing can fail online too).
   Future<List<Recipe>> _withImageUrls(List<Recipe> recipes) async {
     final List<String> paths = recipes
         .map((Recipe r) => r.imagePath)
@@ -362,93 +433,11 @@ ingredients(is_pantry_staple, category)''')
 
     if (paths.isEmpty) return recipes;
 
-    final List<SignedUrlResult> results = await _client.storage
-        .from('recipe-images')
-        .createSignedUrlsResult(paths, _signedUrlTtlSeconds);
-
-    final Map<String, String> urls = <String, String>{
-      for (final SignedUrlResult result in results)
-        if (result is SignedUrlSuccess) result.path: result.signedUrl,
-    };
+    final Map<String, String> urls = await _remote.signImageUrls(paths);
 
     return recipes
         .map((Recipe r) => r.copyWith(imageUrl: urls[r.imagePath ?? '']))
         .toList(growable: false);
-  }
-
-  Recipe _toRecipe(Map<String, dynamic> row) => Recipe(
-        id: row['id'] as String,
-        householdId: row['household_id'] as String,
-        title: row['title'] as String,
-        description: row['description'] as String?,
-        servings: row['servings'] as int?,
-        prepMinutes: row['prep_minutes'] as int?,
-        cookMinutes: row['cook_minutes'] as int?,
-        originalLocale: row['original_locale'] as String,
-        sourceType: RecipeSourceType.fromWire(row['source_type'] as String),
-        sourceUrl: row['source_url'] as String?,
-        sourceAttribution: row['source_attribution'] as String?,
-        status: RecipeStatus.values.byName(row['status'] as String),
-        imagePath: row['image_path'] as String?,
-        tags: (row['tags'] as List<dynamic>? ?? <dynamic>[]).cast<String>(),
-        createdBy: row['created_by'] as String,
-        updatedAt: _toDate(row['updated_at']),
-        deletedAt: _toDate(row['deleted_at']),
-      );
-
-  RecipeIngredient _toIngredient(Map<String, dynamic> row) {
-    // Present only when `ingredients(...)` was embedded -- fetchDetail does
-    // not ask for it, because a recipe does not care whether an ingredient is
-    // a cupboard staple. fetchLinesForRecipes does.
-    final Map<String, dynamic>? catalog =
-        row['ingredients'] as Map<String, dynamic>?;
-    return RecipeIngredient(
-        id: row['id'] as String?,
-        recipeId: row['recipe_id'] as String?,
-        isPantryStaple: catalog?['is_pantry_staple'] as bool? ?? false,
-        category: catalog?['category'] as String?,
-        position: row['position'] as int,
-        section: row['section'] as String?,
-        rawText: row['raw_text'] as String,
-        ingredientId: row['ingredient_id'] as String?,
-        quantity: _toQuantity(row),
-        unitCode: row['unit_code'] as String?,
-        note: row['note'] as String?,
-        isOptional: row['is_optional'] as bool? ?? false,
-        matchMethod: row['match_method'] == null
-            ? null
-            : MatchMethod.values.byName(row['match_method'] as String),
-        matchConfidence: _toNullableDouble(row['match_confidence']),
-        matchedAt: _toDate(row['matched_at']),
-      );
-  }
-
-  RecipeStep _toStep(Map<String, dynamic> row) => RecipeStep(
-        id: row['id'] as String?,
-        position: row['position'] as int,
-        text: row['text'] as String,
-        timerSeconds: row['timer_seconds'] as int?,
-      );
-
-  /// Both halves of a fraction or neither -- the table's check constraints say
-  /// the same thing, so a half-null pair here means the row was written by
-  /// something that bypassed them.
-  Quantity? _toQuantity(Map<String, dynamic> row) {
-    final int? numerator = row['qty_num'] as int?;
-    final int? denominator = row['qty_den'] as int?;
-    if (numerator == null || denominator == null) return null;
-
-    final int? maxNumerator = row['qty_max_num'] as int?;
-    final int? maxDenominator = row['qty_max_den'] as int?;
-    if (maxNumerator != null && maxDenominator != null) {
-      return Quantity.range(
-        numerator: numerator,
-        denominator: denominator,
-        maxNumerator: maxNumerator,
-        maxDenominator: maxDenominator,
-      );
-    }
-    return Quantity.fraction(numerator, denominator);
   }
 
   Map<String, dynamic> _ingredientPayload(RecipeIngredient line) =>
@@ -471,25 +460,5 @@ ingredients(is_pantry_staple, category)''')
   Map<String, dynamic> _stepPayload(RecipeStep step) => <String, dynamic>{
         'text': step.text,
         'timer_seconds': step.timerSeconds,
-      };
-
-  static String? _blankToNull(String? value) {
-    final String? trimmed = value?.trim();
-    return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
-  }
-
-  static DateTime? _toDate(Object? value) =>
-      value == null ? null : DateTime.parse(value as String);
-
-  /// Postgres `numeric` reaches Dart as a `String` when it will not fit a
-  /// double exactly, and as a `num` otherwise -- the same trap
-  /// `IngredientRepository` documents. This is match confidence, a score;
-  /// recipe quantities are `Quantity` and never touch a float (rule 5).
-  static double? _toNullableDouble(Object? value) => switch (value) {
-        null => null,
-        final num n => n.toDouble(),
-        final String s => double.parse(s),
-        _ => throw const UnknownFailure(
-            message: 'The server sent an unexpected reply.'),
       };
 }

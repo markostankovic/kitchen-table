@@ -1,0 +1,97 @@
+[
+  {
+    "description": "requested locale's display name wins over another locale's display name",
+    "locale": "sr",
+    "names": [
+      {
+        "name": "Zdn flour c1",
+        "locale": "en",
+        "is_display_name": true,
+        "created_at": "2020-01-01T00:00:00Z"
+      },
+      {
+        "name": "Zdn brašno c1",
+        "locale": "sr",
+        "is_display_name": true,
+        "created_at": "2020-01-02T00:00:00Z"
+      }
+    ],
+    "expected": "Zdn brašno c1"
+  },
+  {
+    "description": "any locale's display name beats the requested locale's non-display name",
+    "locale": "sr",
+    "names": [
+      {
+        "name": "Zdn šargarepa stari naziv c2",
+        "locale": "sr",
+        "is_display_name": false,
+        "created_at": "2020-01-01T00:00:00Z"
+      },
+      {
+        "name": "Zdn carrot c2",
+        "locale": "en",
+        "is_display_name": true,
+        "created_at": "2020-01-02T00:00:00Z"
+      }
+    ],
+    "expected": "Zdn carrot c2"
+  },
+  {
+    "description": "with no display name at all, the requested locale wins on locale alone",
+    "locale": "sr",
+    "names": [
+      {
+        "name": "Zdn flour c3",
+        "locale": "en",
+        "is_display_name": false,
+        "created_at": "2020-01-01T00:00:00Z"
+      },
+      {
+        "name": "Zdn brašno alias c3",
+        "locale": "sr",
+        "is_display_name": false,
+        "created_at": "2020-01-02T00:00:00Z"
+      }
+    ],
+    "expected": "Zdn brašno alias c3"
+  },
+  {
+    "description": "everything else tied, the oldest name wins",
+    "locale": "sr",
+    "names": [
+      {
+        "name": "Zdn second alias c4",
+        "locale": "sr",
+        "is_display_name": false,
+        "created_at": "2020-06-01T00:00:00Z"
+      },
+      {
+        "name": "Zdn first alias c4",
+        "locale": "sr",
+        "is_display_name": false,
+        "created_at": "2020-01-01T00:00:00Z"
+      }
+    ],
+    "expected": "Zdn first alias c4"
+  },
+  {
+    "description": "the requested locale has no rows at all, falls back to any display name",
+    "locale": "en",
+    "names": [
+      {
+        "name": "Zdn brašno c5",
+        "locale": "sr",
+        "is_display_name": true,
+        "created_at": "2020-01-01T00:00:00Z"
+      }
+    ],
+    "expected": "Zdn brašno c5"
+  },
+  {
+    "description": "no names at all resolves to null, not an error",
+    "locale": "sr",
+    "names": [],
+    "expected": null
+  }
+]
