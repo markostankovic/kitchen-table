@@ -9,6 +9,7 @@ import '../domain/meal_plan_entry.dart';
 import '../domain/meal_plan_week.dart';
 import '../domain/meal_slot.dart';
 import '../domain/plan_week.dart';
+import '../domain/snack_variety.dart';
 
 /// The week grid: 7 days x 4 slots, add / move / remove a recipe or a note.
 ///
@@ -155,6 +156,15 @@ class _SlotRow extends ConsumerWidget {
       final MealPlanEditor editor = ref.read(mealPlanEditorProvider.notifier);
       switch (pick) {
         case PickRecipe(:final recipe):
+          if (slot == MealSlot.snack) {
+            final int repeatCount = await editor.snackRepeatCount(
+                recipeId: recipe.id, entryDate: day);
+            if (!context.mounted) return;
+            if (shouldWarnOnRepeat(repeatCount)) {
+              final bool proceed = await _confirmRepeat(context, repeatCount);
+              if (!proceed || !context.mounted) return;
+            }
+          }
           await editor.addRecipe(
               entryDate: day, slot: slot, recipeId: recipe.id);
         case PickNote(:final note):
@@ -165,6 +175,33 @@ class _SlotRow extends ConsumerWidget {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.message)));
     }
+  }
+
+  /// Advisory only -- `snack_variety.dart`'s check never blocks the write,
+  /// it only asks first. Cancelling here writes nothing; the caller checks
+  /// `context.mounted` again after this returns either way.
+  Future<bool> _confirmRepeat(BuildContext context, int repeatCount) async {
+    final bool? proceed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Already planned recently'),
+        content: Text(
+          'Already in $repeatCount snack slot${repeatCount == 1 ? '' : 's'} '
+          'this fortnight.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Add anyway'),
+          ),
+        ],
+      ),
+    );
+    return proceed ?? false;
   }
 
   Future<void> _moveHere(BuildContext context, WidgetRef ref, String entryId) async {
@@ -210,8 +247,12 @@ class _SlotRow extends ConsumerWidget {
                   spacing: 6,
                   runSpacing: 4,
                   children: <Widget>[
-                    for (final MealPlanEntry entry in entries)
-                      _EntryChip(entry: entry),
+                    for (int i = 0; i < entries.length; i++)
+                      _EntryChip(
+                        entry: entries[i],
+                        index: i,
+                        total: entries.length,
+                      ),
                     ActionChip(
                       avatar: const Icon(Icons.add, size: 16),
                       label: const Text('Add'),
@@ -226,12 +267,23 @@ class _SlotRow extends ConsumerWidget {
       );
 }
 
-enum _EntryAction { open, move, remove }
+enum _EntryAction { open, leftovers, move, up, down, remove }
 
 class _EntryChip extends ConsumerWidget {
-  const _EntryChip({required this.entry});
+  const _EntryChip({
+    required this.entry,
+    required this.index,
+    required this.total,
+  });
 
   final MealPlanEntry entry;
+
+  /// This chip's position and the slot's size, both computed by the caller
+  /// from the same ordered list `entriesFor` already returns -- so *Move up*
+  /// / *Move down* can be shown only where there is somewhere to go, without
+  /// a second definition of "first" / "last" in this file.
+  final int index;
+  final int total;
 
   Future<void> _openActions(BuildContext context, WidgetRef ref) async {
     final _EntryAction? action = await showModalBottomSheet<_EntryAction>(
@@ -246,11 +298,29 @@ class _EntryChip extends ConsumerWidget {
                 title: const Text('Open recipe'),
                 onTap: () => Navigator.of(context).pop(_EntryAction.open),
               ),
+            if (entry.entryKind == MealEntryKind.recipe)
+              ListTile(
+                leading: const Icon(Icons.replay_outlined),
+                title: const Text('Plan leftovers...'),
+                onTap: () => Navigator.of(context).pop(_EntryAction.leftovers),
+              ),
             ListTile(
               leading: const Icon(Icons.swap_horiz),
               title: const Text('Move to...'),
               onTap: () => Navigator.of(context).pop(_EntryAction.move),
             ),
+            if (index > 0)
+              ListTile(
+                leading: const Icon(Icons.arrow_upward),
+                title: const Text('Move up'),
+                onTap: () => Navigator.of(context).pop(_EntryAction.up),
+              ),
+            if (index < total - 1)
+              ListTile(
+                leading: const Icon(Icons.arrow_downward),
+                title: const Text('Move down'),
+                onTap: () => Navigator.of(context).pop(_EntryAction.down),
+              ),
             ListTile(
               leading: const Icon(Icons.delete_outline),
               title: const Text('Remove'),
@@ -265,8 +335,14 @@ class _EntryChip extends ConsumerWidget {
     switch (action) {
       case _EntryAction.open:
         RecipeDetailRoute(entry.recipeId!).go(context);
+      case _EntryAction.leftovers:
+        await _showLeftoverDialog(context, ref);
       case _EntryAction.move:
         await _showMoveDialog(context, ref);
+      case _EntryAction.up:
+        await _reorder(context, ref, index - 1);
+      case _EntryAction.down:
+        await _reorder(context, ref, index + 1);
       case _EntryAction.remove:
         await _remove(context, ref);
     }
@@ -343,6 +419,104 @@ class _EntryChip extends ConsumerWidget {
     }
   }
 
+  /// Same `StatefulBuilder` + two dropdowns shape as [_showMoveDialog], but
+  /// the day list is 14 consecutive dates from [entry]'s own date rather than
+  /// the visible week's 7 -- a leftover's range is D56's "next 14 days from
+  /// the source", not bounded by what happens to be on screen, and it can
+  /// cross a month boundary, hence [shortDateLabel] rather than
+  /// [dayAbbrevOf].
+  Future<void> _showLeftoverDialog(BuildContext context, WidgetRef ref) async {
+    final List<DateTime> candidateDays = List<DateTime>.generate(
+      14,
+      (int i) => DateTime(
+        entry.entryDate.year,
+        entry.entryDate.month,
+        entry.entryDate.day + i,
+      ),
+    );
+    DateTime selectedDay = candidateDays[1]; // source date + 1 day, default
+    MealSlot selectedSlot = entry.slot;
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) => AlertDialog(
+          title: const Text('Plan leftovers'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              DropdownButtonFormField<DateTime>(
+                initialValue: selectedDay,
+                decoration: const InputDecoration(labelText: 'Day'),
+                items: <DropdownMenuItem<DateTime>>[
+                  for (final DateTime day in candidateDays)
+                    DropdownMenuItem<DateTime>(
+                      value: day,
+                      child: Text(shortDateLabel(day)),
+                    ),
+                ],
+                onChanged: (DateTime? value) {
+                  if (value != null) setState(() => selectedDay = value);
+                },
+              ),
+              DropdownButtonFormField<MealSlot>(
+                initialValue: selectedSlot,
+                decoration: const InputDecoration(labelText: 'Slot'),
+                items: <DropdownMenuItem<MealSlot>>[
+                  for (final MealSlot slot in MealSlot.ordered)
+                    DropdownMenuItem<MealSlot>(
+                      value: slot,
+                      child: Text(_slotLabel(slot)),
+                    ),
+                ],
+                onChanged: (MealSlot? value) {
+                  if (value != null) setState(() => selectedSlot = value);
+                },
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await ref.read(mealPlanEditorProvider.notifier).addLeftover(
+            sourceEntryId: entry.id,
+            entryDate: selectedDay,
+            slot: selectedSlot,
+          );
+    } on AppFailure catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
+  Future<void> _reorder(
+      BuildContext context, WidgetRef ref, int newPosition) async {
+    try {
+      await ref.read(mealPlanEditorProvider.notifier).reorderEntry(
+            entryId: entry.id,
+            newPosition: newPosition,
+          );
+    } on AppFailure catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
   Future<void> _remove(BuildContext context, WidgetRef ref) async {
     try {
       await ref.read(mealPlanEditorProvider.notifier).removeEntry(entry.id);
@@ -370,9 +544,11 @@ class _EntryChip extends ConsumerWidget {
 
   Widget _chip(BuildContext context) => Chip(
         avatar: Icon(
-          entry.entryKind == MealEntryKind.note
-              ? Icons.edit_note_outlined
-              : Icons.restaurant_menu_outlined,
+          switch (entry.entryKind) {
+            MealEntryKind.note => Icons.edit_note_outlined,
+            MealEntryKind.leftover => Icons.replay_outlined,
+            MealEntryKind.recipe => Icons.restaurant_menu_outlined,
+          },
           size: 16,
         ),
         label: Text(entry.label),

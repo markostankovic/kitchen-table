@@ -155,4 +155,18 @@ void main() {
       ]);
     });
   });
+
+  group('shortDateLabel', () {
+    test('day, date and month, unambiguous on its own', () {
+      expect(shortDateLabel(DateTime(2026, 9, 14)), 'Mon 14 Sep');
+    });
+
+    test('disambiguates dates that dayAbbrevOf + day cannot -- a leftover '
+        'window crossing a month boundary', () {
+      // The 14-day leftover window can straddle a month, where two
+      // different days share the same day-of-month.
+      expect(shortDateLabel(DateTime(2026, 6, 29)), 'Mon 29 Jun');
+      expect(shortDateLabel(DateTime(2026, 7, 29)), 'Wed 29 Jul');
+    });
+  });
 }

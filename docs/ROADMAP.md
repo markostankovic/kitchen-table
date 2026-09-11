@@ -387,15 +387,84 @@ client-only. Household isolation is covered by the SQL suite's own
 non-member assertions rather than repeated with a second device, the same
 call D48's verification note makes for the recipe-images bucket.
 
+### Part 3 — Leftovers, variety and order
+
+**Status: complete.** Decisions taken during it: D55–D58.
+
+The three items D51 and D49 left named and unreachable in the meal plan:
+leftover entries actually writable, the snack variety check, and within-slot
+reordering.
+
+- `meal_plan_entries_leftover_source`, a second `before insert or update`
+  trigger alongside migration 14's own (never edited -- CLAUDE.md), derives
+  `recipe_id` onto a leftover row from its source entry and refuses anything
+  else -- a note as a source, another leftover as a source (no chains), or a
+  leftover pointing at itself (D55). This is what closes D51's deliberately
+  loose `'leftover'` check branch: the client never sends `recipe_id`, and a
+  value nothing derives or checks is a value that could otherwise quietly
+  drift from its source
+- `reorder_meal_plan_entry(entry, new_position)`, the RPC D49 named --
+  renumbers a whole `(meal_plan_id, entry_date, slot)` group in one
+  statement rather than swapping two rows, because D49 already ruled out a
+  unique index on `position`, so gaps are legal input and the renumber has to
+  tolerate them (D57)
+- `MealPlanRepository.addLeftoverEntry`, `.reorderEntry`,
+  `.countRecipeInSlot` -- the last scoped to household and to visible plans
+  through a `meal_plans!inner` embed, because RLS alone would also count a
+  slot in any *other* household the caller belongs to
+- `snack_variety.dart`: a centred +/- 7-day window around the candidate date,
+  not the trailing "last 14 days" `docs/DATA_MODEL.md` originally sketched
+  (D58) -- a meal plan is forward-looking, and a trailing window only warns
+  when slots happen to be filled in calendar order
+- Screen: *Plan leftovers...* on a recipe entry's action sheet (not offered
+  on a note or another leftover), a 14-day destination picker starting the
+  day after the source, *Move up* / *Move down* shown only where there is
+  somewhere to go, and an advisory Cancel/Add-anyway dialog before a repeated
+  snack is actually written -- the check never blocks the write itself, only
+  asks first
+
+**Done when:** a cook can put the same recipe's leftovers in a later slot,
+get warned (not stopped) about a snack repeating within a fortnight either
+side, and reorder entries sharing a slot. — **Met**, verified end to end on
+the Android emulator against the local stack (UI Automator dumps to locate
+elements precisely, not eyeballed coordinates), not only in the 20-plus new
+SQL assertions (`meal_plan_leftovers_test.sql`) and the Dart tests beside it.
+Planning Thursday dinner's leftovers defaulted the dialog to Friday, same
+slot, exactly D56's "source date + 1, source's own slot"; retargeting it to
+the following Monday's dinner produced a chip reading `Leftovers: <title>`
+with the replay icon, opened the source recipe from it, and a direct query
+confirmed the row's `recipe_id` matched the source's exactly — the client
+never sends one, so this is the derivation working through the real app, not
+just the SQL suite's separate check that a *wrong* client-sent value gets
+overwritten. That Monday write landed in a second `meal_plans` row
+(`meal_plans` count moved from 1 to 2) that did not exist a moment before,
+invisible until the grid was paged forward into the following week — D56's
+known consequence, not a bug. Removing the source entry took its leftover
+down with it, confirmed by a zero count where the leftover row used to be.
+Three entries added to one slot, the last moved up once from the action
+sheet: a direct query showed the moved row's `position` change from 2 to 1
+and its sibling shift from 1 to 2, with no gap or duplicate across the group,
+and `meal_plans.updated_at` moved on that reorder alone — the one write that
+changes no other column on the plan row, so the touch trigger is the only
+thing that could have moved it. Adding the same recipe to a third snack slot
+within a few days of two earlier ones surfaced the count in the warning text
+verbatim (`Already in 2 snack slots this fortnight.`); Cancel left the row
+count at zero, Add anyway wrote it, and three earlier additions of the same
+recipe to a lunch slot never triggered the dialog at all.
+
+One call made here for the next part rather than this one: the shopping
+list's pantry staples (salt, oil, sugar, water, pepper) will be aggregated
+and flagged like anything else, then rendered collapsed under a "Probably
+have" heading rather than hidden -- `household_pantry_prefs` stays a
+both-directions override on the flag, and nothing is ever missing from the
+snapshot itself.
+
 ### Still to build
 
-- Leftover entries actually pointing at their source entry (D51: the column
-  and the `'leftover'` vocabulary already exist, unreachable)
-- Variety check on the snack slot (client query, 14-day window, warn at 2+)
-- Within-slot reordering (D49 names the RPC it would need)
-- `shopping_lists`, `shopping_list_items`
+- `shopping_lists`, `shopping_list_items`, `household_pantry_prefs`
 - Client-side aggregation: group, scale by servings, sum within unit family,
-  split across families, suppress pantry staples
+  split across families, flag pantry staples (collapsed, not suppressed --
+  see Part 3's closing note above)
 - Drift read cache (cache-then-network) for recipes, meal plans, shopping lists,
   ingredients; delta fetch on `updated_at`, honour `deleted_at`
 - Offline banner; writes fail loudly

@@ -490,33 +490,56 @@ create index on meal_plan_entries (meal_plan_id, entry_date, slot);
 ```
 
 No `created_at` or `updated_at` on `meal_plan_entries` (D24, D49): it
-cascades with its plan and carries no lifecycle of its own. Two triggers
+cascades with its plan and carries no lifecycle of its own. Three triggers
 carry the invariants a `check` constraint cannot reach:
 
-- `meal_plan_entries_before_write` (`before insert or update`) assigns
-  `position` at the tail of its `(meal_plan_id, entry_date, slot)` group,
-  refuses an `entry_date` outside the plan's week, and refuses a
+- `meal_plan_entries_before_write` (`before insert or update`, migration 14)
+  assigns `position` at the tail of its `(meal_plan_id, entry_date, slot)`
+  group, refuses an `entry_date` outside the plan's week, and refuses a
   `leftover_of_entry_id` the caller cannot see.
-- `meal_plan_entries_touch_plan` (`after insert or update or delete`) sets
-  `meal_plans.updated_at = now()`, so a week whose entries changed does not
-  look untouched to the Phase 2 delta fetch -- the trigger equivalent of what
-  `replace_recipe_lines` does by hand for a recipe's lines.
+- `meal_plan_entries_leftover_source` (`before insert or update`, migration
+  15, D55) derives `recipe_id` onto a `entry_kind = 'leftover'` row from its
+  source entry, overwriting whatever the client sent, and refuses a source
+  that is not itself an `entry_kind = 'recipe'` row -- no
+  leftover-of-leftover chains.
+- `meal_plan_entries_touch_plan` (`after insert or update or delete`,
+  migration 14) sets `meal_plans.updated_at = now()`, so a week whose entries
+  changed does not look untouched to the Phase 2 delta fetch -- the trigger
+  equivalent of what `replace_recipe_lines` does by hand for a recipe's lines.
 
 `ensure_meal_plan(household uuid, week date) returns uuid` creates a
 household's plan for a week on the first write into it and resurrects one
 that was soft-deleted; nothing calls it from a read path (D50).
 
-Leftover entries ship in this migration, unreachable (D51): the column, its
-self-FK (`on delete cascade`) and the `'leftover'` check branch all exist,
-but no client writes them yet. Once that later slice lands, leftover entries
-will point at the entry they came from, so the shopping list can skip them
-(no ingredients bought twice) and the variety check can still see what was
-eaten.
+`reorder_meal_plan_entry(entry uuid, new_position int) returns void`
+(migration 15, D57) moves `entry` to `new_position` (clamped to its group's
+bounds) within its own `(meal_plan_id, entry_date, slot)` group, renumbering
+every sibling to `0..n-1` in one statement. `meal_plan_entries_before_write`
+cannot express this itself -- it always lands an insert or a cross-slot move
+at the tail of the destination group (D49) -- and it does not fight this RPC:
+that trigger reassigns `position` only on `INSERT`, or on `UPDATE` when
+`entry_date` or `slot` actually changed, and a reorder changes neither.
 
-**Variety check** (not yet built) will be a client-side query, not a table:
-for a candidate recipe in a `snack` slot, count entries for the same
-`recipe_id` in that slot across the last N days (default 14). Warn above a
-threshold (default 2).
+Leftover entries: reachable since Phase 2 part 3 (D55). A leftover row's
+`recipe_id` is derived server-side from its source entry, so it needs no join
+to be found by the variety check or by the shopping list's "skip leftovers so
+nothing is bought twice" filter -- both can match on `recipe_id` alone. A
+leftover's destination is a date, not necessarily a slot in the week its
+source sits in (D56): Sunday dinner's leftovers landing on Monday lunch is
+the common case, and that is a different `meal_plans` row, created lazily by
+the same `ensure_meal_plan` path any other first write into a week already
+uses.
+
+**Variety check**, built in Phase 2 part 3 (D58): a client-side query, not a
+table. For a candidate recipe in a `snack` slot, count entries carrying the
+same `recipe_id` in that slot within a window **centred** on the candidate
+date -- `kVarietyWindowDays` (7) either side, not the trailing "last N days"
+this section originally sketched. A meal plan is forward-looking: most of
+what a candidate should be compared against has not been cooked yet, only
+planned, and a trailing window only warns when slots happen to be filled in
+calendar order. Warns at `kVarietyWarnAtOrAbove` (2) or more existing
+occurrences, and is advisory only -- the cook can proceed past the warning;
+nothing here blocks a write.
 
 ---
 

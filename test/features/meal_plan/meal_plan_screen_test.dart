@@ -20,6 +20,9 @@ class _Calls {
   ({DateTime date, MealSlot slot, String note})? addedNote;
   ({String id, DateTime date, MealSlot slot})? moved;
   String? removed;
+  ({String sourceId, DateTime date, MealSlot slot})? addedLeftover;
+  ({String id, int newPosition})? reordered;
+  bool snackRepeatCountCalled = false;
 }
 
 /// The notifier is overridden, not mocked -- Riverpod's own override
@@ -32,10 +35,16 @@ class _Calls {
 /// Overriding them turns the call into something this file can capture and
 /// assert on directly.
 class _StubPlan extends MealPlanEditor {
-  _StubPlan(this.initial, this.calls);
+  _StubPlan(this.initial, this.calls, {this.repeatCount = 0});
 
   final MealPlanWeek initial;
   final _Calls calls;
+
+  /// What [snackRepeatCount] returns, regardless of the arguments it is
+  /// called with -- the exact window/threshold arithmetic is
+  /// `snack_variety_test.dart`'s job; this suite only needs to control
+  /// whether the screen's warning dialog appears.
+  final int repeatCount;
 
   @override
   Future<MealPlanWeek> build() async => initial;
@@ -71,6 +80,33 @@ class _StubPlan extends MealPlanEditor {
   Future<void> removeEntry(String entryId) async {
     calls.removed = entryId;
   }
+
+  @override
+  Future<void> addLeftover({
+    required String sourceEntryId,
+    required DateTime entryDate,
+    required MealSlot slot,
+  }) async {
+    calls.addedLeftover =
+        (sourceId: sourceEntryId, date: entryDate, slot: slot);
+  }
+
+  @override
+  Future<void> reorderEntry({
+    required String entryId,
+    required int newPosition,
+  }) async {
+    calls.reordered = (id: entryId, newPosition: newPosition);
+  }
+
+  @override
+  Future<int> snackRepeatCount({
+    required String recipeId,
+    required DateTime entryDate,
+  }) async {
+    calls.snackRepeatCountCalled = true;
+    return repeatCount;
+  }
 }
 
 /// A [VisibleWeek] pinned to a known Monday, so day headers and the week
@@ -89,6 +125,7 @@ Future<_Calls> _pump(
   WidgetTester tester, {
   required MealPlanWeek initial,
   List<Recipe> plannable = const <Recipe>[],
+  int repeatCount = 0,
 }) async {
   // The week list is taller than the default 800x600 test surface -- without
   // this, days below the fold simply are not there to find.
@@ -101,7 +138,8 @@ Future<_Calls> _pump(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        mealPlanEditorProvider.overrideWith(() => _StubPlan(initial, calls)),
+        mealPlanEditorProvider.overrideWith(
+            () => _StubPlan(initial, calls, repeatCount: repeatCount)),
         visibleWeekProvider.overrideWith(() => _PinnedWeek()),
         plannableRecipesProvider(query: '')
             .overrideWith((Ref ref) async => plannable),
@@ -112,6 +150,17 @@ Future<_Calls> _pump(
   await tester.pumpAndSettle();
   return calls;
 }
+
+Recipe _plannableRecipe({required String id, required String title}) =>
+    Recipe(
+      id: id,
+      householdId: 'h1',
+      title: title,
+      originalLocale: 'sr',
+      sourceType: RecipeSourceType.manual,
+      status: RecipeStatus.tested,
+      createdBy: 'u1',
+    );
 
 void main() {
   testWidgets('the AppBar is titled Plan', (WidgetTester tester) async {
@@ -248,6 +297,279 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(calls.removed, 'e1');
+  });
+
+  testWidgets(
+      'the action sheet offers "Plan leftovers..." for a recipe entry, not '
+      'for a note or a leftover', (WidgetTester tester) async {
+    final MealPlanWeek plan = MealPlanWeek(
+      week: _week,
+      planId: 'plan-1',
+      entries: <MealPlanEntry>[
+        MealPlanEntry(
+          id: 'e-recipe',
+          mealPlanId: 'plan-1',
+          entryDate: _monday,
+          slot: MealSlot.lunch,
+          position: 0,
+          entryKind: MealEntryKind.recipe,
+          recipeId: 'r1',
+          recipeTitle: 'zzz recipe entry',
+        ),
+        MealPlanEntry(
+          id: 'e-note',
+          mealPlanId: 'plan-1',
+          entryDate: _monday,
+          slot: MealSlot.breakfast,
+          position: 0,
+          entryKind: MealEntryKind.note,
+          note: 'zzz note entry',
+        ),
+        MealPlanEntry(
+          id: 'e-leftover',
+          mealPlanId: 'plan-1',
+          entryDate: _tuesday,
+          slot: MealSlot.dinner,
+          position: 0,
+          entryKind: MealEntryKind.leftover,
+          recipeId: 'r1',
+          recipeTitle: 'zzz leftover entry',
+          leftoverOfEntryId: 'e-recipe',
+        ),
+      ],
+    );
+    await _pump(tester, initial: plan);
+
+    await tester.tap(find.text('zzz recipe entry'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plan leftovers...'), findsOneWidget);
+    await tester.tapAt(const Offset(10, 10)); // dismiss via the modal barrier
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('zzz note entry'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plan leftovers...'), findsNothing);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Leftovers: zzz leftover entry'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plan leftovers...'), findsNothing);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      '"Plan leftovers..." defaults to the source date + 1 day and the '
+      "source's own slot, and confirming calls addLeftover",
+      (WidgetTester tester) async {
+    final MealPlanWeek plan = MealPlanWeek(
+      week: _week,
+      planId: 'plan-1',
+      entries: <MealPlanEntry>[
+        MealPlanEntry(
+          id: 'e1',
+          mealPlanId: 'plan-1',
+          entryDate: _monday,
+          slot: MealSlot.dinner,
+          position: 0,
+          entryKind: MealEntryKind.recipe,
+          recipeId: 'r1',
+          recipeTitle: 'zzz sarma',
+        ),
+      ],
+    );
+    final _Calls calls = await _pump(tester, initial: plan);
+    final DateTime expectedDefault =
+        DateTime(_monday.year, _monday.month, _monday.day + 1);
+
+    await tester.tap(find.text('zzz sarma'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Plan leftovers...'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Plan leftovers'), findsOneWidget); // dialog title
+    expect(find.text(shortDateLabel(expectedDefault)), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+    await tester.pumpAndSettle();
+
+    expect(calls.addedLeftover, isNotNull);
+    expect(calls.addedLeftover!.sourceId, 'e1');
+    expect(calls.addedLeftover!.date, expectedDefault);
+    expect(calls.addedLeftover!.slot, MealSlot.dinner);
+  });
+
+  testWidgets(
+      'the action sheet shows Move up only when not first, Move down only '
+      'when not last', (WidgetTester tester) async {
+    final MealPlanWeek plan = MealPlanWeek(
+      week: _week,
+      planId: 'plan-1',
+      entries: <MealPlanEntry>[
+        MealPlanEntry(
+          id: 'e0',
+          mealPlanId: 'plan-1',
+          entryDate: _monday,
+          slot: MealSlot.breakfast,
+          position: 0,
+          entryKind: MealEntryKind.note,
+          note: 'zzz note 0',
+        ),
+        MealPlanEntry(
+          id: 'e1',
+          mealPlanId: 'plan-1',
+          entryDate: _monday,
+          slot: MealSlot.breakfast,
+          position: 1,
+          entryKind: MealEntryKind.note,
+          note: 'zzz note 1',
+        ),
+        MealPlanEntry(
+          id: 'e2',
+          mealPlanId: 'plan-1',
+          entryDate: _monday,
+          slot: MealSlot.breakfast,
+          position: 2,
+          entryKind: MealEntryKind.note,
+          note: 'zzz note 2',
+        ),
+      ],
+    );
+    await _pump(tester, initial: plan);
+
+    await tester.tap(find.text('zzz note 0'));
+    await tester.pumpAndSettle();
+    expect(find.text('Move up'), findsNothing);
+    expect(find.text('Move down'), findsOneWidget);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('zzz note 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('Move up'), findsOneWidget);
+    expect(find.text('Move down'), findsNothing);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('tapping Move up calls reorderEntry with index - 1',
+      (WidgetTester tester) async {
+    final MealPlanWeek plan = MealPlanWeek(
+      week: _week,
+      planId: 'plan-1',
+      entries: <MealPlanEntry>[
+        MealPlanEntry(
+          id: 'e0',
+          mealPlanId: 'plan-1',
+          entryDate: _monday,
+          slot: MealSlot.breakfast,
+          position: 0,
+          entryKind: MealEntryKind.note,
+          note: 'zzz note 0',
+        ),
+        MealPlanEntry(
+          id: 'e1',
+          mealPlanId: 'plan-1',
+          entryDate: _monday,
+          slot: MealSlot.breakfast,
+          position: 1,
+          entryKind: MealEntryKind.note,
+          note: 'zzz note 1',
+        ),
+        MealPlanEntry(
+          id: 'e2',
+          mealPlanId: 'plan-1',
+          entryDate: _monday,
+          slot: MealSlot.breakfast,
+          position: 2,
+          entryKind: MealEntryKind.note,
+          note: 'zzz note 2',
+        ),
+      ],
+    );
+    final _Calls calls = await _pump(tester, initial: plan);
+
+    await tester.tap(find.text('zzz note 2'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Move up'));
+    await tester.pumpAndSettle();
+
+    expect(calls.reordered, (id: 'e2', newPosition: 1));
+  });
+
+  testWidgets(
+      'picking a repeated snack recipe warns, and Cancel writes nothing',
+      (WidgetTester tester) async {
+    final Recipe recipe = _plannableRecipe(id: 'r1', title: 'zzz snack bar');
+    final _Calls calls = await _pump(
+      tester,
+      initial: MealPlanWeek.empty(_week),
+      plannable: <Recipe>[recipe],
+      repeatCount: 2,
+    );
+
+    // Monday's slot rows are breakfast(0), lunch(1), dinner(2), snack(3).
+    await tester.tap(find.widgetWithText(ActionChip, 'Add').at(3));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('zzz snack bar'));
+    await tester.pumpAndSettle();
+
+    expect(calls.snackRepeatCountCalled, isTrue);
+    expect(find.text('Already planned recently'), findsOneWidget);
+    expect(find.text('Already in 2 snack slots this fortnight.'),
+        findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(calls.addedRecipe, isNull);
+  });
+
+  testWidgets('picking a repeated snack recipe, then Add anyway calls '
+      'addRecipe', (WidgetTester tester) async {
+    final Recipe recipe = _plannableRecipe(id: 'r1', title: 'zzz snack bar');
+    final _Calls calls = await _pump(
+      tester,
+      initial: MealPlanWeek.empty(_week),
+      plannable: <Recipe>[recipe],
+      repeatCount: 2,
+    );
+
+    await tester.tap(find.widgetWithText(ActionChip, 'Add').at(3));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('zzz snack bar'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Add anyway'));
+    await tester.pumpAndSettle();
+
+    expect(calls.addedRecipe, isNotNull);
+    expect(calls.addedRecipe!.recipeId, 'r1');
+    expect(calls.addedRecipe!.slot, MealSlot.snack);
+  });
+
+  testWidgets(
+      'a non-snack slot never calls snackRepeatCount, and adds immediately',
+      (WidgetTester tester) async {
+    final Recipe recipe = _plannableRecipe(id: 'r1', title: 'zzz lunch dish');
+    final _Calls calls = await _pump(
+      tester,
+      initial: MealPlanWeek.empty(_week),
+      plannable: <Recipe>[recipe],
+      repeatCount: 99,
+    );
+
+    // Monday's lunch Add chip -- breakfast(0), lunch(1), dinner(2), snack(3).
+    await tester.tap(find.widgetWithText(ActionChip, 'Add').at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('zzz lunch dish'));
+    await tester.pumpAndSettle();
+
+    expect(calls.snackRepeatCountCalled, isFalse);
+    expect(find.text('Already planned recently'), findsNothing);
+    expect(calls.addedRecipe, isNotNull);
+    expect(calls.addedRecipe!.slot, MealSlot.lunch);
   });
 
   testWidgets('an AppFailure from the provider renders its message',

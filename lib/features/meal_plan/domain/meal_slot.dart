@@ -27,8 +27,8 @@ enum MealSlot {
 enum MealEntryKind {
   recipe,
 
-  /// D51: the column and this value ship in migration 14, but nothing writes
-  /// it yet -- the leftover feature itself is a later part.
+  /// D51 shipped this value in migration 14 unreachable; Phase 2 part 3
+  /// (D55) writes it, deriving `recipe_id` server-side from its source entry.
   leftover,
   note,
 }

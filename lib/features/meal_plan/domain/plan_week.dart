@@ -54,6 +54,15 @@ DateTime parseIsoDate(String isoDate) => DateTime.parse(isoDate);
 /// A three-letter English day abbreviation for [date]'s weekday.
 String dayAbbrevOf(DateTime date) => _dayAbbrev[date.weekday - DateTime.monday];
 
+/// `Mon 14 Sep` -- [dayAbbrevOf] plus day and month.
+///
+/// `dayAbbrevOf(day) + day.day` (what the Move-to dialog uses) is only
+/// unambiguous within a single visible week. Phase 2 part 3's leftover
+/// dialog offers 14 consecutive dates from an arbitrary entry, which can
+/// cross a month boundary, so that shorthand is not enough there.
+String shortDateLabel(DateTime date) =>
+    '${dayAbbrevOf(date)} ${date.day} ${_monthAbbrev[date.month - 1]}';
+
 /// A calendar week, Monday through Sunday.
 ///
 /// Two weeks with the same [start] are equal, which is what lets

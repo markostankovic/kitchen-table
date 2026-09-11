@@ -16,8 +16,13 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MealPlanEntry {
 
- String get id; String get mealPlanId; DateTime get entryDate; MealSlot get slot; int get position; MealEntryKind get entryKind; String? get recipeId;/// D51: the column ships in migration 14; nothing writes it until a
-/// later part builds the leftover feature.
+ String get id; String get mealPlanId; DateTime get entryDate; MealSlot get slot; int get position; MealEntryKind get entryKind; String? get recipeId;/// The source entry this is leftovers of, for `entryKind ==
+/// MealEntryKind.leftover`. Ships unreachable in migration 14 (D51);
+/// Phase 2 part 3 (D55) writes it, and derives [recipeId] onto the row
+/// server-side from the source -- never sent by the client -- so a
+/// leftover entry's [recipeId] and [recipeTitle] are trustworthy without
+/// a join, the same way [recipeId] already is for an `entryKind ==
+/// recipe` row.
  String? get leftoverOfEntryId; String? get note; int? get servings;/// Resolved, not stored -- see the class doc.
  String? get recipeTitle; int? get recipeServings;
 /// Create a copy of MealPlanEntry
@@ -239,8 +244,13 @@ class _MealPlanEntry extends MealPlanEntry {
 @override final  int position;
 @override final  MealEntryKind entryKind;
 @override final  String? recipeId;
-/// D51: the column ships in migration 14; nothing writes it until a
-/// later part builds the leftover feature.
+/// The source entry this is leftovers of, for `entryKind ==
+/// MealEntryKind.leftover`. Ships unreachable in migration 14 (D51);
+/// Phase 2 part 3 (D55) writes it, and derives [recipeId] onto the row
+/// server-side from the source -- never sent by the client -- so a
+/// leftover entry's [recipeId] and [recipeTitle] are trustworthy without
+/// a join, the same way [recipeId] already is for an `entryKind ==
+/// recipe` row.
 @override final  String? leftoverOfEntryId;
 @override final  String? note;
 @override final  int? servings;

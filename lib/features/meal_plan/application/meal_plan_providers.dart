@@ -8,6 +8,7 @@ import '../data/meal_plan_repository.dart';
 import '../domain/meal_plan_week.dart';
 import '../domain/meal_slot.dart';
 import '../domain/plan_week.dart';
+import '../domain/snack_variety.dart';
 
 part 'meal_plan_providers.g.dart';
 
@@ -99,6 +100,65 @@ class MealPlanEditor extends _$MealPlanEditor {
   Future<void> removeEntry(String entryId) =>
       _write((MealPlanRepository repo, String householdId, PlanWeek week) =>
           repo.removeEntry(entryId));
+
+  /// Marks leftovers of [sourceEntryId] on [entryDate] / [slot].
+  ///
+  /// Deliberately ignores the `week` [_write] supplies (the visible week) and
+  /// derives the destination week from [entryDate] instead (D56): a
+  /// leftover's week is wherever its date falls, which is routinely NOT the
+  /// week on screen -- Sunday dinner's leftovers land on Monday lunch, a
+  /// different `meal_plans` row entirely, created lazily by
+  /// `MealPlanRepository.addLeftoverEntry` exactly as any other first write
+  /// into a week already is (D50). A leftover placed into next week is
+  /// invisible until the cook pages the grid forward; that is correct, not a
+  /// bug -- the grid shows one week at a time by design (D54).
+  Future<void> addLeftover({
+    required String sourceEntryId,
+    required DateTime entryDate,
+    required MealSlot slot,
+  }) =>
+      _write((MealPlanRepository repo, String householdId, PlanWeek week) =>
+          repo.addLeftoverEntry(
+            householdId: householdId,
+            week: PlanWeek.of(entryDate),
+            entryDate: entryDate,
+            slot: slot,
+            sourceEntryId: sourceEntryId,
+          ));
+
+  Future<void> reorderEntry({
+    required String entryId,
+    required int newPosition,
+  }) =>
+      _write((MealPlanRepository repo, String householdId, PlanWeek week) =>
+          repo.reorderEntry(entryId: entryId, newPosition: newPosition));
+
+  /// How many snack-slot entries already carry [recipeId] in the window
+  /// centred on [entryDate] (`snack_variety.dart`) -- the raw count behind
+  /// the screen's "already planned N times" warning.
+  ///
+  /// Not a write: it neither goes through [_write] nor bumps
+  /// [mealPlanRevisionProvider]. Returns 0 when there is no household yet,
+  /// the same "never touch the client without one" rule [build] follows --
+  /// there is nothing to warn about before a household exists.
+  Future<int> snackRepeatCount({
+    required String recipeId,
+    required DateTime entryDate,
+  }) async {
+    final String? householdId =
+        await ref.read(currentHouseholdIdProvider.future);
+    if (householdId == null) return 0;
+
+    final ({DateTime from, DateTime to}) window =
+        varietyWindowAround(entryDate);
+    return ref.read(mealPlanRepositoryProvider).countRecipeInSlot(
+          householdId: householdId,
+          recipeId: recipeId,
+          slot: MealSlot.snack,
+          from: window.from,
+          to: window.to,
+        );
+  }
 
   /// Every action shares this shape: resolve the household, run the
   /// repository call, then bump [mealPlanRevisionProvider], which rebuilds

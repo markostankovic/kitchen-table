@@ -1215,6 +1215,139 @@ offline-friendly draft for the week grid, mirroring `RecipeEditor` — nothing
 here is composed as one unit the way a recipe's title-and-lines are, so the
 draft would only add a way to lose changes to a back gesture.
 
+## D55 — A leftover entry carries its source's `recipe_id`, derived by trigger and never sent by the client
+
+**Decided.** `meal_plan_entries_leftover_source` (migration 15), a second
+`before insert or update` trigger alongside migration 14's
+`meal_plan_entries_before_write`, sets `new.recipe_id` from the source entry's
+own `recipe_id` whenever `entry_kind = 'leftover'`, overwriting whatever the
+client sent. It also refuses a source that is not itself an
+`entry_kind = 'recipe'` row — no leftover-of-leftover chains — and refuses a
+leftover pointing at itself.
+
+**Why.** This is what D51's deliberately loose `'leftover'` check-constraint
+branch was for: it required only `leftover_of_entry_id`, precisely so a later
+migration could add `recipe_id` to the row without rewriting that constraint.
+Deriving it, rather than trusting the client, is what makes the
+denormalisation safe to build on — a leftover's `recipe_id` cannot disagree
+with its source's, so the drift the loose branch permits is simply not
+expressible, the same move `ensure_meal_plan` already makes for the plan id
+and `meal_plan_entries_before_write` already makes for `position` (D49, D50).
+The payoff is immediate: the snack variety check (D58) and `countRecipeInSlot`
+can match `recipe_id` alone and count a leftover as an occurrence of its
+source recipe, with no join back through `leftover_of_entry_id`. The shopping
+list (Phase 2's next part) gets the same thing for free when it needs to skip
+leftovers so nothing is bought twice.
+
+A second, additively-named trigger rather than folding a fourth invariant
+into `meal_plan_entries_before_write`: that function's own comment in
+migration 14 describes exactly three invariants, and CLAUDE.md forbids
+editing an applied migration to keep that description honest. Trigger
+execution order is alphabetical by name, so `..._before_write` still runs
+first, but the two turned out to be independent in practice — position
+assignment and the week-boundary guard never read `recipe_id` or the leftover
+source's row.
+
+**Rejected.** Trusting a client-sent `recipe_id` on a leftover row (D42's
+argument against a machine tier writing catalog data unsupervised applies here
+in miniature: a value nothing derives or checks is a value that can quietly
+drift). Chains of leftovers — a leftover of a leftover has a head nobody can
+find, and the check would need to walk an arbitrary-depth chain to resolve one
+`recipe_id`.
+
+## D56 — A leftover's destination is a date, not a slot in the visible week
+
+**Decided.** `MealPlanEditor.addLeftover` ignores the `week` its own `_write`
+funnel would otherwise supply (the week on screen) and derives the
+destination week from the leftover's `entryDate` instead:
+`MealPlanRepository.addLeftoverEntry` calls `_ensurePlan` with
+`PlanWeek.of(entryDate)`. The leftover dialog offers 14 consecutive dates
+starting at the source entry's own date, crossing a week boundary freely.
+
+**Why.** Sunday dinner's leftovers landing on Monday lunch is the single most
+common leftover there is, and Monday sits in a different `meal_plans` row
+than Sunday. Restricting the leftover dialog to the visible week's 7 days
+(the same list `_showMoveDialog` already offers) cannot express that at all.
+`ensure_meal_plan` already creates a week's row lazily on its first write
+(D50); a leftover's write is just another caller of the same path, into
+whichever week its date falls in.
+
+**Consequence.** A leftover placed into next week is invisible on the grid
+until the cook pages forward — the grid shows one week at a time by design
+(D54), and this is not a bug, just a fact worth having named once rather than
+rediscovered as a "missing" entry.
+
+**Rejected.** Restricting the leftover dialog to the visible week's days —
+cannot express the Sunday → Monday case, which is the main one.
+
+## D57 — Within-slot order is an RPC that renumbers the whole group, not a two-row swap
+
+**Decided.** `reorder_meal_plan_entry(entry uuid, new_position int)`
+(migration 15), the RPC D49 named and left unbuilt. It looks up the entry's
+`(meal_plan_id, entry_date, slot)`, clamps `new_position` into `[0, group_size
+- 1]`, and renumbers every sibling in that group to `0..n-1` in one
+statement — splicing the moving row in at the target index among the others,
+ordered by their current `position` — rather than swapping the two rows at
+the old and new positions.
+
+**Why.** A two-row swap would preserve whatever gap or duplicate already
+exists elsewhere in that group's `position` values. D49 rejected a unique
+index on `position` specifically so two concurrent inserts into an empty slot
+do not collide as a spurious "already exists" — which means gaps (and,
+briefly, ties) are legal, and this RPC has to tolerate them on the way in
+regardless of what produced them. Renumbering the whole group is also what
+lets it leave the group gap-free on the way out, which a swap does not
+guarantee. Clamping rather than raising on an out-of-range `new_position`: a
+"move down" tapped on the last chip is a no-op, not a mistake worth
+surfacing.
+
+It does not fight `meal_plan_entries_before_write`: that trigger reassigns
+`position` only on `INSERT`, or on `UPDATE` when `entry_date` or `slot`
+actually changed (migration 14). A reorder changes neither, so its
+tail-assignment branch never fires — the update this RPC issues is exactly
+the "note text or servings changed" case that trigger was already written to
+leave `position` alone for. This is the one fact that makes the RPC work at
+all, and it is not obvious from reading either function in isolation, which
+is why migration 15 writes it down explicitly rather than leaving it to be
+rediscovered by whoever next touches either trigger.
+
+**Rejected.** A two-row swap (preserves existing gaps/duplicates instead of
+normalising them, and is not obviously simpler to reason about than a full
+renumber). A unique index on `(meal_plan_id, entry_date, slot, position)` —
+D49 already rejected this for a different reason (it would turn two
+concurrent inserts into a spurious conflict), and it would make this RPC's
+renumbering a multi-statement dance to avoid transiently violating it.
+
+## D58 — The snack variety window is centred on the candidate date, not trailing, and the warning never blocks a write
+
+**Decided.** `snack_variety.dart`'s `varietyWindowAround` returns a window
+`kVarietyWindowDays` (7) either side of the date being considered — 15
+calendar days inclusive, close to `docs/DATA_MODEL.md`'s original "last 14
+days" figure but centred rather than trailing. `shouldWarnOnRepeat` fires at
+`kVarietyWarnAtOrAbove` (2) or more existing occurrences in that window. The
+screen's warning dialog (Cancel / Add anyway) is advisory only — declining to
+proceed after seeing it is the only way the check stops a write; the check
+itself never does.
+
+**Why.** `docs/DATA_MODEL.md`'s original sketch worded this as a trailing
+window ending on the candidate date, written before the meal plan existed to
+plan against. A meal plan is a forward-looking document: most of what a
+candidate snack should be compared against has not been cooked yet, only
+planned, and a trailing window only warns when slots happen to be filled in
+calendar order — planning Saturday's snack before Wednesday's would get no
+warning from a trailing window even though the two sit five days apart. A
+centred window catches the repeat regardless of the order slots are filled
+in, which is how meal planning actually happens. Advisory rather than
+blocking follows D54's instinct for every meal-plan failure already: a
+cook's plan is not something the app second-guesses past a single "are you
+sure".
+
+**Rejected.** A trailing window matching `docs/DATA_MODEL.md`'s original
+wording literally — would depart from the app's actual usage pattern for the
+reason above. Blocking the write outright — a warning that cannot be
+overridden would make "plan the same snack twice on purpose" impossible, and
+there is nothing wrong with that on occasion.
+
 ## Open / deferred
 
 - **Client vs Edge Function split** — rule of thumb written in
@@ -1264,10 +1397,11 @@ draft would only add a way to lose changes to a back gesture.
   partial index, in one migration. Not in Phase 1a.
 - **Invite redemption rate limiting** — see D26. Deferred deliberately, with
   the upgrade path named there.
-- **Leftover entries and the snack variety check** — see D51. The column and
-  the `leftover` vocabulary ship in migration 14; nothing writes them and no
-  client counts them yet. Also deferred: within-slot reordering (D49 names
-  the RPC it would need), thumbnails on the week grid's own tiles (D53), and
-  copying or clearing a whole week — which is where `meal_plans.deleted_at`
+- **Thumbnails on the week grid's own tiles, and copying or clearing a whole
+  week** — see D53. The picker gets thumbnails for free from
+  `_withImageUrls`; the grid's tiles deliberately do not, and no second
+  caller needs it yet. Copying/clearing a week is where `meal_plans.deleted_at`
   gets its first human-triggered writer and D50's resurrection path gets
-  exercised outside the SQL suite.
+  exercised outside the SQL suite — still unbuilt after Phase 2 part 3, which
+  closed the other three items this note used to list (leftover entries,
+  the snack variety check, within-slot reordering — D55–D58).

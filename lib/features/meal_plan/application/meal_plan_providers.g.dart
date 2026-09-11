@@ -200,7 +200,7 @@ final class MealPlanEditorProvider
   MealPlanEditor create() => MealPlanEditor();
 }
 
-String _$mealPlanEditorHash() => r'a8ae1deb48eb305a5241546434349db70ccd1122';
+String _$mealPlanEditorHash() => r'1c3a95aa8517bb4b6b7dedcf174e3d15744c2c50';
 
 /// The visible week's entries, and the writes that change them.
 ///

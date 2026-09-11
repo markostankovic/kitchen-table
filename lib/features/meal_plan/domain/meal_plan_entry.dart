@@ -34,8 +34,13 @@ abstract class MealPlanEntry with _$MealPlanEntry {
     required MealEntryKind entryKind,
     String? recipeId,
 
-    /// D51: the column ships in migration 14; nothing writes it until a
-    /// later part builds the leftover feature.
+    /// The source entry this is leftovers of, for `entryKind ==
+    /// MealEntryKind.leftover`. Ships unreachable in migration 14 (D51);
+    /// Phase 2 part 3 (D55) writes it, and derives [recipeId] onto the row
+    /// server-side from the source -- never sent by the client -- so a
+    /// leftover entry's [recipeId] and [recipeTitle] are trustworthy without
+    /// a join, the same way [recipeId] already is for an `entryKind ==
+    /// recipe` row.
     String? leftoverOfEntryId,
     String? note,
     int? servings,
@@ -49,15 +54,21 @@ abstract class MealPlanEntry with _$MealPlanEntry {
       _$MealPlanEntryFromJson(json);
 
   /// What to show on the tile: the recipe's title for a recipe entry, the
-  /// note text for a note entry.
+  /// note text for a note entry, and `Leftovers: <title>` for a leftover --
+  /// it must not read as a second helping cooked from scratch.
   ///
   /// Defined here, once, rather than in the grid widget -- the entry_kind
   /// check constraint in migration 14 already guarantees exactly one of
   /// [recipeTitle] / [note] is meaningful for a given [entryKind], so this is
   /// a lookup, not a decision.
   String get label => switch (entryKind) {
-        MealEntryKind.recipe || MealEntryKind.leftover =>
-          recipeTitle ?? 'Recipe',
+        MealEntryKind.recipe => recipeTitle ?? 'Recipe',
+        MealEntryKind.leftover => 'Leftovers: ${recipeTitle ?? 'Recipe'}',
         MealEntryKind.note => note ?? '',
       };
+
+  /// Whether this is a leftover entry -- shorthand for the switch above,
+  /// used by the screen's action sheet and (Phase 2's next part) the
+  /// shopping list, which skips leftovers so nothing is bought twice.
+  bool get isLeftover => entryKind == MealEntryKind.leftover;
 }

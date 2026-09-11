@@ -22,6 +22,26 @@ MealPlanEntry _recipeEntry({
       recipeTitle: title,
     );
 
+MealPlanEntry _leftoverEntry({
+  required String id,
+  required DateTime date,
+  required MealSlot slot,
+  required int position,
+  required String sourceId,
+  String title = 'Torta',
+}) =>
+    MealPlanEntry(
+      id: id,
+      mealPlanId: 'plan-1',
+      entryDate: date,
+      slot: slot,
+      position: position,
+      entryKind: MealEntryKind.leftover,
+      recipeId: 'r1',
+      recipeTitle: title,
+      leftoverOfEntryId: sourceId,
+    );
+
 MealPlanEntry _noteEntry({
   required String id,
   required DateTime date,
@@ -134,6 +154,31 @@ void main() {
           id: 'e1', date: monday, slot: MealSlot.breakfast, position: 0,
           note: 'zzz buy bread');
       expect(entry.label, 'zzz buy bread');
+    });
+
+    test('a leftover entry is prefixed -- it must not read as a fresh '
+        'helping cooked from scratch', () {
+      final MealPlanEntry entry = _leftoverEntry(
+          id: 'e2', date: tuesday, slot: MealSlot.lunch, position: 0,
+          sourceId: 'e1', title: 'Sarma');
+      expect(entry.label, 'Leftovers: Sarma');
+    });
+  });
+
+  group('MealPlanEntry.isLeftover', () {
+    test('true only for a leftover entry', () {
+      final MealPlanEntry recipe = _recipeEntry(
+          id: 'e1', date: monday, slot: MealSlot.lunch, position: 0);
+      final MealPlanEntry leftover = _leftoverEntry(
+          id: 'e2', date: tuesday, slot: MealSlot.lunch, position: 0,
+          sourceId: 'e1');
+      final MealPlanEntry note = _noteEntry(
+          id: 'e3', date: monday, slot: MealSlot.breakfast, position: 0,
+          note: 'zzz buy bread');
+
+      expect(recipe.isLeftover, isFalse);
+      expect(leftover.isLeftover, isTrue);
+      expect(note.isLeftover, isFalse);
     });
   });
 
