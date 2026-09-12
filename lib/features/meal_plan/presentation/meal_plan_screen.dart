@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/net/network_status.dart';
 import '../../../core/recipes/widgets/recipe_picker_sheet.dart';
 import '../../../core/router/routes.dart';
 import '../application/meal_plan_providers.dart';
@@ -57,6 +58,7 @@ class MealPlanScreen extends ConsumerWidget {
                 onRefresh: () async => ref.invalidate(mealPlanEditorProvider),
                 child: ListView(
                   children: <Widget>[
+                    const _SavedCopyLine(),
                     for (final DateTime day in plan.week.days)
                       _DaySection(day: day, plan: plan),
                   ],
@@ -91,6 +93,37 @@ class _WeekBar extends ConsumerWidget {
           onPressed: () => ref.read(visibleWeekProvider.notifier).next(),
         ),
       ],
+    );
+  }
+}
+
+/// "Showing your saved copy -- no connection." on `_GeneratedAt`'s exact
+/// precedent (`shopping_list_screen.dart`, D67, widened to meal plans in
+/// Phase 2 part 6b). Renders only inside the `data:` branch -- exactly where
+/// a cache hit is on screen -- and only when [Reachability.offline], never
+/// on [Reachability.unknown]: no read has completed yet at that point, and a
+/// line here would be a guess, not a fact.
+///
+/// Narrower and more useful than [OfflineBanner]: this says "this WEEK is
+/// not what the server has right now", the banner says "the phone cannot
+/// reach the server at all" (D76).
+class _SavedCopyLine extends ConsumerWidget {
+  const _SavedCopyLine();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bool offline =
+        ref.watch(networkStatusProvider) == Reachability.offline;
+    if (!offline) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Text(
+        'Showing your saved copy — no connection.',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.error,
+        ),
+      ),
     );
   }
 }

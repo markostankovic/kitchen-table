@@ -1,281 +1,212 @@
-/// Meal plan data access. The only place in this feature that touches
-/// Supabase (CLAUDE.md rule 1).
+/// Meal plan data access, composed from a Remote half (Supabase) and a
+/// Local half (the Drift cache) -- `docs/ARCHITECTURE.md`'s "Offline
+/// (Phase 2)" split, the fourth outing after the shopping list, the unit
+/// catalog and recipes (Phase 2 part 6b).
+///
+/// This file itself imports neither `supabase_flutter` nor `drift`: rule 1's
+/// "the only place `supabase_flutter` may be imported" now belongs to
+/// [RemoteMealPlanDataSource], and [LocalMealPlanDataSource] is the drift
+/// half. This class only orchestrates the two.
 library;
 
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../../../core/supabase/supabase_failure.dart';
-import '../domain/meal_plan_entry.dart';
+import '../../../core/error/app_failure.dart';
 import '../domain/meal_plan_week.dart';
 import '../domain/meal_slot.dart';
 import '../domain/plan_week.dart';
-
-/// The columns one entry carries, plus the `recipes` embed that resolves
-/// [MealPlanEntry.recipeTitle] / [MealPlanEntry.recipeServings] at read time
-/// -- never persisted (D53). No `MealPlanRepository` search for recipes; the
-/// picker reads `RecipeRepository` directly through `core/recipes/`, so this
-/// feature never duplicates that query.
-const String _entryColumns = '''
-id, meal_plan_id, entry_date, slot, position, entry_kind, recipe_id,
-leftover_of_entry_id, note, servings, recipes(title, servings)''';
+import 'local_meal_plan_datasource.dart';
+import 'remote_meal_plan_datasource.dart';
 
 class MealPlanRepository {
-  const MealPlanRepository(this._client);
+  const MealPlanRepository(this._remote, this._local);
 
-  final SupabaseClient _client;
+  final RemoteMealPlanDataSource _remote;
+  final LocalMealPlanDataSource _local;
 
-  /// The household's plan for [week], or an empty one if nothing has ever
-  /// been written into it. D50 rules that the `meal_plans` row is created
-  /// lazily, on the first write -- so a week the cook is only browsing is not
-  /// an error, it is [MealPlanWeek.empty].
+  /// The household's plan for [week], cache immediately then the network --
+  /// the same shape `RecipeRepository.watchList` established (D67, D74),
+  /// widened from one row to a whole household's meal-plan history so
+  /// paging between weeks stays instant and correct offline (D75).
   ///
-  /// `deleted_at` is filtered here rather than left to RLS (D23): the policy
-  /// keeps returning a soft-deleted plan's row so the Phase 2 delta fetch can
-  /// evict it, but a soft delete does not cascade to `meal_plan_entries` --
-  /// only a hard delete does -- so without this filter a cleared week would
-  /// still show its old entries.
-  Future<MealPlanWeek> fetchWeek({
+  /// The watermark is per-household, not per-week (D75): once
+  /// [LocalMealPlanDataSource.readWeeksWatermark] is non-null, a full sync
+  /// has happened, so a cache miss for the requested week is an
+  /// authoritative "this week is empty" (D50's lazily-created plan row),
+  /// not "we never looked" -- the same distinction a cold cache and a truly
+  /// empty household draw for `RecipeRepository.watchList`.
+  ///
+  /// A cache hit outlives a [NetworkFailure]; a cold cache does not -- an
+  /// honest "no connection, and nothing saved yet" beats an empty week that
+  /// implies nothing was ever planned (matches
+  /// `RecipeRepository.watchList`'s own rule).
+  Stream<MealPlanWeek> watchWeek({
     required String householdId,
     required PlanWeek week,
-  }) =>
-      runGuarded(() async {
-        final Map<String, dynamic>? row = await _client
-            .from('meal_plans')
-            .select('id, meal_plan_entries($_entryColumns)')
-            .eq('household_id', householdId)
-            .eq('week_start', week.isoDate)
-            .isFilter('deleted_at', null)
-            .maybeSingle();
+    void Function()? onReachable,
+    void Function()? onUnreachable,
+  }) async* {
+    final DateTime? since = await _local.readWeeksWatermark(householdId);
+    final MealPlanWeek? cached = await _local.readWeek(
+      householdId: householdId,
+      week: week,
+    );
 
-        if (row == null) return MealPlanWeek.empty(week);
+    if (cached != null) {
+      yield cached;
+    } else if (since != null) {
+      // A watermark exists: the household has been fully synced at least
+      // once, so an absent week is genuinely empty, not merely unseen.
+      yield MealPlanWeek.empty(week);
+    }
 
-        final List<MealPlanEntry> entries =
-            (row['meal_plan_entries'] as List<dynamic>? ?? <dynamic>[])
-                .cast<Map<String, dynamic>>()
-                .map(_toEntry)
-                .toList(growable: false);
+    try {
+      final List<Map<String, dynamic>> changed = await _remote
+          .fetchChangedSince(householdId: householdId, since: since);
 
-        return MealPlanWeek(
-          week: week,
-          planId: row['id'] as String,
-          entries: entries,
-        );
-      });
+      if (changed.isNotEmpty) {
+        await _applyWeekDelta(householdId, changed, since);
+      }
 
-  /// Adds a recipe to one slot of one day.
-  ///
-  /// [entryDate] must fall inside [week] -- `meal_plan_entries_before_write`
-  /// (migration 14) refuses it otherwise. `position` is never sent: the
-  /// server assigns it at the tail of the slot (D49), the same argument D36
-  /// already made for `recipe_ingredients.position`.
+      onReachable?.call();
+      final MealPlanWeek fresh =
+          await _local.readWeek(householdId: householdId, week: week) ??
+              MealPlanWeek.empty(week);
+      yield fresh;
+    } on NetworkFailure catch (e) {
+      onUnreachable?.call();
+      // Something was already emitted above -- either a cache hit, or (with
+      // a live watermark) an authoritative empty week -- so this can return
+      // quietly rather than error the stream.
+      if (cached != null || since != null) return;
+      throw NetworkFailure(
+        message: 'No connection, and no saved plan on this phone yet.',
+        cause: e.cause,
+      );
+    }
+  }
+
+  /// Adds a recipe to one slot of one day. Online-only (D12).
   Future<void> addRecipeEntry({
     required String householdId,
     required PlanWeek week,
     required DateTime entryDate,
     required MealSlot slot,
     required String recipeId,
-  }) =>
-      runGuarded(() async {
-        final String planId =
-            await _ensurePlan(householdId: householdId, week: week);
-        await _client.from('meal_plan_entries').insert(<String, dynamic>{
-          'meal_plan_id': planId,
-          'entry_date': isoDateOf(entryDate),
-          'slot': slot.name,
-          'entry_kind': MealEntryKind.recipe.name,
-          'recipe_id': recipeId,
-        });
-      });
+  }) => _remote.addRecipeEntry(
+    householdId: householdId,
+    week: week,
+    entryDate: entryDate,
+    slot: slot,
+    recipeId: recipeId,
+  );
 
-  /// Adds a note to one slot of one day.
-  ///
-  /// Explicit and separate from [addRecipeEntry] rather than one method that
-  /// infers `entry_kind` from which argument came in non-null -- that is
-  /// exactly the bug 1d part 5 shipped once already:
-  /// `ImportRepository.saveImported` derived `source_type` from whether a
-  /// source URL was present, and a photographed page silently recorded as
-  /// `manual`. Two explicit methods make that class of mistake unwritable.
+  /// Adds a note to one slot of one day. Online-only (D12).
   Future<void> addNoteEntry({
     required String householdId,
     required PlanWeek week,
     required DateTime entryDate,
     required MealSlot slot,
     required String note,
-  }) =>
-      runGuarded(() async {
-        final String planId =
-            await _ensurePlan(householdId: householdId, week: week);
-        await _client.from('meal_plan_entries').insert(<String, dynamic>{
-          'meal_plan_id': planId,
-          'entry_date': isoDateOf(entryDate),
-          'slot': slot.name,
-          'entry_kind': MealEntryKind.note.name,
-          'note': note.trim(),
-        });
-      });
+  }) => _remote.addNoteEntry(
+    householdId: householdId,
+    week: week,
+    entryDate: entryDate,
+    slot: slot,
+    note: note,
+  );
 
-  /// Moves an existing entry to a different day and/or slot.
-  ///
-  /// `position` is recomputed server-side at the tail of the destination slot
-  /// (D49) -- within-slot reordering is a known limitation of that trigger,
-  /// written down there, and is not offered by this slice's UI either.
+  /// Moves an existing entry to a different day and/or slot. Online-only
+  /// (D12).
   Future<void> moveEntry({
     required String entryId,
     required DateTime entryDate,
     required MealSlot slot,
-  }) =>
-      runGuarded(() async {
-        await _client.from('meal_plan_entries').update(<String, dynamic>{
-          'entry_date': isoDateOf(entryDate),
-          'slot': slot.name,
-        }).eq('id', entryId);
-      });
+  }) => _remote.moveEntry(entryId: entryId, entryDate: entryDate, slot: slot);
 
   /// Sets how many people one planned meal is for, or clears the override.
-  ///
-  /// `meal_plan_entries.servings` has existed since migration 14 and nothing
-  /// has ever written it, which made `docs/DATA_MODEL.md`'s "scale by
-  /// servings" step a no-op: the shopping list could read the column but the
-  /// cook could not fill it in. This is the writer (D62).
-  ///
-  /// Null clears the override, which is not the same as 1 -- it means "however
-  /// many the recipe says", and the aggregator then scales by nothing at all.
+  /// Online-only (D12).
   Future<void> setEntryServings({
     required String entryId,
     required int? servings,
-  }) =>
-      runGuarded(() async {
-        await _client
-            .from('meal_plan_entries')
-            .update(<String, dynamic>{'servings': servings}).eq('id', entryId);
-      });
+  }) => _remote.setEntryServings(entryId: entryId, servings: servings);
 
-  /// Removes an entry. A real delete, not a soft one -- `meal_plan_entries`
-  /// carries no `deleted_at` of its own (D24, D49); it cascades with its
-  /// plan, and this is the same removal a cascade would eventually do.
-  Future<void> removeEntry(String entryId) => runGuarded(() async {
-        await _client.from('meal_plan_entries').delete().eq('id', entryId);
-      });
+  /// Removes an entry. Online-only (D12).
+  Future<void> removeEntry(String entryId) => _remote.removeEntry(entryId);
 
-  /// Marks leftovers of [sourceEntryId] in one slot of one day.
-  ///
-  /// [week] is the week containing [entryDate], not necessarily the week the
-  /// source entry sits in (D56) -- Sunday dinner's leftovers landing on
-  /// Monday lunch is the commonest leftover there is, and that is a
-  /// different `meal_plans` row. `_ensurePlan` creates it on this first write
-  /// into it, the same lazy-creation path any other write already takes.
-  ///
-  /// `recipe_id` is deliberately NOT sent -- `meal_plan_entries_leftover_
-  /// source` (migration 15) derives it from the source entry server-side
-  /// (D55), so a client value could never disagree with it anyway.
+  /// Marks leftovers of [sourceEntryId] in one slot of one day. Online-only
+  /// (D12).
   Future<void> addLeftoverEntry({
     required String householdId,
     required PlanWeek week,
     required DateTime entryDate,
     required MealSlot slot,
     required String sourceEntryId,
-  }) =>
-      runGuarded(() async {
-        final String planId =
-            await _ensurePlan(householdId: householdId, week: week);
-        await _client.from('meal_plan_entries').insert(<String, dynamic>{
-          'meal_plan_id': planId,
-          'entry_date': isoDateOf(entryDate),
-          'slot': slot.name,
-          'entry_kind': MealEntryKind.leftover.name,
-          'leftover_of_entry_id': sourceEntryId,
-        });
-      });
+  }) => _remote.addLeftoverEntry(
+    householdId: householdId,
+    week: week,
+    entryDate: entryDate,
+    slot: slot,
+    sourceEntryId: sourceEntryId,
+  );
 
-  /// Moves an entry to [newPosition] within its own slot, via
-  /// `reorder_meal_plan_entry` (D57). `meal_plan_entries_before_write`
-  /// cannot express this -- it always lands an insert or a cross-slot move at
-  /// the tail of the destination group (D49) -- so this is a separate RPC,
-  /// not a plain `update` like [moveEntry].
+  /// Moves an entry to [newPosition] within its own slot. Online-only (D12).
   Future<void> reorderEntry({
     required String entryId,
     required int newPosition,
-  }) =>
-      runGuarded(() async {
-        await _client.rpc<void>(
-          'reorder_meal_plan_entry',
-          params: <String, dynamic>{
-            'entry': entryId,
-            'new_position': newPosition,
-          },
-        );
-      });
+  }) => _remote.reorderEntry(entryId: entryId, newPosition: newPosition);
 
   /// How many times [recipeId] already occupies [slot] between [from] and
-  /// [to], inclusive -- the snack variety check's raw count
-  /// (`snack_variety.dart` turns it into a warn/don't-warn decision).
-  ///
-  /// Scoped to [householdId] and to visible plans explicitly, through the
-  /// `meal_plans!inner` embed: RLS alone would also count a slot in any
-  /// *other* household the caller belongs to, and a soft-deleted week's
-  /// entries live on past its plan's `deleted_at` (D23) -- the same reason
-  /// [fetchWeek] filters `deleted_at` in `data/` rather than trusting the
-  /// policy to. Matching on `recipe_id` alone (not `entry_kind`) counts a
-  /// leftover as an occurrence of its source recipe too, which is correct --
-  /// migration 15 derives `recipe_id` onto every leftover row (D55), so this
-  /// needs no join to know that.
+  /// [to] -- the snack variety check's raw count. Always online, checked
+  /// immediately before a write (D12).
   Future<int> countRecipeInSlot({
     required String householdId,
     required String recipeId,
     required MealSlot slot,
     required DateTime from,
     required DateTime to,
-  }) =>
-      runGuarded(() async {
-        final List<Map<String, dynamic>> rows = await _client
-            .from('meal_plan_entries')
-            .select('id, meal_plans!inner(household_id, deleted_at)')
-            .eq('recipe_id', recipeId)
-            .eq('slot', slot.name)
-            .gte('entry_date', isoDateOf(from))
-            .lte('entry_date', isoDateOf(to))
-            .eq('meal_plans.household_id', householdId)
-            .isFilter('meal_plans.deleted_at', null);
-        return rows.length;
-      });
+  }) => _remote.countRecipeInSlot(
+    householdId: householdId,
+    recipeId: recipeId,
+    slot: slot,
+    from: from,
+    to: to,
+  );
 
   // ---------------------------------------------------------------------
   // Internals
   // ---------------------------------------------------------------------
 
-  /// Creates the household's plan for [week] if this is the first write into
-  /// it, or returns its existing id (D50). Called only from a write path
-  /// above -- never from [fetchWeek].
-  Future<String> _ensurePlan({
-    required String householdId,
-    required PlanWeek week,
-  }) async {
-    final dynamic id = await _client.rpc<dynamic>(
-      'ensure_meal_plan',
-      params: <String, dynamic>{
-        'household': householdId,
-        'week': week.isoDate,
-      },
-    );
-    return id as String;
-  }
+  /// Applies a household's delta onto the cache: partitions the changed
+  /// rows into alive and tombstoned, upserts the survivors, evicts the
+  /// tombstones, and advances the watermark to the max `updated_at` actually
+  /// received -- never `DateTime.now()` (D72). Mirrors
+  /// `RecipeRepository._applyRecipeDelta` exactly, one entity later.
+  Future<void> _applyWeekDelta(
+    String householdId,
+    List<Map<String, dynamic>> changed,
+    DateTime? since,
+  ) async {
+    DateTime maxUpdated = since ?? DateTime.utc(1970);
+    final List<Map<String, dynamic>> alive = <Map<String, dynamic>>[];
+    final List<String> tombstoned = <String>[];
 
-  MealPlanEntry _toEntry(Map<String, dynamic> row) {
-    final Map<String, dynamic>? recipe =
-        row['recipes'] as Map<String, dynamic>?;
-    return MealPlanEntry(
-      id: row['id'] as String,
-      mealPlanId: row['meal_plan_id'] as String,
-      entryDate: parseIsoDate(row['entry_date'] as String),
-      slot: MealSlot.values.byName(row['slot'] as String),
-      position: row['position'] as int,
-      entryKind: MealEntryKind.values.byName(row['entry_kind'] as String),
-      recipeId: row['recipe_id'] as String?,
-      leftoverOfEntryId: row['leftover_of_entry_id'] as String?,
-      note: row['note'] as String?,
-      servings: row['servings'] as int?,
-      recipeTitle: recipe?['title'] as String?,
-      recipeServings: recipe?['servings'] as int?,
-    );
+    for (final Map<String, dynamic> row in changed) {
+      final DateTime updatedAt =
+          DateTime.parse(row['updated_at'] as String).toUtc();
+      if (updatedAt.isAfter(maxUpdated)) maxUpdated = updatedAt;
+
+      if (row['deleted_at'] != null) {
+        tombstoned.add(row['id'] as String);
+      } else {
+        alive.add(row);
+      }
+    }
+
+    if (alive.isNotEmpty) {
+      await _local.upsertMany(householdId: householdId, rows: alive);
+    }
+    for (final String id in tombstoned) {
+      await _local.evict(id);
+    }
+    await _local.advanceWeeksWatermark(householdId, maxUpdated);
   }
 }

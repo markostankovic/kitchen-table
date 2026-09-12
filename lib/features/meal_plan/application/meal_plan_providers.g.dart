@@ -55,7 +55,7 @@ final class MealPlanRepositoryProvider
 }
 
 String _$mealPlanRepositoryHash() =>
-    r'1a9bd928dca104390b4f06a85d212ef6e4649576';
+    r'3c9c61ae50cacdcf7ba5ce385d07e8dc288f7348';
 
 /// The one week currently on screen.
 ///
@@ -141,8 +141,15 @@ abstract class _$VisibleWeek extends $Notifier<PlanWeek> {
 
 /// The visible week's entries, and the writes that change them.
 ///
+/// A `Stream`, not a `Future` (Phase 2 part 6b, on `RecipeList`'s own D67
+/// precedent): `watchWeek` emits a cached week immediately, then the
+/// network's answer, and a `StreamNotifier` is what lets the second
+/// emission be part of the provider's own lifecycle. The value type
+/// consumers see (`AsyncValue<MealPlanWeek>`) is unchanged from the old
+/// `Future`-based provider.
+///
 /// `build()` resolves the household id before it ever reaches
-/// [mealPlanRepositoryProvider], and returns an empty week rather than
+/// [mealPlanRepositoryProvider], and yields an empty week rather than
 /// constructing a repository call when there is none -- a household-less
 /// caller never touches `Supabase.instance.client` (the shell's tab loop
 /// relies on exactly this to render the Plan tab under test).
@@ -157,8 +164,15 @@ final mealPlanEditorProvider = MealPlanEditorProvider._();
 
 /// The visible week's entries, and the writes that change them.
 ///
+/// A `Stream`, not a `Future` (Phase 2 part 6b, on `RecipeList`'s own D67
+/// precedent): `watchWeek` emits a cached week immediately, then the
+/// network's answer, and a `StreamNotifier` is what lets the second
+/// emission be part of the provider's own lifecycle. The value type
+/// consumers see (`AsyncValue<MealPlanWeek>`) is unchanged from the old
+/// `Future`-based provider.
+///
 /// `build()` resolves the household id before it ever reaches
-/// [mealPlanRepositoryProvider], and returns an empty week rather than
+/// [mealPlanRepositoryProvider], and yields an empty week rather than
 /// constructing a repository call when there is none -- a household-less
 /// caller never touches `Supabase.instance.client` (the shell's tab loop
 /// relies on exactly this to render the Plan tab under test).
@@ -168,11 +182,18 @@ final mealPlanEditorProvider = MealPlanEditorProvider._();
 /// independent, and putting a recipe in Thursday lunch is complete on its
 /// own. D12 already rules out an offline draft buying anything.
 final class MealPlanEditorProvider
-    extends $AsyncNotifierProvider<MealPlanEditor, MealPlanWeek> {
+    extends $StreamNotifierProvider<MealPlanEditor, MealPlanWeek> {
   /// The visible week's entries, and the writes that change them.
   ///
+  /// A `Stream`, not a `Future` (Phase 2 part 6b, on `RecipeList`'s own D67
+  /// precedent): `watchWeek` emits a cached week immediately, then the
+  /// network's answer, and a `StreamNotifier` is what lets the second
+  /// emission be part of the provider's own lifecycle. The value type
+  /// consumers see (`AsyncValue<MealPlanWeek>`) is unchanged from the old
+  /// `Future`-based provider.
+  ///
   /// `build()` resolves the household id before it ever reaches
-  /// [mealPlanRepositoryProvider], and returns an empty week rather than
+  /// [mealPlanRepositoryProvider], and yields an empty week rather than
   /// constructing a repository call when there is none -- a household-less
   /// caller never touches `Supabase.instance.client` (the shell's tab loop
   /// relies on exactly this to render the Plan tab under test).
@@ -200,12 +221,19 @@ final class MealPlanEditorProvider
   MealPlanEditor create() => MealPlanEditor();
 }
 
-String _$mealPlanEditorHash() => r'15b730f2cb880d27a94e2bd28881c7cb9c60ab8d';
+String _$mealPlanEditorHash() => r'843dd140f31edc9b20ad2382ca536e4494426522';
 
 /// The visible week's entries, and the writes that change them.
 ///
+/// A `Stream`, not a `Future` (Phase 2 part 6b, on `RecipeList`'s own D67
+/// precedent): `watchWeek` emits a cached week immediately, then the
+/// network's answer, and a `StreamNotifier` is what lets the second
+/// emission be part of the provider's own lifecycle. The value type
+/// consumers see (`AsyncValue<MealPlanWeek>`) is unchanged from the old
+/// `Future`-based provider.
+///
 /// `build()` resolves the household id before it ever reaches
-/// [mealPlanRepositoryProvider], and returns an empty week rather than
+/// [mealPlanRepositoryProvider], and yields an empty week rather than
 /// constructing a repository call when there is none -- a household-less
 /// caller never touches `Supabase.instance.client` (the shell's tab loop
 /// relies on exactly this to render the Plan tab under test).
@@ -215,8 +243,8 @@ String _$mealPlanEditorHash() => r'15b730f2cb880d27a94e2bd28881c7cb9c60ab8d';
 /// independent, and putting a recipe in Thursday lunch is complete on its
 /// own. D12 already rules out an offline draft buying anything.
 
-abstract class _$MealPlanEditor extends $AsyncNotifier<MealPlanWeek> {
-  FutureOr<MealPlanWeek> build();
+abstract class _$MealPlanEditor extends $StreamNotifier<MealPlanWeek> {
+  Stream<MealPlanWeek> build();
   @$mustCallSuper
   @override
   WhenComplete runBuild() {

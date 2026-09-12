@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
+import 'package:kitchen_table/core/net/network_status.dart';
 import 'package:kitchen_table/core/recipes/recipe_picker_providers.dart';
 import 'package:kitchen_table/features/meal_plan/application/meal_plan_providers.dart';
 import 'package:kitchen_table/features/meal_plan/domain/meal_plan_entry.dart';
@@ -47,7 +48,9 @@ class _StubPlan extends MealPlanEditor {
   final int repeatCount;
 
   @override
-  Future<MealPlanWeek> build() async => initial;
+  Stream<MealPlanWeek> build() async* {
+    yield initial;
+  }
 
   @override
   Future<void> addRecipe({
@@ -126,6 +129,7 @@ Future<_Calls> _pump(
   required MealPlanWeek initial,
   List<Recipe> plannable = const <Recipe>[],
   int repeatCount = 0,
+  Reachability? networkStatus,
 }) async {
   // The week list is taller than the default 800x600 test surface -- without
   // this, days below the fold simply are not there to find.
@@ -143,6 +147,8 @@ Future<_Calls> _pump(
         visibleWeekProvider.overrideWith(() => _PinnedWeek()),
         plannableRecipesProvider(query: '')
             .overrideWith((Ref ref) async => plannable),
+        if (networkStatus != null)
+          networkStatusProvider.overrideWithValue(networkStatus),
       ],
       child: const MaterialApp(home: MealPlanScreen()),
     ),
@@ -572,6 +578,37 @@ void main() {
     expect(calls.addedRecipe!.slot, MealSlot.lunch);
   });
 
+  group('the saved-copy line', () {
+    testWidgets('renders when NetworkStatus is offline',
+        (WidgetTester tester) async {
+      await _pump(
+        tester,
+        initial: MealPlanWeek.empty(_week),
+        networkStatus: Reachability.offline,
+      );
+      expect(
+        find.textContaining('Showing your saved copy'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('does not render when NetworkStatus is online',
+        (WidgetTester tester) async {
+      await _pump(
+        tester,
+        initial: MealPlanWeek.empty(_week),
+        networkStatus: Reachability.online,
+      );
+      expect(find.textContaining('Showing your saved copy'), findsNothing);
+    });
+
+    testWidgets('does not render on the default Reachability.unknown',
+        (WidgetTester tester) async {
+      await _pump(tester, initial: MealPlanWeek.empty(_week));
+      expect(find.textContaining('Showing your saved copy'), findsNothing);
+    });
+  });
+
   testWidgets('an AppFailure from the provider renders its message',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1200, 3000);
@@ -597,7 +634,9 @@ void main() {
 
 class _ThrowingPlan extends MealPlanEditor {
   @override
-  Future<MealPlanWeek> build() async => throw const NetworkFailure();
+  Stream<MealPlanWeek> build() async* {
+    throw const NetworkFailure();
+  }
 }
 
 String _dayAbbrev(DateTime date) =>

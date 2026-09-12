@@ -18,9 +18,9 @@
 /// One counter, not a stream of events, on `data_revision.dart`'s own
 /// precedent: nothing downstream needs to know WHICH read failed, only
 /// whether the most recent attempt got through. `core/` rather than a
-/// feature, because every cached read reports into it and part 7's offline
-/// banner reads it -- the same reason `currentHouseholdIdProvider` lives
-/// here.
+/// feature, because every cached read reports into it and `offline_banner
+/// .dart`'s global banner (Phase 2 part 6b, D76) reads it -- the same reason
+/// `currentHouseholdIdProvider` lives here.
 library;
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';

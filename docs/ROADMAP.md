@@ -690,34 +690,61 @@ with Serbian catalog names on matched lines and a photo placeholder" walk
 every prior part in this phase closed with — is the one verification step
 still open, named here rather than left to be assumed.
 
-### Part 6b — Meal plan weeks offline
+### Part 6b — Meal plan weeks offline, and the global offline signal
 
-**Status: not started.** The last entity on Phase 2's offline list.
-`SyncWatermarks` and the delta-fetch shape are already proven (part 6a); the
-new piece is a per-`(household_id, week_start)` scope rather than a
-per-household one, and `meal_plan_entries_touch_plan()` (migration 14)
-already maintains `meal_plans.updated_at` for exactly this trigger.
+**Status: complete.** Decisions taken during it: D75–D76.
 
-### Still to build
+The last entity on Phase 2's offline list, plus the global banner the
+Done-when has always asked for. `SyncWatermarks` and the delta-fetch shape
+were already proven in part 6a; the correction here is the watermark's
+scope (D75, replacing the per-`(household_id, week_start)` sketch this
+section used to carry) and `meal_plan_entries_touch_plan()` (migration 14),
+already in place, is what makes `meal_plans.updated_at` trustworthy for it.
 
-- ~~`shopping_lists`, `shopping_list_items`, `household_pantry_prefs`~~ — done
-  in part 4
-- ~~Client-side aggregation~~ — done in part 4
-- ~~Drift read cache foundation, proven on the shopping list and unit
-  catalog~~ — done in part 5
-- ~~Delta fetch (`last_sync_at`-style), recipes and the ingredient name
-  catalog offline~~ — done in part 6a
-- Meal plan weeks offline — part 6b
-- A global offline banner (distinct from part 5's per-screen "showing your
-  saved copy" line); writes fail loudly everywhere, not just on the list
-- Small admin screen: unverified ingredient count, unmatched line count,
-  match_method distribution, and a place for D47's "nothing notices a
-  permanently-failing best-effort path" to surface
+- `MealPlanWeekCache` (`core/db/app_database.dart`), keyed by `id` on
+  `RecipeCache`'s precedent (a plan's id never changes under
+  `ensure_meal_plan`'s upsert) with a `(householdId, weekStart)` unique-key
+  belt-and-suspenders on `ShoppingListCache`'s. `weekStart` is stored as
+  text, not a `DateTimeColumn` -- `plan_week.dart` forbids `.toUtc()` on a
+  plan week, and a `DateTimeColumn` round-trips through a local-time epoch
+  conversion that would shift it. `schemaVersion` moved to `3`
+- `dto/meal_plan_week_dto.dart` -- decoders only, on `recipe_dto.dart`'s
+  precedent rather than `shopping_list_dto.dart`'s: a cached week is never
+  built from a domain object, only read off the wire and stored as-is
+- `RemoteMealPlanDataSource` / `LocalMealPlanDataSource` /
+  `MealPlanRepository`, the fourth outing of the Remote/Local split. Every
+  write from the old single-file repository moved to the Remote half
+  unchanged; the read became `watchWeek()`, cache-then-network on
+  `RecipeRepository.watchList`'s shape, widened from one week to a whole
+  household's meal-plan history so paging stays instant offline (D75)
+- `MealPlanEditor` became a `StreamNotifier<MealPlanWeek>` on `RecipeList`'s
+  own precedent -- the value type consumers see
+  (`AsyncValue<MealPlanWeek>`) is unchanged, and the only test cost was the
+  same stub-rewrite `RecipeList`'s own conversion paid
+- `OfflineBanner` (`core/net/offline_banner.dart`), rendered by `AppShell`
+  above every tab's body, and the meal plan screen's own "Showing your saved
+  copy -- no connection." line under the week bar, on the shopping list
+  screen's `_GeneratedAt` precedent (D76)
+- `Makefile`'s `test-sql` target now runs `gen_display_name_sql.dart` before
+  the SQL suite, closing a gap part 6a left open: the generator's own header
+  already claimed this, and `supabase/tests/display_names_test.sql` could
+  silently drift from `test/fixtures/display_names.json` without it
 
-**Done when:** every entity in `docs/ARCHITECTURE.md`'s offline list — recipes,
-meal plans, the shopping list, the ingredient catalog — is readable offline,
-with a global signal saying so. Parts 5 and 6a met this for everything except
-meal plans; part 6b is what remains.
+**Done when:** every entity in `docs/ARCHITECTURE.md`'s offline list --
+recipes, meal plans, the shopping list, the ingredient catalog -- is readable
+offline, with a global signal saying so. -- **Met.** All 366 Dart tests pass
+(18 new: `local_meal_plan_datasource_test.dart`'s cache round-trip and
+`uniqueKeys` guard, and `meal_plan_repository_offline_test.dart`'s full
+`watchWeek` matrix -- cold cache success and failure, warm cache surviving a
+`NetworkFailure`, D75's authoritative-empty case under a live watermark, a
+soft-deleted plan evicting its cache entry with its still-embedded entries
+ignored, the watermark advancing to the max `updated_at` received rather
+than `now()`, and `onReachable`/`onUnreachable` ordering), plus new
+`app_shell_test.dart` and `meal_plan_screen_test.dart` cases for the banner
+and the saved-copy line respectively. `make check` in full: `dart analyze`
+and `tool/check_layers.dart` both clean, `make test-sql` (now regenerating
+and passing `display_names_test.sql` too), `lint-functions` and
+`test-functions` unaffected since no Edge Function changed.
 
 ---
 

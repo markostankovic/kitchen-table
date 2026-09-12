@@ -1538,6 +1538,377 @@ class RecipeCacheCompanion extends UpdateCompanion<RecipeCacheData> {
   }
 }
 
+class $MealPlanWeekCacheTable extends MealPlanWeekCache
+    with TableInfo<$MealPlanWeekCacheTable, MealPlanWeekCacheData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MealPlanWeekCacheTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _householdIdMeta = const VerificationMeta(
+    'householdId',
+  );
+  @override
+  late final GeneratedColumn<String> householdId = GeneratedColumn<String>(
+    'household_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _weekStartMeta = const VerificationMeta(
+    'weekStart',
+  );
+  @override
+  late final GeneratedColumn<String> weekStart = GeneratedColumn<String>(
+    'week_start',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dataMeta = const VerificationMeta('data');
+  @override
+  late final GeneratedColumn<String> data = GeneratedColumn<String>(
+    'data',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    householdId,
+    weekStart,
+    updatedAt,
+    data,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'meal_plan_week_cache';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MealPlanWeekCacheData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('household_id')) {
+      context.handle(
+        _householdIdMeta,
+        householdId.isAcceptableOrUnknown(
+          data['household_id']!,
+          _householdIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_householdIdMeta);
+    }
+    if (data.containsKey('week_start')) {
+      context.handle(
+        _weekStartMeta,
+        weekStart.isAcceptableOrUnknown(data['week_start']!, _weekStartMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_weekStartMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('data')) {
+      context.handle(
+        _dataMeta,
+        this.data.isAcceptableOrUnknown(data['data']!, _dataMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dataMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {householdId, weekStart},
+  ];
+  @override
+  MealPlanWeekCacheData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MealPlanWeekCacheData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      householdId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}household_id'],
+      )!,
+      weekStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}week_start'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      data: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}data'],
+      )!,
+    );
+  }
+
+  @override
+  $MealPlanWeekCacheTable createAlias(String alias) {
+    return $MealPlanWeekCacheTable(attachedDatabase, alias);
+  }
+}
+
+class MealPlanWeekCacheData extends DataClass
+    implements Insertable<MealPlanWeekCacheData> {
+  final String id;
+  final String householdId;
+  final String weekStart;
+  final DateTime updatedAt;
+  final String data;
+  const MealPlanWeekCacheData({
+    required this.id,
+    required this.householdId,
+    required this.weekStart,
+    required this.updatedAt,
+    required this.data,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['household_id'] = Variable<String>(householdId);
+    map['week_start'] = Variable<String>(weekStart);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['data'] = Variable<String>(data);
+    return map;
+  }
+
+  MealPlanWeekCacheCompanion toCompanion(bool nullToAbsent) {
+    return MealPlanWeekCacheCompanion(
+      id: Value(id),
+      householdId: Value(householdId),
+      weekStart: Value(weekStart),
+      updatedAt: Value(updatedAt),
+      data: Value(data),
+    );
+  }
+
+  factory MealPlanWeekCacheData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MealPlanWeekCacheData(
+      id: serializer.fromJson<String>(json['id']),
+      householdId: serializer.fromJson<String>(json['householdId']),
+      weekStart: serializer.fromJson<String>(json['weekStart']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      data: serializer.fromJson<String>(json['data']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'householdId': serializer.toJson<String>(householdId),
+      'weekStart': serializer.toJson<String>(weekStart),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'data': serializer.toJson<String>(data),
+    };
+  }
+
+  MealPlanWeekCacheData copyWith({
+    String? id,
+    String? householdId,
+    String? weekStart,
+    DateTime? updatedAt,
+    String? data,
+  }) => MealPlanWeekCacheData(
+    id: id ?? this.id,
+    householdId: householdId ?? this.householdId,
+    weekStart: weekStart ?? this.weekStart,
+    updatedAt: updatedAt ?? this.updatedAt,
+    data: data ?? this.data,
+  );
+  MealPlanWeekCacheData copyWithCompanion(MealPlanWeekCacheCompanion data) {
+    return MealPlanWeekCacheData(
+      id: data.id.present ? data.id.value : this.id,
+      householdId: data.householdId.present
+          ? data.householdId.value
+          : this.householdId,
+      weekStart: data.weekStart.present ? data.weekStart.value : this.weekStart,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      data: data.data.present ? data.data.value : this.data,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MealPlanWeekCacheData(')
+          ..write('id: $id, ')
+          ..write('householdId: $householdId, ')
+          ..write('weekStart: $weekStart, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('data: $data')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, householdId, weekStart, updatedAt, data);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MealPlanWeekCacheData &&
+          other.id == this.id &&
+          other.householdId == this.householdId &&
+          other.weekStart == this.weekStart &&
+          other.updatedAt == this.updatedAt &&
+          other.data == this.data);
+}
+
+class MealPlanWeekCacheCompanion
+    extends UpdateCompanion<MealPlanWeekCacheData> {
+  final Value<String> id;
+  final Value<String> householdId;
+  final Value<String> weekStart;
+  final Value<DateTime> updatedAt;
+  final Value<String> data;
+  final Value<int> rowid;
+  const MealPlanWeekCacheCompanion({
+    this.id = const Value.absent(),
+    this.householdId = const Value.absent(),
+    this.weekStart = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.data = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MealPlanWeekCacheCompanion.insert({
+    required String id,
+    required String householdId,
+    required String weekStart,
+    required DateTime updatedAt,
+    required String data,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       householdId = Value(householdId),
+       weekStart = Value(weekStart),
+       updatedAt = Value(updatedAt),
+       data = Value(data);
+  static Insertable<MealPlanWeekCacheData> custom({
+    Expression<String>? id,
+    Expression<String>? householdId,
+    Expression<String>? weekStart,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? data,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (householdId != null) 'household_id': householdId,
+      if (weekStart != null) 'week_start': weekStart,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (data != null) 'data': data,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MealPlanWeekCacheCompanion copyWith({
+    Value<String>? id,
+    Value<String>? householdId,
+    Value<String>? weekStart,
+    Value<DateTime>? updatedAt,
+    Value<String>? data,
+    Value<int>? rowid,
+  }) {
+    return MealPlanWeekCacheCompanion(
+      id: id ?? this.id,
+      householdId: householdId ?? this.householdId,
+      weekStart: weekStart ?? this.weekStart,
+      updatedAt: updatedAt ?? this.updatedAt,
+      data: data ?? this.data,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (householdId.present) {
+      map['household_id'] = Variable<String>(householdId.value);
+    }
+    if (weekStart.present) {
+      map['week_start'] = Variable<String>(weekStart.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (data.present) {
+      map['data'] = Variable<String>(data.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MealPlanWeekCacheCompanion(')
+          ..write('id: $id, ')
+          ..write('householdId: $householdId, ')
+          ..write('weekStart: $weekStart, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('data: $data, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SyncWatermarksTable extends SyncWatermarks
     with TableInfo<$SyncWatermarksTable, SyncWatermark> {
   @override
@@ -1811,6 +2182,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $IngredientNameCacheTable ingredientNameCache =
       $IngredientNameCacheTable(this);
   late final $RecipeCacheTable recipeCache = $RecipeCacheTable(this);
+  late final $MealPlanWeekCacheTable mealPlanWeekCache =
+      $MealPlanWeekCacheTable(this);
   late final $SyncWatermarksTable syncWatermarks = $SyncWatermarksTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -1821,6 +2194,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     unitCatalogCache,
     ingredientNameCache,
     recipeCache,
+    mealPlanWeekCache,
     syncWatermarks,
   ];
 }
@@ -2738,6 +3112,232 @@ typedef $$RecipeCacheTableProcessedTableManager =
       RecipeCacheData,
       PrefetchHooks Function()
     >;
+typedef $$MealPlanWeekCacheTableCreateCompanionBuilder =
+    MealPlanWeekCacheCompanion Function({
+      required String id,
+      required String householdId,
+      required String weekStart,
+      required DateTime updatedAt,
+      required String data,
+      Value<int> rowid,
+    });
+typedef $$MealPlanWeekCacheTableUpdateCompanionBuilder =
+    MealPlanWeekCacheCompanion Function({
+      Value<String> id,
+      Value<String> householdId,
+      Value<String> weekStart,
+      Value<DateTime> updatedAt,
+      Value<String> data,
+      Value<int> rowid,
+    });
+
+class $$MealPlanWeekCacheTableFilterComposer
+    extends Composer<_$AppDatabase, $MealPlanWeekCacheTable> {
+  $$MealPlanWeekCacheTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get householdId => $composableBuilder(
+    column: $table.householdId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get weekStart => $composableBuilder(
+    column: $table.weekStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MealPlanWeekCacheTableOrderingComposer
+    extends Composer<_$AppDatabase, $MealPlanWeekCacheTable> {
+  $$MealPlanWeekCacheTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get householdId => $composableBuilder(
+    column: $table.householdId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get weekStart => $composableBuilder(
+    column: $table.weekStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MealPlanWeekCacheTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MealPlanWeekCacheTable> {
+  $$MealPlanWeekCacheTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get householdId => $composableBuilder(
+    column: $table.householdId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get weekStart =>
+      $composableBuilder(column: $table.weekStart, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get data =>
+      $composableBuilder(column: $table.data, builder: (column) => column);
+}
+
+class $$MealPlanWeekCacheTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MealPlanWeekCacheTable,
+          MealPlanWeekCacheData,
+          $$MealPlanWeekCacheTableFilterComposer,
+          $$MealPlanWeekCacheTableOrderingComposer,
+          $$MealPlanWeekCacheTableAnnotationComposer,
+          $$MealPlanWeekCacheTableCreateCompanionBuilder,
+          $$MealPlanWeekCacheTableUpdateCompanionBuilder,
+          (
+            MealPlanWeekCacheData,
+            BaseReferences<
+              _$AppDatabase,
+              $MealPlanWeekCacheTable,
+              MealPlanWeekCacheData
+            >,
+          ),
+          MealPlanWeekCacheData,
+          PrefetchHooks Function()
+        > {
+  $$MealPlanWeekCacheTableTableManager(
+    _$AppDatabase db,
+    $MealPlanWeekCacheTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MealPlanWeekCacheTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MealPlanWeekCacheTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MealPlanWeekCacheTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> householdId = const Value.absent(),
+                Value<String> weekStart = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> data = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MealPlanWeekCacheCompanion(
+                id: id,
+                householdId: householdId,
+                weekStart: weekStart,
+                updatedAt: updatedAt,
+                data: data,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String householdId,
+                required String weekStart,
+                required DateTime updatedAt,
+                required String data,
+                Value<int> rowid = const Value.absent(),
+              }) => MealPlanWeekCacheCompanion.insert(
+                id: id,
+                householdId: householdId,
+                weekStart: weekStart,
+                updatedAt: updatedAt,
+                data: data,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$MealPlanWeekCacheTable, MealPlanWeekCacheData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $MealPlanWeekCacheTable,
+                    MealPlanWeekCacheData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MealPlanWeekCacheTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MealPlanWeekCacheTable,
+      MealPlanWeekCacheData,
+      $$MealPlanWeekCacheTableFilterComposer,
+      $$MealPlanWeekCacheTableOrderingComposer,
+      $$MealPlanWeekCacheTableAnnotationComposer,
+      $$MealPlanWeekCacheTableCreateCompanionBuilder,
+      $$MealPlanWeekCacheTableUpdateCompanionBuilder,
+      (
+        MealPlanWeekCacheData,
+        BaseReferences<
+          _$AppDatabase,
+          $MealPlanWeekCacheTable,
+          MealPlanWeekCacheData
+        >,
+      ),
+      MealPlanWeekCacheData,
+      PrefetchHooks Function()
+    >;
 typedef $$SyncWatermarksTableCreateCompanionBuilder =
     SyncWatermarksCompanion Function({
       required String entity,
@@ -2923,6 +3523,8 @@ class $AppDatabaseManager {
       $$IngredientNameCacheTableTableManager(_db, _db.ingredientNameCache);
   $$RecipeCacheTableTableManager get recipeCache =>
       $$RecipeCacheTableTableManager(_db, _db.recipeCache);
+  $$MealPlanWeekCacheTableTableManager get mealPlanWeekCache =>
+      $$MealPlanWeekCacheTableTableManager(_db, _db.mealPlanWeekCache);
   $$SyncWatermarksTableTableManager get syncWatermarks =>
       $$SyncWatermarksTableTableManager(_db, _db.syncWatermarks);
 }

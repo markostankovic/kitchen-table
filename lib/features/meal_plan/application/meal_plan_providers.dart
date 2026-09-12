@@ -1,10 +1,14 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/db/app_database.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/household/current_household.dart';
+import '../../../core/net/network_status.dart';
 import '../../../core/refresh/data_revision.dart';
 import '../../../core/supabase/supabase_client.dart';
+import '../data/local_meal_plan_datasource.dart';
 import '../data/meal_plan_repository.dart';
+import '../data/remote_meal_plan_datasource.dart';
 import '../domain/meal_plan_week.dart';
 import '../domain/meal_slot.dart';
 import '../domain/plan_week.dart';
@@ -13,8 +17,10 @@ import '../domain/snack_variety.dart';
 part 'meal_plan_providers.g.dart';
 
 @Riverpod(keepAlive: true)
-MealPlanRepository mealPlanRepository(Ref ref) =>
-    MealPlanRepository(ref.watch(supabaseClientProvider));
+MealPlanRepository mealPlanRepository(Ref ref) => MealPlanRepository(
+  RemoteMealPlanDataSource(ref.watch(supabaseClientProvider)),
+  LocalMealPlanDataSource(ref.watch(appDatabaseProvider)),
+);
 
 /// The one week currently on screen.
 ///
@@ -35,8 +41,15 @@ class VisibleWeek extends _$VisibleWeek {
 
 /// The visible week's entries, and the writes that change them.
 ///
+/// A `Stream`, not a `Future` (Phase 2 part 6b, on `RecipeList`'s own D67
+/// precedent): `watchWeek` emits a cached week immediately, then the
+/// network's answer, and a `StreamNotifier` is what lets the second
+/// emission be part of the provider's own lifecycle. The value type
+/// consumers see (`AsyncValue<MealPlanWeek>`) is unchanged from the old
+/// `Future`-based provider.
+///
 /// `build()` resolves the household id before it ever reaches
-/// [mealPlanRepositoryProvider], and returns an empty week rather than
+/// [mealPlanRepositoryProvider], and yields an empty week rather than
 /// constructing a repository call when there is none -- a household-less
 /// caller never touches `Supabase.instance.client` (the shell's tab loop
 /// relies on exactly this to render the Plan tab under test).
@@ -48,17 +61,26 @@ class VisibleWeek extends _$VisibleWeek {
 @riverpod
 class MealPlanEditor extends _$MealPlanEditor {
   @override
-  Future<MealPlanWeek> build() async {
+  Stream<MealPlanWeek> build() async* {
     ref.watch(mealPlanRevisionProvider);
     final PlanWeek week = ref.watch(visibleWeekProvider);
 
     final String? householdId =
         await ref.watch(currentHouseholdIdProvider.future);
-    if (householdId == null) return MealPlanWeek.empty(week);
+    if (householdId == null) {
+      yield MealPlanWeek.empty(week);
+      return;
+    }
 
-    return ref
+    final NetworkStatus status = ref.read(networkStatusProvider.notifier);
+    yield* ref
         .watch(mealPlanRepositoryProvider)
-        .fetchWeek(householdId: householdId, week: week);
+        .watchWeek(
+          householdId: householdId,
+          week: week,
+          onReachable: status.reportReachable,
+          onUnreachable: status.reportUnreachable,
+        );
   }
 
   Future<void> addRecipe({

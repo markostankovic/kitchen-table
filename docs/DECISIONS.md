@@ -1897,6 +1897,95 @@ twice.
   reversing that for consistency with `fetchDetail` would undo D67's own
   reasoning for no reason specific to recipes.
 
+## D75 — The meal plan delta is household-scoped across all weeks, and a cache miss under a live watermark means "empty," not "unknown"
+
+**Decided.** `entity = 'meal_plans'`, `scope = householdId` — one watermark
+for the whole household, covering every week it has ever written into, not
+one per `(household_id, week_start)`. `RemoteMealPlanDataSource
+.fetchChangedSince` fetches every `meal_plans` row (with its embedded
+`meal_plan_entries`) whose `updated_at` is after the watermark, or every row
+the household has ever written into when the watermark is null — the same
+shape D72 already gave recipes.
+
+The note this decision replaces (D64–D74's closing summary, and the part 6a
+sketch in `docs/ROADMAP.md`) proposed keying the watermark per week instead.
+That is corrected here, on the same footing D49 corrected the original
+`meal_plans` sketch and D58 corrected the trailing variety window.
+
+**Why.**
+
+- A per-week scope needs a two-step head-then-body fetch to be a delta at
+  all: read the plan row's `updated_at` first, then its entries only if that
+  moved. A week holds at most 28 small entries, so the head request buys
+  almost nothing while costing a second round trip on the changed path.
+- The Plan tab's whole interaction is paging between weeks. A
+  household-scoped sync warms every changed week in one trip, so paging stays
+  instant and correct offline for every week ever synced — including weeks
+  never opened on this phone, which a per-week scope can never cache, because
+  nothing would ever have asked the server about them.
+- It gives the cache an authoritative negative. Once
+  `LocalMealPlanDataSource.readWeeksWatermark` is non-null, a full fetch has
+  happened for this household, so a cache miss for the requested week is
+  "this week is genuinely empty" (D50's lazily-created plan row), not "we
+  never looked." `MealPlanRepository.watchWeek` checks the watermark itself,
+  separately from the per-week cache read, exactly so it can draw this
+  distinction — a per-week scope has no watermark of its own to consult and
+  would have to render "unknown" as "empty" and hope it is right.
+
+**Cost, accepted.** The cold fetch (`since == null`) pulls the household's
+whole meal-plan history. `meal_plans` holds one row per week ever *written
+into* — browsing writes nothing (D50) — so a family planning weekly for a
+year is on the order of 52 rows. It happens once per install; after that the
+delta is almost always empty.
+
+**Rejected.** Bounding the cold fetch to a window of weeks around today. It
+breaks the watermark itself: a row outside the window with a higher
+`updated_at` than anything inside it would still be skipped, the watermark
+would still advance past it (the max is computed over what the fetch
+*received*, not what exists), and when the window later slides to include
+that week it can never be fetched again — silently, forever. An unbounded
+first fetch of a small table is the cheaper correctness, the same trade D71
+already made for recipes and the ingredient name catalog.
+
+## D76 — The global offline banner lives in `core/net/`, and does not replace the per-screen "saved copy" lines
+
+**Decided.** `OfflineBanner` (`lib/core/net/offline_banner.dart`), rendered
+by `AppShell` above the tab body — one instance, visible on every tab
+including Settings, on `Reachability.offline` only, never on
+`Reachability.unknown`. The per-screen "Showing your saved copy — no
+connection." lines the shopping list (part 5) and the meal plan (this part)
+already render stay exactly as they were.
+
+**Why.** The two say different things. The banner says "the phone cannot
+reach the server, and nothing you change will save" — a fact about the
+session, true on every screen including one (Settings) with no cache of its
+own to ever be stale. The per-screen line says "this particular list/week is
+not what the server has right now" — a narrower claim about the data
+actually on screen, rendered only where a cache hit is showing. Deleting the
+narrower line in favour of the banner, to avoid the appearance of
+duplication, would lose the provenance claim, which is the one a cook
+actually needs standing next to a list before trusting it.
+
+`Reachability.unknown` is deliberately excluded: it means no read has
+completed yet this session (`network_status.dart`'s own definition), and a
+banner rendered before anything has actually failed would be a guess dressed
+as a fact — the same discipline the per-screen line already followed.
+
+This supersedes the note at the bottom of `shopping_list_screen.dart`'s
+`_GeneratedAt` doc comment, which called a global banner "part 7's job" —
+updated in place rather than left to contradict the code, since it shipped
+in part 6b instead.
+
+**Rejected.**
+- Replacing the per-screen lines with the banner alone — loses the
+  provenance claim above for no gain; the two cost one small widget each and
+  answer different questions.
+- Showing the banner on `Reachability.unknown` too, so a cold start with no
+  network never looks falsely "online" — considered and rejected: the first
+  read after launch resolves `unknown` within moments in the common case,
+  and a banner that can flash on before the first real signal is a worse
+  failure than a half-second gap with no banner at all.
+
 ## Open / deferred
 
 - **Client vs Edge Function split** — rule of thumb written in
@@ -1958,16 +2047,15 @@ twice.
   exercised outside the SQL suite — still unbuilt after Phase 2 part 3, which
   closed the other three items this note used to list (leftover entries,
   the snack variety check, within-slot reordering — D55–D58).
-- **The rest of the Drift cache** — see D64–D74. Phase 2 part 6a added the
-  `last_sync_at`-style watermark D71 deferred (`SyncWatermarks`, D72) and
-  used it to cache recipes and the global ingredient name catalog
-  (D72–D74). **Meal plans are the one entity still uncached** — the same
-  watermark mechanism applies, keyed per `(household_id, week_start)` rather
-  than per household, since `meal_plan_entries_touch_plan()` already
-  maintains `meal_plans.updated_at` for exactly this. The offline banner (a
-  global "you're offline", distinct from the shopping list screen's own
-  "showing your saved copy") and the admin screen's
-  `match_method`/cache-health surfacing are both still unbuilt.
+- **The Drift cache and the offline signal are done; the admin screen is
+  not.** See D64–D76. Phase 2 part 6a added the `last_sync_at`-style
+  watermark D71 deferred (`SyncWatermarks`, D72) and used it to cache
+  recipes and the global ingredient name catalog (D72–D74). Part 6b closed
+  the last uncached entity — meal plans, household-scoped across every week
+  rather than per week (D75) — and added the global offline banner
+  alongside the shopping list's and meal plan's own "showing your saved
+  copy" lines (D76), meeting Phase 2's offline Done-when in full. Still
+  unbuilt: the admin screen's `match_method`/cache-health surfacing.
 - **A generated list is never compared against the plan it came from** — see
   Phase 2 part 4's own closing note, unchanged by this part. Editing the week
   after generating still leaves a list that is quietly stale on the server

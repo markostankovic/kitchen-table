@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/net/network_status.dart';
 import 'package:kitchen_table/core/supabase/supabase_client.dart';
 import 'package:kitchen_table/features/auth/application/auth_providers.dart';
 import 'package:kitchen_table/features/auth/domain/app_user.dart';
@@ -59,6 +60,7 @@ Future<void> pumpApp(
   WidgetTester tester, {
   String? userId = 'u1',
   Household? household = _household,
+  Reachability? networkStatus,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -72,6 +74,8 @@ Future<void> pumpApp(
         // repository, and so Supabase.instance.client, which throws.
         householdMembersProvider.overrideWith((Ref ref) async => _members),
         liveInvitesProvider.overrideWith((Ref ref) async => _invites),
+        if (networkStatus != null)
+          networkStatusProvider.overrideWithValue(networkStatus),
       ],
       child: const KitchenTableApp(),
     ),
@@ -147,6 +151,38 @@ void main() {
       final NavigationBar bar =
           tester.widget<NavigationBar>(find.byType(NavigationBar));
       expect(bar.selectedIndex, 2);
+    });
+  });
+
+  group('offline banner', () {
+    testWidgets('renders on Reachability.offline', (WidgetTester tester) async {
+      await pumpApp(tester, networkStatus: Reachability.offline);
+      expect(find.textContaining("You're offline"), findsOneWidget);
+    });
+
+    testWidgets('renders nothing on Reachability.unknown (the default -- no '
+        'read has completed yet)', (WidgetTester tester) async {
+      await pumpApp(tester);
+      expect(find.textContaining("You're offline"), findsNothing);
+    });
+
+    testWidgets('renders nothing on Reachability.online',
+        (WidgetTester tester) async {
+      await pumpApp(tester, networkStatus: Reachability.online);
+      expect(find.textContaining("You're offline"), findsNothing);
+    });
+
+    testWidgets('stays visible across a tab switch',
+        (WidgetTester tester) async {
+      await pumpApp(tester, networkStatus: Reachability.offline);
+
+      await tester.tap(find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Settings'),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining("You're offline"), findsOneWidget);
     });
   });
 

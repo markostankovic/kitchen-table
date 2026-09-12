@@ -32,6 +32,7 @@ test: ## Dart/Flutter tests
 test-sql: ## Regenerate generated SQL, then run every test in supabase/tests/
 	dart run tool/gen_normalization_sql.dart
 	dart run tool/gen_unit_alias_sql.dart
+	dart run tool/gen_display_name_sql.dart
 	@for f in supabase/tests/*.sql; do \
 		echo "--- $$f"; \
 		supabase db query --file "$$f" || exit 1; \

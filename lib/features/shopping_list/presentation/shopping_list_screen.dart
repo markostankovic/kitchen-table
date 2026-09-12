@@ -261,13 +261,13 @@ class _GeneratedAt extends ConsumerWidget {
 
   final ShoppingList list;
 
-  /// Only this widget speaks to offline-ness, and only in the one case it is
-  /// true for: it renders exclusively when a list is on screen, which is
-  /// exactly the "cache hit" half of `ShoppingListRepository.watchLatest`
-  /// (Phase 2 part 5). A global "you're offline" banner is part 7's job, not
-  /// this one -- this is a narrower and more useful statement, "this is not
-  /// what the server has right now", said once, where the list already
-  /// states its own provenance.
+  /// This widget's own claim is narrower than [OfflineBanner]'s (Phase 2
+  /// part 6b, D76): it renders exclusively when a list is on screen, which
+  /// is exactly the "cache hit" half of `ShoppingListRepository.watchLatest`
+  /// (Phase 2 part 5), and says "this is not what the server has right now"
+  /// -- the banner says "the phone cannot reach the server at all". Neither
+  /// replaces the other: the banner is a session-wide fact, this line is a
+  /// provenance claim about the data actually on screen.
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bool offline =

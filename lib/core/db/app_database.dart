@@ -129,6 +129,42 @@ class RecipeCache extends Table {
   Set<Column> get primaryKey => <Column<Object>>{id};
 }
 
+/// One household's meal plan week -- the plan row plus its embedded
+/// entries, the same wire shape `MealPlanRepository` already reads (Phase 2
+/// part 6b, D75). `data` carries the server's own row:
+/// `dto/meal_plan_week_dto.dart`'s `mealPlanWeekFromWire` reads a network
+/// response and a cache hit identically (D65's precedent).
+///
+/// [weekStart] is TEXT, not a `DateTimeColumn`, and holds `PlanWeek.isoDate`
+/// verbatim -- `plan_week.dart` forbids `.toUtc()` on a plan week (it is a
+/// local calendar date, and a `DateTimeColumn` round-trips through a
+/// local-time epoch conversion that would silently shift it). One
+/// representation, matching what the server's own `week_start` column sends.
+///
+/// [id] is `meal_plans.id`, which never changes under an update --
+/// `ensure_meal_plan`'s `on conflict (household_id, week_start) do update
+/// ... returning id` guarantees it -- so this is a plain upsert-by-id, on
+/// [RecipeCache]'s precedent, not [ShoppingListCache]'s delete-then-insert
+/// dance.
+class MealPlanWeekCache extends Table {
+  TextColumn get id => text()();
+  TextColumn get householdId => text()();
+  TextColumn get weekStart => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get data => text()();
+
+  @override
+  Set<Column> get primaryKey => <Column<Object>>{id};
+
+  /// Belt-and-suspenders alongside the delta fetch's own upsert-by-id: one
+  /// cached row per household per week, the same claim
+  /// [ShoppingListCache.uniqueKeys] makes for "one live list per household".
+  @override
+  List<Set<Column>> get uniqueKeys => <Set<Column>>[
+    <Column<Object>>{householdId, weekStart},
+  ];
+}
+
 /// A per-(entity, scope) delta-fetch watermark (D72, closing D71's
 /// deferral). [scope] is a household id for household-scoped entities, or
 /// [globalSyncScope] for reference data with no household of its own --
@@ -162,6 +198,7 @@ const String globalSyncScope = '_global';
     UnitCatalogCache,
     IngredientNameCache,
     RecipeCache,
+    MealPlanWeekCache,
     SyncWatermarks,
   ],
 )
@@ -190,9 +227,10 @@ class AppDatabase extends _$AppDatabase {
   /// Bumped to 2 in part 6a for [IngredientNameCache], [RecipeCache] and
   /// [SyncWatermarks] -- one version bump for the whole part, not one per
   /// table, on the same "ship it now, there is no irreversibility here"
-  /// argument D71 made for the table shapes themselves.
+  /// argument D71 made for the table shapes themselves. Bumped to 3 in part
+  /// 6b for [MealPlanWeekCache], on the same argument.
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -206,7 +244,7 @@ class AppDatabase extends _$AppDatabase {
       );
 
   /// Drops every household-scoped row -- the shopping list, cached recipes,
-  /// and any watermark that is not [globalSyncScope].
+  /// cached meal plan weeks, and any watermark that is not [globalSyncScope].
   ///
   /// Called on sign-out, and must never block it or surface a failure of its
   /// own -- a corrupt cache file is not a reason to fail signing out, so this
@@ -220,6 +258,7 @@ class AppDatabase extends _$AppDatabase {
       cacheWrite('household clear', () => transaction(() async {
             await delete(shoppingListCache).go();
             await delete(recipeCache).go();
+            await delete(mealPlanWeekCache).go();
             await (delete(syncWatermarks)
                   ..where((SyncWatermarks t) => t.scope.equals(globalSyncScope).not()))
                 .go();
