@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/features/ingredients/domain/ingredient_match.dart';
 import 'package:kitchen_table/features/ingredients/domain/quantity.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
@@ -123,7 +124,15 @@ Future<void> _pumpList(
       overrides: [
         recipeListProvider.overrideWith2((_) => _StubRecipeList(recipes)),
       ],
-      child: const MaterialApp(home: RecipeListScreen()),
+      // The AppBar title reads AppLocalizations now (D77, Phase 3 part 1),
+      // so this screen needs the delegates wired in -- the real app root
+      // does this once in `main.dart`; a bare `MaterialApp` in a widget test
+      // has to do it itself.
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: RecipeListScreen(),
+      ),
     ),
   );
   await tester.pumpAndSettle();

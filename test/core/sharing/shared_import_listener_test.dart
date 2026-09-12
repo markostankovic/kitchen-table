@@ -11,6 +11,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
+import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
 import 'package:kitchen_table/core/sharing/share_providers.dart';
 import 'package:kitchen_table/core/sharing/shared_import.dart';
 import 'package:kitchen_table/core/supabase/supabase_client.dart';
@@ -20,6 +22,11 @@ import 'package:kitchen_table/features/auth/domain/profile.dart';
 import 'package:kitchen_table/features/households/application/household_providers.dart';
 import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/main.dart';
+
+// `_profile`'s locale is `AppLocale.sr` (the domain model's own default), so
+// chrome assertions expect Serbian (D77, Phase 3 part 1) -- the same fixture
+// shape `app_shell_test.dart` uses.
+final AppLocalizations _sr = AppLocalizationsSr();
 
 const AppUser _user = AppUser(id: 'u1', email: 'a@example.com');
 const Profile _profile = Profile(id: 'u1', displayName: 'Marko');
@@ -101,7 +108,7 @@ void main() {
     await _pump(tester, share: const SharedUrl(_url), userId: null,
         household: null);
 
-    expect(find.text('Send code'), findsOneWidget,
+    expect(find.text(_sr.sendCode), findsOneWidget,
         reason: 'sign-in still wins; the share must not jump the queue');
     expect(find.widgetWithText(AppBar, 'Import from a link'), findsNothing);
   });
@@ -120,6 +127,6 @@ void main() {
   ) async {
     await _pump(tester, share: null);
 
-    expect(find.widgetWithText(AppBar, 'Recipes'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, _sr.navRecipes), findsOneWidget);
   });
 }

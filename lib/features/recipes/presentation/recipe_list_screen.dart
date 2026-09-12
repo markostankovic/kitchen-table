@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../application/recipe_providers.dart';
 import '../domain/recipe.dart';
@@ -48,7 +49,10 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
         ref.watch(recipeListProvider(query: _query));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Recipes')),
+      // The title shares its ARB key with the nav label (D77, Phase 3 part 1)
+      // so the tab and this AppBar never disagree about the language they are
+      // in, even though the rest of this screen's content is still English.
+      appBar: AppBar(title: Text(AppLocalizations.of(context).navRecipes)),
       // A menu rather than a single action, because there is now more than one
       // way to get a recipe in. `import-url` and `import-photo` are the rest
       // of Phase 1d and hang here beside Paste without another redesign.

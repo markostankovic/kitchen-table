@@ -1,0 +1,28 @@
+{
+  "@@locale": "en",
+
+  "navRecipes": "Recipes",
+  "navPlan": "Plan",
+  "navList": "List",
+  "navSettings": "Settings",
+
+  "profileLoading": "Loading...",
+  "profileLoadError": "Could not load your profile",
+  "profileNone": "No profile",
+  "householdMenuItem": "Household",
+  "signOut": "Sign out",
+  "languageSectionTitle": "Language",
+
+  "signInSubtitle": "Sign in with a code sent to your email.",
+  "emailLabel": "Email",
+  "emailEmptyError": "Enter your email address.",
+  "emailInvalidError": "That does not look like an email address.",
+  "sendCode": "Send code",
+
+  "checkEmailTitle": "Check your email",
+  "codeSentTo": "We sent a code to {email}.",
+  "codeEmptyError": "Enter the code from your email.",
+  "verify": "Verify",
+  "resendCode": "Send a new code",
+  "newCodeSent": "New code sent."
+}

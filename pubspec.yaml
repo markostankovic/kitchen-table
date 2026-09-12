@@ -55,6 +55,13 @@ dependencies:
   drift: ^2.35.0
   path_provider: ^2.1.6
   drift_flutter: ^0.3.1
+  # Phase 3 part 1 (D77): flutter_localizations ships with the Flutter SDK;
+  # intl is its own dependency, pinned to whatever version this SDK's
+  # flutter_localizations actually resolves rather than a hand-picked one.
+  # A new dependency under rule 8, asked for and approved.
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.3
 
 dev_dependencies:
   flutter_test:
@@ -84,6 +91,12 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Phase 3 part 1: runs flutter_gen_l10n from l10n.yaml on every
+  # `flutter pub get` / `flutter run` / `flutter test`. The generated output
+  # is committed (l10n.yaml sets `synthetic-package: false`), on the same
+  # convention CLAUDE.md states for `*.g.dart` / `*.freezed.dart`.
+  generate: true
 
   # To add assets to your application, add an assets section, like this:
   # assets:

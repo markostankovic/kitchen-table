@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/l10n/generated/app_localizations.dart';
 import '../application/auth_providers.dart';
 
 /// Step two of email OTP: enter the code.
@@ -33,7 +34,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
   Future<void> _submit() async {
     final String token = _code.text.trim();
     if (token.isEmpty) {
-      setState(() => _error = 'Enter the code from your email.');
+      setState(() => _error = AppLocalizations.of(context).codeEmptyError);
       return;
     }
 
@@ -61,7 +62,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
       await ref.read(authRepositoryProvider).requestOtp(widget.email);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('New code sent.')),
+        SnackBar(content: Text(AppLocalizations.of(context).newCodeSent)),
       );
     } on AppFailure catch (e) {
       if (!mounted) return;
@@ -71,6 +72,8 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations loc = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(),
       body: SafeArea(
@@ -81,12 +84,12 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Text('Check your email',
+                Text(loc.checkEmailTitle,
                     style: Theme.of(context).textTheme.headlineSmall,
                     textAlign: TextAlign.center),
                 const SizedBox(height: 8),
                 Text(
-                  'We sent a code to ${widget.email}.',
+                  loc.codeSentTo(widget.email),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -122,11 +125,11 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                           height: 16,
                           width: 16,
                           child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Verify'),
+                      : Text(loc.verify),
                 ),
                 TextButton(
                   onPressed: _verifying ? null : _resend,
-                  child: const Text('Send a new code'),
+                  child: Text(loc.resendCode),
                 ),
               ],
             ),

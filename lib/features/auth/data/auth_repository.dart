@@ -83,6 +83,26 @@ class AuthRepository {
         );
       });
 
+  /// Sets the caller's own preferred locale (D77).
+  ///
+  /// A plain update, the same shape as `RecipeRepository.update` -- the
+  /// column's check constraint and the `profiles_update_own` RLS policy
+  /// already exist (migration 2), so there is nothing to add server-side.
+  /// `appLocaleProvider` (`core/l10n/app_locale.dart`) is what turns this
+  /// write into the whole app re-rendering; the caller invalidates
+  /// `ownProfileProvider` after a successful call.
+  Future<void> updateLocale(AppLocale locale) => runGuarded(() async {
+        final String? id = _client.auth.currentUser?.id;
+        if (id == null) {
+          throw const UnauthorizedFailure(
+              message: 'You are not signed in any more.');
+        }
+
+        await _client
+            .from('profiles')
+            .update(<String, dynamic>{'locale': locale.code}).eq('id', id);
+      });
+
   AppUser? _toAppUser(User? user) {
     if (user == null) return null;
     return AppUser(id: user.id, email: user.email ?? '');

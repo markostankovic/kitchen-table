@@ -9,6 +9,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
+import 'package:kitchen_table/core/l10n/generated/app_localizations_en.dart';
+import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
 import 'package:kitchen_table/core/net/network_status.dart';
 import 'package:kitchen_table/core/supabase/supabase_client.dart';
 import 'package:kitchen_table/features/auth/application/auth_providers.dart';
@@ -19,6 +22,15 @@ import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/features/households/domain/household_invite.dart';
 import 'package:kitchen_table/features/households/domain/household_member.dart';
 import 'package:kitchen_table/main.dart';
+
+// Read off the generated classes directly rather than hardcoding literals,
+// so a wording change in the ARB files cannot silently desync these
+// assertions from what the app actually renders (D77, Phase 3 part 1).
+// `_profile`'s locale is `AppLocale.sr` (the domain model's own default), so
+// `sr` is what every existing assertion below now expects; `en` is only used
+// by the one test that pumps an English profile deliberately.
+final AppLocalizations sr = AppLocalizationsSr();
+final AppLocalizations en = AppLocalizationsEn();
 
 const AppUser _user = AppUser(id: 'u1', email: 'a@example.com');
 const Profile _profile = Profile(id: 'u1', displayName: 'Marko');
@@ -55,11 +67,14 @@ final List<HouseholdInvite> _invites = <HouseholdInvite>[
 /// Pumps the app with auth state forced to a known shape.
 ///
 /// [userId] null means signed out; [household] null means signed in but not
-/// yet onboarded.
+/// yet onboarded. [profile] defaults to `AppLocale.sr` -- the domain model's
+/// own default -- which is why chrome assertions below expect Serbian unless
+/// a test overrides it (D77, Phase 3 part 1).
 Future<void> pumpApp(
   WidgetTester tester, {
   String? userId = 'u1',
   Household? household = _household,
+  Profile profile = _profile,
   Reachability? networkStatus,
 }) async {
   await tester.pumpWidget(
@@ -69,7 +84,7 @@ Future<void> pumpApp(
         currentHouseholdProvider.overrideWith((Ref ref) async => household),
         authStateProvider.overrideWith(
             (Ref ref) => Stream<AppUser?>.value(userId == null ? null : _user)),
-        ownProfileProvider.overrideWith((Ref ref) async => _profile),
+        ownProfileProvider.overrideWith((Ref ref) async => profile),
         // Without these two the household screen reaches the real
         // repository, and so Supabase.instance.client, which throws.
         householdMembersProvider.overrideWith((Ref ref) async => _members),
@@ -87,7 +102,9 @@ void main() {
   group('auth redirect', () {
     testWidgets('signed out lands on sign-in', (WidgetTester tester) async {
       await pumpApp(tester, userId: null, household: null);
-      expect(find.text('Send code'), findsOneWidget);
+      // No profile exists before sign-in, so the pre-auth default (Serbian,
+      // D77) is what renders here regardless of any profile fixture.
+      expect(find.text(sr.sendCode), findsOneWidget);
       expect(find.byType(NavigationBar), findsNothing,
           reason: 'onboarding routes sit outside the shell');
     });
@@ -95,6 +112,7 @@ void main() {
     testWidgets('signed in without a household lands on onboarding',
         (WidgetTester tester) async {
       await pumpApp(tester, household: null);
+      // The household-creation screen is not localized in this part.
       expect(find.text('Name your household'), findsOneWidget);
       expect(find.byType(NavigationBar), findsNothing);
     });
@@ -102,7 +120,7 @@ void main() {
     testWidgets('signed in and onboarded lands in the shell',
         (WidgetTester tester) async {
       await pumpApp(tester);
-      expect(find.widgetWithText(AppBar, 'Recipes'), findsOneWidget);
+      expect(find.widgetWithText(AppBar, sr.navRecipes), findsOneWidget);
       expect(find.byType(NavigationBar), findsOneWidget);
     });
   });
@@ -119,11 +137,14 @@ void main() {
         (WidgetTester tester) async {
       await pumpApp(tester);
 
+      // Each tab's own AppBar title shares its ARB key with the nav label
+      // (D77), so label and title are still the same string per tab -- just
+      // a localized one now instead of a hardcoded English one.
       for (final String label in <String>[
-        'Plan',
-        'List',
-        'Settings',
-        'Recipes',
+        sr.navPlan,
+        sr.navList,
+        sr.navSettings,
+        sr.navRecipes,
       ]) {
         await tester.tap(find.descendant(
           of: find.byType(NavigationBar),
@@ -144,13 +165,32 @@ void main() {
 
       await tester.tap(find.descendant(
         of: find.byType(NavigationBar),
-        matching: find.text('List'),
+        matching: find.text(sr.navList),
       ));
       await tester.pumpAndSettle();
 
       final NavigationBar bar =
           tester.widget<NavigationBar>(find.byType(NavigationBar));
       expect(bar.selectedIndex, 2);
+    });
+
+    testWidgets('renders English chrome for an English profile',
+        (WidgetTester tester) async {
+      await pumpApp(
+        tester,
+        profile: const Profile(
+            id: 'u1', displayName: 'Marko', locale: AppLocale.en),
+      );
+
+      final NavigationBar bar =
+          tester.widget<NavigationBar>(find.byType(NavigationBar));
+      expect(
+        bar.destinations
+            .cast<NavigationDestination>()
+            .map((NavigationDestination d) => d.label),
+        <String>[en.navRecipes, en.navPlan, en.navList, en.navSettings],
+      );
+      expect(find.widgetWithText(AppBar, en.navRecipes), findsOneWidget);
     });
   });
 
@@ -178,7 +218,7 @@ void main() {
 
       await tester.tap(find.descendant(
         of: find.byType(NavigationBar),
-        matching: find.text('Settings'),
+        matching: find.text(sr.navSettings),
       ));
       await tester.pumpAndSettle();
 
@@ -193,16 +233,17 @@ void main() {
 
       await tester.tap(find.descendant(
         of: find.byType(NavigationBar),
-        matching: find.text('Settings'),
+        matching: find.text(sr.navSettings),
       ));
       await tester.pumpAndSettle();
 
       expect(find.text('Marko'), findsOneWidget);
       expect(find.text('a@example.com'), findsOneWidget);
 
-      await tester.tap(find.text('Household'));
+      await tester.tap(find.text(sr.householdMenuItem));
       await tester.pumpAndSettle();
 
+      // The household screen itself is not localized in this part.
       expect(find.widgetWithText(AppBar, 'Household'), findsOneWidget);
       expect(find.text('Test Household'), findsOneWidget);
       expect(find.byType(NavigationBar), findsOneWidget,
@@ -215,16 +256,37 @@ void main() {
 
       await tester.tap(find.descendant(
         of: find.byType(NavigationBar),
-        matching: find.text('Settings'),
+        matching: find.text(sr.navSettings),
       ));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Household'));
+      await tester.tap(find.text(sr.householdMenuItem));
       await tester.pumpAndSettle();
 
       expect(find.text('Ana'), findsOneWidget);
       expect(find.text('owner'), findsOneWidget);
       expect(find.text('adult'), findsOneWidget);
       expect(find.text('482913'), findsOneWidget);
+    });
+
+    testWidgets('offers the language toggle, selected on the current locale',
+        (WidgetTester tester) async {
+      await pumpApp(tester);
+
+      await tester.tap(find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text(sr.navSettings),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text(sr.languageSectionTitle), findsOneWidget);
+      // Language names are never translated (D77) -- both segments read the
+      // same regardless of which locale is active.
+      final SegmentedButton<AppLocale> toggle =
+          tester.widget<SegmentedButton<AppLocale>>(
+              find.byType(SegmentedButton<AppLocale>));
+      expect(toggle.selected, <AppLocale>{AppLocale.sr});
+      expect(find.text('Srpski'), findsOneWidget);
+      expect(find.text('English'), findsOneWidget);
     });
   });
 

@@ -17,6 +17,7 @@ lib/
     ingredients/       # the catalog: providers + the line editor (D43)
     household/         # currentHouseholdIdProvider, closing D33 (D52)
     recipes/           # the meal plan's recipe picker, reading recipes/data/ (D53)
+    l10n/              # ARB files, generated AppLocalizations, appLocaleProvider (D77)
     refresh/           # cross-feature "this changed" counters
     widgets/           # generic, feature-agnostic
   features/
@@ -303,6 +304,35 @@ Reachability itself is `core/net/network_status.dart`'s `NetworkStatus`
 (D67) — derived from the same `NetworkFailure` `runGuarded` already
 produces, not a separate connectivity check (`connectivity_plus` was asked
 about and rejected).
+
+## Localization (Phase 3)
+
+`profiles.locale` is the app's one locale — not a device setting, not a
+local-only preference (D77). `core/l10n/app_locale.dart`'s `appLocaleProvider`
+derives a `Locale` from it, falling back to Serbian whenever there is no
+profile to read (signed out, or still loading), and `main.dart` feeds that
+straight to `MaterialApp.router`'s `locale`. Writing a new value goes through
+`AuthRepository.updateLocale`, a plain update — `profiles.locale`'s check
+constraint and its `profiles_update_own` RLS policy have existed since
+migration 2.
+
+```
+lib/core/l10n/
+  arb/app_sr.arb        # template — CLAUDE.md's Serbian-first
+  arb/app_en.arb
+  generated/            # flutter gen-l10n output, committed like *.g.dart
+  app_locale.dart        # appLocaleProvider
+```
+
+ARB strings are chrome only so far — the bottom nav, each tab's own AppBar
+title, Settings, and sign-in / verify-OTP (Phase 3 part 1). Everything else
+renders in English until the part that owns that screen localizes it, one
+feature at a time. Language names themselves (*Srpski*, *English*) are never
+translated — a language's own name is not chrome.
+
+`recipe_translations`, `translate-recipe` and the review flow are later parts
+of Phase 3 and will read `profiles.locale` too — the same field, not a second
+one, which is the entire reason it was chosen over a device-local setting.
 
 ## Enforcement
 

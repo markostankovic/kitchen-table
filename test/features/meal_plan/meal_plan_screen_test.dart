@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
+import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/net/network_status.dart';
 import 'package:kitchen_table/core/recipes/recipe_picker_providers.dart';
 import 'package:kitchen_table/features/meal_plan/application/meal_plan_providers.dart';
@@ -150,7 +151,12 @@ Future<_Calls> _pump(
         if (networkStatus != null)
           networkStatusProvider.overrideWithValue(networkStatus),
       ],
-      child: const MaterialApp(home: MealPlanScreen()),
+      // The AppBar title reads AppLocalizations now (D77, Phase 3 part 1).
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MealPlanScreen(),
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -621,7 +627,12 @@ void main() {
           mealPlanEditorProvider.overrideWith(() => _ThrowingPlan()),
           visibleWeekProvider.overrideWith(() => _PinnedWeek()),
         ],
-        child: const MaterialApp(home: MealPlanScreen()),
+        // The AppBar title reads AppLocalizations now (D77, Phase 3 part 1).
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MealPlanScreen(),
+      ),
       ),
     );
     await tester.pumpAndSettle();

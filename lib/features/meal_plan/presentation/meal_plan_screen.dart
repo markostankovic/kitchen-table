@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/net/network_status.dart';
 import '../../../core/recipes/widgets/recipe_picker_sheet.dart';
 import '../../../core/router/routes.dart';
@@ -14,10 +15,13 @@ import '../domain/snack_variety.dart';
 
 /// The week grid: 7 days x 4 slots, add / move / remove a recipe or a note.
 ///
-/// The `AppBar` is built outside the body's `AsyncValue.when` and titled
-/// exactly `Plan` -- `test/core/router/app_shell_test.dart` taps this tab and
-/// asserts that title regardless of what the underlying providers do, the
-/// same shape `RecipeListScreen` already survives.
+/// The `AppBar` is built outside the body's `AsyncValue.when` and titled from
+/// `AppLocalizations.navPlan` -- the same key the bottom nav label uses (D77,
+/// Phase 3 part 1), so this screen's own header and its tab always agree on
+/// language even though everything else here is still English.
+/// `test/core/router/app_shell_test.dart` taps this tab and asserts that
+/// title regardless of what the underlying providers do, the same shape
+/// `RecipeListScreen` already survives.
 ///
 /// Phone-first vertical list of days, each with 4 slot rows -- not a 7-column
 /// grid, which would not fit a phone's width. Tapping a slot is the primary,
@@ -32,7 +36,7 @@ class MealPlanScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Plan'),
+        title: Text(AppLocalizations.of(context).navPlan),
         actions: <Widget>[
           IconButton(
             tooltip: 'This week',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/generated/app_localizations.dart';
 import '../net/offline_banner.dart';
 
 /// Bottom-nav shell: Recipes / Plan / List / Settings (docs/ARCHITECTURE.md).
@@ -9,9 +10,13 @@ import '../net/offline_banner.dart';
 /// Each tab is a `StatefulShellBranch`, so switching tabs preserves the
 /// navigation stack within a tab rather than resetting it.
 ///
-/// Labels are hardcoded English for now. UI strings move to ARB files in
-/// Phase 3 (docs/ROADMAP.md); adding `flutter_localizations` earlier would be
-/// scaffolding for a phase that has not started.
+/// Labels are localized (D77, Phase 3 part 1) -- a `List<NavigationDestination>`
+/// built from [AppLocalizations] rather than the `static const` list this
+/// class used to carry, since a `const` value cannot read a localized string.
+/// Each tab's own AppBar title uses the same key (`navRecipes`, `navPlan`,
+/// `navList`, `navSettings`), so a tab and its header never disagree about
+/// what language they are in -- everything else on those screens stays
+/// English until the parts that own them are localized in turn.
 ///
 /// [OfflineBanner] sits above [navigationShell] rather than inside each
 /// branch's own `Scaffold` -- one instance, visible on every tab including
@@ -24,32 +29,34 @@ class AppShell extends ConsumerWidget {
 
   final StatefulNavigationShell navigationShell;
 
-  static const List<NavigationDestination> _destinations =
+  static List<NavigationDestination> _destinations(AppLocalizations loc) =>
       <NavigationDestination>[
-    NavigationDestination(
-      icon: Icon(Icons.menu_book_outlined),
-      selectedIcon: Icon(Icons.menu_book),
-      label: 'Recipes',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.calendar_month_outlined),
-      selectedIcon: Icon(Icons.calendar_month),
-      label: 'Plan',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.checklist_outlined),
-      selectedIcon: Icon(Icons.checklist),
-      label: 'List',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.settings_outlined),
-      selectedIcon: Icon(Icons.settings),
-      label: 'Settings',
-    ),
-  ];
+        NavigationDestination(
+          icon: const Icon(Icons.menu_book_outlined),
+          selectedIcon: const Icon(Icons.menu_book),
+          label: loc.navRecipes,
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.calendar_month_outlined),
+          selectedIcon: const Icon(Icons.calendar_month),
+          label: loc.navPlan,
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.checklist_outlined),
+          selectedIcon: const Icon(Icons.checklist),
+          label: loc.navList,
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.settings_outlined),
+          selectedIcon: const Icon(Icons.settings),
+          label: loc.navSettings,
+        ),
+      ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations loc = AppLocalizations.of(context);
+
     return Scaffold(
       body: Column(
         children: <Widget>[
@@ -59,7 +66,7 @@ class AppShell extends ConsumerWidget {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
-        destinations: _destinations,
+        destinations: _destinations(loc),
         onDestinationSelected: (int index) => navigationShell.goBranch(
           index,
           // Tapping the active tab returns it to its root, the platform

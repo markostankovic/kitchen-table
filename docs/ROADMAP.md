@@ -750,12 +750,51 @@ and passing `display_names_test.sql` too), `lint-functions` and
 
 ## Phase 3 — Serbian / English
 
-- `flutter_localizations` + ARB files for UI strings
+### Part 1 — The locale toggle, and the app chrome in two languages
+
+**Status: complete.** Decisions taken during it: D77.
+
+`flutter_localizations` + ARB files, and the locale toggle they exist to
+serve — scoped to the app's chrome, not yet to recipe content.
+
+- `lib/core/l10n/arb/app_sr.arb` (template) and `app_en.arb`, generated to a
+  committed `lib/core/l10n/generated/` via `l10n.yaml`
+- `core/l10n/app_locale.dart`: `appLocaleProvider`, derived from
+  `ownProfileProvider.value?.locale`, falling back to Serbian pre-auth
+- `AuthRepository.updateLocale`, writing straight to `profiles.locale` — no
+  migration needed; the column, its check constraint and
+  `profiles_update_own` have existed since migration 2 and nothing had ever
+  written to them
+- A *Language* segmented button on Settings (*Srpski* / *English*, never
+  translated — a language's own name is not chrome)
+- Localized: the bottom nav, each tab's own AppBar title (sharing the nav
+  label's key), the Settings screen, and sign-in / verify-OTP
+
+**Done when:** switching the language in Settings changes the app's chrome
+between Serbian and English immediately, and the choice survives a
+force-stop because it lives in `profiles.locale`, not in memory. — **Met**,
+verified on the Android emulator against the local stack: a fresh sign-in
+renders Serbian with no profile loaded yet (the pre-auth default); switching
+to English in Settings changed the nav bar, every tab's AppBar title and the
+Settings screen itself immediately, with no restart; force-stopping and
+relaunching came back English, confirmed directly against
+`profiles.locale`; switching back to Serbian reversed it; and toggling the
+language while offline failed loudly with a SnackBar rather than silently
+succeeding, since writes are online-only (D12) and this one is no exception.
+
+Everything else — recipes, import, meal plan, shopping list, households —
+stays English until the part that owns each of them localizes it in turn,
+the same rhythm every phase here has used.
+
+### Still to build
+
 - `recipe_translations` + RLS
 - `translate-recipe` Edge Function, marked `is_machine_generated`
-- Locale toggle; recipe detail shows translated title/description/steps,
-  ingredient lines render from the catalog in the active locale
+- Recipe detail shows translated title/description/steps in the active
+  locale, ingredient lines rendering from the catalog the same way
 - Review flow: edit a machine translation, set `reviewed_by`
+- The remaining screens' bodies (recipes, import, meal plan, shopping list,
+  households), one feature at a time
 
 **Done when:** one recipe entered in Serbian reads correctly in English,
 ingredient names included, without a second recipe row existing.

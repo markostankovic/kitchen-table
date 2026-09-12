@@ -1,0 +1,96 @@
+{
+  "@@locale": "sr",
+
+  "navRecipes": "Recepti",
+  "@navRecipes": {
+    "description": "Bottom nav label and AppBar title for the Recipes tab."
+  },
+  "navPlan": "Plan",
+  "@navPlan": {
+    "description": "Bottom nav label and AppBar title for the meal-plan tab."
+  },
+  "navList": "Lista",
+  "@navList": {
+    "description": "Bottom nav label and AppBar title for the shopping-list tab."
+  },
+  "navSettings": "Podešavanja",
+  "@navSettings": {
+    "description": "Bottom nav label and AppBar title for the Settings tab."
+  },
+
+  "profileLoading": "Učitavanje...",
+  "@profileLoading": {
+    "description": "Settings screen, shown while the caller's own profile is loading."
+  },
+  "profileLoadError": "Nije moguće učitati profil",
+  "@profileLoadError": {
+    "description": "Settings screen, shown if the profile fetch fails."
+  },
+  "profileNone": "Nema profila",
+  "@profileNone": {
+    "description": "Settings screen, fallback when there is no display name yet."
+  },
+  "householdMenuItem": "Domaćinstvo",
+  "@householdMenuItem": {
+    "description": "Settings screen, the row that opens the household screen."
+  },
+  "signOut": "Odjavi se",
+  "@signOut": {
+    "description": "Settings screen, the sign-out row."
+  },
+  "languageSectionTitle": "Jezik",
+  "@languageSectionTitle": {
+    "description": "Settings screen, heading above the language toggle."
+  },
+
+  "signInSubtitle": "Prijavite se kodom poslatim na vaš imejl.",
+  "@signInSubtitle": {
+    "description": "Sign-in screen subtitle."
+  },
+  "emailLabel": "Imejl",
+  "@emailLabel": {
+    "description": "Sign-in screen, the email field's label."
+  },
+  "emailEmptyError": "Unesite svoju imejl adresu.",
+  "@emailEmptyError": {
+    "description": "Sign-in screen, validator error when the email field is blank."
+  },
+  "emailInvalidError": "To ne izgleda kao imejl adresa.",
+  "@emailInvalidError": {
+    "description": "Sign-in screen, validator error when the email field is not an address."
+  },
+  "sendCode": "Pošalji kod",
+  "@sendCode": {
+    "description": "Sign-in screen, the submit button."
+  },
+
+  "checkEmailTitle": "Proverite imejl",
+  "@checkEmailTitle": {
+    "description": "Verify-OTP screen title."
+  },
+  "codeSentTo": "Poslali smo kod na {email}.",
+  "@codeSentTo": {
+    "description": "Verify-OTP screen subtitle, naming the address the code went to.",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "codeEmptyError": "Unesite kod iz imejla.",
+  "@codeEmptyError": {
+    "description": "Verify-OTP screen, shown when the code field is submitted blank."
+  },
+  "verify": "Potvrdi",
+  "@verify": {
+    "description": "Verify-OTP screen, the submit button."
+  },
+  "resendCode": "Pošalji novi kod",
+  "@resendCode": {
+    "description": "Verify-OTP screen, the resend link."
+  },
+  "newCodeSent": "Novi kod je poslat.",
+  "@newCodeSent": {
+    "description": "Verify-OTP screen, the SnackBar shown after a successful resend."
+  }
+}

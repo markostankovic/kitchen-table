@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
+import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/net/network_status.dart';
 import '../../ingredients/domain/unit_catalog.dart';
 import '../../meal_plan/domain/plan_week.dart';
@@ -13,10 +14,13 @@ import '../domain/shopping_list.dart';
 
 /// The generated shopping list.
 ///
-/// The `AppBar` is built outside the body's `AsyncValue.when` and titled
-/// exactly `List` -- `test/core/router/app_shell_test.dart` taps this tab and
-/// asserts that title regardless of what the underlying providers do, the
-/// same shape `MealPlanScreen` and `RecipeListScreen` already survive.
+/// The `AppBar` is built outside the body's `AsyncValue.when` and titled from
+/// `AppLocalizations.navList` -- the same key the bottom nav label uses (D77,
+/// Phase 3 part 1), so this screen's own header and its tab always agree on
+/// language even though everything else here is still English.
+/// `test/core/router/app_shell_test.dart` taps this tab and asserts that
+/// title regardless of what the underlying providers do, the same shape
+/// `MealPlanScreen` and `RecipeListScreen` already survive.
 ///
 /// There are no checkboxes here and there never will be. D13 made the list a
 /// snapshot rather than a live document, and that single decision is what
@@ -33,7 +37,7 @@ class ShoppingListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('List'),
+        title: Text(AppLocalizations.of(context).navList),
         actions: <Widget>[
           if (list.value != null)
             IconButton(

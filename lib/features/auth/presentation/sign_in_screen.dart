@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../application/auth_providers.dart';
 
@@ -48,6 +49,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations loc = AppLocalizations.of(context);
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -59,12 +62,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
+                  // The brand name, not chrome -- never localized, the same
+                  // way 'Srpski'/'English' are never localized either.
                   Text('Kitchen Table',
                       style: Theme.of(context).textTheme.headlineMedium,
                       textAlign: TextAlign.center),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Sign in with a code sent to your email.',
+                  Text(
+                    loc.signInSubtitle,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -73,15 +78,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     autofocus: true,
                     keyboardType: TextInputType.emailAddress,
                     autofillHints: const <String>[AutofillHints.email],
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: loc.emailLabel,
+                      border: const OutlineInputBorder(),
                     ),
                     validator: (String? value) {
                       final String v = (value ?? '').trim();
-                      if (v.isEmpty) return 'Enter your email address.';
+                      if (v.isEmpty) return loc.emailEmptyError;
                       if (!v.contains('@') || !v.contains('.')) {
-                        return 'That does not look like an email address.';
+                        return loc.emailInvalidError;
                       }
                       return null;
                     },
@@ -104,7 +109,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                             width: 16,
                             child:
                                 CircularProgressIndicator(strokeWidth: 2))
-                        : const Text('Send code'),
+                        : Text(loc.sendCode),
                   ),
                 ],
               ),

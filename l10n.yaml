@@ -1,0 +1,15 @@
+# Phase 3 part 1 (D77). Serbian is the template -- CLAUDE.md's "Serbian-first"
+# -- so a key added here and left untranslated in app_en.arb is a build-time
+# gap in English, never the reverse.
+#
+# output-dir means the generated Dart lands in the repo and is committed, the
+# same convention CLAUDE.md states for `*.g.dart` / `*.freezed.dart`. (This
+# SDK generates directly to output-dir with no synthetic-package option --
+# an older `synthetic-package: false` line here is now a no-op and was
+# removed rather than left as dead configuration.)
+arb-dir: lib/core/l10n/arb
+template-arb-file: app_sr.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+output-dir: lib/core/l10n/generated
+nullable-getter: false
