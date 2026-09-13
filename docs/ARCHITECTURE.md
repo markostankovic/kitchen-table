@@ -182,13 +182,17 @@ _shared/
   parse_line.ts  # same line parse as Dart, against the same fixture (D31)
   jobs.ts        # the import_jobs lifecycle, shared by all three importers
   match.ts       # tiers 1-4 over a whole recipe, in-process for the importers
+  translate.ts   # translate-recipe's prompt and its thin callStructured wrapper
 ```
 
 `jobs.ts` and `match.ts` were added in 1d part 2 and are not in the original
 list. `match.ts` is in `_shared/` rather than inside `match-ingredients/`
 because the importers need the pipeline in the same isolate — the alternative
 was an HTTP hop from one function to a sibling, paying a round trip and a
-second auth check to run code already loaded.
+second auth check to run code already loaded. `translate.ts` arrived in
+Phase 3 part 2, on `read_recipe.ts`'s own precedent (itself missing from this
+list, alongside `jsonld.ts` and `url_guard.ts` — this block has not tracked
+every addition since 1d).
 
 The first three exist as of Phase 1a; the other five arrived with Phase 1d
 part 1. `normalize.ts` and `parse_line.ts` are each one side of a contract whose
@@ -325,14 +329,24 @@ lib/core/l10n/
 ```
 
 ARB strings are chrome only so far — the bottom nav, each tab's own AppBar
-title, Settings, and sign-in / verify-OTP (Phase 3 part 1). Everything else
-renders in English until the part that owns that screen localizes it, one
-feature at a time. Language names themselves (*Srpski*, *English*) are never
-translated — a language's own name is not chrome.
+title, Settings, sign-in / verify-OTP (Phase 3 part 1), and the recipe detail
+screen (Phase 3 part 2). Everything else renders in English until the part
+that owns that screen localizes it, one feature at a time. Language names
+themselves (*Srpski*, *English*) are never translated — a language's own
+name is not chrome.
 
-`recipe_translations`, `translate-recipe` and the review flow are later parts
-of Phase 3 and will read `profiles.locale` too — the same field, not a second
-one, which is the entire reason it was chosen over a device-local setting.
+`recipe_translations`, `translate-recipe` and the recipe detail screen's own
+locale-aware read arrived in Phase 3 part 2; the review flow is still a
+later part. A recipe's *content* locale is resolved in exactly one place per
+concern, each reading `profiles.locale` through `appLocaleProvider` rather
+than a second notion of "what language": `RecipeDetail`'s own getters
+(`displayTitle`/`displayDescription`/`displaySteps`, falling back to the
+original whenever `recipe_translations` has no row for the reading locale)
+decide which prose is on screen, and `ingredient_display_names`/
+`DisplayNameChain` (unchanged, D1) decide which ingredient and unit names
+are. Ingredient lines are never translated per recipe — sending them to
+`translate-recipe` would ask a model to redo work the catalog already does
+for free, which is D1's whole argument applied to a second feature.
 
 ## Enforcement
 

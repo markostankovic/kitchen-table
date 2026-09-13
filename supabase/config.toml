@@ -414,6 +414,9 @@ verify_jwt = true
 [functions.match-ingredients]
 verify_jwt = true
 
+[functions.translate-recipe]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

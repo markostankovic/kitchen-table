@@ -35,6 +35,13 @@ class RecipeEditor extends _$RecipeEditor {
     // detail screens re-read, and an editor watching it would answer by
     // throwing away whatever the user had typed. A draft is only ever loaded
     // once.
+    // `fetchDetail`'s `locale` defaults to 'sr' here, left as-is: the editor
+    // edits the recipe's OWN original text (`recipe.title`, not
+    // `displayTitle`), and it cannot know which locale to ask for until this
+    // very fetch returns. The visible symptom -- an ingredient chip's name
+    // shown in Serbian while editing an English recipe -- is named in
+    // docs/ROADMAP.md rather than silently left for the next session to
+    // rediscover.
     final RecipeRepository repository = ref.watch(recipeRepositoryProvider);
     final RecipeDetail detail = await repository.fetchDetail(recipeId);
     return RecipeDraft.fromDetail(detail);
@@ -204,7 +211,10 @@ class RecipeEditor extends _$RecipeEditor {
     }
 
     ref.read(recipesRevisionProvider.notifier).bump();
-    ref.invalidate(recipeDetailProvider(recipeId));
+    // The whole family, not just the default-locale entry: Phase 3 part 2
+    // made `recipeDetailProvider` vary by reading locale, and a save should
+    // invalidate whichever locale a screen is actually watching.
+    ref.invalidate(recipeDetailProvider);
     return recipeId;
   }
 

@@ -90,6 +90,13 @@ AppFailure _fromFunction(FunctionException e) {
     case 'invite_not_found':
       return NotFoundFailure(
           message: message ?? 'That code is not valid.', cause: e);
+    // Phase 3 part 2, translate-recipe. Not found also covers "not a
+    // member" -- the caller-scoped select that produces this code cannot
+    // tell the two apart, deliberately (D14's own reasoning for
+    // loadJobForCaller's 404, applied here).
+    case 'recipe_not_found':
+      return NotFoundFailure(
+          message: message ?? 'That recipe is not available.', cause: e);
     case 'invite_already_used':
     case 'already_in_household':
       return ConflictFailure(
@@ -124,6 +131,12 @@ AppFailure _fromFunction(FunctionException e) {
     case 'input_too_large':
       return ValidationFailure(
           message: message ?? 'That text could not be imported.', cause: e);
+    // Phase 3 part 2, translate-recipe: asking for a recipe's own
+    // original_locale is refused before any model call runs.
+    case 'same_locale':
+      return ValidationFailure(
+          message: message ?? 'This recipe is already written in that language.',
+          cause: e);
     case 'quota_exceeded':
     case 'quota_unavailable':
     case 'ai_rate_limited':

@@ -786,18 +786,91 @@ Everything else — recipes, import, meal plan, shopping list, households —
 stays English until the part that owns each of them localizes it in turn,
 the same rhythm every phase here has used.
 
+### Part 2 — `recipe_translations`, `translate-recipe`, and the recipe read in the reader's language
+
+**Status: complete.** Decisions taken during it: D78–D81.
+
+`recipe_translations` + RLS, the `translate-recipe` Edge Function, and the
+recipe detail screen reading title/description/steps in the reader's locale
+-- ingredient and unit names included, closing a gap that had existed since
+Phase 1c: the bilingual catalog (D1) had only ever been asked for Serbian,
+because nothing anywhere in the app had ever passed anything else into
+`RecipeRepository.fetchDetail`'s `locale` parameter. **Review flow is
+deliberately out** -- `reviewed_by` and `reviewed_at` ship in this part's
+migration, unreachable, the same way `recipes.image_path` (D35) and
+`leftover_of_entry_id` (D51) shipped ahead of their writers.
+
+- Migration 17: `recipe_translations`, a child table in the D24 sense (no
+  `household_id`, hard delete, cascades with its recipe) that nonetheless
+  keeps `created_at`/`updated_at` because a translation is reviewed and
+  regenerated in place rather than being step-shaped and inert (D78).
+  `recipe_translations_touch_recipe()` -- an after-trigger on
+  `meal_plan_entries_touch_plan()`'s own shape -- is what makes a translated
+  recipe reach the existing recipe delta fetch with no new cache table:
+  `RecipeCache.data` already stores the whole PostgREST row verbatim, and
+  `recipe_translations` now rides along inside it, embedded
+  (`AppDatabase.schemaVersion` moved to `4` for exactly this reason -- a
+  change to the blob's shape, not to a table's columns). `save_recipe_translation`
+  refuses an unknown locale and refuses translating into the recipe's own
+  `original_locale`, both `security invoker`, both mirroring
+  `replace_recipe_lines`'s guard-then-upsert shape
+- `translate-recipe`: synchronous, no `import_jobs` row -- one model call
+  with no confirm gate in this part, on `match-ingredients`'s shape rather
+  than `import-text`'s (D79). `_shared/translate.ts` sends the model no
+  ingredient lines at all (they render from the catalog, never per recipe),
+  requires Latin-script Serbian as a stated rule rather than an assumption,
+  and asks for each translated step's SOURCE position back as an alignment
+  key -- `alignSteps` validates the returned positions and refuses, as a
+  billed `AiFailure`, rather than silently reordering or dropping a step
+  (D80). Idempotent, and translating into a recipe's own original locale
+  costs no model call at all
+- `RecipeDetail` gains `readingLocale` and `translations`, plus
+  `RecipeIngredient.resolvedName`'s pattern one level up -- `displayTitle`/
+  `displayDescription`/`displaySteps`/`canTranslate`/
+  `isShowingMachineTranslation`, one definition of "which words does this
+  reader see" so the AppBar, the body and any later screen cannot disagree
+- The detail screen: a *Translate to &lt;language&gt;* overflow item, shown
+  only when the reading locale differs from the recipe's own and no
+  translation exists yet; a *Machine translation* chip beside the existing
+  *Draft* chip; unit names now render in the READER's locale rather than the
+  recipe's own `original_locale`, the same fix one column over. This is also
+  the recipes feature's first screen to read `AppLocalizations` (D77's
+  rhythm, one screen at a time) -- the list and the editor still render in
+  English
+- D81, the literal fix underneath the feature: `RecipeDetailScreen` and
+  `ShoppingListEditor.generate()` now read `appLocaleProvider` and pass it
+  through, instead of the hardcoded `'sr'` both had carried since their own
+  parts shipped -- `shopping_lists.locale` exists precisely so a generated
+  list does not render half-translated after a locale switch (migration
+  16's own comment), and had been recording a falsehood the whole time.
+  Left alone deliberately: `RecipeEditor.build`'s own `fetchDetail` still
+  defaults to `'sr'`, named rather than hidden below
+
+**Done when:** one recipe entered in Serbian reads correctly in English,
+ingredient names included, without a second recipe row existing. -- **Met**,
+verified against the local stack: `make check` clean in full (`dart
+analyze`, `tool/check_layers.dart`, 368 Dart tests, `deno check`/`lint`/`fmt`,
+155 Deno tests, and `rls_recipe_translations_test.sql` alongside the other
+16 SQL suites, all passing). `rls_recipe_translations_test.sql` asserts the
+Done-when itself in the one place a SQL suite can reach it: a Serbian recipe
+translated into English reads back its English title through
+`recipe_translations`, `ingredient_display_names(..., 'en')` still answers
+`brašno` as `flour` on the same recipe's matched line, and
+`select count(*) from recipes` for that title stays at exactly 1 throughout
+-- no second recipe row, at any point.
+
+Still open, and named here so it is not rediscovered: the emulator walk
+every other part in this project has closed with (translate a real recipe,
+force-stop, airplane mode, relaunch, confirm it renders from the cache) has
+not been run -- this part's verification stopped at the local Postgres
+stack and the Dart/Deno test suites. `RecipeEditor.build` reading a hardcoded
+`'sr'` (above) is the other open item.
+
 ### Still to build
 
-- `recipe_translations` + RLS
-- `translate-recipe` Edge Function, marked `is_machine_generated`
-- Recipe detail shows translated title/description/steps in the active
-  locale, ingredient lines rendering from the catalog the same way
 - Review flow: edit a machine translation, set `reviewed_by`
 - The remaining screens' bodies (recipes, import, meal plan, shopping list,
   households), one feature at a time
-
-**Done when:** one recipe entered in Serbian reads correctly in English,
-ingredient names included, without a second recipe row existing.
 
 ---
 

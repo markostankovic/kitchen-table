@@ -79,6 +79,7 @@ final UnitCatalog _units = UnitCatalog(
 
 final RecipeDetail _detail = RecipeDetail(
   recipe: _torta,
+  readingLocale: 'sr',
   ingredients: <RecipeIngredient>[
     // Matched: renders the CATALOG's word, not the genitive the cook typed.
     RecipeIngredient(
@@ -142,10 +143,15 @@ Future<void> _pumpDetail(WidgetTester tester, RecipeDetail detail) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        recipeDetailProvider('r1').overrideWith((Ref ref) async => detail),
+        recipeDetailProvider('r1', locale: detail.readingLocale)
+            .overrideWith((Ref ref) async => detail),
         unitCatalogProvider.overrideWith((Ref ref) async => _units),
       ],
+      // The screen now reads AppLocalizations too (Phase 3 part 2), on
+      // `_pumpList`'s own precedent above.
       child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: RecipeDetailScreen(recipeId: 'r1'),
       ),
     ),

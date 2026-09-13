@@ -73,4 +73,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get newCodeSent => 'New code sent.';
+
+  @override
+  String get recipeDetailFallbackTitle => 'Recipe';
+
+  @override
+  String get couldNotLoadRecipe => 'Could not load this recipe.';
+
+  @override
+  String get editTooltip => 'Edit';
+
+  @override
+  String get deleteRecipeMenuItem => 'Delete recipe';
+
+  @override
+  String get deleteRecipeDialogTitle => 'Delete this recipe?';
+
+  @override
+  String get deleteRecipeDialogBody =>
+      'It will stop appearing in your household’s recipes.';
+
+  @override
+  String get cancelButton => 'Cancel';
+
+  @override
+  String get deleteButton => 'Delete';
+
+  @override
+  String get ingredientsHeading => 'Ingredients';
+
+  @override
+  String get stepsHeading => 'Steps';
+
+  @override
+  String get noIngredientsYet => 'No ingredients yet.';
+
+  @override
+  String get noStepsYet => 'No steps yet.';
+
+  @override
+  String get draftChipLabel => 'Draft';
+
+  @override
+  String get machineTranslationChipLabel => 'Machine translation';
+
+  @override
+  String translateAction(String language) {
+    return 'Translate to $language';
+  }
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get languageSerbian => 'Serbian';
 }

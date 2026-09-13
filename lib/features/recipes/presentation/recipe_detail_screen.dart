@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/l10n/app_locale.dart';
+import '../../../core/l10n/generated/app_localizations.dart';
+import '../../../core/refresh/data_revision.dart';
 import '../../../core/router/routes.dart';
 import '../../ingredients/domain/unit_catalog.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
@@ -20,39 +23,66 @@ import '../../../core/ingredients/widgets/quantity_format.dart';
 /// shopping list say `brašno` for a recipe written in Serbian and one written
 /// in English. A line that matched nothing renders exactly what was typed,
 /// which is rule 3 and a perfectly good outcome, not a degraded one.
-class RecipeDetailScreen extends ConsumerWidget {
+///
+/// Phase 3 part 2 widens the same idea to the recipe's own prose:
+/// [RecipeDetail.displayTitle]/[displayDescription]/[displaySteps] read from
+/// a `recipe_translations` row when the reader's locale differs from the
+/// recipe's own, exactly as [RecipeIngredient.resolvedName] already reads
+/// from the catalog. This screen is also this feature's first to read
+/// [AppLocalizations] (D77's rhythm, one screen at a time) -- the recipe
+/// list and editor still render in English.
+class RecipeDetailScreen extends ConsumerStatefulWidget {
   const RecipeDetailScreen({required this.recipeId, super.key});
 
   final String recipeId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<RecipeDetail> detail =
-        ref.watch(recipeDetailProvider(recipeId));
+  ConsumerState<RecipeDetailScreen> createState() =>
+      _RecipeDetailScreenState();
+}
+
+class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
+  bool _translating = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String readingLocale = ref.watch(appLocaleProvider).languageCode;
+    final AsyncValue<RecipeDetail> detail = ref.watch(
+      recipeDetailProvider(widget.recipeId, locale: readingLocale),
+    );
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(detail.value?.recipe.title ?? 'Recipe'),
+        title: Text(detail.value?.displayTitle ?? l10n.recipeDetailFallbackTitle),
         actions: <Widget>[
           IconButton(
-            tooltip: 'Edit',
+            tooltip: l10n.editTooltip,
             icon: const Icon(Icons.edit_outlined),
             onPressed: detail.hasValue
-                ? () => RecipeEditRoute(recipeId).go(context)
+                ? () => RecipeEditRoute(widget.recipeId).go(context)
                 : null,
           ),
           // Delete sits behind an overflow rather than next to Edit: they are
           // one tap apart and only one of them is reversible.
           PopupMenuButton<_DetailAction>(
-            enabled: detail.hasValue,
+            enabled: detail.hasValue && !_translating,
             onSelected: (_DetailAction action) => switch (action) {
-              _DetailAction.delete => _confirmDelete(context, ref),
+              _DetailAction.translate => _translate(detail.value!, l10n),
+              _DetailAction.delete => _confirmDelete(l10n),
             },
-            itemBuilder: (BuildContext context) =>
-                const <PopupMenuEntry<_DetailAction>>[
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<_DetailAction>>[
+              if (detail.value?.canTranslate ?? false)
+                PopupMenuItem<_DetailAction>(
+                  value: _DetailAction.translate,
+                  child: Text(l10n.translateAction(_targetLanguageName(
+                    l10n,
+                    detail.value!.recipe.originalLocale,
+                  ))),
+                ),
               PopupMenuItem<_DetailAction>(
                 value: _DetailAction.delete,
-                child: Text('Delete recipe'),
+                child: Text(l10n.deleteRecipeMenuItem),
               ),
             ],
           ),
@@ -63,49 +93,73 @@ class RecipeDetailScreen extends ConsumerWidget {
         error: (Object e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text('Could not load this recipe.\n\n$e',
+            child: Text('${l10n.couldNotLoadRecipe}\n\n$e',
                 textAlign: TextAlign.center),
           ),
         ),
-        data: (RecipeDetail d) => _Body(detail: d),
+        data: (RecipeDetail d) =>
+            _Body(detail: d, l10n: l10n, translating: _translating),
       ),
     );
+  }
+
+  /// The other locale's own name, in the reading language -- distinct from
+  /// the Settings toggle's untranslated *Srpski*/*English* (D77): this is
+  /// prose ("Translate to Serbian"), not the language's own label.
+  String _targetLanguageName(AppLocalizations l10n, String originalLocale) =>
+      originalLocale == 'sr' ? l10n.languageEnglish : l10n.languageSerbian;
+
+  Future<void> _translate(RecipeDetail detail, AppLocalizations l10n) async {
+    setState(() => _translating = true);
+    try {
+      await ref.read(recipeRepositoryProvider).translate(
+            widget.recipeId,
+            detail.readingLocale,
+          );
+      ref.read(recipesRevisionProvider.notifier).bump();
+      ref.invalidate(recipeDetailProvider);
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _translating = false);
+    }
   }
 
   /// Soft-deletes the recipe after a confirmation, then returns to the list.
   ///
   /// The row is not erased -- there are no hard deletes (rule 4) -- so the
   /// copy says the recipe goes away rather than that it is destroyed.
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+  Future<void> _confirmDelete(AppLocalizations l10n) async {
     final bool confirmed = await showDialog<bool>(
           context: context,
           builder: (BuildContext dialogContext) => AlertDialog(
-            title: const Text('Delete this recipe?'),
-            content: const Text(
-                'It will stop appearing in your household’s recipes.'),
+            title: Text(l10n.deleteRecipeDialogTitle),
+            content: Text(l10n.deleteRecipeDialogBody),
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Cancel'),
+                child: Text(l10n.cancelButton),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text('Delete'),
+                child: Text(l10n.deleteButton),
               ),
             ],
           ),
         ) ??
         false;
 
-    if (!confirmed || !context.mounted) return;
+    if (!confirmed || !mounted) return;
 
     try {
-      await ref.read(recipeRepositoryProvider).softDelete(recipeId);
+      await ref.read(recipeRepositoryProvider).softDelete(widget.recipeId);
       ref.invalidate(recipeListProvider);
-      if (!context.mounted) return;
+      if (!mounted) return;
       const RecipesRoute().go(context);
     } on AppFailure catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       // A snackbar rather than the forms' inline error: this screen has no
       // field for the message to sit under, and the action is transient.
       ScaffoldMessenger.of(context)
@@ -114,12 +168,14 @@ class RecipeDetailScreen extends ConsumerWidget {
   }
 }
 
-enum _DetailAction { delete }
+enum _DetailAction { translate, delete }
 
 class _Body extends ConsumerWidget {
-  const _Body({required this.detail});
+  const _Body({required this.detail, required this.l10n, required this.translating});
 
   final RecipeDetail detail;
+  final AppLocalizations l10n;
+  final bool translating;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -164,19 +220,36 @@ class _Body extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
         ],
-        if (recipe.status == RecipeStatus.draft)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Chip(label: Text('Draft')),
-            ),
-          ),
+        Wrap(
+          spacing: 8,
+          children: <Widget>[
+            if (recipe.status == RecipeStatus.draft)
+              Chip(label: Text(l10n.draftChipLabel)),
+            // Anything AI-produced is draft until a human marks it tested
+            // (docs/ROADMAP.md) -- this is that rule applied to prose rather
+            // than to the recipe row itself (Phase 3, part 2).
+            if (detail.isShowingMachineTranslation)
+              Chip(label: Text(l10n.machineTranslationChipLabel)),
+            if (translating)
+              const Chip(
+                label: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+          ],
+        ),
+        if (recipe.status == RecipeStatus.draft ||
+            detail.isShowingMachineTranslation ||
+            translating)
+          const SizedBox(height: 8),
         if (meta.isNotEmpty)
           Text(meta.join(' · '), style: Theme.of(context).textTheme.bodySmall),
-        if (recipe.description != null && recipe.description!.isNotEmpty) ...<Widget>[
+        if (detail.displayDescription != null &&
+            detail.displayDescription!.isNotEmpty) ...<Widget>[
           const SizedBox(height: 12),
-          Text(recipe.description!),
+          Text(detail.displayDescription!),
         ],
         if (recipe.tags.isNotEmpty) ...<Widget>[
           const SizedBox(height: 12),
@@ -188,26 +261,29 @@ class _Body extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: 24),
-        _SectionHeading(text: 'Ingredients'),
+        _SectionHeading(text: l10n.ingredientsHeading),
         if (detail.ingredients.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Text('No ingredients yet.'),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(l10n.noIngredientsYet),
           )
         else
           ...detail.ingredients.map(
-            (RecipeIngredient line) =>
-                _IngredientRow(line: line, units: units, recipe: recipe),
+            (RecipeIngredient line) => _IngredientRow(
+              line: line,
+              units: units,
+              locale: detail.readingLocale,
+            ),
           ),
         const SizedBox(height: 24),
-        _SectionHeading(text: 'Steps'),
-        if (detail.steps.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Text('No steps yet.'),
+        _SectionHeading(text: l10n.stepsHeading),
+        if (detail.displaySteps.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(l10n.noStepsYet),
           )
         else
-          ...detail.steps.map((RecipeStep step) => _StepRow(step: step)),
+          ...detail.displaySteps.map((RecipeStep step) => _StepRow(step: step)),
         if (recipe.sourceAttribution != null ||
             recipe.sourceUrl != null) ...<Widget>[
           const SizedBox(height: 24),
@@ -231,12 +307,16 @@ class _IngredientRow extends StatelessWidget {
   const _IngredientRow({
     required this.line,
     required this.units,
-    required this.recipe,
+    required this.locale,
   });
 
   final RecipeIngredient line;
   final UnitCatalog units;
-  final Recipe recipe;
+
+  /// The reader's own locale, not `recipe.originalLocale` -- a translated
+  /// method reading in one language beside a unit spelled in another would
+  /// be the same bug D81 fixed for the display name, one column over.
+  final String locale;
 
   @override
   Widget build(BuildContext context) {
@@ -247,7 +327,7 @@ class _IngredientRow extends StatelessWidget {
     final String amount = <String>[
       if (line.quantity != null) formatQuantity(line.quantity!),
       if (line.unitCode != null)
-        units.displayName(line.unitCode!, locale: recipe.originalLocale),
+        units.displayName(line.unitCode!, locale: locale),
     ].join(' ');
 
     final String trailer = <String>[

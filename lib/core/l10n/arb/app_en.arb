@@ -24,5 +24,23 @@
   "codeEmptyError": "Enter the code from your email.",
   "verify": "Verify",
   "resendCode": "Send a new code",
-  "newCodeSent": "New code sent."
+  "newCodeSent": "New code sent.",
+
+  "recipeDetailFallbackTitle": "Recipe",
+  "couldNotLoadRecipe": "Could not load this recipe.",
+  "editTooltip": "Edit",
+  "deleteRecipeMenuItem": "Delete recipe",
+  "deleteRecipeDialogTitle": "Delete this recipe?",
+  "deleteRecipeDialogBody": "It will stop appearing in your household’s recipes.",
+  "cancelButton": "Cancel",
+  "deleteButton": "Delete",
+  "ingredientsHeading": "Ingredients",
+  "stepsHeading": "Steps",
+  "noIngredientsYet": "No ingredients yet.",
+  "noStepsYet": "No steps yet.",
+  "draftChipLabel": "Draft",
+  "machineTranslationChipLabel": "Machine translation",
+  "translateAction": "Translate to {language}",
+  "languageEnglish": "English",
+  "languageSerbian": "Serbian"
 }

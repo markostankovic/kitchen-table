@@ -92,5 +92,79 @@
   "newCodeSent": "Novi kod je poslat.",
   "@newCodeSent": {
     "description": "Verify-OTP screen, the SnackBar shown after a successful resend."
+  },
+
+  "recipeDetailFallbackTitle": "Recept",
+  "@recipeDetailFallbackTitle": {
+    "description": "Recipe detail screen, AppBar title shown before the recipe has loaded."
+  },
+  "couldNotLoadRecipe": "Nije moguće učitati ovaj recept.",
+  "@couldNotLoadRecipe": {
+    "description": "Recipe detail screen, shown above the error when the fetch fails."
+  },
+  "editTooltip": "Izmeni",
+  "@editTooltip": {
+    "description": "Recipe detail screen, the Edit icon button's tooltip."
+  },
+  "deleteRecipeMenuItem": "Obriši recept",
+  "@deleteRecipeMenuItem": {
+    "description": "Recipe detail screen, the overflow menu's delete item."
+  },
+  "deleteRecipeDialogTitle": "Obrisati ovaj recept?",
+  "@deleteRecipeDialogTitle": {
+    "description": "Recipe detail screen, the delete-confirmation dialog's title."
+  },
+  "deleteRecipeDialogBody": "Neće se više pojavljivati u receptima vašeg domaćinstva.",
+  "@deleteRecipeDialogBody": {
+    "description": "Recipe detail screen, the delete-confirmation dialog's body."
+  },
+  "cancelButton": "Otkaži",
+  "@cancelButton": {
+    "description": "Recipe detail screen, the delete-confirmation dialog's Cancel button."
+  },
+  "deleteButton": "Obriši",
+  "@deleteButton": {
+    "description": "Recipe detail screen, the delete-confirmation dialog's Delete button."
+  },
+  "ingredientsHeading": "Sastojci",
+  "@ingredientsHeading": {
+    "description": "Recipe detail screen, the ingredients section heading."
+  },
+  "stepsHeading": "Koraci",
+  "@stepsHeading": {
+    "description": "Recipe detail screen, the steps section heading."
+  },
+  "noIngredientsYet": "Još nema sastojaka.",
+  "@noIngredientsYet": {
+    "description": "Recipe detail screen, shown when a recipe has no ingredient lines."
+  },
+  "noStepsYet": "Još nema koraka.",
+  "@noStepsYet": {
+    "description": "Recipe detail screen, shown when a recipe has no steps."
+  },
+  "draftChipLabel": "Nacrt",
+  "@draftChipLabel": {
+    "description": "Recipe detail screen, the chip shown on an untested recipe."
+  },
+  "machineTranslationChipLabel": "Mašinski prevod",
+  "@machineTranslationChipLabel": {
+    "description": "Recipe detail screen, the chip shown when the title/description/steps on screen came from translate-recipe rather than a human (Phase 3, part 2)."
+  },
+  "translateAction": "Prevedi na {language}",
+  "@translateAction": {
+    "description": "Recipe detail screen, the overflow menu's translate item -- {language} is one of languageEnglish/languageSerbian.",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "languageEnglish": "engleski",
+  "@languageEnglish": {
+    "description": "A target language's own name, used inside translateAction -- not the Settings toggle's untranslated 'English' (D77)."
+  },
+  "languageSerbian": "srpski",
+  "@languageSerbian": {
+    "description": "A target language's own name, used inside translateAction -- not the Settings toggle's untranslated 'Srpski' (D77)."
   }
 }

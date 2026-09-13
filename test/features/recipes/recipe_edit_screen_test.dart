@@ -40,6 +40,7 @@ const Recipe _torta = Recipe(
 
 final RecipeDetail _detail = RecipeDetail(
   recipe: _torta,
+  readingLocale: 'sr',
   ingredients: const <RecipeIngredient>[
     RecipeIngredient(position: 0, rawText: '200 g šargarepe'),
     RecipeIngredient(position: 1, rawText: 'so po ukusu'),

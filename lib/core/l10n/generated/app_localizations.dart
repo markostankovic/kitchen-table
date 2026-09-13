@@ -223,6 +223,108 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Novi kod je poslat.'**
   String get newCodeSent;
+
+  /// Recipe detail screen, AppBar title shown before the recipe has loaded.
+  ///
+  /// In sr, this message translates to:
+  /// **'Recept'**
+  String get recipeDetailFallbackTitle;
+
+  /// Recipe detail screen, shown above the error when the fetch fails.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nije moguće učitati ovaj recept.'**
+  String get couldNotLoadRecipe;
+
+  /// Recipe detail screen, the Edit icon button's tooltip.
+  ///
+  /// In sr, this message translates to:
+  /// **'Izmeni'**
+  String get editTooltip;
+
+  /// Recipe detail screen, the overflow menu's delete item.
+  ///
+  /// In sr, this message translates to:
+  /// **'Obriši recept'**
+  String get deleteRecipeMenuItem;
+
+  /// Recipe detail screen, the delete-confirmation dialog's title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Obrisati ovaj recept?'**
+  String get deleteRecipeDialogTitle;
+
+  /// Recipe detail screen, the delete-confirmation dialog's body.
+  ///
+  /// In sr, this message translates to:
+  /// **'Neće se više pojavljivati u receptima vašeg domaćinstva.'**
+  String get deleteRecipeDialogBody;
+
+  /// Recipe detail screen, the delete-confirmation dialog's Cancel button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Otkaži'**
+  String get cancelButton;
+
+  /// Recipe detail screen, the delete-confirmation dialog's Delete button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Obriši'**
+  String get deleteButton;
+
+  /// Recipe detail screen, the ingredients section heading.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sastojci'**
+  String get ingredientsHeading;
+
+  /// Recipe detail screen, the steps section heading.
+  ///
+  /// In sr, this message translates to:
+  /// **'Koraci'**
+  String get stepsHeading;
+
+  /// Recipe detail screen, shown when a recipe has no ingredient lines.
+  ///
+  /// In sr, this message translates to:
+  /// **'Još nema sastojaka.'**
+  String get noIngredientsYet;
+
+  /// Recipe detail screen, shown when a recipe has no steps.
+  ///
+  /// In sr, this message translates to:
+  /// **'Još nema koraka.'**
+  String get noStepsYet;
+
+  /// Recipe detail screen, the chip shown on an untested recipe.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nacrt'**
+  String get draftChipLabel;
+
+  /// Recipe detail screen, the chip shown when the title/description/steps on screen came from translate-recipe rather than a human (Phase 3, part 2).
+  ///
+  /// In sr, this message translates to:
+  /// **'Mašinski prevod'**
+  String get machineTranslationChipLabel;
+
+  /// Recipe detail screen, the overflow menu's translate item -- {language} is one of languageEnglish/languageSerbian.
+  ///
+  /// In sr, this message translates to:
+  /// **'Prevedi na {language}'**
+  String translateAction(String language);
+
+  /// A target language's own name, used inside translateAction -- not the Settings toggle's untranslated 'English' (D77).
+  ///
+  /// In sr, this message translates to:
+  /// **'engleski'**
+  String get languageEnglish;
+
+  /// A target language's own name, used inside translateAction -- not the Settings toggle's untranslated 'Srpski' (D77).
+  ///
+  /// In sr, this message translates to:
+  /// **'srpski'**
+  String get languageSerbian;
 }
 
 class _AppLocalizationsDelegate

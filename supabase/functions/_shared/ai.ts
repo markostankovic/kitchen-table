@@ -31,11 +31,17 @@ import { HttpError } from "./http.ts";
  * 4): pick, from a short list of candidates the database already produced,
  * which one a string names. Narrow, high volume, batched one call per recipe.
  * A cheaper model is the right instrument, not a compromise.
+ *
+ * `TRANSLATION` (Phase 3, part 2) is the same model as `PROSE` -- translating
+ * a headnote and a method into fluent Serbian or English, keeping quantities
+ * and register intact, is a reasoning problem of the same shape as reading a
+ * cookbook page, not a narrow lookup like matching.
  */
 export const MODELS = {
   PROSE: "claude-opus-5",
   VISION: "claude-opus-5",
   MATCHING: "claude-haiku-4-5",
+  TRANSLATION: "claude-opus-5",
 } as const;
 
 export type ModelId = typeof MODELS[keyof typeof MODELS];

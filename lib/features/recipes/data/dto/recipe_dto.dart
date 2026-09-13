@@ -19,6 +19,7 @@ library;
 import '../../domain/recipe.dart';
 import '../../domain/recipe_ingredient.dart';
 import '../../domain/recipe_step.dart';
+import '../../domain/recipe_translation.dart';
 import '../../../ingredients/domain/ingredient_match.dart';
 import '../../../ingredients/domain/quantity.dart';
 
@@ -30,14 +31,21 @@ id, household_id, title, description, servings, prep_minutes, cook_minutes,
 original_locale, source_type, source_url, source_attribution, status,
 image_path, tags, created_by, updated_at, deleted_at''';
 
-/// The embedded lines and steps a detail-shaped fetch asks for, on top of
-/// [recipeColumns].
+/// The embedded lines, steps and translations a detail-shaped fetch asks
+/// for, on top of [recipeColumns].
+///
+/// `recipe_translations` rides into the same cached blob as everything
+/// else here (Phase 3 part 2) -- there is no separate cache table and no
+/// separate round trip, online or offline, because [LocalRecipeDataSource]
+/// stores the whole PostgREST row verbatim (D65).
 const String recipeDetailEmbed = '''
 recipe_ingredients(id, position, section, raw_text, ingredient_id,
                    qty_num, qty_den, qty_max_num, qty_max_den,
                    unit_code, note, is_optional,
                    match_method, match_confidence, matched_at),
-recipe_steps(id, position, text, timer_seconds)''';
+recipe_steps(id, position, text, timer_seconds),
+recipe_translations(locale, title, description, steps,
+                    is_machine_generated, reviewed_by, reviewed_at)''';
 
 Recipe recipeFromWire(Map<String, dynamic> row) => Recipe(
       id: row['id'] as String,
@@ -77,6 +85,16 @@ List<RecipeStep> recipeStepsFromWire(Map<String, dynamic> row) =>
         .toList()
       ..sort((RecipeStep a, RecipeStep b) => a.position.compareTo(b.position));
 
+/// Every translation embedded on [row]. Absent entirely for a row fetched
+/// without [recipeDetailEmbed], and empty (not absent) for a recipe nobody
+/// has translated yet -- both read the same way here, an empty list.
+List<RecipeTranslation> recipeTranslationsFromWire(
+        Map<String, dynamic> row) =>
+    (row['recipe_translations'] as List<dynamic>? ?? <dynamic>[])
+        .cast<Map<String, dynamic>>()
+        .map(recipeTranslationFromWire)
+        .toList(growable: false);
+
 RecipeIngredient recipeIngredientFromWire(Map<String, dynamic> row) {
   // Present only when `ingredients(...)` was embedded -- fetchDetail does
   // not ask for it, because a recipe does not care whether an ingredient is
@@ -109,6 +127,30 @@ RecipeStep recipeStepFromWire(Map<String, dynamic> row) => RecipeStep(
       position: row['position'] as int,
       text: row['text'] as String,
       timerSeconds: row['timer_seconds'] as int?,
+    );
+
+/// `recipe_translations.steps` is stored as `jsonb` -- `[{position, text}]`
+/// -- rather than a child table (migration 17's own comment), so its steps
+/// decode from a nested list already parsed out of that column, not from a
+/// second embed. Sorted by position for the same reason [recipeStepsFromWire]
+/// is: nothing promises embed or array order survives the wire.
+RecipeTranslation recipeTranslationFromWire(Map<String, dynamic> row) =>
+    RecipeTranslation(
+      locale: row['locale'] as String,
+      title: row['title'] as String,
+      description: row['description'] as String?,
+      steps: (row['steps'] as List<dynamic>? ?? <dynamic>[])
+          .cast<Map<String, dynamic>>()
+          .map((Map<String, dynamic> step) => RecipeStep(
+                position: step['position'] as int,
+                text: step['text'] as String,
+              ))
+          .toList()
+        ..sort(
+            (RecipeStep a, RecipeStep b) => a.position.compareTo(b.position)),
+      isMachineGenerated: row['is_machine_generated'] as bool? ?? true,
+      reviewedBy: row['reviewed_by'] as String?,
+      reviewedAt: _toDate(row['reviewed_at']),
     );
 
 /// Both halves of a fraction or neither -- the table's check constraints say

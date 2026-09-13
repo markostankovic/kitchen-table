@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$RecipeDetail {
 
- Recipe get recipe; List<RecipeIngredient> get ingredients; List<RecipeStep> get steps;
+ Recipe get recipe; String get readingLocale; List<RecipeIngredient> get ingredients; List<RecipeStep> get steps; List<RecipeTranslation> get translations;
 /// Create a copy of RecipeDetail
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +30,20 @@ $RecipeDetailCopyWith<RecipeDetail> get copyWith => _$RecipeDetailCopyWithImpl<R
 @override
 bool operator ==(Object other) {
   final _this = this as RecipeDetail;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecipeDetail&&(identical(other.recipe, _this.recipe) || other.recipe == _this.recipe)&&const DeepCollectionEquality().equals(other.ingredients, _this.ingredients)&&const DeepCollectionEquality().equals(other.steps, _this.steps));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecipeDetail&&(identical(other.recipe, _this.recipe) || other.recipe == _this.recipe)&&(identical(other.readingLocale, _this.readingLocale) || other.readingLocale == _this.readingLocale)&&const DeepCollectionEquality().equals(other.ingredients, _this.ingredients)&&const DeepCollectionEquality().equals(other.steps, _this.steps)&&const DeepCollectionEquality().equals(other.translations, _this.translations));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RecipeDetail;
-  return Object.hash(runtimeType,_this.recipe,const DeepCollectionEquality().hash(_this.ingredients),const DeepCollectionEquality().hash(_this.steps));
+  return Object.hash(runtimeType,_this.recipe,_this.readingLocale,const DeepCollectionEquality().hash(_this.ingredients),const DeepCollectionEquality().hash(_this.steps),const DeepCollectionEquality().hash(_this.translations));
 }
 
 @override
 String toString() {
   final _this = this as RecipeDetail;
-  return 'RecipeDetail(recipe: ${_this.recipe}, ingredients: ${_this.ingredients}, steps: ${_this.steps})';
+  return 'RecipeDetail(recipe: ${_this.recipe}, readingLocale: ${_this.readingLocale}, ingredients: ${_this.ingredients}, steps: ${_this.steps}, translations: ${_this.translations})';
 }
 
 
@@ -54,7 +54,7 @@ abstract mixin class $RecipeDetailCopyWith<$Res>  {
   factory $RecipeDetailCopyWith(RecipeDetail value, $Res Function(RecipeDetail) _then) = _$RecipeDetailCopyWithImpl;
 @useResult
 $Res call({
- Recipe recipe, List<RecipeIngredient> ingredients, List<RecipeStep> steps
+ Recipe recipe, String readingLocale, List<RecipeIngredient> ingredients, List<RecipeStep> steps, List<RecipeTranslation> translations
 });
 
 
@@ -71,12 +71,14 @@ class _$RecipeDetailCopyWithImpl<$Res>
 
 /// Create a copy of RecipeDetail
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? recipe = null,Object? ingredients = null,Object? steps = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? recipe = null,Object? readingLocale = null,Object? ingredients = null,Object? steps = null,Object? translations = null,}) {
   return _then(RecipeDetail(
 recipe: null == recipe ? _self.recipe : recipe // ignore: cast_nullable_to_non_nullable
-as Recipe,ingredients: null == ingredients ? _self.ingredients : ingredients // ignore: cast_nullable_to_non_nullable
+as Recipe,readingLocale: null == readingLocale ? _self.readingLocale : readingLocale // ignore: cast_nullable_to_non_nullable
+as String,ingredients: null == ingredients ? _self.ingredients : ingredients // ignore: cast_nullable_to_non_nullable
 as List<RecipeIngredient>,steps: null == steps ? _self.steps : steps // ignore: cast_nullable_to_non_nullable
-as List<RecipeStep>,
+as List<RecipeStep>,translations: null == translations ? _self.translations : translations // ignore: cast_nullable_to_non_nullable
+as List<RecipeTranslation>,
   ));
 }
 /// Create a copy of RecipeDetail
@@ -170,10 +172,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Recipe recipe,  List<RecipeIngredient> ingredients,  List<RecipeStep> steps)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Recipe recipe,  String readingLocale,  List<RecipeIngredient> ingredients,  List<RecipeStep> steps,  List<RecipeTranslation> translations)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RecipeDetail() when $default != null:
-return $default(_that.recipe,_that.ingredients,_that.steps);case _:
+return $default(_that.recipe,_that.readingLocale,_that.ingredients,_that.steps,_that.translations);case _:
   return orElse();
 
 }
@@ -191,10 +193,10 @@ return $default(_that.recipe,_that.ingredients,_that.steps);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Recipe recipe,  List<RecipeIngredient> ingredients,  List<RecipeStep> steps)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Recipe recipe,  String readingLocale,  List<RecipeIngredient> ingredients,  List<RecipeStep> steps,  List<RecipeTranslation> translations)  $default,) {final _that = this;
 switch (_that) {
 case _RecipeDetail():
-return $default(_that.recipe,_that.ingredients,_that.steps);case _:
+return $default(_that.recipe,_that.readingLocale,_that.ingredients,_that.steps,_that.translations);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -211,10 +213,10 @@ return $default(_that.recipe,_that.ingredients,_that.steps);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Recipe recipe,  List<RecipeIngredient> ingredients,  List<RecipeStep> steps)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Recipe recipe,  String readingLocale,  List<RecipeIngredient> ingredients,  List<RecipeStep> steps,  List<RecipeTranslation> translations)?  $default,) {final _that = this;
 switch (_that) {
 case _RecipeDetail() when $default != null:
-return $default(_that.recipe,_that.ingredients,_that.steps);case _:
+return $default(_that.recipe,_that.readingLocale,_that.ingredients,_that.steps,_that.translations);case _:
   return null;
 
 }
@@ -225,11 +227,12 @@ return $default(_that.recipe,_that.ingredients,_that.steps);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _RecipeDetail implements RecipeDetail {
-  const _RecipeDetail({required this.recipe,  List<RecipeIngredient> ingredients = const <RecipeIngredient>[],  List<RecipeStep> steps = const <RecipeStep>[]}): _ingredients = ingredients,_steps = steps;
+class _RecipeDetail extends RecipeDetail {
+  const _RecipeDetail({required this.recipe, required this.readingLocale,  List<RecipeIngredient> ingredients = const <RecipeIngredient>[],  List<RecipeStep> steps = const <RecipeStep>[],  List<RecipeTranslation> translations = const <RecipeTranslation>[]}): _ingredients = ingredients,_steps = steps,_translations = translations,super._();
   factory _RecipeDetail.fromJson(Map<String, dynamic> json) => _$RecipeDetailFromJson(json);
 
 @override final  Recipe recipe;
+@override final  String readingLocale;
  final  List<RecipeIngredient> _ingredients;
 @override@JsonKey() List<RecipeIngredient> get ingredients {
   if (_ingredients is EqualUnmodifiableListView) return _ingredients;
@@ -242,6 +245,13 @@ class _RecipeDetail implements RecipeDetail {
   if (_steps is EqualUnmodifiableListView) return _steps;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_steps);
+}
+
+ final  List<RecipeTranslation> _translations;
+@override@JsonKey() List<RecipeTranslation> get translations {
+  if (_translations is EqualUnmodifiableListView) return _translations;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_translations);
 }
 
 
@@ -258,18 +268,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecipeDetail&&(identical(other.recipe, recipe) || other.recipe == recipe)&&const DeepCollectionEquality().equals(other.ingredients, _ingredients)&&const DeepCollectionEquality().equals(other.steps, _steps));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecipeDetail&&(identical(other.recipe, recipe) || other.recipe == recipe)&&(identical(other.readingLocale, readingLocale) || other.readingLocale == readingLocale)&&const DeepCollectionEquality().equals(other.ingredients, _ingredients)&&const DeepCollectionEquality().equals(other.steps, _steps)&&const DeepCollectionEquality().equals(other.translations, _translations));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,recipe,const DeepCollectionEquality().hash(_ingredients),const DeepCollectionEquality().hash(_steps));
+    return Object.hash(runtimeType,recipe,readingLocale,const DeepCollectionEquality().hash(_ingredients),const DeepCollectionEquality().hash(_steps),const DeepCollectionEquality().hash(_translations));
 }
 
 @override
 String toString() {
-    return 'RecipeDetail(recipe: $recipe, ingredients: $ingredients, steps: $steps)';
+    return 'RecipeDetail(recipe: $recipe, readingLocale: $readingLocale, ingredients: $ingredients, steps: $steps, translations: $translations)';
 }
 
 
@@ -280,7 +290,7 @@ abstract mixin class _$RecipeDetailCopyWith<$Res> implements $RecipeDetailCopyWi
   factory _$RecipeDetailCopyWith(_RecipeDetail value, $Res Function(_RecipeDetail) _then) = __$RecipeDetailCopyWithImpl;
 @override @useResult
 $Res call({
- Recipe recipe, List<RecipeIngredient> ingredients, List<RecipeStep> steps
+ Recipe recipe, String readingLocale, List<RecipeIngredient> ingredients, List<RecipeStep> steps, List<RecipeTranslation> translations
 });
 
 
@@ -297,12 +307,14 @@ class __$RecipeDetailCopyWithImpl<$Res>
 
 /// Create a copy of RecipeDetail
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? recipe = null,Object? ingredients = null,Object? steps = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? recipe = null,Object? readingLocale = null,Object? ingredients = null,Object? steps = null,Object? translations = null,}) {
   return _then(_RecipeDetail(
 recipe: null == recipe ? _self.recipe : recipe // ignore: cast_nullable_to_non_nullable
-as Recipe,ingredients: null == ingredients ? _self._ingredients : ingredients // ignore: cast_nullable_to_non_nullable
+as Recipe,readingLocale: null == readingLocale ? _self.readingLocale : readingLocale // ignore: cast_nullable_to_non_nullable
+as String,ingredients: null == ingredients ? _self._ingredients : ingredients // ignore: cast_nullable_to_non_nullable
 as List<RecipeIngredient>,steps: null == steps ? _self._steps : steps // ignore: cast_nullable_to_non_nullable
-as List<RecipeStep>,
+as List<RecipeStep>,translations: null == translations ? _self._translations : translations // ignore: cast_nullable_to_non_nullable
+as List<RecipeTranslation>,
   ));
 }
 

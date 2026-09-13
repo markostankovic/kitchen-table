@@ -129,8 +129,10 @@ class RecipeRepository {
 
       return RecipeDetail(
         recipe: withImage.single,
+        readingLocale: locale,
         ingredients: resolved,
         steps: steps,
+        translations: recipeTranslationsFromWire(row),
       );
     } on NetworkFailure {
       final Map<String, dynamic>? cached = await _local.readOne(id);
@@ -144,9 +146,26 @@ class RecipeRepository {
         locale,
       );
 
-      return RecipeDetail(recipe: recipe, ingredients: resolved, steps: steps);
+      return RecipeDetail(
+        recipe: recipe,
+        readingLocale: locale,
+        ingredients: resolved,
+        steps: steps,
+        translations: recipeTranslationsFromWire(cached),
+      );
     }
   }
+
+  /// Translates [recipeId]'s title, description and steps into
+  /// [targetLocale] (Phase 3, part 2), and saves the result.
+  ///
+  /// Online-only, like every write in this app (D12): a translation is a
+  /// model call and there is nothing sensible to draft offline. Delegates
+  /// straight to the Edge Function; the caller (the detail screen) is
+  /// responsible for invalidating `recipeDetailProvider` afterwards so the
+  /// next read picks up the new row.
+  Future<void> translate(String recipeId, String targetLocale) =>
+      _remote.translate(recipeId, targetLocale);
 
   /// A single best-available answer from [watchList] -- the fresh network
   /// result when reachable, the cached one otherwise (or a [NetworkFailure]

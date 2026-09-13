@@ -9,6 +9,7 @@ part of 'recipe_detail.dart';
 _RecipeDetail _$RecipeDetailFromJson(Map<String, dynamic> json) =>
     _RecipeDetail(
       recipe: Recipe.fromJson(json['recipe'] as Map<String, dynamic>),
+      readingLocale: json['readingLocale'] as String,
       ingredients:
           (json['ingredients'] as List<dynamic>?)
               ?.map((e) => RecipeIngredient.fromJson(e as Map<String, dynamic>))
@@ -19,11 +20,20 @@ _RecipeDetail _$RecipeDetailFromJson(Map<String, dynamic> json) =>
               ?.map((e) => RecipeStep.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const <RecipeStep>[],
+      translations:
+          (json['translations'] as List<dynamic>?)
+              ?.map(
+                (e) => RecipeTranslation.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <RecipeTranslation>[],
     );
 
 Map<String, dynamic> _$RecipeDetailToJson(_RecipeDetail instance) =>
     <String, dynamic>{
       'recipe': instance.recipe,
+      'readingLocale': instance.readingLocale,
       'ingredients': instance.ingredients,
       'steps': instance.steps,
+      'translations': instance.translations,
     };

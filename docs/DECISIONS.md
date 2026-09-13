@@ -2046,6 +2046,150 @@ forget precisely because the first one just works.
   literally in one commit — a much larger, harder-to-review diff and far
   more test churn than the chrome alone, for no gain the "Done when" needed.
 
+## D78 — `recipe_translations` is a child table that keeps its own lifecycle columns, and a touch trigger hands it to the existing delta fetch
+
+**Decided.** Migration 17. No `household_id`, so D24 governs and rule 4's "no
+hard deletes" does not reach this table: it cascades with its recipe, and a
+soft-deleted recipe's translations are already unreachable. There is
+deliberately no `deleted_at` — a translation is regenerable from the
+original at any time, so removing one is a hard delete, the same call
+`recipe_ingredients` and `recipe_steps` made, and it gets a DELETE policy for
+the same reason. Unlike those two child tables, this one DOES keep
+`created_at` and `updated_at`, with a `set_updated_at` trigger.
+`recipe_translations_touch_recipe()`, on `meal_plan_entries_touch_plan()`'s
+own shape, touches the parent recipe's `updated_at` on every insert, update
+or delete.
+
+**Why the lifecycle columns, when `recipe_steps` has none.** A step has no
+life after it is written; a translation does. Part 3's review flow reads and
+stamps it (`reviewed_by`, `reviewed_at`), and a re-translation overwrites the
+same row in place rather than being deleted and re-inserted — `updated_at`
+is the only signal that a review might now be stale against a newer
+translation underneath it. `docs/DATA_MODEL.md`'s original sketch already
+carried both columns without saying why; this is that reasoning, the same
+correction D49 and D59 each had to write out in prose for their own tables
+when a sketch's shape didn't match either "full rule 4" or "bare child table"
+exactly.
+
+**Why the touch trigger, and not `save_recipe_translation` touching the
+parent by hand the way `replace_recipe_lines` does.** It would have worked,
+but `recipe_translations` has three writers already named in this project —
+`save_recipe_translation` now, part 3's review flow next, and a bare
+`update`/`delete` under RLS is always legal since the four policies are
+ordinary membership checks, not RPC-gated. A trigger is one definition that
+covers all three; a hand-written touch inside one function covers only that
+function. This is the load-bearing piece for offline: `RecipeCache.data`
+stores the whole PostgREST row verbatim, `recipe_translations` rides along
+embedded in it (no new cache table), and the delta fetch's
+`updated_at > watermark` is the only thing that tells a device a translation
+changed at all.
+
+**Rejected.** Giving it no lifecycle columns at all, on `recipe_steps`'
+precedent — would have left nothing for part 3's review flow to read a
+staleness signal from, and nothing for the touch trigger to update. A
+`deleted_at`, on the household-scoped tables' precedent — there is no
+household_id here to make rule 4 apply in the first place, and a translation
+that should go away is regenerated, not tombstoned.
+
+## D79 — `translate-recipe` is synchronous, with no `import_jobs` row
+
+**Decided.** One recipe id and a target locale in; the function reads the
+recipe, calls the model, saves the translation and answers 200 — all inside
+the request, on `match-ingredients`' shape rather than `import-text`'s.
+
+**Why.** `import_jobs` exists because an import is a multi-stage pipeline
+ending in a human confirm screen (D14, D8), and its `kind` is a closed set of
+three with import-shaped input columns (`input_url`/`input_text`/
+`input_storage_path`). A translation is one model call over prose the
+household already owns, with no confirm gate in this part — there is nothing
+for a job row to track between "asked" and "done" that the HTTP response
+itself cannot carry. `match-ingredients` already establishes the shape:
+everything inside the handler, thrown straight out to `withHttp`, a plain
+200.
+
+**Consequence.** Idempotent, and on the recipe's own `original_locale` it
+makes no model call at all — checked before `checkQuota` even runs, the same
+"nothing to do here should never cost a token" property `match-ingredients`
+states for its own fully-matched case.
+
+**Rejected.** A fourth `import_jobs.kind` — would have widened a table whose
+columns are shaped around three input kinds that all have a *source*, for a
+feature whose only input is a recipe id already in the database.
+
+## D80 — What `translate-recipe` asks a model for, and what it never sees
+
+**Decided.** Ingredient lines are never sent to the model and never
+mentioned in its prompt. Serbian output is required to be Latin script only,
+stated as an explicit rule rather than assumed. Every source step is
+translated 1:1 and comes back carrying the SAME position number as its
+source; `_shared/translate.ts`'s `alignSteps` validates the returned
+position multiset against the source's own and refuses — as a billed
+`AiFailure`, not a silent reorder — on any mismatch.
+
+**Why no ingredient lines.** They are never translated per recipe (D1) —
+they render from the bilingual catalog at read time. Sending them to
+`translate-recipe` would invite the model to produce a second, worse answer
+to a question `ingredient_display_name()` already answers exactly, and it
+would be paying for a translation `search_ingredients`/`ingredient_names`
+already gives away for the cost of a join.
+
+**Why Latin script is a stated rule rather than an assumption.** D4 already
+settled Latin-only for storage and display, but nothing about that decision
+constrains what a language model volunteers when simply asked for "Serbian" —
+it will produce fluent Cyrillic on request, and nothing downstream of the
+model call would catch it before it reached `recipe_translations.title`.
+
+**Why position is asked for at all, when D41 says not to ask a model to redo
+work code already does.** D41's argument is about re-deriving a value a
+deterministic pass already computes exactly (a quantity, a unit code, a
+match). Position here is not that: it is an alignment key over prose the
+model itself is producing, and nothing deterministic could supply it instead
+— only the model knows which translated sentence corresponds to which
+source step. Asking for it and validating it is what turns a step the model
+silently merged or dropped into a loud, billed failure instead of a
+translated method quietly missing a line.
+
+**Rejected.** Aligning translated steps to source steps by array order
+instead of an explicit position field — indistinguishable from a merge or a
+drop unless the counts happen to differ, and a model that merges two short
+steps into one produces an array of the "right" apparent shape with the
+wrong content silently attached to the wrong position.
+
+## D81 — The reader's own locale resolves a display name, everywhere, not `'sr'`
+
+**Decided.** `RecipeDetailScreen` now reads `appLocaleProvider` and passes it
+into `recipeDetailProvider`; `ShoppingListEditor.generate()` reads the same
+provider and passes it into both `fetchLinesForRecipes` and
+`ShoppingListRepository.save`'s `locale` argument, which is what
+`shopping_lists.locale` actually stores.
+
+**Why this needed a decision and not just a bug fix.** The bilingual catalog
+(D1) has existed since Phase 1b and has only ever been asked for Serbian —
+`RecipeRepository.fetchDetail`'s `locale` parameter defaulted to `'sr'` and
+nothing in the app had ever passed anything else, and
+`shopping_list_providers.dart` wrote the literal string `'sr'` into
+`shopping_lists.locale` regardless of the household's setting. Neither was
+ever a compile error or a failing test: both are a parameter with a default
+value that happened to be right until Phase 3 part 1 made the app's language
+switchable. D77 (part 1) put the reader's locale one provider away
+(`appLocaleProvider`) precisely so this would be a one-line fix per call
+site rather than a new mechanism.
+
+**Consequence, left alone deliberately.** `RecipeEditor.build`'s
+`fetchDetail(recipeId)` still defaults to `'sr'` — the editor loads the
+recipe's own original text (`recipe.title`, never `displayTitle`), and it
+cannot know which locale to ask for until the very fetch that would tell it
+returns. The visible symptom — an ingredient chip rendering its Serbian name
+while editing an English recipe — is named in `docs/ROADMAP.md` rather than
+silently left for a future session to rediscover. Fixing it properly needs
+either a second round trip or threading the reading locale into the editor
+route, and neither is this part's problem to solve.
+
+**Rejected.** Leaving `shopping_lists.locale` at `'sr'` until a later part —
+the column exists precisely so a list generated in one language does not
+render half-translated after a locale switch (migration 16's own comment),
+and it had been recording a falsehood since the day it shipped.
+
 ## Open / deferred
 
 - **Client vs Edge Function split** — rule of thumb written in

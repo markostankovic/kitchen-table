@@ -229,8 +229,15 @@ class AppDatabase extends _$AppDatabase {
   /// table, on the same "ship it now, there is no irreversibility here"
   /// argument D71 made for the table shapes themselves. Bumped to 3 in part
   /// 6b for [MealPlanWeekCache], on the same argument.
+  ///
+  /// Bumped to 4 in Phase 3 part 2 for a different reason: no new table, but
+  /// [RecipeCache.data]'s own shape changed. A row cached before this part
+  /// has no `recipe_translations` key and its `updated_at` has not moved, so
+  /// the delta fetch would never re-send it -- the first bump this database
+  /// has needed for a change inside the blob rather than a change to a
+  /// table's columns.
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

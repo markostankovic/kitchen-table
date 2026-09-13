@@ -73,4 +73,58 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get newCodeSent => 'Novi kod je poslat.';
+
+  @override
+  String get recipeDetailFallbackTitle => 'Recept';
+
+  @override
+  String get couldNotLoadRecipe => 'Nije moguće učitati ovaj recept.';
+
+  @override
+  String get editTooltip => 'Izmeni';
+
+  @override
+  String get deleteRecipeMenuItem => 'Obriši recept';
+
+  @override
+  String get deleteRecipeDialogTitle => 'Obrisati ovaj recept?';
+
+  @override
+  String get deleteRecipeDialogBody =>
+      'Neće se više pojavljivati u receptima vašeg domaćinstva.';
+
+  @override
+  String get cancelButton => 'Otkaži';
+
+  @override
+  String get deleteButton => 'Obriši';
+
+  @override
+  String get ingredientsHeading => 'Sastojci';
+
+  @override
+  String get stepsHeading => 'Koraci';
+
+  @override
+  String get noIngredientsYet => 'Još nema sastojaka.';
+
+  @override
+  String get noStepsYet => 'Još nema koraka.';
+
+  @override
+  String get draftChipLabel => 'Nacrt';
+
+  @override
+  String get machineTranslationChipLabel => 'Mašinski prevod';
+
+  @override
+  String translateAction(String language) {
+    return 'Prevedi na $language';
+  }
+
+  @override
+  String get languageEnglish => 'engleski';
+
+  @override
+  String get languageSerbian => 'srpski';
 }

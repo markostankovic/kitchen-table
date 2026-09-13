@@ -438,6 +438,15 @@ Note: `recipes` holds the original-language text; `recipe_translations` holds
 every other locale. Ingredient lines are **not** translated per recipe — they
 render from the catalog, which is the whole point of D1.
 
+Shipped exactly as sketched above, in migration 17 (Phase 3, part 2) — the
+no-`deleted_at`-but-`created_at`/`updated_at` shape is a deliberate call
+(D78), not an oversight the sketch happened to get right: it is a D24 child
+table (no `household_id`) that nonetheless keeps lifecycle columns because a
+translation, unlike a step, is reviewed and regenerated in place. A trigger
+touches the parent `recipes.updated_at` on every write here, which is what
+lets a translated recipe reach the existing Drift cache with no new table:
+`RecipeCache.data` stores the whole wire row verbatim, and this embeds in it.
+
 ---
 
 ## Meal planning

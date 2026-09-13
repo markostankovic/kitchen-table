@@ -4,6 +4,7 @@ import '../../../core/db/app_database.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/household/current_household.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
+import '../../../core/l10n/app_locale.dart';
 import '../../../core/net/network_status.dart';
 import '../../../core/recipes/recipe_picker_providers.dart';
 import '../../../core/refresh/data_revision.dart';
@@ -127,10 +128,17 @@ class CurrentShoppingList extends _$CurrentShoppingList {
       to: range.to,
     );
 
+    // The reader's own locale (D81), not a hardcoded 'sr': shopping_lists.locale
+    // exists precisely so a list generated in one language does not render
+    // half-translated after a Phase 3 locale switch (migration 16's own
+    // comment) -- this is the write this app made that promise for.
+    final String locale = ref.read(appLocaleProvider).languageCode;
+
     final List<ShoppingItem> items = await _aggregate(
       entries,
       repository,
       householdId,
+      locale,
     );
 
     // Only point at a plan when the range is exactly one existing week.
@@ -146,7 +154,7 @@ class CurrentShoppingList extends _$CurrentShoppingList {
       mealPlanId: planId,
       dateFrom: range.from,
       dateTo: range.to,
-      locale: 'sr',
+      locale: locale,
       items: items,
     );
 
@@ -202,6 +210,7 @@ class CurrentShoppingList extends _$CurrentShoppingList {
     List<MealPlanEntry> entries,
     ShoppingListRepository repository,
     String householdId,
+    String locale,
   ) async {
     final List<String> recipeIds = entries
         .where((MealPlanEntry e) => !e.isLeftover && e.recipeId != null)
@@ -211,7 +220,7 @@ class CurrentShoppingList extends _$CurrentShoppingList {
 
     final List<RecipeIngredient> lines = await ref
         .read(plannableRecipeSourceProvider)
-        .fetchLinesForRecipes(recipeIds);
+        .fetchLinesForRecipes(recipeIds, locale: locale);
 
     final Map<String, bool> prefs = await repository.fetchPantryPrefs(
       householdId: householdId,

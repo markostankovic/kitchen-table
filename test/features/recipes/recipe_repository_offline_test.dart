@@ -90,6 +90,10 @@ class _FakeRemote implements RemoteRecipeDataSource {
       const <String, String>{};
 
   @override
+  Future<void> translate(String recipeId, String targetLocale) =>
+      throw UnimplementedError();
+
+  @override
   Future<Map<String, dynamic>> create({
     required String householdId,
     required String title,

@@ -181,3 +181,44 @@ export type ModelRecipeT = z.infer<typeof ModelRecipe>;
 export type ParsedRecipeT = z.infer<typeof ParsedRecipe>;
 export type ParsedIngredientLineT = z.infer<typeof ParsedIngredientLine>;
 export type ParsedQuantityT = z.infer<typeof ParsedQuantity>;
+
+// ---------------------------------------------------------------------------
+// ModelTranslation -- translate-recipe's structured-output contract
+// ---------------------------------------------------------------------------
+
+/**
+ * What `translate-recipe` asks a model for (Phase 3, part 2).
+ *
+ * Deliberately narrower than ModelRecipe in one direction and wider in
+ * another. Narrower: there is no `ingredients` field at all. Ingredient
+ * lines are never translated per recipe -- they render from the bilingual
+ * catalog at read time (D1), so sending them would invite the model to
+ * produce a second, worse answer to a question `ingredient_display_name()`
+ * already answers exactly. Wider: `steps` carries `position` back, because
+ * the caller has to know which translated line corresponds to which source
+ * step. That is not asking the model to redo work code already does (D41
+ * forbids that) -- position here is an alignment key over prose the model
+ * itself is producing, not a value `parse_line.ts` or any other
+ * deterministic pass could derive instead. `translate.ts`'s `alignSteps`
+ * validates the returned positions against the source's and throws rather
+ * than silently reordering a method on a mismatch.
+ *
+ * Not exported to Dart by `make types` (`tool/gen_types.ts` emits only
+ * `ParsedRecipe`): the client never decodes this shape directly, it reads
+ * the saved `recipe_translations` row back through PostgREST instead.
+ */
+export const ModelTranslationStep = z.object({
+  position: z.int().nonnegative().describe(
+    "The 0-based position of the SOURCE step this translates, exactly as " +
+      "given in the input. Every source position must appear exactly once.",
+  ),
+  text: z.string().min(1),
+});
+
+export const ModelTranslation = z.object({
+  title: z.string().min(1),
+  description: z.string().nullable().optional(),
+  steps: z.array(ModelTranslationStep),
+}).meta({ title: "ModelTranslation" });
+
+export type ModelTranslationT = z.infer<typeof ModelTranslation>;

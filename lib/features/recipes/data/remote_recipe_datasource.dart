@@ -155,6 +155,29 @@ ingredients(is_pantry_staple, category)''')
     };
   }
 
+  /// Translates [recipeId]'s title, description and steps into
+  /// [targetLocale] through the `translate-recipe` Edge Function (Phase 3,
+  /// part 2), which saves the result itself. Nothing comes back but success
+  /// or a thrown [AppFailure] -- the caller re-reads the recipe afterwards
+  /// (`recipeDetailProvider`'s invalidation) rather than this method
+  /// returning a row, on `ImportRepository`'s own body-camelCase, shape-
+  /// checked convention for calling an Edge Function.
+  Future<void> translate(String recipeId, String targetLocale) =>
+      runGuarded(() async {
+        final FunctionResponse res = await _client.functions.invoke(
+          'translate-recipe',
+          body: <String, dynamic>{
+            'recipeId': recipeId,
+            'targetLocale': targetLocale,
+          },
+        );
+
+        if (res.data is! Map<String, dynamic>) {
+          throw const UnknownFailure(
+              message: 'The server sent an unexpected reply.');
+        }
+      });
+
   /// Creates a recipe and returns the row that was written.
   ///
   /// Unlike `create_household`, this is a plain insert: `recipes` has an

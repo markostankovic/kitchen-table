@@ -175,6 +175,7 @@ void main() {
     test('fromDetail carries the recipe and its children', () {
       final RecipeDetail detail = RecipeDetail(
         recipe: _torta,
+        readingLocale: 'sr',
         ingredients: const <RecipeIngredient>[
           RecipeIngredient(
             position: 0,
@@ -204,7 +205,7 @@ void main() {
 
     test('toRecipe folds the edits onto the row without losing its owner', () {
       final RecipeDraft draft = RecipeDraft.fromDetail(
-        const RecipeDetail(recipe: _torta),
+        const RecipeDetail(recipe: _torta, readingLocale: 'sr'),
       ).copyWith(title: 'Torta od šargarepe', servings: 12);
 
       final Recipe updated = draft.toRecipe();
@@ -236,7 +237,8 @@ void main() {
       final Recipe withPhoto =
           _torta.copyWith(imagePath: 'h1/123.jpg', imageUrl: 'https://x/1');
       final RecipeDraft draft =
-          RecipeDraft.fromDetail(RecipeDetail(recipe: withPhoto));
+          RecipeDraft.fromDetail(
+              RecipeDetail(recipe: withPhoto, readingLocale: 'sr'));
 
       expect(draft.imagePath, 'h1/123.jpg');
 
@@ -248,7 +250,7 @@ void main() {
         'must actually reach the wire', () {
       final Recipe withPhoto = _torta.copyWith(imagePath: 'h1/123.jpg');
       final RecipeDraft draft = RecipeDraft.fromDetail(
-        RecipeDetail(recipe: withPhoto),
+        RecipeDetail(recipe: withPhoto, readingLocale: 'sr'),
       ).copyWith(imagePath: null);
 
       final Recipe updated = draft.toRecipe();
