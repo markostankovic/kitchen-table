@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/error/failure_l10n.dart';
 import '../../../core/ingredients/widgets/ingredient_line_field.dart';
+import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../../recipes/domain/recipe_draft.dart';
 import '../application/import_confirm.dart';
@@ -27,6 +29,7 @@ class ImportReviewScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<ImportJob> job = ref.watch(importJobProvider(jobId));
 
     return Scaffold(
@@ -35,12 +38,16 @@ class ImportReviewScreen extends ConsumerWidget {
         loading: () => const _Waiting(status: null),
         error: (Object e, _) => _Failed(
           jobId: jobId,
-          message: e is AppFailure ? e.message : 'Could not load that import.',
+          message: localizedErrorMessage(e, l10n),
         ),
         data: (ImportJob value) => switch (value.status) {
           ImportJobStatus.failed => _Failed(
               jobId: jobId,
-              message: value.errorMessage ?? 'That import could not be read.',
+              // The server's own sentence, persisted in import_jobs so a job
+              // can still say why days later -- l10n.failureImportUnreadable
+              // reads the same ARB key the degenerate path of this job's own
+              // throw site (import_confirm.dart) falls back to.
+              message: value.errorMessage ?? l10n.failureImportUnreadable,
             ),
           // A job already saved. Reachable by pressing Back onto a finished
           // review, and better answered than crashed on.
@@ -108,8 +115,9 @@ class _FailedState extends ConsumerState<_Failed> {
       const RecipesRoute().go(context);
     } on AppFailure catch (e) {
       if (!mounted) return;
+      final AppLocalizations l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
       setState(() => _dismissing = false);
     }
   }
@@ -180,7 +188,7 @@ class _ReviewBody extends ConsumerStatefulWidget {
 
 class _ReviewBodyState extends ConsumerState<_ReviewBody> {
   bool _saving = false;
-  String? _error;
+  AppFailure? _failure;
 
   ImportConfirm get _confirm =>
       ref.read(importConfirmProvider(widget.jobId).notifier);
@@ -188,7 +196,7 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
   Future<void> _submit() async {
     setState(() {
       _saving = true;
-      _error = null;
+      _failure = null;
     });
 
     try {
@@ -197,7 +205,7 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
       RecipeDetailRoute(recipeId).go(context);
     } on AppFailure catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message);
+      setState(() => _failure = e);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -205,6 +213,7 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<ImportReview> review =
         ref.watch(importConfirmProvider(widget.jobId));
 
@@ -214,7 +223,7 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            e is AppFailure ? e.message : 'Could not read that import.\n\n$e',
+            localizedErrorMessage(e, l10n),
             textAlign: TextAlign.center,
           ),
         ),
@@ -222,7 +231,7 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
       data: (ImportReview value) => Column(
         children: <Widget>[
           Expanded(child: _buildForm(value.draft, value.needsAttention)),
-          _buildSaveBar(context),
+          _buildSaveBar(l10n),
         ],
       ),
     );
@@ -318,7 +327,7 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
     );
   }
 
-  Widget _buildSaveBar(BuildContext context) {
+  Widget _buildSaveBar(AppLocalizations l10n) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -326,9 +335,9 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (_error != null) ...<Widget>[
+            if (_failure != null) ...<Widget>[
               Text(
-                _error!,
+                _failure!.localized(l10n),
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               const SizedBox(height: 8),

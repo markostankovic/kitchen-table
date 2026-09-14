@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/ingredients/ingredient_catalog_providers.dart';
+import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/features/import/application/import_providers.dart';
 import 'package:kitchen_table/features/import/domain/import_job.dart';
 import 'package:kitchen_table/features/import/domain/parsed_recipe.dart';
@@ -88,7 +89,11 @@ Future<void> _pump(
               const <IngredientMatch>[],
         ),
       ],
-      child: const MaterialApp(home: ImportReviewScreen(jobId: _jobId)),
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ImportReviewScreen(jobId: _jobId),
+      ),
     ),
   );
   if (settle) {

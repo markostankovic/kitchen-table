@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/error/failure_l10n.dart';
+import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../application/import_providers.dart';
 
@@ -27,7 +29,11 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
   String? _contentType;
 
   bool _busy = false;
-  String? _error;
+
+  /// Either an already-localized string -- image_picker's own platform
+  /// exception, outside the [FailureCode] mechanism entirely -- or an
+  /// [AppFailure], localized lazily in [build].
+  Object? _error;
 
   /// Downscaled at the picker, not after.
   ///
@@ -64,9 +70,10 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
         _extension = 'jpg';
         _contentType = 'image/jpeg';
       });
-    } on Exception catch (e) {
+    } on Exception catch (_) {
       if (!mounted) return;
-      setState(() => _error = 'That photo could not be opened. ($e)');
+      setState(
+          () => _error = AppLocalizations.of(context).photoCouldNotBeOpened);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -96,7 +103,7 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
       ImportReviewRoute(jobId).go(context);
     } on AppFailure catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message);
+      setState(() => _error = e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -104,6 +111,7 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final Uint8List? bytes = _bytes;
 
     return Scaffold(
@@ -157,7 +165,7 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
             children: <Widget>[
               if (_error != null) ...<Widget>[
                 Text(
-                  _error!,
+                  _errorText(l10n),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
                 const SizedBox(height: 8),
@@ -177,5 +185,12 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
         ),
       ),
     );
+  }
+
+  /// [_error] is either a plain, already-localized string or an [AppFailure]
+  /// to localize lazily -- see its own doc comment.
+  String _errorText(AppLocalizations l10n) {
+    final Object error = _error!;
+    return error is AppFailure ? error.localized(l10n) : error as String;
   }
 }

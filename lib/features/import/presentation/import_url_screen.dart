@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/error/failure_l10n.dart';
+import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../application/import_providers.dart';
 
@@ -26,7 +28,7 @@ class _ImportUrlScreenState extends ConsumerState<ImportUrlScreen> {
       TextEditingController(text: widget.initialUrl ?? '');
 
   bool _submitting = false;
-  String? _error;
+  AppFailure? _failure;
 
   @override
   void dispose() {
@@ -37,7 +39,7 @@ class _ImportUrlScreenState extends ConsumerState<ImportUrlScreen> {
   Future<void> _submit() async {
     setState(() {
       _submitting = true;
-      _error = null;
+      _failure = null;
     });
 
     try {
@@ -47,7 +49,7 @@ class _ImportUrlScreenState extends ConsumerState<ImportUrlScreen> {
       ImportReviewRoute(jobId).go(context);
     } on AppFailure catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message);
+      setState(() => _failure = e);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -55,6 +57,7 @@ class _ImportUrlScreenState extends ConsumerState<ImportUrlScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Import from a link')),
       body: ListView(
@@ -89,9 +92,9 @@ class _ImportUrlScreenState extends ConsumerState<ImportUrlScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              if (_error != null) ...<Widget>[
+              if (_failure != null) ...<Widget>[
                 Text(
-                  _error!,
+                  _failure!.localized(l10n),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
                 const SizedBox(height: 8),
