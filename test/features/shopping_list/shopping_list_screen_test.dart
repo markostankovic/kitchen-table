@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
 import 'package:kitchen_table/core/ingredients/ingredient_catalog_providers.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
+import 'package:kitchen_table/core/l10n/generated/app_localizations_en.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit_catalog.dart';
 import 'package:kitchen_table/features/shopping_list/application/shopping_list_providers.dart';
@@ -164,13 +165,15 @@ void main() {
   });
 
   testWidgets('a failure to generate is shown, not swallowed', (tester) async {
-    await _pump(tester,
-        failure: const NetworkFailure(message: 'You appear to be offline.'));
+    // A bare NetworkFailure, not a custom message: D92's failure vocabulary
+    // renders from the variant's default FailureCode, not from `message`
+    // (which is the log-line/server-prose fallback for a null code).
+    await _pump(tester, failure: const NetworkFailure());
 
     await tester.tap(find.text('Generate list'));
     await tester.pumpAndSettle();
 
-    expect(find.text('You appear to be offline.'), findsOneWidget);
+    expect(find.text(AppLocalizationsEn().failureOffline), findsOneWidget);
   });
 
   testWidgets('renders an item with its summed quantity', (tester) async {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/error/failure_l10n.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/net/network_status.dart';
@@ -31,13 +32,14 @@ class ShoppingListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<ShoppingList?> list = ref.watch(
       currentShoppingListProvider,
     );
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).navList),
+        title: Text(l10n.navList),
         actions: <Widget>[
           if (list.value != null)
             IconButton(
@@ -57,7 +59,7 @@ class ShoppingListScreen extends ConsumerWidget {
               error: (Object e, _) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Text(e is AppFailure ? e.message : e.toString()),
+                  child: Text(localizedErrorMessage(e, l10n)),
                 ),
               ),
               data: (ShoppingList? current) => RefreshIndicator(
@@ -82,8 +84,9 @@ Future<void> _generate(BuildContext context, WidgetRef ref) async {
     await ref.read(currentShoppingListProvider.notifier).generate();
   } on AppFailure catch (e) {
     if (!context.mounted) return;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(e.message)));
+        .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
   }
 }
 
@@ -377,8 +380,9 @@ class _ItemTile extends ConsumerWidget {
           );
     } on AppFailure catch (e) {
       if (!context.mounted) return;
+      final AppLocalizations l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
       return;
     }
 
