@@ -350,5 +350,180 @@
   "photoCouldNotBeOpened": "Tu fotografiju nije moguće otvoriti.",
   "@photoCouldNotBeOpened": {
     "description": "Failure vocabulary (D92) -- image_picker's own PlatformException, outside the FailureCode mechanism since it never becomes an AppFailure."
+  },
+
+  "offlineBannerMessage": "Nema veze -- prikazane su sačuvane kopije. Izmene se neće sačuvati.",
+  "@offlineBannerMessage": {
+    "description": "OfflineBanner, rendered above every tab's body while Reachability.offline (D76)."
+  },
+
+  "recipeServingsCount": "{count, plural, one{{count} porcija} few{{count} porcije} other{{count} porcija}}",
+  "@recipeServingsCount": {
+    "description": "Recipe detail and list screens, the meta line's servings count. This repo's first ICU plural -- Serbian needs one/few/other, which English's plain 's' suffix does not reach.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recipePrepMinutes": "{minutes} min priprema",
+  "@recipePrepMinutes": {
+    "description": "Recipe detail and list screens, the meta line's prep-time minutes. Plain int, not a plural -- 'min' is a unit abbreviation and does not decline.",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "recipeCookMinutes": "{minutes} min kuvanja",
+  "@recipeCookMinutes": {
+    "description": "Recipe detail and list screens, the meta line's cook-time minutes.",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "ingredientOptionalTrailer": "opciono",
+  "@ingredientOptionalTrailer": {
+    "description": "Recipe detail screen, shown after an ingredient line when it is marked optional and has no note of its own."
+  },
+  "ingredientNotMatchedTooltip": "Nije povezano sa sastojkom",
+  "@ingredientNotMatchedTooltip": {
+    "description": "Recipe detail screen, the icon tooltip on an ingredient line the catalog did not match."
+  },
+
+  "snackSlotCount": "{count, plural, one{{count} obroku} few{{count} obroka} other{{count} obroka}}",
+  "@snackSlotCount": {
+    "description": "Meal plan screen (part 6), the repeat-warning dialog's count of snack slots already holding this recipe. Added here alongside the other plurals so the vocabulary is complete before that screen's own part localizes the sentence around it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ingredientsMatchedCount": "{count, plural, one{{count} sastojak} few{{count} sastojka} other{{count} sastojaka}}",
+  "@ingredientsMatchedCount": {
+    "description": "Import review screen (part 5), the summary card's count of matched ingredient lines. Added here for the same reason as snackSlotCount.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "addRecipeTooltip": "Dodaj recept",
+  "@addRecipeTooltip": {
+    "description": "Recipe list screen, the FAB's tooltip."
+  },
+  "newRecipeMenuItem": "Novi recept",
+  "@newRecipeMenuItem": {
+    "description": "Recipe list screen, the FAB menu's manual-entry item."
+  },
+  "importFromLinkMenuItem": "Uvezi sa linka",
+  "@importFromLinkMenuItem": {
+    "description": "Recipe list screen, the FAB menu's import-from-URL item."
+  },
+  "pasteRecipeMenuItem": "Nalepi recept",
+  "@pasteRecipeMenuItem": {
+    "description": "Recipe list screen, the FAB menu's paste-text item."
+  },
+  "photographPageMenuItem": "Fotografiši stranicu",
+  "@photographPageMenuItem": {
+    "description": "Recipe list screen, the FAB menu's photo-import item."
+  },
+  "searchRecipesHint": "Pretraži recepte",
+  "@searchRecipesHint": {
+    "description": "Recipe list screen's search field, and the recipe picker sheet's own (core/recipes/widgets/recipe_picker_sheet.dart) -- one key, since both search the same recipes by the same concept."
+  },
+  "noRecipesMatch": "Nema recepata koji se poklapaju.",
+  "@noRecipesMatch": {
+    "description": "Recipe list screen, the empty state while a search query matches nothing."
+  },
+  "noRecipesYet": "Još nema recepata.\n\nDodajte jedan koji znate napamet.",
+  "@noRecipesYet": {
+    "description": "Recipe list screen, the empty state with no search in progress."
+  },
+
+  "newRecipeTitle": "Novi recept",
+  "@newRecipeTitle": {
+    "description": "Recipe edit screen, the AppBar title for a recipe that does not exist yet."
+  },
+  "editRecipeTitle": "Izmena recepta",
+  "@editRecipeTitle": {
+    "description": "Recipe edit screen, the AppBar title for an existing recipe."
+  },
+  "servingsFieldLabel": "Porcije",
+  "@servingsFieldLabel": {
+    "description": "Recipe edit screen, the servings number field's label -- distinct from recipeServingsCount, which is the read-only display elsewhere."
+  },
+  "prepMinutesFieldLabel": "Priprema (min)",
+  "@prepMinutesFieldLabel": {
+    "description": "Recipe edit screen, the prep-time number field's label."
+  },
+  "cookMinutesFieldLabel": "Kuvanje (min)",
+  "@cookMinutesFieldLabel": {
+    "description": "Recipe edit screen, the cook-time number field's label."
+  },
+  "writtenInFieldLabel": "Napisano na",
+  "@writtenInFieldLabel": {
+    "description": "Recipe edit screen, the label above the Srpski/English segmented button -- the language names themselves stay untranslated (D77)."
+  },
+  "statusFieldLabel": "Status",
+  "@statusFieldLabel": {
+    "description": "Recipe edit screen, the label above the Draft/Tested segmented button."
+  },
+  "testedStatusLabel": "Isprobano",
+  "@testedStatusLabel": {
+    "description": "Recipe edit screen, the status segmented button's tested option -- draftChipLabel is its Draft counterpart, shared with the chip elsewhere since both name the same status."
+  },
+  "tagsFieldLabel": "Oznake",
+  "@tagsFieldLabel": {
+    "description": "Recipe edit screen, the tags field's label."
+  },
+  "tagsHelperText": "Odvojene zarezima",
+  "@tagsHelperText": {
+    "description": "Recipe edit screen, the tags field's helper text."
+  },
+  "addIngredientButton": "Dodaj sastojak",
+  "@addIngredientButton": {
+    "description": "Recipe edit and import review screens, the button that appends a blank ingredient line."
+  },
+  "addStepButton": "Dodaj korak",
+  "@addStepButton": {
+    "description": "Recipe edit and import review screens, the button that appends a blank step."
+  },
+  "saveButton": "Sačuvaj",
+  "@saveButton": {
+    "description": "Recipe edit screen, the save button -- distinct from saveReviewButton, which also stamps a review."
+  },
+  "cameraButton": "Kamera",
+  "@cameraButton": {
+    "description": "Recipe edit screen, the photo field's camera button."
+  },
+  "galleryButton": "Galerija",
+  "@galleryButton": {
+    "description": "Recipe edit screen, the photo field's gallery-picker button."
+  },
+  "removePhotoTooltip": "Ukloni fotografiju",
+  "@removePhotoTooltip": {
+    "description": "Recipe edit screen, the photo field's remove-photo icon button."
+  },
+  "removeTooltip": "Ukloni",
+  "@removeTooltip": {
+    "description": "Recipe edit and import review screens, the tooltip on the icon that removes one ingredient or step row."
+  },
+  "wholeNumberError": "Ceo broj.",
+  "@wholeNumberError": {
+    "description": "Recipe edit screen, the servings/prep/cook number fields' validator error when the value does not parse as an integer."
+  },
+  "atLeastError": "Najmanje {minimum}.",
+  "@atLeastError": {
+    "description": "Recipe edit screen, the servings/prep/cook number fields' validator error when the value is below the column's minimum.",
+    "placeholders": {
+      "minimum": {
+        "type": "int"
+      }
+    }
   }
 }

@@ -234,19 +234,19 @@ void main() {
   group('offline banner', () {
     testWidgets('renders on Reachability.offline', (WidgetTester tester) async {
       await pumpApp(tester, networkStatus: Reachability.offline);
-      expect(find.textContaining("You're offline"), findsOneWidget);
+      expect(find.text(sr.offlineBannerMessage), findsOneWidget);
     });
 
     testWidgets('renders nothing on Reachability.unknown (the default -- no '
         'read has completed yet)', (WidgetTester tester) async {
       await pumpApp(tester);
-      expect(find.textContaining("You're offline"), findsNothing);
+      expect(find.text(sr.offlineBannerMessage), findsNothing);
     });
 
     testWidgets('renders nothing on Reachability.online',
         (WidgetTester tester) async {
       await pumpApp(tester, networkStatus: Reachability.online);
-      expect(find.textContaining("You're offline"), findsNothing);
+      expect(find.text(sr.offlineBannerMessage), findsNothing);
     });
 
     testWidgets('stays visible across a tab switch',
@@ -259,7 +259,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining("You're offline"), findsOneWidget);
+      expect(find.text(sr.offlineBannerMessage), findsOneWidget);
     });
   });
 

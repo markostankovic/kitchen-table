@@ -63,29 +63,29 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
             FloatingActionButton(
           onPressed: () =>
               controller.isOpen ? controller.close() : controller.open(),
-          tooltip: 'Add a recipe',
+          tooltip: l10n.addRecipeTooltip,
           child: const Icon(Icons.add),
         ),
         menuChildren: <Widget>[
           MenuItemButton(
             leadingIcon: const Icon(Icons.edit_outlined),
             onPressed: () => const RecipeNewRoute().go(context),
-            child: const Text('New recipe'),
+            child: Text(l10n.newRecipeMenuItem),
           ),
           MenuItemButton(
             leadingIcon: const Icon(Icons.link_outlined),
             onPressed: () => const ImportUrlRoute().go(context),
-            child: const Text('Import from a link'),
+            child: Text(l10n.importFromLinkMenuItem),
           ),
           MenuItemButton(
             leadingIcon: const Icon(Icons.content_paste_outlined),
             onPressed: () => const ImportPasteRoute().go(context),
-            child: const Text('Paste a recipe'),
+            child: Text(l10n.pasteRecipeMenuItem),
           ),
           MenuItemButton(
             leadingIcon: const Icon(Icons.photo_camera_outlined),
             onPressed: () => const ImportPhotoRoute().go(context),
-            child: const Text('Photograph a page'),
+            child: Text(l10n.photographPageMenuItem),
           ),
         ],
       ),
@@ -98,7 +98,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
               onChanged: _onQueryChanged,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Search recipes',
+                hintText: l10n.searchRecipesHint,
                 prefixIcon: const Icon(Icons.search),
                 border: const OutlineInputBorder(),
                 suffixIcon: _search.text.isEmpty
@@ -124,7 +124,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
                 ),
               ),
               data: (List<Recipe> items) => items.isEmpty
-                  ? _EmptyState(searching: _query.isNotEmpty)
+                  ? _EmptyState(searching: _query.isNotEmpty, l10n: l10n)
                   : RefreshIndicator(
                       onRefresh: () async =>
                           ref.invalidate(recipeListProvider(query: _query)),
@@ -132,7 +132,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
                         itemCount: items.length,
                         separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (BuildContext context, int i) =>
-                            _RecipeTile(recipe: items[i]),
+                            _RecipeTile(recipe: items[i], l10n: l10n),
                       ),
                     ),
             ),
@@ -144,16 +144,19 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
 }
 
 class _RecipeTile extends StatelessWidget {
-  const _RecipeTile({required this.recipe});
+  const _RecipeTile({required this.recipe, required this.l10n});
 
   final Recipe recipe;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
     final List<String> meta = <String>[
-      if (recipe.servings != null) '${recipe.servings} servings',
-      if (recipe.prepMinutes != null) '${recipe.prepMinutes} min prep',
-      if (recipe.cookMinutes != null) '${recipe.cookMinutes} min cook',
+      if (recipe.servings != null) l10n.recipeServingsCount(recipe.servings!),
+      if (recipe.prepMinutes != null)
+        l10n.recipePrepMinutes(recipe.prepMinutes!),
+      if (recipe.cookMinutes != null)
+        l10n.recipeCookMinutes(recipe.cookMinutes!),
     ];
 
     return ListTile(
@@ -176,7 +179,7 @@ class _RecipeTile extends StatelessWidget {
       // A draft is a recipe nobody has vouched for yet -- the standing rule
       // that keeps AI-produced recipes marked applies to hand-entered ones too.
       trailing: recipe.status == RecipeStatus.draft
-          ? const Chip(label: Text('Draft'))
+          ? Chip(label: Text(l10n.draftChipLabel))
           : null,
       onTap: () => RecipeDetailRoute(recipe.id).go(context),
     );
@@ -184,18 +187,17 @@ class _RecipeTile extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.searching});
+  const _EmptyState({required this.searching, required this.l10n});
 
   final bool searching;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) => Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Text(
-            searching
-                ? 'No recipes match that.'
-                : 'No recipes yet.\n\nAdd one you know by heart.',
+            searching ? l10n.noRecipesMatch : l10n.noRecipesYet,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge,
           ),

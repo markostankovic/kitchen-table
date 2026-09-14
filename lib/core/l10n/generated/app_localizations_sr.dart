@@ -269,4 +269,144 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get photoCouldNotBeOpened => 'Tu fotografiju nije moguće otvoriti.';
+
+  @override
+  String get offlineBannerMessage =>
+      'Nema veze -- prikazane su sačuvane kopije. Izmene se neće sačuvati.';
+
+  @override
+  String recipeServingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count porcija',
+      few: '$count porcije',
+      one: '$count porcija',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String recipePrepMinutes(int minutes) {
+    return '$minutes min priprema';
+  }
+
+  @override
+  String recipeCookMinutes(int minutes) {
+    return '$minutes min kuvanja';
+  }
+
+  @override
+  String get ingredientOptionalTrailer => 'opciono';
+
+  @override
+  String get ingredientNotMatchedTooltip => 'Nije povezano sa sastojkom';
+
+  @override
+  String snackSlotCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count obroka',
+      few: '$count obroka',
+      one: '$count obroku',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String ingredientsMatchedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sastojaka',
+      few: '$count sastojka',
+      one: '$count sastojak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addRecipeTooltip => 'Dodaj recept';
+
+  @override
+  String get newRecipeMenuItem => 'Novi recept';
+
+  @override
+  String get importFromLinkMenuItem => 'Uvezi sa linka';
+
+  @override
+  String get pasteRecipeMenuItem => 'Nalepi recept';
+
+  @override
+  String get photographPageMenuItem => 'Fotografiši stranicu';
+
+  @override
+  String get searchRecipesHint => 'Pretraži recepte';
+
+  @override
+  String get noRecipesMatch => 'Nema recepata koji se poklapaju.';
+
+  @override
+  String get noRecipesYet =>
+      'Još nema recepata.\n\nDodajte jedan koji znate napamet.';
+
+  @override
+  String get newRecipeTitle => 'Novi recept';
+
+  @override
+  String get editRecipeTitle => 'Izmena recepta';
+
+  @override
+  String get servingsFieldLabel => 'Porcije';
+
+  @override
+  String get prepMinutesFieldLabel => 'Priprema (min)';
+
+  @override
+  String get cookMinutesFieldLabel => 'Kuvanje (min)';
+
+  @override
+  String get writtenInFieldLabel => 'Napisano na';
+
+  @override
+  String get statusFieldLabel => 'Status';
+
+  @override
+  String get testedStatusLabel => 'Isprobano';
+
+  @override
+  String get tagsFieldLabel => 'Oznake';
+
+  @override
+  String get tagsHelperText => 'Odvojene zarezima';
+
+  @override
+  String get addIngredientButton => 'Dodaj sastojak';
+
+  @override
+  String get addStepButton => 'Dodaj korak';
+
+  @override
+  String get saveButton => 'Sačuvaj';
+
+  @override
+  String get cameraButton => 'Kamera';
+
+  @override
+  String get galleryButton => 'Galerija';
+
+  @override
+  String get removePhotoTooltip => 'Ukloni fotografiju';
+
+  @override
+  String get removeTooltip => 'Ukloni';
+
+  @override
+  String get wholeNumberError => 'Ceo broj.';
+
+  @override
+  String atLeastError(int minimum) {
+    return 'Najmanje $minimum.';
+  }
 }

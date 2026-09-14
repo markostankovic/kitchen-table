@@ -203,9 +203,11 @@ class _Body extends ConsumerWidget {
         ref.watch(unitCatalogProvider).value ?? UnitCatalog.empty();
 
     final List<String> meta = <String>[
-      if (recipe.servings != null) '${recipe.servings} servings',
-      if (recipe.prepMinutes != null) '${recipe.prepMinutes} min prep',
-      if (recipe.cookMinutes != null) '${recipe.cookMinutes} min cook',
+      if (recipe.servings != null) l10n.recipeServingsCount(recipe.servings!),
+      if (recipe.prepMinutes != null)
+        l10n.recipePrepMinutes(recipe.prepMinutes!),
+      if (recipe.cookMinutes != null)
+        l10n.recipeCookMinutes(recipe.cookMinutes!),
     ];
 
     return ListView(
@@ -294,6 +296,7 @@ class _Body extends ConsumerWidget {
               line: line,
               units: units,
               locale: detail.readingLocale,
+              l10n: l10n,
             ),
           ),
         const SizedBox(height: 24),
@@ -329,6 +332,7 @@ class _IngredientRow extends StatelessWidget {
     required this.line,
     required this.units,
     required this.locale,
+    required this.l10n,
   });
 
   final RecipeIngredient line;
@@ -338,6 +342,8 @@ class _IngredientRow extends StatelessWidget {
   /// method reading in one language beside a unit spelled in another would
   /// be the same bug D81 fixed for the display name, one column over.
   final String locale;
+
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -353,7 +359,7 @@ class _IngredientRow extends StatelessWidget {
 
     final String trailer = <String>[
       if (line.note != null) line.note!,
-      if (line.isOptional && line.note == null) 'optional',
+      if (line.isOptional && line.note == null) l10n.ingredientOptionalTrailer,
     ].join(', ');
 
     return Padding(
@@ -380,7 +386,7 @@ class _IngredientRow extends StatelessWidget {
           ),
           if (!line.isMatched)
             Tooltip(
-              message: 'Not matched to an ingredient',
+              message: l10n.ingredientNotMatchedTooltip,
               child: Icon(Icons.help_outline,
                   size: 18, color: Theme.of(context).colorScheme.outline),
             ),

@@ -268,4 +268,140 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get photoCouldNotBeOpened => 'That photo could not be opened.';
+
+  @override
+  String get offlineBannerMessage =>
+      'You\'re offline — showing saved copies. Changes won\'t save.';
+
+  @override
+  String recipeServingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count servings',
+      one: '$count serving',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String recipePrepMinutes(int minutes) {
+    return '$minutes min prep';
+  }
+
+  @override
+  String recipeCookMinutes(int minutes) {
+    return '$minutes min cook';
+  }
+
+  @override
+  String get ingredientOptionalTrailer => 'optional';
+
+  @override
+  String get ingredientNotMatchedTooltip => 'Not matched to an ingredient';
+
+  @override
+  String snackSlotCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count snack slots',
+      one: '$count snack slot',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String ingredientsMatchedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ingredients',
+      one: '$count ingredient',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addRecipeTooltip => 'Add a recipe';
+
+  @override
+  String get newRecipeMenuItem => 'New recipe';
+
+  @override
+  String get importFromLinkMenuItem => 'Import from a link';
+
+  @override
+  String get pasteRecipeMenuItem => 'Paste a recipe';
+
+  @override
+  String get photographPageMenuItem => 'Photograph a page';
+
+  @override
+  String get searchRecipesHint => 'Search recipes';
+
+  @override
+  String get noRecipesMatch => 'No recipes match that.';
+
+  @override
+  String get noRecipesYet => 'No recipes yet.\n\nAdd one you know by heart.';
+
+  @override
+  String get newRecipeTitle => 'New recipe';
+
+  @override
+  String get editRecipeTitle => 'Edit recipe';
+
+  @override
+  String get servingsFieldLabel => 'Servings';
+
+  @override
+  String get prepMinutesFieldLabel => 'Prep (min)';
+
+  @override
+  String get cookMinutesFieldLabel => 'Cook (min)';
+
+  @override
+  String get writtenInFieldLabel => 'Written in';
+
+  @override
+  String get statusFieldLabel => 'Status';
+
+  @override
+  String get testedStatusLabel => 'Tested';
+
+  @override
+  String get tagsFieldLabel => 'Tags';
+
+  @override
+  String get tagsHelperText => 'Separated by commas';
+
+  @override
+  String get addIngredientButton => 'Add ingredient';
+
+  @override
+  String get addStepButton => 'Add step';
+
+  @override
+  String get saveButton => 'Save';
+
+  @override
+  String get cameraButton => 'Camera';
+
+  @override
+  String get galleryButton => 'Gallery';
+
+  @override
+  String get removePhotoTooltip => 'Remove photo';
+
+  @override
+  String get removeTooltip => 'Remove';
+
+  @override
+  String get wholeNumberError => 'Whole number.';
+
+  @override
+  String atLeastError(int minimum) {
+    return 'At least $minimum.';
+  }
 }

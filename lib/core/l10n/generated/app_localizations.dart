@@ -583,6 +583,216 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Tu fotografiju nije moguće otvoriti.'**
   String get photoCouldNotBeOpened;
+
+  /// OfflineBanner, rendered above every tab's body while Reachability.offline (D76).
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema veze -- prikazane su sačuvane kopije. Izmene se neće sačuvati.'**
+  String get offlineBannerMessage;
+
+  /// Recipe detail and list screens, the meta line's servings count. This repo's first ICU plural -- Serbian needs one/few/other, which English's plain 's' suffix does not reach.
+  ///
+  /// In sr, this message translates to:
+  /// **'{count, plural, one{{count} porcija} few{{count} porcije} other{{count} porcija}}'**
+  String recipeServingsCount(int count);
+
+  /// Recipe detail and list screens, the meta line's prep-time minutes. Plain int, not a plural -- 'min' is a unit abbreviation and does not decline.
+  ///
+  /// In sr, this message translates to:
+  /// **'{minutes} min priprema'**
+  String recipePrepMinutes(int minutes);
+
+  /// Recipe detail and list screens, the meta line's cook-time minutes.
+  ///
+  /// In sr, this message translates to:
+  /// **'{minutes} min kuvanja'**
+  String recipeCookMinutes(int minutes);
+
+  /// Recipe detail screen, shown after an ingredient line when it is marked optional and has no note of its own.
+  ///
+  /// In sr, this message translates to:
+  /// **'opciono'**
+  String get ingredientOptionalTrailer;
+
+  /// Recipe detail screen, the icon tooltip on an ingredient line the catalog did not match.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nije povezano sa sastojkom'**
+  String get ingredientNotMatchedTooltip;
+
+  /// Meal plan screen (part 6), the repeat-warning dialog's count of snack slots already holding this recipe. Added here alongside the other plurals so the vocabulary is complete before that screen's own part localizes the sentence around it.
+  ///
+  /// In sr, this message translates to:
+  /// **'{count, plural, one{{count} obroku} few{{count} obroka} other{{count} obroka}}'**
+  String snackSlotCount(int count);
+
+  /// Import review screen (part 5), the summary card's count of matched ingredient lines. Added here for the same reason as snackSlotCount.
+  ///
+  /// In sr, this message translates to:
+  /// **'{count, plural, one{{count} sastojak} few{{count} sastojka} other{{count} sastojaka}}'**
+  String ingredientsMatchedCount(int count);
+
+  /// Recipe list screen, the FAB's tooltip.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaj recept'**
+  String get addRecipeTooltip;
+
+  /// Recipe list screen, the FAB menu's manual-entry item.
+  ///
+  /// In sr, this message translates to:
+  /// **'Novi recept'**
+  String get newRecipeMenuItem;
+
+  /// Recipe list screen, the FAB menu's import-from-URL item.
+  ///
+  /// In sr, this message translates to:
+  /// **'Uvezi sa linka'**
+  String get importFromLinkMenuItem;
+
+  /// Recipe list screen, the FAB menu's paste-text item.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nalepi recept'**
+  String get pasteRecipeMenuItem;
+
+  /// Recipe list screen, the FAB menu's photo-import item.
+  ///
+  /// In sr, this message translates to:
+  /// **'Fotografiši stranicu'**
+  String get photographPageMenuItem;
+
+  /// Recipe list screen's search field, and the recipe picker sheet's own (core/recipes/widgets/recipe_picker_sheet.dart) -- one key, since both search the same recipes by the same concept.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pretraži recepte'**
+  String get searchRecipesHint;
+
+  /// Recipe list screen, the empty state while a search query matches nothing.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema recepata koji se poklapaju.'**
+  String get noRecipesMatch;
+
+  /// Recipe list screen, the empty state with no search in progress.
+  ///
+  /// In sr, this message translates to:
+  /// **'Još nema recepata.\n\nDodajte jedan koji znate napamet.'**
+  String get noRecipesYet;
+
+  /// Recipe edit screen, the AppBar title for a recipe that does not exist yet.
+  ///
+  /// In sr, this message translates to:
+  /// **'Novi recept'**
+  String get newRecipeTitle;
+
+  /// Recipe edit screen, the AppBar title for an existing recipe.
+  ///
+  /// In sr, this message translates to:
+  /// **'Izmena recepta'**
+  String get editRecipeTitle;
+
+  /// Recipe edit screen, the servings number field's label -- distinct from recipeServingsCount, which is the read-only display elsewhere.
+  ///
+  /// In sr, this message translates to:
+  /// **'Porcije'**
+  String get servingsFieldLabel;
+
+  /// Recipe edit screen, the prep-time number field's label.
+  ///
+  /// In sr, this message translates to:
+  /// **'Priprema (min)'**
+  String get prepMinutesFieldLabel;
+
+  /// Recipe edit screen, the cook-time number field's label.
+  ///
+  /// In sr, this message translates to:
+  /// **'Kuvanje (min)'**
+  String get cookMinutesFieldLabel;
+
+  /// Recipe edit screen, the label above the Srpski/English segmented button -- the language names themselves stay untranslated (D77).
+  ///
+  /// In sr, this message translates to:
+  /// **'Napisano na'**
+  String get writtenInFieldLabel;
+
+  /// Recipe edit screen, the label above the Draft/Tested segmented button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Status'**
+  String get statusFieldLabel;
+
+  /// Recipe edit screen, the status segmented button's tested option -- draftChipLabel is its Draft counterpart, shared with the chip elsewhere since both name the same status.
+  ///
+  /// In sr, this message translates to:
+  /// **'Isprobano'**
+  String get testedStatusLabel;
+
+  /// Recipe edit screen, the tags field's label.
+  ///
+  /// In sr, this message translates to:
+  /// **'Oznake'**
+  String get tagsFieldLabel;
+
+  /// Recipe edit screen, the tags field's helper text.
+  ///
+  /// In sr, this message translates to:
+  /// **'Odvojene zarezima'**
+  String get tagsHelperText;
+
+  /// Recipe edit and import review screens, the button that appends a blank ingredient line.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaj sastojak'**
+  String get addIngredientButton;
+
+  /// Recipe edit and import review screens, the button that appends a blank step.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaj korak'**
+  String get addStepButton;
+
+  /// Recipe edit screen, the save button -- distinct from saveReviewButton, which also stamps a review.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sačuvaj'**
+  String get saveButton;
+
+  /// Recipe edit screen, the photo field's camera button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Kamera'**
+  String get cameraButton;
+
+  /// Recipe edit screen, the photo field's gallery-picker button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Galerija'**
+  String get galleryButton;
+
+  /// Recipe edit screen, the photo field's remove-photo icon button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ukloni fotografiju'**
+  String get removePhotoTooltip;
+
+  /// Recipe edit and import review screens, the tooltip on the icon that removes one ingredient or step row.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ukloni'**
+  String get removeTooltip;
+
+  /// Recipe edit screen, the servings/prep/cook number fields' validator error when the value does not parse as an integer.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ceo broj.'**
+  String get wholeNumberError;
+
+  /// Recipe edit screen, the servings/prep/cook number fields' validator error when the value is below the column's minimum.
+  ///
+  /// In sr, this message translates to:
+  /// **'Najmanje {minimum}.'**
+  String atLeastError(int minimum);
 }
 
 class _AppLocalizationsDelegate

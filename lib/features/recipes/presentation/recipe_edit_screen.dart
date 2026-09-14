@@ -140,7 +140,9 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
         ref.watch(recipeEditorProvider(widget.recipeId));
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isNew ? 'New recipe' : 'Edit recipe')),
+      appBar: AppBar(
+        title: Text(_isNew ? l10n.newRecipeTitle : l10n.editRecipeTitle),
+      ),
       body: draft.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (Object e, _) => Center(
@@ -150,13 +152,13 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
                 textAlign: TextAlign.center),
           ),
         ),
-        data: _buildForm,
+        data: (RecipeDraft d) => _buildForm(d, l10n),
       ),
       bottomNavigationBar: draft.hasValue ? _buildSaveBar(l10n) : null,
     );
   }
 
-  Widget _buildForm(RecipeDraft draft) {
+  Widget _buildForm(RecipeDraft draft, AppLocalizations l10n) {
     return Form(
       key: _formKey,
       child: ListView(
@@ -168,17 +170,18 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
                 draft.imagePath == null ? null : draft.source?.imageUrl,
             onPick: _pickImage,
             onRemove: _removeImage,
+            l10n: l10n,
           ),
           const SizedBox(height: 16),
           TextFormField(
             initialValue: draft.title,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Title',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.titleLabel,
+              border: const OutlineInputBorder(),
             ),
             validator: (String? value) =>
-                (value ?? '').trim().isEmpty ? 'Enter a title.' : null,
+                (value ?? '').trim().isEmpty ? l10n.titleRequiredError : null,
             onChanged: _editor.setTitle,
           ),
           const SizedBox(height: 12),
@@ -186,9 +189,9 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
             initialValue: draft.description ?? '',
             textCapitalization: TextCapitalization.sentences,
             maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Description',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.descriptionLabel,
+              border: const OutlineInputBorder(),
             ),
             onChanged: _editor.setDescription,
           ),
@@ -198,30 +201,33 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
             children: <Widget>[
               Expanded(
                 child: _NumberField(
-                  label: 'Servings',
+                  label: l10n.servingsFieldLabel,
                   value: draft.servings,
                   // The table's check is `servings > 0`; a recipe for nobody
                   // is not a thing.
                   minimum: 1,
                   onChanged: _editor.setServings,
+                  l10n: l10n,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _NumberField(
-                  label: 'Prep (min)',
+                  label: l10n.prepMinutesFieldLabel,
                   value: draft.prepMinutes,
                   minimum: 0,
                   onChanged: _editor.setPrepMinutes,
+                  l10n: l10n,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _NumberField(
-                  label: 'Cook (min)',
+                  label: l10n.cookMinutesFieldLabel,
                   value: draft.cookMinutes,
                   minimum: 0,
                   onChanged: _editor.setCookMinutes,
+                  l10n: l10n,
                 ),
               ),
             ],
@@ -229,7 +235,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
           const SizedBox(height: 16),
           // 'sr' and 'en' are the only values the column allows, so this is a
           // closed choice rather than a text field.
-          _FieldLabel(text: 'Written in'),
+          _FieldLabel(text: l10n.writtenInFieldLabel),
           const SizedBox(height: 6),
           SegmentedButton<String>(
             segments: const <ButtonSegment<String>>[
@@ -241,14 +247,15 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
                 _editor.setLocale(selection.first),
           ),
           const SizedBox(height: 16),
-          _FieldLabel(text: 'Status'),
+          _FieldLabel(text: l10n.statusFieldLabel),
           const SizedBox(height: 6),
           SegmentedButton<RecipeStatus>(
-            segments: const <ButtonSegment<RecipeStatus>>[
+            segments: <ButtonSegment<RecipeStatus>>[
               ButtonSegment<RecipeStatus>(
-                  value: RecipeStatus.draft, label: Text('Draft')),
+                  value: RecipeStatus.draft, label: Text(l10n.draftChipLabel)),
               ButtonSegment<RecipeStatus>(
-                  value: RecipeStatus.tested, label: Text('Tested')),
+                  value: RecipeStatus.tested,
+                  label: Text(l10n.testedStatusLabel)),
             ],
             selected: <RecipeStatus>{draft.status},
             onSelectionChanged: (Set<RecipeStatus> selection) =>
@@ -257,15 +264,15 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
           const SizedBox(height: 16),
           TextFormField(
             initialValue: draft.tags.join(', '),
-            decoration: const InputDecoration(
-              labelText: 'Tags',
-              helperText: 'Separated by commas',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.tagsFieldLabel,
+              helperText: l10n.tagsHelperText,
+              border: const OutlineInputBorder(),
             ),
             onChanged: (String value) => _editor.setTags(_parseTags(value)),
           ),
           const SizedBox(height: 24),
-          _SectionHeading(text: 'Ingredients'),
+          _SectionHeading(text: l10n.ingredientsHeading),
           const SizedBox(height: 8),
           ReorderableListView(
             shrinkWrap: true,
@@ -290,11 +297,11 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
             child: TextButton.icon(
               onPressed: _editor.addLine,
               icon: const Icon(Icons.add),
-              label: const Text('Add ingredient'),
+              label: Text(l10n.addIngredientButton),
             ),
           ),
           const SizedBox(height: 16),
-          _SectionHeading(text: 'Steps'),
+          _SectionHeading(text: l10n.stepsHeading),
           const SizedBox(height: 8),
           ReorderableListView(
             shrinkWrap: true,
@@ -308,11 +315,12 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
                   key: ValueKey<int>(step.localId),
                   index: index,
                   initialValue: step.text,
-                  hintText: 'Step ${index + 1}',
+                  hintText: l10n.stepLabel(index + 1),
                   maxLines: 3,
                   onChanged: (String value) =>
                       _editor.setStepText(step.localId, value),
                   onRemove: () => _editor.removeStep(step.localId),
+                  removeTooltip: l10n.removeTooltip,
                 ),
             ],
           ),
@@ -321,7 +329,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
             child: TextButton.icon(
               onPressed: _editor.addStep,
               icon: const Icon(Icons.add),
-              label: const Text('Add step'),
+              label: Text(l10n.addStepButton),
             ),
           ),
         ],
@@ -351,7 +359,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
                       height: 16,
                       width: 16,
                       child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Save'),
+                  : Text(l10n.saveButton),
             ),
           ],
         ),
@@ -386,12 +394,14 @@ class _PhotoField extends StatelessWidget {
     required this.existingImageUrl,
     required this.onPick,
     required this.onRemove,
+    required this.l10n,
   });
 
   final RecipeImageUpload? pickedImage;
   final String? existingImageUrl;
   final ValueChanged<ImageSource> onPick;
   final VoidCallback onRemove;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -429,7 +439,7 @@ class _PhotoField extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: () => onPick(ImageSource.camera),
                 icon: const Icon(Icons.camera_alt_outlined),
-                label: const Text('Camera'),
+                label: Text(l10n.cameraButton),
               ),
             ),
             const SizedBox(width: 8),
@@ -437,13 +447,13 @@ class _PhotoField extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: () => onPick(ImageSource.gallery),
                 icon: const Icon(Icons.photo_library_outlined),
-                label: const Text('Gallery'),
+                label: Text(l10n.galleryButton),
               ),
             ),
             if (hasPhoto) ...<Widget>[
               const SizedBox(width: 8),
               IconButton(
-                tooltip: 'Remove photo',
+                tooltip: l10n.removePhotoTooltip,
                 icon: const Icon(Icons.delete_outline),
                 onPressed: onRemove,
               ),
@@ -463,6 +473,7 @@ class _EditableRow extends StatelessWidget {
     required this.hintText,
     required this.onChanged,
     required this.onRemove,
+    required this.removeTooltip,
     this.maxLines = 1,
     super.key,
   });
@@ -473,6 +484,7 @@ class _EditableRow extends StatelessWidget {
   final int maxLines;
   final ValueChanged<String> onChanged;
   final VoidCallback onRemove;
+  final String removeTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -502,7 +514,7 @@ class _EditableRow extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Remove',
+            tooltip: removeTooltip,
             icon: const Icon(Icons.close),
             onPressed: onRemove,
           ),
@@ -519,12 +531,14 @@ class _NumberField extends StatelessWidget {
     required this.value,
     required this.minimum,
     required this.onChanged,
+    required this.l10n,
   });
 
   final String label;
   final int? value;
   final int minimum;
   final ValueChanged<int?> onChanged;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -542,8 +556,8 @@ class _NumberField extends StatelessWidget {
         final String text = (raw ?? '').trim();
         if (text.isEmpty) return null;
         final int? parsed = int.tryParse(text);
-        if (parsed == null) return 'Whole number.';
-        if (parsed < minimum) return 'At least $minimum.';
+        if (parsed == null) return l10n.wholeNumberError;
+        if (parsed < minimum) return l10n.atLeastError(minimum);
         return null;
       },
       onChanged: (String raw) {

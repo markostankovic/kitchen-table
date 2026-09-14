@@ -19,6 +19,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/generated/app_localizations.dart';
 import 'network_status.dart';
 
 class OfflineBanner extends ConsumerWidget {
@@ -37,7 +38,7 @@ class OfflineBanner extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Text(
-            "You're offline — showing saved copies. Changes won't save.",
+            AppLocalizations.of(context).offlineBannerMessage,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onErrorContainer,
