@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/net/network_status.dart';
 import '../../../core/recipes/widgets/recipe_picker_sheet.dart';
@@ -32,11 +33,12 @@ class MealPlanScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<MealPlanWeek> week = ref.watch(mealPlanEditorProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).navPlan),
+        title: Text(l10n.navPlan),
         actions: <Widget>[
           IconButton(
             tooltip: 'This week',
@@ -55,7 +57,7 @@ class MealPlanScreen extends ConsumerWidget {
               error: (Object e, _) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Text(e is AppFailure ? e.message : e.toString()),
+                  child: Text(localizedErrorMessage(e, l10n)),
                 ),
               ),
               data: (MealPlanWeek plan) => RefreshIndicator(
@@ -209,8 +211,9 @@ class _SlotRow extends ConsumerWidget {
       }
     } on AppFailure catch (e) {
       if (!context.mounted) return;
+      final AppLocalizations l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
     }
   }
 
@@ -248,8 +251,9 @@ class _SlotRow extends ConsumerWidget {
           .moveEntry(entryId: entryId, entryDate: day, slot: slot);
     } on AppFailure catch (e) {
       if (!context.mounted) return;
+      final AppLocalizations l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
     }
   }
 
@@ -465,8 +469,9 @@ class _EntryChip extends ConsumerWidget {
           .setServings(entryId: entry.id, servings: selected);
     } on AppFailure catch (e) {
       if (!context.mounted) return;
+      final AppLocalizations l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
     }
   }
 
@@ -536,8 +541,9 @@ class _EntryChip extends ConsumerWidget {
           );
     } on AppFailure catch (e) {
       if (!context.mounted) return;
+      final AppLocalizations l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
     }
   }
 
@@ -620,8 +626,9 @@ class _EntryChip extends ConsumerWidget {
           );
     } on AppFailure catch (e) {
       if (!context.mounted) return;
+      final AppLocalizations l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
     }
   }
 
@@ -634,8 +641,9 @@ class _EntryChip extends ConsumerWidget {
           );
     } on AppFailure catch (e) {
       if (!context.mounted) return;
+      final AppLocalizations l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
     }
   }
 
@@ -644,8 +652,9 @@ class _EntryChip extends ConsumerWidget {
       await ref.read(mealPlanEditorProvider.notifier).removeEntry(entry.id);
     } on AppFailure catch (e) {
       if (!context.mounted) return;
+      final AppLocalizations l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
     }
   }
 
