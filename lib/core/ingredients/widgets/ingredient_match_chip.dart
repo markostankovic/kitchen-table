@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/generated/app_localizations.dart';
 import '../../../features/ingredients/domain/ingredient_match.dart';
 import '../../../features/ingredients/domain/unit_catalog.dart';
 import '../../../features/recipes/domain/recipe_draft.dart';
@@ -47,6 +48,10 @@ class IngredientMatchChip extends StatelessWidget {
 
     final ColorScheme colors = Theme.of(context).colorScheme;
     final String amount = _amount();
+    // The recipe's own language, not the reader's chrome locale -- this chip
+    // sits beside catalog names that are never translated per recipe either
+    // (D1), on ingredient_line_field.dart's own hint-text precedent.
+    final AppLocalizations chipL10n = lookupAppLocalizations(Locale(locale));
 
     final (IconData icon, String name, Color? color) = switch (line) {
       // Quantity and unit are rendered even here: tier 1 parses without a
@@ -58,10 +63,14 @@ class IngredientMatchChip extends StatelessWidget {
         ),
       _ when suggestion != null => (
           Icons.help_outline,
-          '${suggestion!.displayName}?',
+          chipL10n.ingredientSuggestionLabel(suggestion!.displayName),
           colors.outline,
         ),
-      _ => (Icons.help_outline, 'No match', colors.outline),
+      _ => (
+          Icons.help_outline,
+          chipL10n.ingredientNoMatchLabel,
+          colors.outline,
+        ),
     };
 
     final String label =

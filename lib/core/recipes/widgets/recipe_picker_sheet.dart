@@ -77,6 +77,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<List<Recipe>> recipes =
         ref.watch(plannableRecipesProvider(query: _query));
 
@@ -96,10 +97,10 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
                 autofocus: true,
                 onChanged: _onQueryChanged,
                 textInputAction: TextInputAction.search,
-                decoration: const InputDecoration(
-                  hintText: 'Search recipes',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  hintText: l10n.searchRecipesHint,
+                  prefixIcon: const Icon(Icons.search),
+                  border: const OutlineInputBorder(),
                 ),
               ),
             ),
@@ -111,19 +112,18 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
                 ),
                 error: (Object e, _) => Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Text(localizedErrorMessage(
-                      e, AppLocalizations.of(context))),
+                  child: Text(localizedErrorMessage(e, l10n)),
                 ),
                 data: (List<Recipe> found) => found.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.fromLTRB(24, 8, 24, 8),
-                        child: Text('No recipes match.'),
+                    ? Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                        child: Text(l10n.noRecipesMatch),
                       )
                     : ListView(
                         shrinkWrap: true,
                         children: <Widget>[
                           for (final Recipe recipe in found)
-                            _RecipeTile(recipe: recipe),
+                            _RecipeTile(recipe: recipe, l10n: l10n),
                         ],
                       ),
               ),
@@ -131,8 +131,8 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
             const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.edit_note_outlined),
-              title: const Text('Add a note instead'),
-              subtitle: const Text('"leftovers", "eating out" -- no recipe'),
+              title: Text(l10n.addNoteInsteadMenuItem),
+              subtitle: Text(l10n.addNoteInsteadSubtitle),
               onTap: _addNote,
             ),
             const SizedBox(height: 8),
@@ -144,9 +144,10 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
 }
 
 class _RecipeTile extends StatelessWidget {
-  const _RecipeTile({required this.recipe});
+  const _RecipeTile({required this.recipe, required this.l10n});
 
   final Recipe recipe;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) => ListTile(
@@ -159,35 +160,36 @@ class _RecipeTile extends StatelessWidget {
         ),
         title: Text(recipe.title),
         subtitle: recipe.servings != null
-            ? Text('${recipe.servings} servings')
+            ? Text(l10n.recipeServingsCount(recipe.servings!))
             : null,
         onTap: () => Navigator.of(context).pop(PickRecipe(recipe)),
       );
 }
 
 Future<String?> _promptForNote(BuildContext context) {
+  final AppLocalizations l10n = AppLocalizations.of(context);
   final TextEditingController controller = TextEditingController();
   return showDialog<String>(
     context: context,
     builder: (BuildContext context) => AlertDialog(
-      title: const Text('Add a note'),
+      title: Text(l10n.addNoteDialogTitle),
       content: TextField(
         controller: controller,
         autofocus: true,
         textCapitalization: TextCapitalization.sentences,
-        decoration: const InputDecoration(hintText: 'e.g. leftovers'),
+        decoration: InputDecoration(hintText: l10n.addNoteHint),
       ),
       actions: <Widget>[
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancelButton),
         ),
         FilledButton(
           onPressed: () {
             final String text = controller.text.trim();
             Navigator.of(context).pop(text.isEmpty ? null : text);
           },
-          child: const Text('Add'),
+          child: Text(l10n.addButton),
         ),
       ],
     ),

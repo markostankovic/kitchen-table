@@ -409,4 +409,57 @@ class AppLocalizationsSr extends AppLocalizations {
   String atLeastError(int minimum) {
     return 'Najmanje $minimum.';
   }
+
+  @override
+  String get ingredientLineHint => '2 šolje glatkog brašna';
+
+  @override
+  String get ingredientNoMatchLabel => 'Nema poklapanja';
+
+  @override
+  String ingredientSuggestionLabel(String name) {
+    return '$name?';
+  }
+
+  @override
+  String ingredientPickerQuestion(String query) {
+    return 'Koji sastojak je „$query”?';
+  }
+
+  @override
+  String get ingredientPickerNoMatches => 'Ništa u katalogu se ne poklapa.';
+
+  @override
+  String ingredientPickerCreateNew(String query) {
+    return 'Napravi „$query”';
+  }
+
+  @override
+  String get ingredientPickerCreateNewSubtitle =>
+      'Dodaje ga u katalog domaćinstva';
+
+  @override
+  String ingredientPickerMatchedByAlias(String name) {
+    return 'poklopio „$name”';
+  }
+
+  @override
+  String get ingredientPickerUnverifiedTooltip =>
+      'Dodao je neko drugi, nije sa zvaničnog spiska';
+
+  @override
+  String get addNoteInsteadMenuItem => 'Dodaj napomenu umesto recepta';
+
+  @override
+  String get addNoteInsteadSubtitle =>
+      '„ostaci”, „jedemo napolju” -- bez recepta';
+
+  @override
+  String get addNoteDialogTitle => 'Dodaj napomenu';
+
+  @override
+  String get addNoteHint => 'npr. ostaci';
+
+  @override
+  String get addButton => 'Dodaj';
 }

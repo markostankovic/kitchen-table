@@ -111,16 +111,21 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
                 child: TextFormField(
                   initialValue: widget.line.rawText,
                   textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    hintText: '2 šolje glatkog brašna',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    // The RECIPE's own language, not the reader's chrome
+                    // locale -- an example of what to type in this recipe
+                    // should read in the language this recipe is written
+                    // in (D86's own reasoning, one screen over).
+                    hintText: lookupAppLocalizations(Locale(widget.locale))
+                        .ingredientLineHint,
+                    border: const OutlineInputBorder(),
                     isDense: true,
                   ),
                   onChanged: (String value) => _onTextChanged(value, parser),
                 ),
               ),
               IconButton(
-                tooltip: 'Remove',
+                tooltip: AppLocalizations.of(context).removeTooltip,
                 icon: const Icon(Icons.close),
                 onPressed: widget.onRemove,
               ),

@@ -525,5 +525,85 @@
         "type": "int"
       }
     }
+  },
+
+  "ingredientLineHint": "2 šolje glatkog brašna",
+  "@ingredientLineHint": {
+    "description": "Ingredient line field, an example of what to type. Looked up by the RECIPE's own language (widget.locale via lookupAppLocalizations), never the reader's chrome locale -- an English reader typing an English recipe should not be shown a Serbian example (D86's own reasoning, one screen over)."
+  },
+
+  "ingredientNoMatchLabel": "Nema poklapanja",
+  "@ingredientNoMatchLabel": {
+    "description": "Ingredient match chip, shown when the search found nothing. Looked up by the recipe's own language, on ingredientLineHint's own precedent -- this chip sits beside catalog names that are never in the reader's chrome locale either."
+  },
+  "ingredientSuggestionLabel": "{name}?",
+  "@ingredientSuggestionLabel": {
+    "description": "Ingredient match chip, offering a candidate that did not clear the auto-accept bar -- tapping opens the picker. Same locale rule as ingredientNoMatchLabel.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+
+  "ingredientPickerQuestion": "Koji sastojak je „{query}”?",
+  "@ingredientPickerQuestion": {
+    "description": "Ingredient picker sheet, the title asking which catalog entry a typed word means. Locale rule: the recipe's own language (widget.locale), same as ingredientNoMatchLabel -- this sheet is opened from the match chip.",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "ingredientPickerNoMatches": "Ništa u katalogu se ne poklapa.",
+  "@ingredientPickerNoMatches": {
+    "description": "Ingredient picker sheet, shown when the search returns nothing."
+  },
+  "ingredientPickerCreateNew": "Napravi „{query}”",
+  "@ingredientPickerCreateNew": {
+    "description": "Ingredient picker sheet, the always-last row that creates a new catalog ingredient from the typed word.",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "ingredientPickerCreateNewSubtitle": "Dodaje ga u katalog domaćinstva",
+  "@ingredientPickerCreateNewSubtitle": {
+    "description": "Ingredient picker sheet, the create-new row's subtitle."
+  },
+  "ingredientPickerMatchedByAlias": "poklopio „{name}”",
+  "@ingredientPickerMatchedByAlias": {
+    "description": "Ingredient picker sheet, a candidate row's subtitle when it matched through a different name than the one displayed -- an alias or an inflected form.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ingredientPickerUnverifiedTooltip": "Dodao je neko drugi, nije sa zvaničnog spiska",
+  "@ingredientPickerUnverifiedTooltip": {
+    "description": "Ingredient picker sheet, a candidate row's tooltip when it came from a household's own entry rather than the curated catalog."
+  },
+
+  "addNoteInsteadMenuItem": "Dodaj napomenu umesto recepta",
+  "@addNoteInsteadMenuItem": {
+    "description": "Recipe picker sheet (core/recipes/widgets), the row offering a free-text note instead of a recipe."
+  },
+  "addNoteInsteadSubtitle": "„ostaci”, „jedemo napolju” -- bez recepta",
+  "@addNoteInsteadSubtitle": {
+    "description": "Recipe picker sheet, the add-note row's subtitle giving examples."
+  },
+  "addNoteDialogTitle": "Dodaj napomenu",
+  "@addNoteDialogTitle": {
+    "description": "Recipe picker sheet, the note-entry dialog's title."
+  },
+  "addNoteHint": "npr. ostaci",
+  "@addNoteHint": {
+    "description": "Recipe picker sheet, the note-entry dialog's text field hint."
+  },
+  "addButton": "Dodaj",
+  "@addButton": {
+    "description": "Recipe picker sheet, the note-entry dialog's confirm button -- a bare 'Add', distinct from addIngredientButton/addStepButton which name what they add."
   }
 }

@@ -57,6 +57,10 @@ class _IngredientPickerSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<List<IngredientMatch>> matches =
         ref.watch(ingredientMatchesProvider(query, locale: locale));
+    // The recipe's own language, not the reader's chrome locale -- this
+    // sheet is opened from the match chip, which already follows that rule
+    // (ingredient_line_field.dart, ingredient_match_chip.dart).
+    final AppLocalizations sheetL10n = lookupAppLocalizations(Locale(locale));
 
     return SafeArea(
       child: ConstrainedBox(
@@ -70,7 +74,7 @@ class _IngredientPickerSheet extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
               child: Text(
-                'Which ingredient is “$query”?',
+                sheetL10n.ingredientPickerQuestion(query),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
@@ -86,15 +90,15 @@ class _IngredientPickerSheet extends ConsumerWidget {
                       e, AppLocalizations.of(context))),
                 ),
                 data: (List<IngredientMatch> found) => found.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.fromLTRB(24, 8, 24, 8),
-                        child: Text('Nothing in the catalog matches.'),
+                    ? Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                        child: Text(sheetL10n.ingredientPickerNoMatches),
                       )
                     : ListView(
                         shrinkWrap: true,
                         children: <Widget>[
                           for (final IngredientMatch match in found)
-                            _MatchTile(match: match),
+                            _MatchTile(match: match, l10n: sheetL10n),
                         ],
                       ),
               ),
@@ -104,8 +108,8 @@ class _IngredientPickerSheet extends ConsumerWidget {
             // hatch that keeps an unusual ingredient from blocking a save.
             ListTile(
               leading: const Icon(Icons.add),
-              title: Text('Create “$query”'),
-              subtitle: const Text('Adds it to the catalog for the household'),
+              title: Text(sheetL10n.ingredientPickerCreateNew(query)),
+              subtitle: Text(sheetL10n.ingredientPickerCreateNewSubtitle),
               onTap: () => Navigator.of(context).pop(ChooseNew(query)),
             ),
             const SizedBox(height: 8),
@@ -117,9 +121,10 @@ class _IngredientPickerSheet extends ConsumerWidget {
 }
 
 class _MatchTile extends StatelessWidget {
-  const _MatchTile({required this.match});
+  const _MatchTile({required this.match, required this.l10n});
 
   final IngredientMatch match;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -130,12 +135,14 @@ class _MatchTile extends StatelessWidget {
 
     return ListTile(
       title: Text(match.displayName),
-      subtitle: matchedByAnotherName ? Text('matched “${match.matchedName}”') : null,
+      subtitle: matchedByAnotherName
+          ? Text(l10n.ingredientPickerMatchedByAlias(match.matchedName))
+          : null,
       trailing: match.isVerified
           ? null
-          : const Tooltip(
-              message: 'Added by someone, not from the curated list',
-              child: Icon(Icons.help_outline, size: 18),
+          : Tooltip(
+              message: l10n.ingredientPickerUnverifiedTooltip,
+              child: const Icon(Icons.help_outline, size: 18),
             ),
       onTap: () => Navigator.of(context).pop(ChooseExisting(match)),
     );

@@ -793,6 +793,90 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Najmanje {minimum}.'**
   String atLeastError(int minimum);
+
+  /// Ingredient line field, an example of what to type. Looked up by the RECIPE's own language (widget.locale via lookupAppLocalizations), never the reader's chrome locale -- an English reader typing an English recipe should not be shown a Serbian example (D86's own reasoning, one screen over).
+  ///
+  /// In sr, this message translates to:
+  /// **'2 šolje glatkog brašna'**
+  String get ingredientLineHint;
+
+  /// Ingredient match chip, shown when the search found nothing. Looked up by the recipe's own language, on ingredientLineHint's own precedent -- this chip sits beside catalog names that are never in the reader's chrome locale either.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema poklapanja'**
+  String get ingredientNoMatchLabel;
+
+  /// Ingredient match chip, offering a candidate that did not clear the auto-accept bar -- tapping opens the picker. Same locale rule as ingredientNoMatchLabel.
+  ///
+  /// In sr, this message translates to:
+  /// **'{name}?'**
+  String ingredientSuggestionLabel(String name);
+
+  /// Ingredient picker sheet, the title asking which catalog entry a typed word means. Locale rule: the recipe's own language (widget.locale), same as ingredientNoMatchLabel -- this sheet is opened from the match chip.
+  ///
+  /// In sr, this message translates to:
+  /// **'Koji sastojak je „{query}”?'**
+  String ingredientPickerQuestion(String query);
+
+  /// Ingredient picker sheet, shown when the search returns nothing.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ništa u katalogu se ne poklapa.'**
+  String get ingredientPickerNoMatches;
+
+  /// Ingredient picker sheet, the always-last row that creates a new catalog ingredient from the typed word.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napravi „{query}”'**
+  String ingredientPickerCreateNew(String query);
+
+  /// Ingredient picker sheet, the create-new row's subtitle.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaje ga u katalog domaćinstva'**
+  String get ingredientPickerCreateNewSubtitle;
+
+  /// Ingredient picker sheet, a candidate row's subtitle when it matched through a different name than the one displayed -- an alias or an inflected form.
+  ///
+  /// In sr, this message translates to:
+  /// **'poklopio „{name}”'**
+  String ingredientPickerMatchedByAlias(String name);
+
+  /// Ingredient picker sheet, a candidate row's tooltip when it came from a household's own entry rather than the curated catalog.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodao je neko drugi, nije sa zvaničnog spiska'**
+  String get ingredientPickerUnverifiedTooltip;
+
+  /// Recipe picker sheet (core/recipes/widgets), the row offering a free-text note instead of a recipe.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaj napomenu umesto recepta'**
+  String get addNoteInsteadMenuItem;
+
+  /// Recipe picker sheet, the add-note row's subtitle giving examples.
+  ///
+  /// In sr, this message translates to:
+  /// **'„ostaci”, „jedemo napolju” -- bez recepta'**
+  String get addNoteInsteadSubtitle;
+
+  /// Recipe picker sheet, the note-entry dialog's title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaj napomenu'**
+  String get addNoteDialogTitle;
+
+  /// Recipe picker sheet, the note-entry dialog's text field hint.
+  ///
+  /// In sr, this message translates to:
+  /// **'npr. ostaci'**
+  String get addNoteHint;
+
+  /// Recipe picker sheet, the note-entry dialog's confirm button -- a bare 'Add', distinct from addIngredientButton/addStepButton which name what they add.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaj'**
+  String get addButton;
 }
 
 class _AppLocalizationsDelegate

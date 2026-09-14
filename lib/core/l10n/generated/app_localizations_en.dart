@@ -404,4 +404,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String atLeastError(int minimum) {
     return 'At least $minimum.';
   }
+
+  @override
+  String get ingredientLineHint => '2 cups all-purpose flour';
+
+  @override
+  String get ingredientNoMatchLabel => 'No match';
+
+  @override
+  String ingredientSuggestionLabel(String name) {
+    return '$name?';
+  }
+
+  @override
+  String ingredientPickerQuestion(String query) {
+    return 'Which ingredient is “$query”?';
+  }
+
+  @override
+  String get ingredientPickerNoMatches => 'Nothing in the catalog matches.';
+
+  @override
+  String ingredientPickerCreateNew(String query) {
+    return 'Create “$query”';
+  }
+
+  @override
+  String get ingredientPickerCreateNewSubtitle =>
+      'Adds it to the catalog for the household';
+
+  @override
+  String ingredientPickerMatchedByAlias(String name) {
+    return 'matched “$name”';
+  }
+
+  @override
+  String get ingredientPickerUnverifiedTooltip =>
+      'Added by someone, not from the curated list';
+
+  @override
+  String get addNoteInsteadMenuItem => 'Add a note instead';
+
+  @override
+  String get addNoteInsteadSubtitle =>
+      '\"leftovers\", \"eating out\" -- no recipe';
+
+  @override
+  String get addNoteDialogTitle => 'Add a note';
+
+  @override
+  String get addNoteHint => 'e.g. leftovers';
+
+  @override
+  String get addButton => 'Add';
 }

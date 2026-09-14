@@ -126,5 +126,23 @@
   "removePhotoTooltip": "Remove photo",
   "removeTooltip": "Remove",
   "wholeNumberError": "Whole number.",
-  "atLeastError": "At least {minimum}."
+  "atLeastError": "At least {minimum}.",
+
+  "ingredientLineHint": "2 cups all-purpose flour",
+
+  "ingredientNoMatchLabel": "No match",
+  "ingredientSuggestionLabel": "{name}?",
+
+  "ingredientPickerQuestion": "Which ingredient is “{query}”?",
+  "ingredientPickerNoMatches": "Nothing in the catalog matches.",
+  "ingredientPickerCreateNew": "Create “{query}”",
+  "ingredientPickerCreateNewSubtitle": "Adds it to the catalog for the household",
+  "ingredientPickerMatchedByAlias": "matched “{name}”",
+  "ingredientPickerUnverifiedTooltip": "Added by someone, not from the curated list",
+
+  "addNoteInsteadMenuItem": "Add a note instead",
+  "addNoteInsteadSubtitle": "\"leftovers\", \"eating out\" -- no recipe",
+  "addNoteDialogTitle": "Add a note",
+  "addNoteHint": "e.g. leftovers",
+  "addButton": "Add"
 }
