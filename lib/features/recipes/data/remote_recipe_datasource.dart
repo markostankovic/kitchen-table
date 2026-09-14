@@ -174,7 +174,8 @@ ingredients(is_pantry_staple, category)''')
 
         if (res.data is! Map<String, dynamic>) {
           throw const UnknownFailure(
-              message: 'The server sent an unexpected reply.');
+              message: 'The server sent an unexpected reply.',
+              code: FailureCode.unexpectedServerReply);
         }
       });
 
@@ -238,7 +239,8 @@ ingredients(is_pantry_staple, category)''')
         final String? userId = _client.auth.currentUser?.id;
         if (userId == null) {
           throw const UnauthorizedFailure(
-              message: 'You are not signed in any more.');
+              message: 'You are not signed in any more.',
+              code: FailureCode.signInAgain);
         }
 
         return _client

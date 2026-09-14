@@ -164,7 +164,8 @@ class RecipeEditor extends _$RecipeEditor {
       householdId = await ref.read(currentHouseholdIdProvider.future);
       if (householdId == null) {
         throw const NotFoundFailure(
-            message: 'You are not in a household yet.');
+            message: 'You are not in a household yet.',
+            code: FailureCode.noHousehold);
       }
     }
 

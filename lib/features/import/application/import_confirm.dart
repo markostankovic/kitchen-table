@@ -42,6 +42,9 @@ class ImportConfirm extends _$ImportConfirm {
     if (job.status == ImportJobStatus.failed) {
       throw ValidationFailure(
         message: job.errorMessage ?? 'That import could not be read.',
+        // No code (D92) when the job carries the server's own prose,
+        // persisted in import_jobs and read back here, possibly days later.
+        code: job.errorMessage == null ? FailureCode.importUnreadable : null,
       );
     }
     final ParsedRecipe? result = job.result;

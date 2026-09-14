@@ -184,6 +184,7 @@ class IngredientRepository {
         final num n => n.toDouble(),
         final String s => double.parse(s),
         _ => throw const UnknownFailure(
-            message: 'The server sent an unexpected reply.'),
+            message: 'The server sent an unexpected reply.',
+            code: FailureCode.unexpectedServerReply),
       };
 }

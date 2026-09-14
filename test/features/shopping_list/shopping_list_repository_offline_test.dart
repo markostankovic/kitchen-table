@@ -113,9 +113,9 @@ void main() {
       repository.watchLatest(householdId: 'h1'),
       emitsError(
         isA<NetworkFailure>().having(
-          (NetworkFailure e) => e.message,
-          'message',
-          contains('no saved list on this phone yet'),
+          (NetworkFailure e) => e.code,
+          'code',
+          FailureCode.offlineNoSavedList,
         ),
       ),
     );

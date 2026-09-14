@@ -55,7 +55,8 @@ class AuthRepository {
         final AppUser? user = _toAppUser(response.user);
         if (user == null) {
           throw const UnauthorizedFailure(
-              message: 'That code was not accepted.');
+              message: 'That code was not accepted.',
+              code: FailureCode.codeNotAccepted);
         }
         return user;
       });
@@ -95,7 +96,8 @@ class AuthRepository {
         final String? id = _client.auth.currentUser?.id;
         if (id == null) {
           throw const UnauthorizedFailure(
-              message: 'You are not signed in any more.');
+              message: 'You are not signed in any more.',
+              code: FailureCode.signInAgain);
         }
 
         await _client

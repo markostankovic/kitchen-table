@@ -50,7 +50,8 @@ class ImportRepository {
         final Object? data = res.data;
         if (data is! Map<String, dynamic>) {
           throw const UnknownFailure(
-              message: 'The server sent an unexpected reply.');
+              message: 'The server sent an unexpected reply.',
+              code: FailureCode.unexpectedServerReply);
         }
         // camelCase, because this is a hand-built Edge Function body rather
         // than a Postgres row -- the split HouseholdRepository documents.
@@ -71,7 +72,8 @@ class ImportRepository {
         final Object? data = res.data;
         if (data is! Map<String, dynamic>) {
           throw const UnknownFailure(
-              message: 'The server sent an unexpected reply.');
+              message: 'The server sent an unexpected reply.',
+              code: FailureCode.unexpectedServerReply);
         }
         return data['jobId'] as String;
       });
@@ -163,7 +165,8 @@ class ImportRepository {
 
         if (rows.isEmpty) {
           throw const NotFoundFailure(
-              message: 'You are not in a household yet.');
+              message: 'You are not in a household yet.',
+              code: FailureCode.noHousehold);
         }
 
         final String householdId = rows.first['id'] as String;
@@ -189,7 +192,8 @@ class ImportRepository {
         final Object? data = res.data;
         if (data is! Map<String, dynamic>) {
           throw const UnknownFailure(
-              message: 'The server sent an unexpected reply.');
+              message: 'The server sent an unexpected reply.',
+              code: FailureCode.unexpectedServerReply);
         }
         return data['jobId'] as String;
       });

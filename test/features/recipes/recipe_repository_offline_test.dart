@@ -189,9 +189,9 @@ void main() {
         repository.watchList(householdId: 'h1'),
         emitsError(
           isA<NetworkFailure>().having(
-            (NetworkFailure e) => e.message,
-            'message',
-            contains('no saved recipes on this phone yet'),
+            (NetworkFailure e) => e.code,
+            'code',
+            FailureCode.offlineNoSavedRecipes,
           ),
         ),
       );

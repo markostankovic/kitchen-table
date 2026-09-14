@@ -164,9 +164,9 @@ void main() {
         repository.watchWeek(householdId: 'h1', week: week),
         emitsError(
           isA<NetworkFailure>().having(
-            (NetworkFailure e) => e.message,
-            'message',
-            contains('no saved plan on this phone yet'),
+            (NetworkFailure e) => e.code,
+            'code',
+            FailureCode.offlineNoSavedPlan,
           ),
         ),
       );

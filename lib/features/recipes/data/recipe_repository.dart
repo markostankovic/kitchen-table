@@ -77,6 +77,7 @@ class RecipeRepository {
       if (cached.isNotEmpty) return;
       throw const NetworkFailure(
         message: 'No connection, and no saved recipes on this phone yet.',
+        code: FailureCode.offlineNoSavedRecipes,
       );
     }
   }

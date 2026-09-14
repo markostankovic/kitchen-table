@@ -117,7 +117,8 @@ class RemoteHouseholdDataSource {
         final Object? data = res.data;
         if (data is! Map<String, dynamic>) {
           throw const UnknownFailure(
-              message: 'The server sent an unexpected reply.');
+              message: 'The server sent an unexpected reply.',
+              code: FailureCode.unexpectedServerReply);
         }
         return _fromInviteResponse(data);
       });

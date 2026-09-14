@@ -112,7 +112,10 @@ class CurrentShoppingList extends _$CurrentShoppingList {
       currentHouseholdIdProvider.future,
     );
     if (householdId == null) {
-      throw const NotFoundFailure(message: 'You are not in a household yet.');
+      throw const NotFoundFailure(
+        message: 'You are not in a household yet.',
+        code: FailureCode.noHousehold,
+      );
     }
 
     final ShoppingListRepository repository = ref.read(
@@ -185,7 +188,10 @@ class CurrentShoppingList extends _$CurrentShoppingList {
       currentHouseholdIdProvider.future,
     );
     if (householdId == null) {
-      throw const NotFoundFailure(message: 'You are not in a household yet.');
+      throw const NotFoundFailure(
+        message: 'You are not in a household yet.',
+        code: FailureCode.noHousehold,
+      );
     }
     await ref
         .read(shoppingListRepositoryProvider)

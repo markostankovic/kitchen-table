@@ -70,6 +70,7 @@ class ShoppingListRepository {
       if (cached != null) return;
       throw NetworkFailure(
         message: 'No connection, and no saved list on this phone yet.',
+        code: FailureCode.offlineNoSavedList,
         cause: e.cause,
       );
     }

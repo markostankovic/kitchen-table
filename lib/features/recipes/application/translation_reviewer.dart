@@ -45,6 +45,7 @@ class TranslationReviewer extends _$TranslationReviewer {
     if (detail.translation == null) {
       throw const NotFoundFailure(
         message: 'There is no translation to review yet.',
+        code: FailureCode.noTranslationToReview,
       );
     }
 

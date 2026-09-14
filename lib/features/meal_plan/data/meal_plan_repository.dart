@@ -79,6 +79,7 @@ class MealPlanRepository {
       if (cached != null || since != null) return;
       throw NetworkFailure(
         message: 'No connection, and no saved plan on this phone yet.',
+        code: FailureCode.offlineNoSavedPlan,
         cause: e.cause,
       );
     }
