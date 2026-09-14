@@ -31,7 +31,7 @@ class KitchenTableApp extends ConsumerWidget {
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
         locale: locale,
-        supportedLocales: AppLocalizations.supportedLocales,
+        supportedLocales: appSupportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         routerConfig: router,
       ),

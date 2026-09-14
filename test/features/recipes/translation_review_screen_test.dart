@@ -63,7 +63,7 @@ Future<void> _pump(
       ],
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
+        supportedLocales: appSupportedLocales,
         home: TranslationReviewScreen(recipeId: 'r1'),
       ),
     ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/features/recipes/application/recipe_editor.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe.dart';
@@ -70,7 +71,7 @@ Future<void> _pump(
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
+        supportedLocales: appSupportedLocales,
         home: RecipeEditScreen(recipeId: recipeId),
       ),
     ),

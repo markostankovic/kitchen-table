@@ -170,4 +170,17 @@ void main() {
     });
     expect(result.exitCode, 0, reason: result.output);
   });
+
+  test('allows a Flutter import under lib/core/ (D91, D92)', () {
+    // `_layerOf` matches only `lib/features/<name>/<layer>/`, so nothing
+    // under `lib/core/` is subject to rule 7's Flutter ban -- the precedent
+    // `core/l10n/app_locale.dart` and `core/error/failure_l10n.dart` both
+    // rely on. Pinned here so a future tightening of `_layerOf` cannot
+    // silently break either file without this test noticing.
+    final result = runChecker(<String, String>{
+      'lib/core/error/failure_l10n.dart':
+          "import 'package:flutter/material.dart';\n",
+    });
+    expect(result.exitCode, 0, reason: result.output);
+  });
 }

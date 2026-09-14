@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
 import 'package:kitchen_table/core/ingredients/ingredient_catalog_providers.dart';
+import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_en.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
@@ -137,7 +138,7 @@ Future<_Calls> _pump(
       // The AppBar title reads AppLocalizations now (D77, Phase 3 part 1).
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
+        supportedLocales: appSupportedLocales,
         home: ShoppingListScreen(),
       ),
     ),

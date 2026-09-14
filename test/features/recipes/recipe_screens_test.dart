@@ -133,7 +133,7 @@ Future<void> _pumpList(
       // has to do it itself.
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
+        supportedLocales: appSupportedLocales,
         home: RecipeListScreen(),
       ),
     ),
@@ -159,7 +159,7 @@ Future<void> _pumpDetail(WidgetTester tester, RecipeDetail detail) async {
       // `_pumpList`'s own precedent above.
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
+        supportedLocales: appSupportedLocales,
         home: RecipeDetailScreen(recipeId: 'r1'),
       ),
     ),
