@@ -5,14 +5,15 @@
 DART_DEFINE := --dart-define-from-file=env/local.json
 
 .PHONY: help gen watch lint lint-functions test test-functions test-sql seed \
-	seed-check db-reset db-start db-stop types check functions-serve \
-	functions-deploy run run-android
+	seed-check l10n-check db-reset db-start db-stop types check \
+	functions-serve functions-deploy run run-android
 
 help:
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  %-17s %s\n", $$1, $$2}'
 
 gen: ## Run code generation once
+	flutter gen-l10n
 	dart run build_runner build
 
 watch: ## Run code generation continuously
@@ -44,13 +45,22 @@ test-sql: ## Regenerate generated SQL, then run every test in supabase/tests/
 # (CLAUDE.md) -- so the only thing that can catch an edited CSV with no
 # migration behind it is an explicit check. Different guarantees, different
 # targets.
-check: lint lint-functions test test-functions seed-check test-sql ## Everything CI would run
+check: lint lint-functions test test-functions seed-check test-sql l10n-check ## Everything CI would run
 
 seed: ## Emit a new catalog seed migration from supabase/seeds/*.csv
 	dart run tool/gen_ingredient_seed.dart --new-migration
 
 seed-check: ## Fail if the seed CSVs changed without a new seed migration
 	dart run tool/gen_ingredient_seed.dart --check
+
+# `flutter: generate: true` in pubspec.yaml means `flutter run`/`flutter test`
+# regenerate lib/core/l10n/generated/ themselves, silently -- so an ARB edit
+# with no `make gen` run first can commit a stale generated file with nobody
+# noticing (the same gap part 6b closed for display_names_test.sql via
+# gen_display_name_sql.dart). This is that check for the l10n generator.
+l10n-check: ## Fail if the ARB files changed without regenerating lib/core/l10n/generated
+	flutter gen-l10n
+	git diff --exit-code -- lib/core/l10n/generated
 
 db-start: ## Start the local Supabase stack
 	supabase start
