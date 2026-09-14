@@ -33,7 +33,7 @@ class ImportReviewScreen extends ConsumerWidget {
     final AsyncValue<ImportJob> job = ref.watch(importJobProvider(jobId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Review import')),
+      appBar: AppBar(title: Text(l10n.reviewImportTitle)),
       body: job.when(
         loading: () => const _Waiting(status: null),
         error: (Object e, _) => _Failed(
@@ -67,6 +67,7 @@ class _Waiting extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -75,15 +76,15 @@ class _Waiting extends StatelessWidget {
           const SizedBox(height: 24),
           Text(
             status == ImportJobStatus.processing
-                ? 'Reading the recipe…'
-                : 'Queued…',
+                ? l10n.readingRecipeEllipsis
+                : l10n.queuedEllipsis,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
-              'This takes a few seconds. You can leave and come back.',
+              l10n.importWaitingHint,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -124,6 +125,7 @@ class _FailedState extends ConsumerState<_Failed> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -139,7 +141,7 @@ class _FailedState extends ConsumerState<_Failed> {
             const SizedBox(height: 24),
             OutlinedButton(
               onPressed: _dismissing ? null : _dismiss,
-              child: const Text('Discard this import'),
+              child: Text(l10n.discardImportButton),
             ),
           ],
         ),
@@ -155,6 +157,7 @@ class _AlreadySaved extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final String? id = recipeId;
     return Center(
       child: Padding(
@@ -162,12 +165,15 @@ class _AlreadySaved extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text('This import has already been saved.'),
+            // Same key as this job's own throw-site fallback (D92) -- the
+            // sentence is the same whether it comes from the failure
+            // vocabulary or from reaching this screen after the fact.
+            Text(l10n.failureImportAlreadySaved),
             if (id != null) ...<Widget>[
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => RecipeDetailRoute(id).go(context),
-                child: const Text('Open the recipe'),
+                child: Text(l10n.openRecipeButton),
               ),
             ],
           ],
@@ -230,14 +236,16 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
       ),
       data: (ImportReview value) => Column(
         children: <Widget>[
-          Expanded(child: _buildForm(value.draft, value.needsAttention)),
+          Expanded(
+              child: _buildForm(value.draft, value.needsAttention, l10n)),
           _buildSaveBar(l10n),
         ],
       ),
     );
   }
 
-  Widget _buildForm(RecipeDraft draft, Set<int> attention) {
+  Widget _buildForm(
+      RecipeDraft draft, Set<int> attention, AppLocalizations l10n) {
     final int matched =
         draft.lines.where((RecipeDraftLine l) => l.isMatched).length;
     final int total =
@@ -247,18 +255,24 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       children: <Widget>[
-        _Summary(matched: matched, total: total, attention: attention.length),
+        _Summary(
+          matched: matched,
+          total: total,
+          attention: attention.length,
+          l10n: l10n,
+        ),
         const SizedBox(height: 16),
         TextFormField(
           initialValue: draft.title,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            labelText: 'Title',
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            labelText: l10n.titleLabel,
           ),
           onChanged: _confirm.setTitle,
         ),
         const SizedBox(height: 24),
-        Text('Ingredients', style: Theme.of(context).textTheme.titleMedium),
+        Text(l10n.ingredientsHeading,
+            style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         // The same scaffolding as the recipe editor, and it has to stay the
         // same: IngredientLineField emits a ReorderableDragStartListener, so
@@ -298,11 +312,11 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
           child: TextButton.icon(
             onPressed: _confirm.addLine,
             icon: const Icon(Icons.add),
-            label: const Text('Add ingredient'),
+            label: Text(l10n.addIngredientButton),
           ),
         ),
         const SizedBox(height: 16),
-        Text('Method', style: Theme.of(context).textTheme.titleMedium),
+        Text(l10n.methodHeading, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         for (final RecipeDraftStep step in draft.steps)
           Padding(
@@ -320,7 +334,7 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
           child: TextButton.icon(
             onPressed: _confirm.addStep,
             icon: const Icon(Icons.add),
-            label: const Text('Add step'),
+            label: Text(l10n.addStepButton),
           ),
         ),
       ],
@@ -349,7 +363,7 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
                       height: 16,
                       width: 16,
                       child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Save recipe'),
+                  : Text(l10n.saveRecipeButton),
             ),
           ],
         ),
@@ -364,11 +378,13 @@ class _Summary extends StatelessWidget {
     required this.matched,
     required this.total,
     required this.attention,
+    required this.l10n,
   });
 
   final int matched;
   final int total;
   final int attention;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -384,10 +400,11 @@ class _Summary extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('$matched of $total ingredients matched'),
+                  Text(l10n.importMatchedOfTotal(
+                      matched, l10n.ingredientsMatchedCount(total))),
                   if (attention > 0)
                     Text(
-                      '$attention worth a look before saving',
+                      l10n.importWorthALook(attention),
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.tertiary,
                       ),

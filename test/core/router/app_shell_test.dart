@@ -113,8 +113,7 @@ void main() {
     testWidgets('signed in without a household lands on onboarding',
         (WidgetTester tester) async {
       await pumpApp(tester, household: null);
-      // The household-creation screen is not localized in this part.
-      expect(find.text('Name your household'), findsOneWidget);
+      expect(find.text(sr.createHouseholdTitle), findsOneWidget);
       expect(find.byType(NavigationBar), findsNothing);
     });
 
@@ -156,7 +155,7 @@ void main() {
         // location, inside the shell -- it does not itself navigate
         // anywhere. What matters is what it did NOT do: bounce to
         // onboarding, which reading the error as "no household" would have.
-        expect(find.text('Name your household'), findsNothing);
+        expect(find.text(sr.createHouseholdTitle), findsNothing);
         expect(find.text(sr.sendCode), findsNothing);
       },
     );
@@ -280,8 +279,8 @@ void main() {
       await tester.tap(find.text(sr.householdMenuItem));
       await tester.pumpAndSettle();
 
-      // The household screen itself is not localized in this part.
-      expect(find.widgetWithText(AppBar, 'Household'), findsOneWidget);
+      expect(find.widgetWithText(AppBar, sr.householdScreenTitle),
+          findsOneWidget);
       expect(find.text('Test Household'), findsOneWidget);
       expect(find.byType(NavigationBar), findsOneWidget,
           reason: 'the household screen is nested inside the Settings tab');
@@ -300,8 +299,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Ana'), findsOneWidget);
-      expect(find.text('owner'), findsOneWidget);
-      expect(find.text('adult'), findsOneWidget);
+      expect(find.text(sr.householdRoleOwner), findsOneWidget);
+      expect(find.text(sr.householdRoleAdult), findsOneWidget);
       expect(find.text('482913'), findsOneWidget);
     });
 
@@ -332,10 +331,10 @@ void main() {
         (WidgetTester tester) async {
       await pumpApp(tester, household: null);
 
-      await tester.tap(find.text('I have an invite code'));
+      await tester.tap(find.text(sr.haveInviteCodeButton));
       await tester.pumpAndSettle();
 
-      expect(find.text('Enter your invite code'), findsOneWidget,
+      expect(find.text(sr.joinHouseholdTitle), findsOneWidget,
           reason: 'the redirect must treat /join-household as an onboarding '
               'route, or it bounces straight back to /create-household');
       expect(find.byType(NavigationBar), findsNothing);
@@ -345,12 +344,12 @@ void main() {
         (WidgetTester tester) async {
       await pumpApp(tester, household: null);
 
-      await tester.tap(find.text('I have an invite code'));
+      await tester.tap(find.text(sr.haveInviteCodeButton));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Create a household instead'));
+      await tester.tap(find.text(sr.createHouseholdInsteadButton));
       await tester.pumpAndSettle();
 
-      expect(find.text('Name your household'), findsOneWidget);
+      expect(find.text(sr.createHouseholdTitle), findsOneWidget);
     });
   });
 }

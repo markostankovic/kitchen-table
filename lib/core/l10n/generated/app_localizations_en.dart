@@ -457,4 +457,179 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addButton => 'Add';
+
+  @override
+  String get createHouseholdTitle => 'Name your household';
+
+  @override
+  String get createHouseholdSubtitle =>
+      'Recipes and meal plans are shared with everyone in it.';
+
+  @override
+  String get householdNameFieldLabel => 'Household name';
+
+  @override
+  String get householdNameEmptyError => 'Enter a name.';
+
+  @override
+  String get createHouseholdButton => 'Create';
+
+  @override
+  String get haveInviteCodeButton => 'I have an invite code';
+
+  @override
+  String get householdScreenTitle => 'Household';
+
+  @override
+  String get noHouseholdYet => 'No household yet.';
+
+  @override
+  String get membersSectionTitle => 'Members';
+
+  @override
+  String get inviteSomeoneSectionTitle => 'Invite someone';
+
+  @override
+  String get loadingEllipsis => 'Loading...';
+
+  @override
+  String get noActiveCodesMessage =>
+      'No active codes. Create one and read it out to whoever is joining.';
+
+  @override
+  String get copyCodeTooltip => 'Copy code';
+
+  @override
+  String get creatingEllipsis => 'Creating...';
+
+  @override
+  String get createInviteCodeButton => 'Create invite code';
+
+  @override
+  String get codeCopiedSnackbar => 'Code copied.';
+
+  @override
+  String get inviteExpiresWithinHour => 'Expires within the hour';
+
+  @override
+  String inviteExpiresInHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Expires in $count hours',
+      one: 'Expires in $count hour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String inviteExpiresInDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Expires in $count days',
+      one: 'Expires in $count day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get householdRoleOwner => 'Owner';
+
+  @override
+  String get householdRoleAdult => 'Member';
+
+  @override
+  String get unknownDisplayName => 'Unknown';
+
+  @override
+  String get joinHouseholdTitle => 'Enter your invite code';
+
+  @override
+  String get joinHouseholdSubtitle =>
+      'Ask someone in the household to generate a code for you.';
+
+  @override
+  String get joinButton => 'Join';
+
+  @override
+  String get createHouseholdInsteadButton => 'Create a household instead';
+
+  @override
+  String get importPasteTitle => 'Paste a recipe';
+
+  @override
+  String get importPasteBody =>
+      'Paste the whole thing -- ingredients, method, whatever else came with it. Extra text around the recipe is fine.';
+
+  @override
+  String get importPasteHint =>
+      'Carrot cake\n\n200 g carrots\n2 cups all-purpose flour…';
+
+  @override
+  String get importSourceFieldLabel => 'Where it came from (optional)';
+
+  @override
+  String get importSourceHelperText => 'Stored and shown with the recipe.';
+
+  @override
+  String get readRecipeButton => 'Read this recipe';
+
+  @override
+  String get importPhotoTitle => 'Photograph a page';
+
+  @override
+  String get importPhotoBody =>
+      'Fill the frame with the recipe. A whole page is fine -- two columns, a sidebar of ingredients, a photo of the dish. Anything it credits is saved with the recipe.';
+
+  @override
+  String get takePhotoButton => 'Take a photo';
+
+  @override
+  String get choosePhotoButton => 'Choose a photo';
+
+  @override
+  String get importUrlTitle => 'Import from a link';
+
+  @override
+  String get importUrlBody =>
+      'Paste the address of a recipe page. Whatever the page credits as its source is saved with the recipe.';
+
+  @override
+  String get linkFieldLabel => 'Link';
+
+  @override
+  String get reviewImportTitle => 'Review import';
+
+  @override
+  String get readingRecipeEllipsis => 'Reading the recipe...';
+
+  @override
+  String get queuedEllipsis => 'Queued...';
+
+  @override
+  String get importWaitingHint =>
+      'This takes a few seconds. You can leave and come back.';
+
+  @override
+  String get discardImportButton => 'Discard this import';
+
+  @override
+  String get openRecipeButton => 'Open the recipe';
+
+  @override
+  String get methodHeading => 'Method';
+
+  @override
+  String get saveRecipeButton => 'Save recipe';
+
+  @override
+  String importMatchedOfTotal(int matched, String totalPhrase) {
+    return '$matched of $totalPhrase matched';
+  }
+
+  @override
+  String importWorthALook(int attention) {
+    return '$attention worth a look before saving';
+  }
 }

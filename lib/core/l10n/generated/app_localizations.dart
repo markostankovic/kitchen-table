@@ -877,6 +877,300 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Dodaj'**
   String get addButton;
+
+  /// Create-household screen (onboarding), the headline.
+  ///
+  /// In sr, this message translates to:
+  /// **'Imenujte svoje domaćinstvo'**
+  String get createHouseholdTitle;
+
+  /// Create-household screen, the subtitle under the headline.
+  ///
+  /// In sr, this message translates to:
+  /// **'Recepti i planovi obroka se dele sa svima u njemu.'**
+  String get createHouseholdSubtitle;
+
+  /// Create-household screen's text field label, and the household screen's own subtitle under the household's name -- same phrase, both places.
+  ///
+  /// In sr, this message translates to:
+  /// **'Naziv domaćinstva'**
+  String get householdNameFieldLabel;
+
+  /// Create-household screen, the name field's validator error when left blank.
+  ///
+  /// In sr, this message translates to:
+  /// **'Unesite naziv.'**
+  String get householdNameEmptyError;
+
+  /// Create-household screen, the submit button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napravi'**
+  String get createHouseholdButton;
+
+  /// Create-household screen, the link to the join-by-code screen instead.
+  ///
+  /// In sr, this message translates to:
+  /// **'Imam pozivni kod'**
+  String get haveInviteCodeButton;
+
+  /// Household screen's AppBar title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Domaćinstvo'**
+  String get householdScreenTitle;
+
+  /// Household screen, shown if somehow reached with no household resolved yet.
+  ///
+  /// In sr, this message translates to:
+  /// **'Još nema domaćinstva.'**
+  String get noHouseholdYet;
+
+  /// Household screen, the members list's section header.
+  ///
+  /// In sr, this message translates to:
+  /// **'Članovi'**
+  String get membersSectionTitle;
+
+  /// Household screen, the invites list's section header.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pozovi nekoga'**
+  String get inviteSomeoneSectionTitle;
+
+  /// Household screen, the members and invites lists' own loading placeholder -- one word, used in both places rather than a per-list variant.
+  ///
+  /// In sr, this message translates to:
+  /// **'Učitavanje...'**
+  String get loadingEllipsis;
+
+  /// Household screen, shown under Invite someone when there are no live invite codes.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema aktivnih kodova. Napravite jedan i pročitajte ga onome ko se priključuje.'**
+  String get noActiveCodesMessage;
+
+  /// Household screen, the icon button that copies an invite code to the clipboard.
+  ///
+  /// In sr, this message translates to:
+  /// **'Kopiraj kod'**
+  String get copyCodeTooltip;
+
+  /// Household screen, the create-invite button's own label while the request is in flight.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pravljenje...'**
+  String get creatingEllipsis;
+
+  /// Household screen, the button that requests a new invite code.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napravi pozivni kod'**
+  String get createInviteCodeButton;
+
+  /// Household screen, the SnackBar shown after copying an invite code.
+  ///
+  /// In sr, this message translates to:
+  /// **'Kod kopiran.'**
+  String get codeCopiedSnackbar;
+
+  /// Household screen, an invite code's expiry line when under an hour remains.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ističe za manje od sat vremena'**
+  String get inviteExpiresWithinHour;
+
+  /// Household screen, an invite code's expiry line when between one hour and one day remains.
+  ///
+  /// In sr, this message translates to:
+  /// **'{count, plural, one{Ističe za {count} sat} few{Ističe za {count} sata} other{Ističe za {count} sati}}'**
+  String inviteExpiresInHours(int count);
+
+  /// Household screen, an invite code's expiry line when a day or more remains.
+  ///
+  /// In sr, this message translates to:
+  /// **'{count, plural, one{Ističe za {count} dan} few{Ističe za {count} dana} other{Ističe za {count} dana}}'**
+  String inviteExpiresInDays(int count);
+
+  /// Household screen, a member row's subtitle for HouseholdRole.owner.
+  ///
+  /// In sr, this message translates to:
+  /// **'Vlasnik'**
+  String get householdRoleOwner;
+
+  /// Household screen, a member row's subtitle for HouseholdRole.adult -- previously rendered as the raw enum name ('owner'/'adult') in both languages.
+  ///
+  /// In sr, this message translates to:
+  /// **'Član'**
+  String get householdRoleAdult;
+
+  /// Household screen, a member row's title when the co-member profile policy withheld the display name.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nepoznato'**
+  String get unknownDisplayName;
+
+  /// Join-household screen (onboarding), the headline.
+  ///
+  /// In sr, this message translates to:
+  /// **'Unesite svoj pozivni kod'**
+  String get joinHouseholdTitle;
+
+  /// Join-household screen, the subtitle under the headline.
+  ///
+  /// In sr, this message translates to:
+  /// **'Zamolite nekoga iz domaćinstva da vam napravi kod.'**
+  String get joinHouseholdSubtitle;
+
+  /// Join-household screen, the submit button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Priključi se'**
+  String get joinButton;
+
+  /// Join-household screen, the link back to create-household instead.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napravi domaćinstvo umesto toga'**
+  String get createHouseholdInsteadButton;
+
+  /// Import-by-paste screen's AppBar title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nalepi recept'**
+  String get importPasteTitle;
+
+  /// Import-by-paste screen, the instruction line above the text field.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nalepite ceo tekst -- sastojke, postupak, šta god je stiglo uz recept. Nije problem ako ima i dodatnog teksta oko recepta.'**
+  String get importPasteBody;
+
+  /// Import-by-paste screen, the paste field's sample hint. Looked up by the READER's chrome locale, not a recipe's -- there is no recipe yet at this point, unlike ingredientLineHint's rule.
+  ///
+  /// In sr, this message translates to:
+  /// **'Šargarepa torta\n\n200 g šargarepe\n2 šolje brašna…'**
+  String get importPasteHint;
+
+  /// Import-by-paste screen, the source-attribution field's label.
+  ///
+  /// In sr, this message translates to:
+  /// **'Odakle je (opcionalno)'**
+  String get importSourceFieldLabel;
+
+  /// Import-by-paste screen, the source-attribution field's helper text.
+  ///
+  /// In sr, this message translates to:
+  /// **'Čuva se i prikazuje uz recept.'**
+  String get importSourceHelperText;
+
+  /// The submit button shared by all three import entry screens (paste, photo, link).
+  ///
+  /// In sr, this message translates to:
+  /// **'Pročitaj ovaj recept'**
+  String get readRecipeButton;
+
+  /// Import-by-photo screen's AppBar title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Fotografiši stranicu'**
+  String get importPhotoTitle;
+
+  /// Import-by-photo screen, the instruction line above the camera/gallery buttons.
+  ///
+  /// In sr, this message translates to:
+  /// **'Uklopite recept u kadar. U redu je i cela stranica -- dve kolone, spisak sastojaka postrani, fotografija jela. Sve što je navedeno kao izvor se čuva uz recept.'**
+  String get importPhotoBody;
+
+  /// Import-by-photo screen, the camera-source button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Fotografiši'**
+  String get takePhotoButton;
+
+  /// Import-by-photo screen, the gallery-source button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Izaberi fotografiju'**
+  String get choosePhotoButton;
+
+  /// Import-by-link screen's AppBar title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Uvezi sa linka'**
+  String get importUrlTitle;
+
+  /// Import-by-link screen, the instruction line above the URL field.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nalepite adresu stranice sa receptom. Šta god stranica navede kao izvor se čuva uz recept.'**
+  String get importUrlBody;
+
+  /// Import-by-link screen, the URL field's label.
+  ///
+  /// In sr, this message translates to:
+  /// **'Link'**
+  String get linkFieldLabel;
+
+  /// Import review screen's AppBar title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pregled uvoza'**
+  String get reviewImportTitle;
+
+  /// Import review screen, the waiting state's status line while the job is processing.
+  ///
+  /// In sr, this message translates to:
+  /// **'Čitanje recepta...'**
+  String get readingRecipeEllipsis;
+
+  /// Import review screen, the waiting state's status line while the job is still queued.
+  ///
+  /// In sr, this message translates to:
+  /// **'U redu čekanja...'**
+  String get queuedEllipsis;
+
+  /// Import review screen, the waiting state's reassurance line.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ovo traje nekoliko sekundi. Možete izaći i vratiti se.'**
+  String get importWaitingHint;
+
+  /// Import review screen, the failed state's dismiss button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Odbaci ovaj uvoz'**
+  String get discardImportButton;
+
+  /// Import review screen, the already-saved state's button to the saved recipe.
+  ///
+  /// In sr, this message translates to:
+  /// **'Otvori recept'**
+  String get openRecipeButton;
+
+  /// Import review screen, the steps section's heading (recipe_edit_screen's own steps section has no heading of its own to share).
+  ///
+  /// In sr, this message translates to:
+  /// **'Postupak'**
+  String get methodHeading;
+
+  /// Import review screen, the save bar's submit button -- distinct from the generic saveButton ('Save') used elsewhere.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sačuvaj recept'**
+  String get saveRecipeButton;
+
+  /// Import review screen, the summary card's first line. {totalPhrase} is ingredientsMatchedCount(total), composed rather than duplicating its plural rule.
+  ///
+  /// In sr, this message translates to:
+  /// **'Poklopljeno {matched} od {totalPhrase}'**
+  String importMatchedOfTotal(int matched, String totalPhrase);
+
+  /// Import review screen, the summary card's second line -- shown only when at least one line needs a look.
+  ///
+  /// In sr, this message translates to:
+  /// **'{attention} vredno pažnje pre čuvanja'**
+  String importWorthALook(int attention);
 }
 
 class _AppLocalizationsDelegate

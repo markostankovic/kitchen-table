@@ -70,7 +70,7 @@ void main() {
   ) async {
     await _pump(tester, share: const SharedUrl(_url));
 
-    expect(find.widgetWithText(AppBar, 'Import from a link'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, _sr.importUrlTitle), findsOneWidget);
     expect(find.text(_url), findsOneWidget,
         reason: 'the shared link should already be in the field');
   });
@@ -80,7 +80,7 @@ void main() {
 
     // The button is still there and still enabled: sharing the wrong page
     // costs a tap, not a model call.
-    expect(find.text('Read this recipe'), findsOneWidget);
+    expect(find.text(_sr.readRecipeButton), findsOneWidget);
     final FilledButton button =
         tester.widget<FilledButton>(find.byType(FilledButton));
     expect(button.onPressed, isNotNull);
@@ -94,7 +94,7 @@ void main() {
       share: const SharedText('200 g šargarepe', sourceUrl: 'https://x.test/r'),
     );
 
-    expect(find.widgetWithText(AppBar, 'Paste a recipe'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, _sr.importPasteTitle), findsOneWidget);
     expect(find.text('200 g šargarepe'), findsOneWidget);
     expect(find.text('https://x.test/r'), findsOneWidget,
         reason: 'the link that came with the text is attribution');
@@ -110,7 +110,7 @@ void main() {
 
     expect(find.text(_sr.sendCode), findsOneWidget,
         reason: 'sign-in still wins; the share must not jump the queue');
-    expect(find.widgetWithText(AppBar, 'Import from a link'), findsNothing);
+    expect(find.widgetWithText(AppBar, _sr.importUrlTitle), findsNothing);
   });
 
   testWidgets('a share arriving before onboarding is held too', (
@@ -118,8 +118,8 @@ void main() {
   ) async {
     await _pump(tester, share: const SharedUrl(_url), household: null);
 
-    expect(find.text('Name your household'), findsOneWidget);
-    expect(find.widgetWithText(AppBar, 'Import from a link'), findsNothing);
+    expect(find.text(_sr.createHouseholdTitle), findsOneWidget);
+    expect(find.widgetWithText(AppBar, _sr.importUrlTitle), findsNothing);
   });
 
   testWidgets('no share means the app opens where it always did', (

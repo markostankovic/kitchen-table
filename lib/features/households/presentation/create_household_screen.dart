@@ -68,12 +68,12 @@ class _CreateHouseholdScreenState
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  Text('Name your household',
+                  Text(l10n.createHouseholdTitle,
                       style: Theme.of(context).textTheme.headlineSmall,
                       textAlign: TextAlign.center),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Recipes and meal plans are shared with everyone in it.',
+                  Text(
+                    l10n.createHouseholdSubtitle,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -81,12 +81,13 @@ class _CreateHouseholdScreenState
                     controller: _name,
                     autofocus: true,
                     textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Household name',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.householdNameFieldLabel,
+                      border: const OutlineInputBorder(),
                     ),
-                    validator: (String? value) =>
-                        (value ?? '').trim().isEmpty ? 'Enter a name.' : null,
+                    validator: (String? value) => (value ?? '').trim().isEmpty
+                        ? l10n.householdNameEmptyError
+                        : null,
                     onFieldSubmitted: (_) => _submit(),
                   ),
                   if (_failure != null) ...<Widget>[
@@ -106,14 +107,14 @@ class _CreateHouseholdScreenState
                             width: 16,
                             child:
                                 CircularProgressIndicator(strokeWidth: 2))
-                        : const Text('Create'),
+                        : Text(l10n.createHouseholdButton),
                   ),
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed: _saving
                         ? null
                         : () => const JoinHouseholdRoute().go(context),
-                    child: const Text('I have an invite code'),
+                    child: Text(l10n.haveInviteCodeButton),
                   ),
                 ],
               ),

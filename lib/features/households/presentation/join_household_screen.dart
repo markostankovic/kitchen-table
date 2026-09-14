@@ -67,12 +67,12 @@ class _JoinHouseholdScreenState extends ConsumerState<JoinHouseholdScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Text('Enter your invite code',
+                Text(l10n.joinHouseholdTitle,
                     style: Theme.of(context).textTheme.headlineSmall,
                     textAlign: TextAlign.center),
                 const SizedBox(height: 8),
-                const Text(
-                  'Ask someone in the household to generate a code for you.',
+                Text(
+                  l10n.joinHouseholdSubtitle,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -108,14 +108,14 @@ class _JoinHouseholdScreenState extends ConsumerState<JoinHouseholdScreen> {
                           height: 16,
                           width: 16,
                           child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Join'),
+                      : Text(l10n.joinButton),
                 ),
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: _joining
                       ? null
                       : () => const CreateHouseholdRoute().go(context),
-                  child: const Text('Create a household instead'),
+                  child: Text(l10n.createHouseholdInsteadButton),
                 ),
               ],
             ),

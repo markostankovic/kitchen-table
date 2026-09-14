@@ -70,13 +70,12 @@ class _ImportPasteScreenState extends ConsumerState<ImportPasteScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Paste a recipe')),
+      appBar: AppBar(title: Text(l10n.importPasteTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: <Widget>[
           Text(
-            'Paste the whole thing -- ingredients, method, whatever else came '
-            'with it. Extra text around the recipe is fine.',
+            l10n.importPasteBody,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
@@ -85,19 +84,19 @@ class _ImportPasteScreenState extends ConsumerState<ImportPasteScreen> {
             maxLines: 14,
             minLines: 8,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: 'Šargarepa torta\n\n200 g šargarepe\n2 šolje brašna…',
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              hintText: l10n.importPasteHint,
             ),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _sourceUrl,
             keyboardType: TextInputType.url,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Where it came from (optional)',
-              helperText: 'Stored and shown with the recipe.',
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              labelText: l10n.importSourceFieldLabel,
+              helperText: l10n.importSourceHelperText,
             ),
           ),
         ],
@@ -124,7 +123,7 @@ class _ImportPasteScreenState extends ConsumerState<ImportPasteScreen> {
                         width: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Read this recipe'),
+                    : Text(l10n.readRecipeButton),
               ),
             ],
           ),

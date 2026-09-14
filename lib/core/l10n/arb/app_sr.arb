@@ -605,5 +605,231 @@
   "addButton": "Dodaj",
   "@addButton": {
     "description": "Recipe picker sheet, the note-entry dialog's confirm button -- a bare 'Add', distinct from addIngredientButton/addStepButton which name what they add."
+  },
+
+  "createHouseholdTitle": "Imenujte svoje domaćinstvo",
+  "@createHouseholdTitle": {
+    "description": "Create-household screen (onboarding), the headline."
+  },
+  "createHouseholdSubtitle": "Recepti i planovi obroka se dele sa svima u njemu.",
+  "@createHouseholdSubtitle": {
+    "description": "Create-household screen, the subtitle under the headline."
+  },
+  "householdNameFieldLabel": "Naziv domaćinstva",
+  "@householdNameFieldLabel": {
+    "description": "Create-household screen's text field label, and the household screen's own subtitle under the household's name -- same phrase, both places."
+  },
+  "householdNameEmptyError": "Unesite naziv.",
+  "@householdNameEmptyError": {
+    "description": "Create-household screen, the name field's validator error when left blank."
+  },
+  "createHouseholdButton": "Napravi",
+  "@createHouseholdButton": {
+    "description": "Create-household screen, the submit button."
+  },
+  "haveInviteCodeButton": "Imam pozivni kod",
+  "@haveInviteCodeButton": {
+    "description": "Create-household screen, the link to the join-by-code screen instead."
+  },
+
+  "householdScreenTitle": "Domaćinstvo",
+  "@householdScreenTitle": {
+    "description": "Household screen's AppBar title."
+  },
+  "noHouseholdYet": "Još nema domaćinstva.",
+  "@noHouseholdYet": {
+    "description": "Household screen, shown if somehow reached with no household resolved yet."
+  },
+  "membersSectionTitle": "Članovi",
+  "@membersSectionTitle": {
+    "description": "Household screen, the members list's section header."
+  },
+  "inviteSomeoneSectionTitle": "Pozovi nekoga",
+  "@inviteSomeoneSectionTitle": {
+    "description": "Household screen, the invites list's section header."
+  },
+  "loadingEllipsis": "Učitavanje...",
+  "@loadingEllipsis": {
+    "description": "Household screen, the members and invites lists' own loading placeholder -- one word, used in both places rather than a per-list variant."
+  },
+  "noActiveCodesMessage": "Nema aktivnih kodova. Napravite jedan i pročitajte ga onome ko se priključuje.",
+  "@noActiveCodesMessage": {
+    "description": "Household screen, shown under Invite someone when there are no live invite codes."
+  },
+  "copyCodeTooltip": "Kopiraj kod",
+  "@copyCodeTooltip": {
+    "description": "Household screen, the icon button that copies an invite code to the clipboard."
+  },
+  "creatingEllipsis": "Pravljenje...",
+  "@creatingEllipsis": {
+    "description": "Household screen, the create-invite button's own label while the request is in flight."
+  },
+  "createInviteCodeButton": "Napravi pozivni kod",
+  "@createInviteCodeButton": {
+    "description": "Household screen, the button that requests a new invite code."
+  },
+  "codeCopiedSnackbar": "Kod kopiran.",
+  "@codeCopiedSnackbar": {
+    "description": "Household screen, the SnackBar shown after copying an invite code."
+  },
+  "inviteExpiresWithinHour": "Ističe za manje od sat vremena",
+  "@inviteExpiresWithinHour": {
+    "description": "Household screen, an invite code's expiry line when under an hour remains."
+  },
+  "inviteExpiresInHours": "{count, plural, one{Ističe za {count} sat} few{Ističe za {count} sata} other{Ističe za {count} sati}}",
+  "@inviteExpiresInHours": {
+    "description": "Household screen, an invite code's expiry line when between one hour and one day remains.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "inviteExpiresInDays": "{count, plural, one{Ističe za {count} dan} few{Ističe za {count} dana} other{Ističe za {count} dana}}",
+  "@inviteExpiresInDays": {
+    "description": "Household screen, an invite code's expiry line when a day or more remains.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "householdRoleOwner": "Vlasnik",
+  "@householdRoleOwner": {
+    "description": "Household screen, a member row's subtitle for HouseholdRole.owner."
+  },
+  "householdRoleAdult": "Član",
+  "@householdRoleAdult": {
+    "description": "Household screen, a member row's subtitle for HouseholdRole.adult -- previously rendered as the raw enum name ('owner'/'adult') in both languages."
+  },
+  "unknownDisplayName": "Nepoznato",
+  "@unknownDisplayName": {
+    "description": "Household screen, a member row's title when the co-member profile policy withheld the display name."
+  },
+
+  "joinHouseholdTitle": "Unesite svoj pozivni kod",
+  "@joinHouseholdTitle": {
+    "description": "Join-household screen (onboarding), the headline."
+  },
+  "joinHouseholdSubtitle": "Zamolite nekoga iz domaćinstva da vam napravi kod.",
+  "@joinHouseholdSubtitle": {
+    "description": "Join-household screen, the subtitle under the headline."
+  },
+  "joinButton": "Priključi se",
+  "@joinButton": {
+    "description": "Join-household screen, the submit button."
+  },
+  "createHouseholdInsteadButton": "Napravi domaćinstvo umesto toga",
+  "@createHouseholdInsteadButton": {
+    "description": "Join-household screen, the link back to create-household instead."
+  },
+
+  "importPasteTitle": "Nalepi recept",
+  "@importPasteTitle": {
+    "description": "Import-by-paste screen's AppBar title."
+  },
+  "importPasteBody": "Nalepite ceo tekst -- sastojke, postupak, šta god je stiglo uz recept. Nije problem ako ima i dodatnog teksta oko recepta.",
+  "@importPasteBody": {
+    "description": "Import-by-paste screen, the instruction line above the text field."
+  },
+  "importPasteHint": "Šargarepa torta\n\n200 g šargarepe\n2 šolje brašna…",
+  "@importPasteHint": {
+    "description": "Import-by-paste screen, the paste field's sample hint. Looked up by the READER's chrome locale, not a recipe's -- there is no recipe yet at this point, unlike ingredientLineHint's rule."
+  },
+  "importSourceFieldLabel": "Odakle je (opcionalno)",
+  "@importSourceFieldLabel": {
+    "description": "Import-by-paste screen, the source-attribution field's label."
+  },
+  "importSourceHelperText": "Čuva se i prikazuje uz recept.",
+  "@importSourceHelperText": {
+    "description": "Import-by-paste screen, the source-attribution field's helper text."
+  },
+  "readRecipeButton": "Pročitaj ovaj recept",
+  "@readRecipeButton": {
+    "description": "The submit button shared by all three import entry screens (paste, photo, link)."
+  },
+
+  "importPhotoTitle": "Fotografiši stranicu",
+  "@importPhotoTitle": {
+    "description": "Import-by-photo screen's AppBar title."
+  },
+  "importPhotoBody": "Uklopite recept u kadar. U redu je i cela stranica -- dve kolone, spisak sastojaka postrani, fotografija jela. Sve što je navedeno kao izvor se čuva uz recept.",
+  "@importPhotoBody": {
+    "description": "Import-by-photo screen, the instruction line above the camera/gallery buttons."
+  },
+  "takePhotoButton": "Fotografiši",
+  "@takePhotoButton": {
+    "description": "Import-by-photo screen, the camera-source button."
+  },
+  "choosePhotoButton": "Izaberi fotografiju",
+  "@choosePhotoButton": {
+    "description": "Import-by-photo screen, the gallery-source button."
+  },
+
+  "importUrlTitle": "Uvezi sa linka",
+  "@importUrlTitle": {
+    "description": "Import-by-link screen's AppBar title."
+  },
+  "importUrlBody": "Nalepite adresu stranice sa receptom. Šta god stranica navede kao izvor se čuva uz recept.",
+  "@importUrlBody": {
+    "description": "Import-by-link screen, the instruction line above the URL field."
+  },
+  "linkFieldLabel": "Link",
+  "@linkFieldLabel": {
+    "description": "Import-by-link screen, the URL field's label."
+  },
+
+  "reviewImportTitle": "Pregled uvoza",
+  "@reviewImportTitle": {
+    "description": "Import review screen's AppBar title."
+  },
+  "readingRecipeEllipsis": "Čitanje recepta...",
+  "@readingRecipeEllipsis": {
+    "description": "Import review screen, the waiting state's status line while the job is processing."
+  },
+  "queuedEllipsis": "U redu čekanja...",
+  "@queuedEllipsis": {
+    "description": "Import review screen, the waiting state's status line while the job is still queued."
+  },
+  "importWaitingHint": "Ovo traje nekoliko sekundi. Možete izaći i vratiti se.",
+  "@importWaitingHint": {
+    "description": "Import review screen, the waiting state's reassurance line."
+  },
+  "discardImportButton": "Odbaci ovaj uvoz",
+  "@discardImportButton": {
+    "description": "Import review screen, the failed state's dismiss button."
+  },
+  "openRecipeButton": "Otvori recept",
+  "@openRecipeButton": {
+    "description": "Import review screen, the already-saved state's button to the saved recipe."
+  },
+  "methodHeading": "Postupak",
+  "@methodHeading": {
+    "description": "Import review screen, the steps section's heading (recipe_edit_screen's own steps section has no heading of its own to share)."
+  },
+  "saveRecipeButton": "Sačuvaj recept",
+  "@saveRecipeButton": {
+    "description": "Import review screen, the save bar's submit button -- distinct from the generic saveButton ('Save') used elsewhere."
+  },
+  "importMatchedOfTotal": "Poklopljeno {matched} od {totalPhrase}",
+  "@importMatchedOfTotal": {
+    "description": "Import review screen, the summary card's first line. {totalPhrase} is ingredientsMatchedCount(total), composed rather than duplicating its plural rule.",
+    "placeholders": {
+      "matched": {
+        "type": "int"
+      },
+      "totalPhrase": {
+        "type": "String"
+      }
+    }
+  },
+  "importWorthALook": "{attention} vredno pažnje pre čuvanja",
+  "@importWorthALook": {
+    "description": "Import review screen, the summary card's second line -- shown only when at least one line needs a look.",
+    "placeholders": {
+      "attention": {
+        "type": "int"
+      }
+    }
   }
 }

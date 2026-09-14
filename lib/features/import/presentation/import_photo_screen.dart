@@ -115,14 +115,12 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
     final Uint8List? bytes = _bytes;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Photograph a page')),
+      appBar: AppBar(title: Text(l10n.importPhotoTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: <Widget>[
           Text(
-            'Fill the frame with the recipe. A whole page is fine -- two '
-            'columns, a sidebar of ingredients, a photo of the dish. Anything '
-            'it credits is saved with the recipe.',
+            l10n.importPhotoBody,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
@@ -132,7 +130,7 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
                 child: OutlinedButton.icon(
                   onPressed: _busy ? null : () => _pick(ImageSource.camera),
                   icon: const Icon(Icons.photo_camera_outlined),
-                  label: const Text('Take a photo'),
+                  label: Text(l10n.takePhotoButton),
                 ),
               ),
               const SizedBox(width: 12),
@@ -140,7 +138,7 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
                 child: OutlinedButton.icon(
                   onPressed: _busy ? null : () => _pick(ImageSource.gallery),
                   icon: const Icon(Icons.photo_library_outlined),
-                  label: const Text('Choose a photo'),
+                  label: Text(l10n.choosePhotoButton),
                 ),
               ),
             ],
@@ -178,7 +176,7 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
                         width: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Read this recipe'),
+                    : Text(l10n.readRecipeButton),
               ),
             ],
           ),

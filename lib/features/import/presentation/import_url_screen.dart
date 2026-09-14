@@ -59,13 +59,12 @@ class _ImportUrlScreenState extends ConsumerState<ImportUrlScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Import from a link')),
+      appBar: AppBar(title: Text(l10n.importUrlTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: <Widget>[
           Text(
-            'Paste the address of a recipe page. Whatever the page credits as '
-            'its source is saved with the recipe.',
+            l10n.importUrlBody,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
@@ -77,9 +76,9 @@ class _ImportUrlScreenState extends ConsumerState<ImportUrlScreen> {
             // cover the button the cook is being asked to press.
             autofocus: widget.initialUrl == null,
             onSubmitted: (_) => _submitting ? null : _submit(),
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Link',
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              labelText: l10n.linkFieldLabel,
               hintText: 'https://…',
             ),
           ),
@@ -107,7 +106,7 @@ class _ImportUrlScreenState extends ConsumerState<ImportUrlScreen> {
                         width: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Read this recipe'),
+                    : Text(l10n.readRecipeButton),
               ),
             ],
           ),

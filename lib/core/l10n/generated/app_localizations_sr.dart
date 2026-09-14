@@ -462,4 +462,181 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get addButton => 'Dodaj';
+
+  @override
+  String get createHouseholdTitle => 'Imenujte svoje domaćinstvo';
+
+  @override
+  String get createHouseholdSubtitle =>
+      'Recepti i planovi obroka se dele sa svima u njemu.';
+
+  @override
+  String get householdNameFieldLabel => 'Naziv domaćinstva';
+
+  @override
+  String get householdNameEmptyError => 'Unesite naziv.';
+
+  @override
+  String get createHouseholdButton => 'Napravi';
+
+  @override
+  String get haveInviteCodeButton => 'Imam pozivni kod';
+
+  @override
+  String get householdScreenTitle => 'Domaćinstvo';
+
+  @override
+  String get noHouseholdYet => 'Još nema domaćinstva.';
+
+  @override
+  String get membersSectionTitle => 'Članovi';
+
+  @override
+  String get inviteSomeoneSectionTitle => 'Pozovi nekoga';
+
+  @override
+  String get loadingEllipsis => 'Učitavanje...';
+
+  @override
+  String get noActiveCodesMessage =>
+      'Nema aktivnih kodova. Napravite jedan i pročitajte ga onome ko se priključuje.';
+
+  @override
+  String get copyCodeTooltip => 'Kopiraj kod';
+
+  @override
+  String get creatingEllipsis => 'Pravljenje...';
+
+  @override
+  String get createInviteCodeButton => 'Napravi pozivni kod';
+
+  @override
+  String get codeCopiedSnackbar => 'Kod kopiran.';
+
+  @override
+  String get inviteExpiresWithinHour => 'Ističe za manje od sat vremena';
+
+  @override
+  String inviteExpiresInHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ističe za $count sati',
+      few: 'Ističe za $count sata',
+      one: 'Ističe za $count sat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String inviteExpiresInDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ističe za $count dana',
+      few: 'Ističe za $count dana',
+      one: 'Ističe za $count dan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get householdRoleOwner => 'Vlasnik';
+
+  @override
+  String get householdRoleAdult => 'Član';
+
+  @override
+  String get unknownDisplayName => 'Nepoznato';
+
+  @override
+  String get joinHouseholdTitle => 'Unesite svoj pozivni kod';
+
+  @override
+  String get joinHouseholdSubtitle =>
+      'Zamolite nekoga iz domaćinstva da vam napravi kod.';
+
+  @override
+  String get joinButton => 'Priključi se';
+
+  @override
+  String get createHouseholdInsteadButton => 'Napravi domaćinstvo umesto toga';
+
+  @override
+  String get importPasteTitle => 'Nalepi recept';
+
+  @override
+  String get importPasteBody =>
+      'Nalepite ceo tekst -- sastojke, postupak, šta god je stiglo uz recept. Nije problem ako ima i dodatnog teksta oko recepta.';
+
+  @override
+  String get importPasteHint =>
+      'Šargarepa torta\n\n200 g šargarepe\n2 šolje brašna…';
+
+  @override
+  String get importSourceFieldLabel => 'Odakle je (opcionalno)';
+
+  @override
+  String get importSourceHelperText => 'Čuva se i prikazuje uz recept.';
+
+  @override
+  String get readRecipeButton => 'Pročitaj ovaj recept';
+
+  @override
+  String get importPhotoTitle => 'Fotografiši stranicu';
+
+  @override
+  String get importPhotoBody =>
+      'Uklopite recept u kadar. U redu je i cela stranica -- dve kolone, spisak sastojaka postrani, fotografija jela. Sve što je navedeno kao izvor se čuva uz recept.';
+
+  @override
+  String get takePhotoButton => 'Fotografiši';
+
+  @override
+  String get choosePhotoButton => 'Izaberi fotografiju';
+
+  @override
+  String get importUrlTitle => 'Uvezi sa linka';
+
+  @override
+  String get importUrlBody =>
+      'Nalepite adresu stranice sa receptom. Šta god stranica navede kao izvor se čuva uz recept.';
+
+  @override
+  String get linkFieldLabel => 'Link';
+
+  @override
+  String get reviewImportTitle => 'Pregled uvoza';
+
+  @override
+  String get readingRecipeEllipsis => 'Čitanje recepta...';
+
+  @override
+  String get queuedEllipsis => 'U redu čekanja...';
+
+  @override
+  String get importWaitingHint =>
+      'Ovo traje nekoliko sekundi. Možete izaći i vratiti se.';
+
+  @override
+  String get discardImportButton => 'Odbaci ovaj uvoz';
+
+  @override
+  String get openRecipeButton => 'Otvori recept';
+
+  @override
+  String get methodHeading => 'Postupak';
+
+  @override
+  String get saveRecipeButton => 'Sačuvaj recept';
+
+  @override
+  String importMatchedOfTotal(int matched, String totalPhrase) {
+    return 'Poklopljeno $matched od $totalPhrase';
+  }
+
+  @override
+  String importWorthALook(int attention) {
+    return '$attention vredno pažnje pre čuvanja';
+  }
 }
