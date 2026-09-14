@@ -70,6 +70,7 @@ final UnitCatalog _units = UnitCatalog(
     const Unit(code: 'ml', family: UnitFamily.volume, toBase: 1, toBaseExact: '1', isMetric: true),
     const Unit(code: 'dl', family: UnitFamily.volume, toBase: 100, toBaseExact: '100', isMetric: true),
     const Unit(code: 'l', family: UnitFamily.volume, toBase: 1000, toBaseExact: '1000', isMetric: true),
+    const Unit(code: 'kom', family: UnitFamily.count, toBase: 1, toBaseExact: '1'),
   ],
   aliases: <String, String>{},
   displayNames: <String, String>{
@@ -78,6 +79,8 @@ final UnitCatalog _units = UnitCatalog(
     'ml|sr': 'ml',
     'dl|sr': 'dl',
     'l|sr': 'l',
+    'kom|sr': 'kom',
+    'kom|en': 'pc',
   },
 );
 
@@ -101,11 +104,12 @@ ShoppingItem _item(
 ItemQuantity _q(int amount, UnitFamily family, String code) =>
     ItemQuantity(family: family, amount: Rational(amount, 1), unitCode: code);
 
-ShoppingList _list(List<ShoppingItem> items) => ShoppingList(
+ShoppingList _list(List<ShoppingItem> items, {String locale = 'sr'}) =>
+    ShoppingList(
       id: 'l1',
       dateFrom: DateTime(2026, 7, 6),
       dateTo: DateTime(2026, 7, 12),
-      locale: 'sr',
+      locale: locale,
       generatedAt: DateTime(2026, 7, 5),
       updatedAt: DateTime(2026, 7, 5),
       items: items,
@@ -180,6 +184,25 @@ void main() {
 
     expect(find.text('brašno'), findsOneWidget);
     expect(find.text('1.2 kg'), findsOneWidget);
+  });
+
+  testWidgets(
+      'count units follow the LIST\'s own locale, not a hardcoded default '
+      '(same class of bug as D81, one layer over)', (tester) async {
+    await _pump(
+      tester,
+      initial: _list(
+        <ShoppingItem>[
+          _item('eggs', quantities: <ItemQuantity>[
+            _q(3, UnitFamily.count, 'kom'),
+          ]),
+        ],
+        locale: 'en',
+      ),
+    );
+
+    expect(find.text('3 pc'), findsOneWidget);
+    expect(find.text('3 kom'), findsNothing);
   });
 
   testWidgets('two families on one line are shown side by side, never merged',

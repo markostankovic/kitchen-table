@@ -2190,6 +2190,262 @@ the column exists precisely so a list generated in one language does not
 render half-translated after a locale switch (migration 16's own comment),
 and it had been recording a falsehood since the day it shipped.
 
+## D82 — Reviewing a translation is a separate `security invoker` writer that updates in place and never creates a row
+
+**Decided.** Migration 18. `review_recipe_translation(recipe, loc, new_title,
+new_description, new_steps)` is a sibling of `save_recipe_translation`, not
+a parameter added to it. It `update`s the existing row and refuses outright
+if none exists for that locale — review edits prose that a machine (or a
+prior review) already produced; there is no client-facing path that
+hand-authors a translation from nothing, and this function is not it. No new
+RLS policy: `recipe_translations_update` (migration 17) already carries both
+`using` and `with check` over the same membership-through-parent predicate a
+review write needs, so this function holds no privilege the caller does not
+already have under RLS — it exists for validation and provenance, not
+authority.
+
+**Why a sibling, not a flag on `save_recipe_translation`.** Its own `on
+conflict` deliberately resets `is_machine_generated`, `reviewed_by` and
+`reviewed_at` to null on every re-translation (D78's own comment: the new
+prose has not been seen by anyone yet). A review wants the opposite of that
+on the same row. Two functions that want opposite defaults for the same
+columns are not one function with a flag; they are two functions, and
+`review_recipe_translation`'s own existence check plus update-only shape is
+what keeps the "create" path solely `save_recipe_translation`'s.
+
+**The position guard.** A reviewer may correct what a step says; they may
+not add, drop or renumber one. `review_recipe_translation` reads the row's
+own `steps` first (`select ... into old_steps`, which doubles as the
+existence check) and refuses unless the incoming steps' positions are
+exactly the row's own positions, as a sorted set. This checks against the
+translation ROW, not `recipe_steps`: `alignSteps` (D80) already tied the row
+to the recipe's own steps at write time, so the row is the nearer and
+cheaper authority, and a review is by definition editing the document that
+was opened. This is deliberately NOT rule 6's fourth cross-language pair —
+`alignSteps` validates a model's answer against a source it was given; this
+validates a human's edit against the row they opened. Same arithmetic,
+different inputs, no fixture that could be meaningful for both, which is
+why there is no `test/fixtures/step_positions.json` to go with it.
+
+**Rejected.** A `reviewed boolean` parameter on `save_recipe_translation` —
+would have needed a second conditional path inside a function whose whole
+shape is "guard, then upsert", and would have let a re-translation and a
+review race for the same row's meaning inside one function instead of two
+functions with two clear jobs. Locking the row with `for update` before the
+position check — nothing else in this project writes
+`recipe_translations` concurrently for the same `(recipe_id, locale)`, and
+no other function in the schema takes that lock, so adding it here would be
+a precedent with no problem behind it.
+
+## D83 — A review records provenance -- `is_machine_generated = false`, `reviewed_by` from `auth.uid()` -- and the app shows that it happened without saying who
+
+**Decided.** `review_recipe_translation` sets `is_machine_generated = false`
+even though the reviewer may have changed only one word, and stamps
+`reviewed_by = auth.uid()` — never a parameter — and `reviewed_at = now()`.
+The detail screen's *Machine translation* chip reads
+`isShowingMachineTranslation`, which reads that same column, so the chip
+disappears the moment a review lands with no code written to make it
+disappear. No *Reviewed* chip is added, and the reviewer's name is not shown
+anywhere.
+
+**Why provenance follows the last human who stood behind the text, not the
+first draft.** `MatchMethod.manual` (D7) is the precedent: accepting the
+match the machine already proposed still writes `manual`, "a human decision
+… never overwritten by a later machine pass." A human agreeing with a
+machine's own words is still a human decision, the same way
+`link_ingredient_alias` hardcoding `source = 'user'` (D42) means a human
+agreed, not that a human typed the string from scratch.
+
+**Why no `reviewed_by` parameter.** The RLS policy would happily let any
+household member write any uuid into that column; a client-supplied
+reviewer id is exactly the kind of self-reported provenance D7 exists to
+rule out. `auth.uid()` inside the function is what makes the column mean
+something rather than merely look like something.
+
+**Why no chip and no name shown.** This app's chips are caveats — *Draft*,
+*Machine translation* — never endorsements, and a *Reviewed* badge would be
+the first positive-state chip in the project, sitting on the ordinary case
+forever once every translation is eventually reviewed. Naming the reviewer
+is not merely a design choice deferred — it is priced here so a later part
+can choose it knowingly: `recipeDetailEmbed` does not join `profiles` today,
+and adding `profiles!reviewed_by(display_name)` would change the shape of
+the blob `RecipeCache.data` stores verbatim (D65), which by D78's own
+precedent (`AppDatabase.schemaVersion` 3 → 4 for a blob-shape change alone)
+costs another schema bump for a line nobody has asked for yet.
+
+**Rejected.** A `reviewedChipLabel` chip driven by `isReviewedTranslation` —
+cheap to add, and left out on the "chips are caveats" argument above rather
+than on cost. Showing the reviewer's name — priced above, not built,
+because the cost is a schema bump this part has no other reason to pay.
+
+## D84 — The review screen edits step text in place, keyed by position, source stacked above each field -- no add, no delete, no reorder, no ingredients
+
+**Decided.** `TranslationReviewDraft.setStepText` is keyed by
+`RecipeStep.position`, not a synthetic `localId` the way `RecipeDraft`'s
+line and step editors are. There is no `addStep`, `removeStep` or
+`reorderSteps` on this draft at all. Every field on the review screen pairs
+the recipe's own original text, read-only, directly above the editable
+translation for it — stacked, not two columns side by side. No ingredient
+editor appears anywhere on this screen.
+
+**Why position is the identity here, and `RecipeDraft`'s local ids are
+not.** `RecipeDraft`'s rows are added, deleted and dragged by a cook who is
+composing a recipe, so identity has to survive all three and a value cannot
+serve since two blank lines compare equal — hence a synthetic id.
+`review_recipe_translation` (D82) refuses a step count or position that does
+not already match the row, so the set of steps here is fixed for the whole
+life of the screen; position already uniquely and stably identifies each
+one, and adding a second id would be tracking two names for the same thing.
+
+**Why stacked rather than side by side.** Phone width, and rule of legibility
+— two columns of prose at 390dp is unreadable, and the reviewer's own eye
+movement is "read the line above, fix the line below it," which is a
+vertical motion, not a horizontal one.
+
+**Why no ingredient editor.** Unchanged from D1 and D80: ingredient lines
+are never translated per recipe, they render from the bilingual catalog at
+read time, so there is nothing on this screen for an ingredient editor to
+edit.
+
+**Rejected.** Reusing `RecipeEditScreen`'s `ReorderableListView` step section
+wholesale — it is drag-and-reorder by construction, and every affordance it
+offers (add, remove, reorder) is exactly the thing `review_recipe_translation`
+refuses server-side. Building the UI to allow what the database forbids
+would only move the failure from "cannot happen" to "happens, then bounces
+off a 22023."
+
+## D85 — Re-translating a reviewed translation is not offered, and the UI is the only guard
+
+**Decided.** `RecipeDetail.canTranslate` requires `translation == null`
+(unchanged since D78) and is never narrowed further by review state, so once
+any translation exists — reviewed or not — the *Translate to …* overflow
+item is gone for good on that recipe/locale pair. There is no
+`review_recipe_translation`-side or `save_recipe_translation`-side guard
+against a machine pass overwriting a human's review; migration 17's own
+`on conflict` clause still resets it, deliberately, the way D78 always
+intended.
+
+**Why the UI is allowed to be the only guard.** `translate-recipe` and
+`save_recipe_translation` are internal, `security invoker` and reachable
+only through a caller who is already a household member — there is no path
+by which a stray or hostile write could land there that RLS was not already
+going to allow the same person to make through the ordinary route. The
+thing being prevented is an accidental tap costing a human's edit, not an
+unauthorized write, and an accidental tap is exactly what removing the menu
+item from the itemBuilder prevents.
+
+**Rejected.** A `review_recipe_translation`-adjacent guard on
+`save_recipe_translation` refusing to overwrite a reviewed row — would have
+made an ordinary re-translation of an UNREVIEWED machine draft (the common
+case D78 was written for) indistinguishable in code from the rare case of
+protecting a review, and would have needed its own bypass for a household
+that genuinely wants to discard a bad review and start over, a need nobody
+has expressed yet. Offering *Translate again* behind a confirmation dialog
+once a translation exists but has not yet been reviewed — a real product
+question, deliberately left open rather than decided here: `canReview`
+already covers "there is something to review" without it, and adding a
+second, narrower `canRetranslate` getter is a small, separate decision for
+whoever picks this up next.
+
+## D86 — The editor's display names follow the reader, closing D81's own named consequence
+
+**Decided.** `RecipeEditor.build` now calls
+`repository.fetchDetail(recipeId, locale: readingLocale)` with
+`readingLocale` read from `appLocaleProvider` via `ref.read` (never
+`ref.watch`), instead of relying on `fetchDetail`'s bare `'sr'` default.
+`IngredientLineField`'s own `locale:` argument in the edit screen is left
+exactly as it was — `draft.originalLocale` — untouched by this decision.
+
+**Why this is D81's consequence, not a new problem.** D81's own title is
+"the reader's own locale resolves a display name, everywhere" — a matched
+ingredient's chip name is the app reporting which catalog entry it found,
+not part of the recipe's own content, so it is the same kind of value
+`RecipeDetailScreen` and `ShoppingListEditor.generate()` already corrected
+to follow the reader in D81 itself. `RecipeEditor.build`'s own comment had
+called this out by name rather than leaving it to be rediscovered, and this
+decision is that comment's resolution.
+
+**Why `ref.read`, not `ref.watch`.** `RecipeEditor.build`'s existing comment
+already explains the shape this has to respect: watching a provider inside
+`build()` re-runs the whole draft load whenever that provider's value
+changes, and a language switch mid-edit re-running the load would discard
+whatever the cook had already typed — the exact failure the comment warns
+against for `recipeDetailProvider`. A locale read once, at the moment the
+draft is opened, carries no such risk.
+
+**Why `IngredientLineField`'s own locale is untouched.** That parameter is
+a WRITE concern — the search locale for `ingredientMatchesProvider`, and the
+locale a newly created alias is written in — not a display concern.
+Pointing it at the reader would write a new alias in the reader's language
+even while editing a recipe written in the other one, which is a worse bug
+than the one being fixed. Display and write are different concerns in this
+screen and stay separated.
+
+**Consequence, left alone deliberately.** The ingredient PICKER's own
+candidate list (via `ingredientMatchesProvider(_query, locale:
+widget.locale)`) still renders in the recipe's own language while an
+already-accepted line's chip now renders in the reader's — the two were
+already different code paths before this decision, and unifying them is a
+matching-behaviour question (does `search_ingredients`' `preferred_locale`
+change which candidates are offered, not merely how they are labelled — it
+does, as a ranking tie-break) that belongs with the screens-localization
+part, not this one.
+
+**Rejected.** Threading the reading locale into the editor's route instead
+of reading `appLocaleProvider` directly — D81 named this as one option;
+`appLocaleProvider` already exists precisely so a screen does not need a
+second channel for "what language is the reader in" (D77), and a route
+parameter would be exactly that second channel.
+
+## D87 — `currentHouseholdIdProvider` has no offline path, and every household-scoped screen inherits that gap silently
+
+**Decided.** Recorded, not fixed here. The Phase 3 part 3 emulator walk —
+translate a recipe, review it, force-stop, disable the emulator's network,
+relaunch cold — found that the Recipes tab did not render the cached recipe
+it had every reason to have: `RecipeList.build()` (and `CurrentShoppingList
+.build()`, and `MealPlanEditor`'s own build, by the same shape) all open with
+`await ref.watch(currentHouseholdIdProvider.future)` before touching their
+own cache at all. `currentHouseholdIdProvider` calls
+`HouseholdRepository.fetchCurrent()` — a plain network read, no cache, no
+client-side timeout. Offline, that call does not fail fast: on this walk it
+took several minutes to finally throw `NetworkFailure`, and until it did,
+every household-scoped screen sat on a spinner, however well its own cache
+was populated underneath it.
+
+**It was not the recipe cache.** Pulled directly off the device
+(`/data/data/com.kitchentable.kitchen_table/files/kitchen_table_cache.sqlite`)
+mid-walk: the `recipe_cache` row for the recipe translated and reviewed
+earlier in the same walk was present, correctly keyed to the real household
+id, and so was its `sync_watermarks` row. `RecipeRepository.watchList`'s own
+cache-then-network shape (D67, widened D74) was never reached to prove or
+disprove itself — the household gate in front of it never let it run.
+
+**Why this was never caught before.** Every offline "Done when" from part 5
+onward (D67, D74, D75) was verified by walking the emulator ALREADY signed
+into an already-resolved household, generally within the same session that
+had just been online — `currentHouseholdIdProvider`, `keepAlive`, had
+already resolved and stayed resolved for the rest of that walk. This is the
+first walk to force a COLD start with no network from the very first frame,
+which is exactly the scenario a phone that lost signal overnight is in.
+
+**Consequence.** Every offline "Done when" this project has claimed met
+(D67, D74, D75, and Phase 2 part 6b's own) is truthful for a warm session --
+reopening a screen, or relaunching with a household already resolved -- and
+unverified for a genuinely cold, offline-from-first-frame one. That is a
+narrower claim than "recipes/meal plans/shopping list are readable offline"
+reads as, and this entry is what keeps the gap from being read as closed.
+
+**Rejected.** Fixing it inside this part — this is a Phase 2 architectural
+gap (household resolution was never on Phase 2's own offline list to begin
+with: recipes, meal plans, the shopping list and the ingredient catalog were
+D71/D72/D73/D75's whole scope, and `currentHouseholdIdProvider` predates all
+of them, D33/D52). A real fix needs a decision this entry does not make for
+whoever picks it up: cache the current household id itself (cheap, and it
+rarely changes), or wrap the fetch in a bounded client-side timeout so a
+black-holed connection fails in seconds rather than minutes, or both. Either
+is a new decision, not a two-line patch inside a part about translation
+review.
+
 ## Open / deferred
 
 - **Client vs Edge Function split** — rule of thumb written in

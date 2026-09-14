@@ -447,6 +447,13 @@ touches the parent `recipes.updated_at` on every write here, which is what
 lets a translated recipe reach the existing Drift cache with no new table:
 `RecipeCache.data` stores the whole wire row verbatim, and this embeds in it.
 
+`is_machine_generated`/`reviewed_by`/`reviewed_at` shipped with migration 17
+but no writer, on `recipes.image_path`'s own precedent (D35). Migration 18
+(Phase 3, part 3) closed that: `review_recipe_translation` is a sibling of
+`save_recipe_translation`, not a parameter on it, because the two want
+opposite things from the same columns on the same row (D82) — see that
+migration's own header for the full reasoning.
+
 ---
 
 ## Meal planning

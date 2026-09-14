@@ -51,10 +51,24 @@ abstract class RecipeDetail with _$RecipeDetail {
   bool get canTranslate =>
       readingLocale != recipe.originalLocale && translation == null;
 
+  /// True when a translation exists for [readingLocale] -- the enabled
+  /// condition for the detail screen's *Review translation* action (Phase 3,
+  /// part 3). The mirror image of [canTranslate]: reading a locale other
+  /// than the recipe's own, exactly one of the two is ever true, and
+  /// neither is true while reading the recipe's own language. Deliberately
+  /// not narrowed to an unreviewed translation -- a reviewed one stays
+  /// reviewable, for a typo found later.
+  bool get canReview => translation != null;
+
   /// True when the title, description and steps on screen came from a
   /// machine translation rather than the recipe's own original text.
   bool get isShowingMachineTranslation =>
       translation != null && translation!.isMachineGenerated;
+
+  /// True once a human has reviewed [translation] (Phase 3, part 3) --
+  /// [RecipeTranslation.reviewedAt] is the provenance
+  /// `review_recipe_translation` stamps, never a client-asserted flag.
+  bool get isReviewedTranslation => translation?.reviewedAt != null;
 
   String get displayTitle => translation?.title ?? recipe.title;
 

@@ -178,6 +178,35 @@ ingredients(is_pantry_staple, category)''')
         }
       });
 
+  /// Records a human review of [recipeId]'s translation into [locale]
+  /// through `review_recipe_translation` (Phase 3, part 3) -- the sibling of
+  /// `save_recipe_translation` that stamps provenance instead of overwriting
+  /// a whole machine draft. The function itself refuses a dropped, added or
+  /// renumbered step; this method does not re-check that, the database is
+  /// the authority.
+  ///
+  /// The returned id is unused: the caller re-reads through
+  /// `recipeDetailProvider`'s invalidation, `saveLines`'s own convention.
+  Future<void> reviewTranslation({
+    required String recipeId,
+    required String locale,
+    required String title,
+    String? description,
+    required List<Map<String, dynamic>> stepPayloads,
+  }) =>
+      runGuarded(() async {
+        await _client.rpc<void>(
+          'review_recipe_translation',
+          params: <String, dynamic>{
+            'recipe': recipeId,
+            'loc': locale,
+            'new_title': title,
+            'new_description': description,
+            'new_steps': stepPayloads,
+          },
+        );
+      });
+
   /// Creates a recipe and returns the row that was written.
   ///
   /// Unlike `create_household`, this is a plain insert: `recipes` has an

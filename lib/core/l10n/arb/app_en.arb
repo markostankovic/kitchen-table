@@ -42,5 +42,15 @@
   "machineTranslationChipLabel": "Machine translation",
   "translateAction": "Translate to {language}",
   "languageEnglish": "English",
-  "languageSerbian": "Serbian"
+  "languageSerbian": "Serbian",
+
+  "reviewTranslationMenuItem": "Review translation",
+  "reviewTranslationTitle": "Review translation",
+  "originalTextLabel": "Original ({language})",
+  "titleLabel": "Title",
+  "descriptionLabel": "Description",
+  "stepLabel": "Step {number}",
+  "titleRequiredError": "Enter a title.",
+  "saveReviewButton": "Save and approve",
+  "noTranslationToReview": "There is no translation to review yet."
 }

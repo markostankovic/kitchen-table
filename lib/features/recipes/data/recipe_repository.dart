@@ -167,6 +167,31 @@ class RecipeRepository {
   Future<void> translate(String recipeId, String targetLocale) =>
       _remote.translate(recipeId, targetLocale);
 
+  /// Records a human review of [recipeId]'s translation into [locale]
+  /// (Phase 3, part 3): the reviewer's edits to the title, description and
+  /// each step's text, replacing the machine draft in place.
+  ///
+  /// Online-only (D12), like every write in this app. No cache write here
+  /// either: `review_recipe_translation`'s trigger touches the parent
+  /// recipe's `updated_at`, so the ordinary route -- the caller invalidates
+  /// `recipeDetailProvider`, which re-reads over the network and re-upserts
+  /// the whole cached blob -- picks the reviewed row up with no extra step,
+  /// the same as [translate] above.
+  Future<void> reviewTranslation(
+    String recipeId, {
+    required String locale,
+    required String title,
+    String? description,
+    required List<RecipeStep> steps,
+  }) => _remote.reviewTranslation(
+    recipeId: recipeId,
+    locale: locale,
+    title: title,
+    description: description,
+    stepPayloads:
+        steps.map(_translatedStepPayload).toList(growable: false),
+  );
+
   /// A single best-available answer from [watchList] -- the fresh network
   /// result when reachable, the cached one otherwise (or a [NetworkFailure]
   /// with neither). For a caller that wants one list rather than two
@@ -479,5 +504,17 @@ class RecipeRepository {
   Map<String, dynamic> _stepPayload(RecipeStep step) => <String, dynamic>{
         'text': step.text,
         'timer_seconds': step.timerSeconds,
+      };
+
+  /// The inverse of [_stepPayload]: POSITION IS SENT, not derived.
+  /// `replace_recipe_lines` numbers a recipe's own steps from array
+  /// ordinality, but `review_recipe_translation` cannot do that -- position
+  /// is an alignment key here, not an ordering (D80), and the function
+  /// refuses a translated step whose position does not already exist on the
+  /// row. Sending it is what lets that guard run.
+  Map<String, dynamic> _translatedStepPayload(RecipeStep step) =>
+      <String, dynamic>{
+        'position': step.position,
+        'text': step.text,
       };
 }

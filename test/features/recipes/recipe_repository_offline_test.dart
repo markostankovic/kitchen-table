@@ -94,6 +94,16 @@ class _FakeRemote implements RemoteRecipeDataSource {
       throw UnimplementedError();
 
   @override
+  Future<void> reviewTranslation({
+    required String recipeId,
+    required String locale,
+    required String title,
+    String? description,
+    required List<Map<String, dynamic>> stepPayloads,
+  }) =>
+      throw UnimplementedError();
+
+  @override
   Future<Map<String, dynamic>> create({
     required String householdId,
     required String title,

@@ -127,4 +127,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageSerbian => 'Serbian';
+
+  @override
+  String get reviewTranslationMenuItem => 'Review translation';
+
+  @override
+  String get reviewTranslationTitle => 'Review translation';
+
+  @override
+  String originalTextLabel(String language) {
+    return 'Original ($language)';
+  }
+
+  @override
+  String get titleLabel => 'Title';
+
+  @override
+  String get descriptionLabel => 'Description';
+
+  @override
+  String stepLabel(int number) {
+    return 'Step $number';
+  }
+
+  @override
+  String get titleRequiredError => 'Enter a title.';
+
+  @override
+  String get saveReviewButton => 'Save and approve';
+
+  @override
+  String get noTranslationToReview => 'There is no translation to review yet.';
 }

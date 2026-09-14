@@ -866,11 +866,129 @@ not been run -- this part's verification stopped at the local Postgres
 stack and the Dart/Deno test suites. `RecipeEditor.build` reading a hardcoded
 `'sr'` (above) is the other open item.
 
+### Part 3 — The translation review flow
+
+**Status: complete.** Decisions taken during it: D82–D86 (plus D87, a
+finding rather than a build decision — see below).
+
+Closes the first bullet of Phase 3's old "Still to build" list, and both
+items part 2 left open by name: the emulator walk, and `RecipeEditor.build`'s
+hardcoded `'sr'`.
+
+- Migration 18: `review_recipe_translation(recipe, loc, new_title,
+  new_description, new_steps)` — a sibling of `save_recipe_translation`, not
+  a parameter on it, because the two want opposite things from the same
+  columns on the same row: the sibling's own `on conflict` resets
+  `is_machine_generated`/`reviewed_by`/`reviewed_at` on every re-translation,
+  and a review wants the opposite (D82). Updates only, never inserts — review
+  edits a translation that exists, on the same door `save_recipe_translation`
+  already answers for a locale that doesn't. Refuses a dropped, added or
+  renumbered step by checking the incoming positions against the ROW's own
+  (not `recipe_steps`'), which is deliberately not treated as rule 6's fourth
+  cross-language pair (D82 says why). `security invoker`, no new RLS policy —
+  the existing UPDATE policy already covers it. `reviewed_by` is `auth.uid()`,
+  never a parameter (D83, on `MatchMethod.manual`'s and
+  `link_ingredient_alias`'s own precedent for what a human decision means)
+- `RecipeRepository.reviewTranslation` / `RemoteRecipeDataSource
+  .reviewTranslation` — online-only (D12), no cache write of its own: the
+  trigger migration 17 already has touches the parent recipe, so the
+  ordinary `recipeDetailProvider` invalidation re-reads and re-caches the
+  whole blob, same as `translate` above it
+- `RecipeDetail.canReview` / `.isReviewedTranslation` — `canReview`'s own
+  comment states the invariant `canTranslate` and `canReview` are never both
+  true at once, and are never both false while reading a foreign locale
+- `TranslationReviewDraft` (`domain/`) and `TranslationReviewer`
+  (`application/`, on `RecipeEditor`'s precedent — loads once, never watches
+  `recipeDetailProvider`) — steps are keyed by position, not a synthetic
+  local id: `RecipeDraft`'s rows are added, deleted and dragged, and this
+  screen's are not, so position already is the identity (D84)
+- `TranslationReviewScreen` — every field pairs the recipe's own original
+  text, read-only, directly above the editable translation for it; a fixed
+  number of step fields with no add, remove or reorder; no ingredient editor
+  anywhere on the screen (D84, D1, D80). New route,
+  `/recipes/:recipeId/review`, nested under the detail page so Back returns
+  there — no `locale` parameter, the reviewed locale is the reading locale
+  (`appLocaleProvider`), the same one-place-per-concern rule D77 and D81
+  already established. This feature's second localized screen
+- Detail screen: the overflow's *Review translation* item appears exactly
+  when `canReview` does, right after where *Translate to …* would be — the
+  two are mutually exclusive, so this is also the entire mechanism for "no
+  retranslate after a review" (D85). The *Machine translation* chip needed
+  no code change to disappear once reviewed: it already reads
+  `isShowingMachineTranslation`, which the review sets false. No *Reviewed*
+  chip, and the reviewer's name is not shown — this app's chips are caveats,
+  not endorsements, and naming the reviewer would cost a `profiles` join in
+  `recipeDetailEmbed` that changes the cached blob's shape for a line nobody
+  has asked for (D83, priced rather than built)
+- `RecipeEditor.build` now reads `appLocaleProvider` (`ref.read`, not
+  `ref.watch` — watching would discard whatever the cook had typed on a
+  language switch mid-edit) instead of `fetchDetail`'s bare `'sr'` default,
+  closing D81's own named consequence: an ingredient chip was rendering in
+  Serbian while editing an English recipe. `IngredientLineField`'s own
+  `locale:` — the search locale, and the locale a new alias is written in —
+  stays `draft.originalLocale`, untouched: display and write are different
+  concerns on this screen (D86)
+- `shopping_list_screen.dart`'s `_ItemTile` now renders count units in the
+  LIST's own stored `locale`, not the reader's current one and not the
+  `formatItemQuantity` default it had silently been falling through to since
+  D9 shipped — the same class of bug D81 named, one layer over, caught in
+  this session rather than left for a later one to rediscover
+- Backfilled: part 2 shipped `RecipeDetail`'s five translation getters with
+  no Dart test anywhere. `recipe_detail_translation_test.dart` covers all
+  seven (the five plus this part's two) across every reading-locale state,
+  including the `displayDescription` null-vs-fallback case part 2's own
+  comment was written for
+
+**Done when:** a machine translation can be corrected and approved by a
+human, and the app shows that it happened. -- **Met**, verified against the
+real model (a live `translate-recipe` call, not a stub) on the Android
+emulator, not only against the local Postgres stack and the 31 new Dart
+tests (`make check` clean in full: `dart analyze`, `tool/check_layers.dart`,
+399 Dart tests, `deno check`/`lint`/`fmt`, 155 Deno tests unaffected since no
+Edge Function changed, and 19 SQL suites including the new
+`review_recipe_translation_test.sql`).
+
+A real Serbian recipe (*Palacinke*, two steps) was translated to English for
+real -- *Pancakes*, both steps translated idiomatically, `is_machine_generated
+= true` -- and the *Machine translation* chip appeared. Opening Review showed
+the Serbian original stacked above each of the three editable fields, exactly
+as designed; editing the title to *Crepes* and saving flipped the database
+row to `is_machine_generated = false`, `reviewed_by` equal to the signed-in
+profile's id and `reviewed_at` set, confirmed by direct query, not just by
+the screen. The chip was gone with no further navigation, and the overflow
+menu now offered *Review translation* and nothing else -- no retranslate
+option, D85 working through the real app. Switching the profile back to
+Serbian showed the recipe's own original text and neither menu item, proving
+`canReview` gates on the READING locale and not merely on a translation's
+existence. Opening the editor on the reviewed recipe while reading English
+rendered the ingredient chip as *flour*, not *brašno* -- D86 confirmed live,
+the fix this session made to `RecipeEditor.build`.
+
+**The walk also found a real gap, named here rather than left to be
+assumed: D87.** Force-stopping the app with the emulator's network disabled
+and relaunching cold left the Recipes tab spinning for several minutes
+before finally showing `NetworkFailure: No connection` -- not a stale-copy
+line, an outright failure, for a recipe whose cache row was confirmed
+present and correctly keyed by pulling the on-device SQLite file directly
+mid-walk. The cause is one layer up from anything Phase 2 built:
+`currentHouseholdIdProvider` has no cache and no client-side timeout, every
+household-scoped screen awaits it before touching its own cache at all, and
+every prior offline "Done when" in this project was verified from an
+already-warm session rather than a cold, offline-from-first-frame one. Every
+offline claim this project has made stands for a warm session; none of them
+has been proven for a cold one until this walk, and D87 is what keeps that
+distinction from quietly disappearing. Re-enabling the network and
+relaunching recovered cleanly -- the household resolved, the cached recipe
+list rendered its one entry, chrome and content both correct.
+
 ### Still to build
 
-- Review flow: edit a machine translation, set `reviewed_by`
+- Review flow: **done** (this part)
 - The remaining screens' bodies (recipes, import, meal plan, shopping list,
   households), one feature at a time
+- D87's own fix: cache `currentHouseholdIdProvider`, or bound its fetch with
+  a client-side timeout, or both -- not decided here, named so it is not
+  rediscovered
 
 ---
 

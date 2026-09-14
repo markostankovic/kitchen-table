@@ -238,17 +238,31 @@ Cache is not always cache-then-network. Drift is a cache, Supabase is the
 truth, never the reverse, but the read order depends on whether staleness is
 worth showing (D67, D74) — built in part 5 (D64–D71) on the shopping list and
 the unit catalog, widened in part 6a (D72–D74) to recipes and the global
-ingredient name catalog. Meal plans are the one entity still uncached.
+ingredient name catalog, and in part 6b to meal plans. Every entity named in
+this section's own "Done when" is cached; households are not, and D87 names
+what that costs.
 
 ```
-ShoppingListRepository / RecipeRepository (list)
+ShoppingListRepository / RecipeRepository (list) / MealPlanRepository
   ├─ Remote*DataSource (Supabase)
   ├─ Local*DataSource  (Drift, core/db/)
-  └─ watchLatest()/watchList(): emit cached immediately → fetch → upsert cache → emit fresh
+  └─ watchLatest()/watchList()/watchWeek(): emit cached immediately → fetch → upsert cache → emit fresh
 
 RecipeRepository.fetchDetail() / IngredientRepository.fetchUnitCatalog()
   └─ network-first; the cache is read only on a NetworkFailure (D70, D74)
 ```
+
+**`currentHouseholdIdProvider` itself has no offline path (D87).** Every
+household-scoped read above gates on it first (`await
+ref.watch(currentHouseholdIdProvider.future)`), and
+`HouseholdRepository.fetchCurrent()` behind it is a plain network call with
+no cache and no client-side timeout. A cold start with no network does not
+fail fast: it hangs on that one call — several minutes, in the Phase 3 part 3
+emulator walk that first exercised this path — and nothing below it, however
+well its own cache is populated, gets a chance to answer until it does.
+Confirmed directly against the on-device cache file during that walk: a
+recipe's row and its `sync_watermarks` entry were both present and correctly
+keyed, and still could not be reached.
 
 Part 6a also closed D71's own deferral: `SyncWatermarks` (`core/db/`) is a
 per-`(entity, scope)` delta-fetch watermark, advanced from the max
@@ -295,8 +309,11 @@ a later delta fetch can evict it).
 Delta fetch (`updated_at > last_sync_at` per table) is `SyncWatermarks`
 (D72), built in part 6a once recipes gave the design something real to be
 right about (D71 deferred it for exactly this reason). `AppDatabase
-.schemaVersion` is `2` as of part 6a; `onUpgrade` still drops every table
-and recreates it rather than migrating — the cache is disposable by
+.schemaVersion` is `4` as of Phase 3 part 2 — `3` from part 6b's
+`MealPlanWeekCache`, `4` from `recipe_translations` riding inside
+`RecipeCache.data`'s existing blob, a shape change rather than a column one
+(D78). `onUpgrade` still drops every table and recreates it rather than
+migrating — the cache is disposable by
 construction, so a schema change costs one refetch, not a migration.
 
 A cache failure never fails the surrounding read or write (D69):

@@ -166,5 +166,52 @@
   "languageSerbian": "srpski",
   "@languageSerbian": {
     "description": "A target language's own name, used inside translateAction -- not the Settings toggle's untranslated 'Srpski' (D77)."
+  },
+
+  "reviewTranslationMenuItem": "Pregledaj prevod",
+  "@reviewTranslationMenuItem": {
+    "description": "Recipe detail screen, the overflow menu's item that opens the translation review screen (Phase 3, part 3). Shown exactly when translateAction is not -- RecipeDetail.canReview and .canTranslate are mutually exclusive."
+  },
+  "reviewTranslationTitle": "Pregled prevoda",
+  "@reviewTranslationTitle": {
+    "description": "Translation review screen, the AppBar title."
+  },
+  "originalTextLabel": "Original ({language})",
+  "@originalTextLabel": {
+    "description": "Translation review screen, the read-only label above the recipe's own text in its own language -- {language} is one of languageEnglish/languageSerbian.",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "titleLabel": "Naslov",
+  "@titleLabel": {
+    "description": "Translation review screen, the editable title field's label."
+  },
+  "descriptionLabel": "Opis",
+  "@descriptionLabel": {
+    "description": "Translation review screen, the editable description field's label."
+  },
+  "stepLabel": "Korak {number}",
+  "@stepLabel": {
+    "description": "Translation review screen, the editable label above each translated step -- {number} is 1-based, the source step's own position.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "titleRequiredError": "Unesite naslov.",
+  "@titleRequiredError": {
+    "description": "Translation review screen, validator error when the title field is blank -- mirrors review_recipe_translation's own guard."
+  },
+  "saveReviewButton": "Sačuvaj i potvrdi",
+  "@saveReviewButton": {
+    "description": "Translation review screen, the save button -- saves the edits AND stamps the review, so the label says both."
+  },
+  "noTranslationToReview": "Još nema prevoda za pregled.",
+  "@noTranslationToReview": {
+    "description": "Translation review screen, shown if it is opened (e.g. a stale deep link) with no translation for the reading locale yet."
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/features/ingredients/domain/ingredient_match.dart';
 import 'package:kitchen_table/features/ingredients/domain/quantity.dart';
@@ -12,6 +13,7 @@ import 'package:kitchen_table/features/recipes/domain/recipe.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_detail.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_ingredient.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_step.dart';
+import 'package:kitchen_table/features/recipes/domain/recipe_translation.dart';
 import 'package:kitchen_table/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:kitchen_table/features/recipes/presentation/recipe_list_screen.dart';
 
@@ -143,6 +145,12 @@ Future<void> _pumpDetail(WidgetTester tester, RecipeDetail detail) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        // appLocaleProvider is pinned to detail.readingLocale rather than
+        // left at its own fallback: the screen derives `readingLocale` from
+        // it, and the two must agree or the screen requests a different
+        // provider instance than this override matches.
+        appLocaleProvider
+            .overrideWith((Ref ref) => Locale(detail.readingLocale)),
         recipeDetailProvider('r1', locale: detail.readingLocale)
             .overrideWith((Ref ref) async => detail),
         unitCatalogProvider.overrideWith((Ref ref) async => _units),
@@ -295,6 +303,93 @@ void main() {
       await _pumpDetail(tester, _detail);
 
       expect(find.byType(Image), findsNothing);
+    });
+  });
+
+  // Phase 3, part 3: the overflow menu's Translate/Review entry points and
+  // the Machine translation chip, none of which had a widget test before
+  // this part.
+  group('translation review entry points', () {
+    testWidgets('Translate shows and Review does not, with no translation',
+        (WidgetTester tester) async {
+      await _pumpDetail(tester, _detail.copyWith(readingLocale: 'en'));
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      // The recipe's own language is Serbian, so translating INTO the
+      // reading locale ('en') is offered as "Translate to English".
+      expect(find.text('Translate to English'), findsOneWidget);
+      expect(find.text('Review translation'), findsNothing);
+    });
+
+    testWidgets('Review shows and Translate does not, once a translation exists',
+        (WidgetTester tester) async {
+      final RecipeDetail translated = _detail.copyWith(
+        readingLocale: 'en',
+        translations: <RecipeTranslation>[
+          const RecipeTranslation(locale: 'en', title: 'Carrot cake'),
+        ],
+      );
+      await _pumpDetail(tester, translated);
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Review translation'), findsOneWidget);
+      expect(find.textContaining('Translate to'), findsNothing);
+    });
+
+    testWidgets('neither shows while reading the recipe\'s own language',
+        (WidgetTester tester) async {
+      await _pumpDetail(tester, _detail); // readingLocale: 'sr', same as original
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Translate to'), findsNothing);
+      expect(find.text('Review translation'), findsNothing);
+    });
+
+    testWidgets('the Machine translation chip renders for a machine draft',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          readingLocale: 'en',
+          translations: <RecipeTranslation>[
+            const RecipeTranslation(locale: 'en', title: 'Carrot cake'),
+          ],
+        ),
+      );
+
+      expect(find.text('Machine translation'), findsOneWidget);
+    });
+
+    testWidgets('the Machine translation chip is absent once reviewed',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          readingLocale: 'en',
+          translations: <RecipeTranslation>[
+            RecipeTranslation(
+              locale: 'en',
+              title: 'Carrot cake',
+              isMachineGenerated: false,
+              reviewedBy: 'u2',
+              reviewedAt: DateTime.utc(2026, 9, 14),
+            ),
+          ],
+        ),
+      );
+
+      expect(find.text('Machine translation'), findsNothing);
+      // And Review is still on offer -- a reviewed translation stays
+      // reviewable (canReview does not narrow to an unreviewed one).
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      expect(find.text('Review translation'), findsOneWidget);
     });
   });
 }

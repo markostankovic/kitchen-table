@@ -23,6 +23,7 @@ import '../../features/import/presentation/import_url_screen.dart';
 import '../../features/recipes/presentation/recipe_detail_screen.dart';
 import '../../features/recipes/presentation/recipe_edit_screen.dart';
 import '../../features/recipes/presentation/recipe_list_screen.dart';
+import '../../features/recipes/presentation/translation_review_screen.dart';
 import '../../features/shopping_list/presentation/shopping_list_screen.dart';
 import 'app_shell.dart';
 
@@ -103,6 +104,7 @@ class JoinHouseholdRoute extends GoRouteData with $JoinHouseholdRoute {
               path: ':recipeId',
               routes: <TypedRoute<RouteData>>[
                 TypedGoRoute<RecipeEditRoute>(path: 'edit'),
+                TypedGoRoute<RecipeTranslationReviewRoute>(path: 'review'),
               ],
             ),
           ],
@@ -282,6 +284,26 @@ class RecipeEditRoute extends GoRouteData with $RecipeEditRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       RecipeEditScreen(recipeId: recipeId);
+}
+
+/// The translation review screen, nested under the recipe's detail page so
+/// Back returns there (Phase 3, part 3).
+///
+/// No `locale` parameter -- the locale under review is the reading locale,
+/// resolved the one place the app resolves language (`appLocaleProvider`,
+/// D77/D81). A second notion of "what language, for this screen" is exactly
+/// the split D1 and D77 exist to prevent.
+class RecipeTranslationReviewRoute extends GoRouteData
+    with $RecipeTranslationReviewRoute {
+  const RecipeTranslationReviewRoute(this.recipeId);
+
+  final String recipeId;
+
+  static const String path = '/recipes/:recipeId/review';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      TranslationReviewScreen(recipeId: recipeId);
 }
 
 class MealPlanRoute extends GoRouteData with $MealPlanRoute {

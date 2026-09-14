@@ -127,4 +127,35 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get languageSerbian => 'srpski';
+
+  @override
+  String get reviewTranslationMenuItem => 'Pregledaj prevod';
+
+  @override
+  String get reviewTranslationTitle => 'Pregled prevoda';
+
+  @override
+  String originalTextLabel(String language) {
+    return 'Original ($language)';
+  }
+
+  @override
+  String get titleLabel => 'Naslov';
+
+  @override
+  String get descriptionLabel => 'Opis';
+
+  @override
+  String stepLabel(int number) {
+    return 'Korak $number';
+  }
+
+  @override
+  String get titleRequiredError => 'Unesite naslov.';
+
+  @override
+  String get saveReviewButton => 'Sačuvaj i potvrdi';
+
+  @override
+  String get noTranslationToReview => 'Još nema prevoda za pregled.';
 }

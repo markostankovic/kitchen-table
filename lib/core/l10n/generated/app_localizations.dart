@@ -325,6 +325,60 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'srpski'**
   String get languageSerbian;
+
+  /// Recipe detail screen, the overflow menu's item that opens the translation review screen (Phase 3, part 3). Shown exactly when translateAction is not -- RecipeDetail.canReview and .canTranslate are mutually exclusive.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pregledaj prevod'**
+  String get reviewTranslationMenuItem;
+
+  /// Translation review screen, the AppBar title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pregled prevoda'**
+  String get reviewTranslationTitle;
+
+  /// Translation review screen, the read-only label above the recipe's own text in its own language -- {language} is one of languageEnglish/languageSerbian.
+  ///
+  /// In sr, this message translates to:
+  /// **'Original ({language})'**
+  String originalTextLabel(String language);
+
+  /// Translation review screen, the editable title field's label.
+  ///
+  /// In sr, this message translates to:
+  /// **'Naslov'**
+  String get titleLabel;
+
+  /// Translation review screen, the editable description field's label.
+  ///
+  /// In sr, this message translates to:
+  /// **'Opis'**
+  String get descriptionLabel;
+
+  /// Translation review screen, the editable label above each translated step -- {number} is 1-based, the source step's own position.
+  ///
+  /// In sr, this message translates to:
+  /// **'Korak {number}'**
+  String stepLabel(int number);
+
+  /// Translation review screen, validator error when the title field is blank -- mirrors review_recipe_translation's own guard.
+  ///
+  /// In sr, this message translates to:
+  /// **'Unesite naslov.'**
+  String get titleRequiredError;
+
+  /// Translation review screen, the save button -- saves the edits AND stamps the review, so the label says both.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sačuvaj i potvrdi'**
+  String get saveReviewButton;
+
+  /// Translation review screen, shown if it is opened (e.g. a stale deep link) with no translation for the reading locale yet.
+  ///
+  /// In sr, this message translates to:
+  /// **'Još nema prevoda za pregled.'**
+  String get noTranslationToReview;
 }
 
 class _AppLocalizationsDelegate

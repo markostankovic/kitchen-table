@@ -69,9 +69,17 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
             enabled: detail.hasValue && !_translating,
             onSelected: (_DetailAction action) => switch (action) {
               _DetailAction.translate => _translate(detail.value!, l10n),
+              _DetailAction.review =>
+                RecipeTranslationReviewRoute(widget.recipeId).go(context),
               _DetailAction.delete => _confirmDelete(l10n),
             },
             itemBuilder: (BuildContext context) => <PopupMenuEntry<_DetailAction>>[
+              // canTranslate and canReview are mutually exclusive (Phase 3,
+              // part 3): before a translation exists only Translate shows;
+              // once one does, only Review does. Neither shows while reading
+              // the recipe's own language. This is also the whole
+              // implementation of "no retranslate after a review" -- once a
+              // translation exists, canTranslate is false and stays false.
               if (detail.value?.canTranslate ?? false)
                 PopupMenuItem<_DetailAction>(
                   value: _DetailAction.translate,
@@ -79,6 +87,11 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                     l10n,
                     detail.value!.recipe.originalLocale,
                   ))),
+                ),
+              if (detail.value?.canReview ?? false)
+                PopupMenuItem<_DetailAction>(
+                  value: _DetailAction.review,
+                  child: Text(l10n.reviewTranslationMenuItem),
                 ),
               PopupMenuItem<_DetailAction>(
                 value: _DetailAction.delete,
@@ -168,7 +181,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   }
 }
 
-enum _DetailAction { translate, delete }
+enum _DetailAction { translate, review, delete }
 
 class _Body extends ConsumerWidget {
   const _Body({required this.detail, required this.l10n, required this.translating});
@@ -227,7 +240,13 @@ class _Body extends ConsumerWidget {
               Chip(label: Text(l10n.draftChipLabel)),
             // Anything AI-produced is draft until a human marks it tested
             // (docs/ROADMAP.md) -- this is that rule applied to prose rather
-            // than to the recipe row itself (Phase 3, part 2).
+            // than to the recipe row itself (Phase 3, part 2). It needs no
+            // code change to disappear once reviewed (Phase 3, part 3):
+            // review_recipe_translation sets is_machine_generated = false,
+            // which is exactly what this getter reads. No separate
+            // "Reviewed" chip is added -- this app's chips are caveats
+            // (Draft, Machine translation), not endorsements, and this
+            // chip's own disappearance already is the signal.
             if (detail.isShowingMachineTranslation)
               Chip(label: Text(l10n.machineTranslationChipLabel)),
             if (translating)

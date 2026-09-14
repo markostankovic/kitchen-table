@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/household/current_household.dart';
+import '../../../core/l10n/app_locale.dart';
 import '../../../core/refresh/data_revision.dart';
 import '../data/recipe_repository.dart';
 import '../domain/recipe.dart';
@@ -35,15 +36,30 @@ class RecipeEditor extends _$RecipeEditor {
     // detail screens re-read, and an editor watching it would answer by
     // throwing away whatever the user had typed. A draft is only ever loaded
     // once.
-    // `fetchDetail`'s `locale` defaults to 'sr' here, left as-is: the editor
-    // edits the recipe's OWN original text (`recipe.title`, not
-    // `displayTitle`), and it cannot know which locale to ask for until this
-    // very fetch returns. The visible symptom -- an ingredient chip's name
-    // shown in Serbian while editing an English recipe -- is named in
-    // docs/ROADMAP.md rather than silently left for the next session to
-    // rediscover.
+    //
+    // `fetchDetail`'s `locale` closes D81's own named consequence (D86): it
+    // used to default to 'sr' here regardless of the reader's own language,
+    // so an ingredient chip rendered in Serbian while editing an English
+    // recipe. D81's title is "the reader's own locale resolves a display
+    // name, everywhere" -- a chip reports which catalog entry the app
+    // matched, not the recipe's own content, so it follows the SAME rule
+    // `RecipeDetailScreen` and `ShoppingListEditor.generate()` already do,
+    // not a second one. `ref.read`, not `ref.watch`: watching would re-run
+    // this whole `build()` on a language switch and discard whatever the
+    // cook had typed, the exact failure this method's own comment warns
+    // against for `recipeDetailProvider`.
+    //
+    // This is deliberately narrower than it looks. `IngredientLineField`'s
+    // own `locale:` parameter -- the search locale, and the locale a new
+    // alias is written in -- stays `draft.originalLocale` in the edit
+    // screen, unchanged: that is a WRITE concern, and pointing it at the
+    // reader would write aliases in the recipe's wrong language. Only the
+    // read side, resolving an already-matched line's display name, follows
+    // the reader.
+    final String readingLocale = ref.read(appLocaleProvider).languageCode;
     final RecipeRepository repository = ref.watch(recipeRepositoryProvider);
-    final RecipeDetail detail = await repository.fetchDetail(recipeId);
+    final RecipeDetail detail =
+        await repository.fetchDetail(recipeId, locale: readingLocale);
     return RecipeDraft.fromDetail(detail);
   }
 

@@ -218,7 +218,7 @@ class _ListBody extends ConsumerWidget {
         ).entries) ...<Widget>[
           _CategoryHeading(label: group.key),
           for (final ShoppingItem item in group.value)
-            _ItemTile(item: item, units: units),
+            _ItemTile(item: item, units: units, locale: list.locale),
         ],
         if (staples.isNotEmpty)
           // Collapsed, never hidden. Nothing is missing from the snapshot
@@ -229,7 +229,7 @@ class _ListBody extends ConsumerWidget {
             subtitle: const Text('Cupboard staples'),
             children: <Widget>[
               for (final ShoppingItem item in staples)
-                _ItemTile(item: item, units: units),
+                _ItemTile(item: item, units: units, locale: list.locale),
             ],
           ),
         const SizedBox(height: 24),
@@ -318,10 +318,20 @@ class _CategoryHeading extends StatelessWidget {
 }
 
 class _ItemTile extends ConsumerWidget {
-  const _ItemTile({required this.item, required this.units});
+  const _ItemTile({required this.item, required this.units, required this.locale});
 
   final ShoppingItem item;
   final UnitCatalog units;
+
+  /// The LIST's own stored locale (`list.locale`, D81's own fix applied one
+  /// layer over) -- not the reader's current `appLocaleProvider`. A
+  /// generated list is a snapshot; rendering its count units in whatever
+  /// language the reader happens to be in today would half-translate a
+  /// document that `shopping_lists.locale` exists precisely to keep
+  /// consistent (migration 16's own comment). Before this fix the parameter
+  /// did not exist and `formatItemQuantity` fell through to its `'sr'`
+  /// default regardless of who generated the list or in what language.
+  final String locale;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -329,7 +339,7 @@ class _ItemTile extends ConsumerWidget {
     // other (D9). An item with no quantities at all shows only its raw lines,
     // which is rule 3 working rather than failing.
     final String quantities = item.quantities
-        .map((ItemQuantity q) => formatItemQuantity(q, units))
+        .map((ItemQuantity q) => formatItemQuantity(q, units, locale: locale))
         .join(' + ');
 
     return ListTile(
