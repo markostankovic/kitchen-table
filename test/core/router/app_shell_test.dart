@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/error/app_failure.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_en.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
@@ -123,6 +124,42 @@ void main() {
       expect(find.widgetWithText(AppBar, sr.navRecipes), findsOneWidget);
       expect(find.byType(NavigationBar), findsOneWidget);
     });
+
+    testWidgets(
+      'a NetworkFailure resolving the household does not force the cook '
+      'into onboarding -- the third state D87/D88 must preserve: '
+      'AsyncError.hasValue is false, so the redirect returns null (no '
+      'override) rather than reading the error as "no household yet" and '
+      'sending them to CreateHouseholdRoute, which they could not complete '
+      'offline anyway (D12)',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currentUserIdProvider.overrideWith(
+                (Ref ref) => Stream<String?>.value('u1'),
+              ),
+              currentHouseholdProvider.overrideWith(
+                (Ref ref) async => throw const NetworkFailure(),
+              ),
+              authStateProvider.overrideWith(
+                (Ref ref) => Stream<AppUser?>.value(_user),
+              ),
+              ownProfileProvider.overrideWith((Ref ref) async => _profile),
+            ],
+            child: const KitchenTableApp(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The redirect returning null leaves go_router at its initial
+        // location, inside the shell -- it does not itself navigate
+        // anywhere. What matters is what it did NOT do: bounce to
+        // onboarding, which reading the error as "no household" would have.
+        expect(find.text('Name your household'), findsNothing);
+        expect(find.text(sr.sendCode), findsNothing);
+      },
+    );
   });
 
   group('shell', () {

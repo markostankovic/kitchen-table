@@ -732,9 +732,9 @@ already in place, is what makes `meal_plans.updated_at` trustworthy for it.
 
 **Done when:** every entity in `docs/ARCHITECTURE.md`'s offline list --
 recipes, meal plans, the shopping list, the ingredient catalog -- is readable
-offline, with a global signal saying so. -- **Met.** All 366 Dart tests pass
-(18 new: `local_meal_plan_datasource_test.dart`'s cache round-trip and
-`uniqueKeys` guard, and `meal_plan_repository_offline_test.dart`'s full
+offline, with a global signal saying so. -- **Met for a warm session.** All
+366 Dart tests pass (18 new: `local_meal_plan_datasource_test.dart`'s cache
+round-trip and `uniqueKeys` guard, and `meal_plan_repository_offline_test.dart`'s full
 `watchWeek` matrix -- cold cache success and failure, warm cache surviving a
 `NetworkFailure`, D75's authoritative-empty case under a live watermark, a
 soft-deleted plan evicting its cache entry with its still-embedded entries
@@ -745,6 +745,95 @@ and the saved-copy line respectively. `make check` in full: `dart analyze`
 and `tool/check_layers.dart` both clean, `make test-sql` (now regenerating
 and passing `display_names_test.sql` too), `lint-functions` and
 `test-functions` unaffected since no Edge Function changed.
+
+**"Met for a warm session" is a correction, added in Part 7.** This
+Done-when was written and verified with the household already resolved --
+every walk in this project up to and including this one signed in, then
+tested offline behavior within the same session. Part 7 (D87) found that a
+genuinely cold, offline-from-first-frame start never reached any of the
+caches this part built at all: `currentHouseholdIdProvider`, which every one
+of them gates on, had no cache and no bound of its own. The caches
+themselves were never wrong; nothing before Part 7 had reached them under
+the one condition that mattered.
+
+### Part 7 — The household cache, and a bounded household read
+
+**Status: complete.** Decisions taken during it: D87 (the finding), D88–D90
+(the fix). Built during Phase 3, filed here because the gap it closes was
+never on Phase 2's own offline list to begin with -- a reader looking for why
+Part 6b's claim above needed correcting finds it at the end of Phase 2, not
+in the middle of the localization phase.
+
+- `CurrentHouseholdCache` (`core/db/app_database.dart`) -- the first
+  PER-USER table in a database that has so far only ever been per-household
+  or global. Keyed on the signed-in user's id, storing the raw `households`
+  wire row; `dto/household_dto.dart`'s `householdFromWire` decodes a fresh
+  response and a cache hit identically (D65, D88). `schemaVersion` 4 -> 5.
+  `clearHouseholdCache()` (the sign-out wipe) drops it too, belt-and-braces
+  alongside the structural guarantee the per-user key already gives
+- `features/households/data/` took the Remote/Local split -- the fourth,
+  after shopping_list/recipes/meal_plan -- for a reason none of the first
+  three needed: without `RemoteHouseholdDataSource.fetchMineRows()` as a
+  fakeable seam, the read order this part depends on would have shipped
+  untested, the exact gap that let D87 through in the first place (D90)
+- `HouseholdRepository.fetchCurrent(userId:)` -- network-first with a cache
+  fallback, `IngredientRepository.fetchUnitCatalog()`'s shape (D70): success
+  writes the chosen row through (or clears it, if the caller genuinely has
+  no household -- the branch keeping a miss unambiguous); a `NetworkFailure`
+  reads the cache; a cold cache rethrows. Deliberately not cache-first --
+  `CreateHouseholdScreen`/`JoinHouseholdScreen` both invalidate and re-await
+  this provider expecting a fresh read (D88)
+- `create()`/`redeemInvite()` clear the whole cache on success, closing a
+  failure mode the fallback would otherwise introduce: switch households,
+  then hit a network blip on the confirming re-fetch, and without this the
+  old household would silently come back instead of the redirect correctly
+  stalling in onboarding (D88)
+- The bound that actually shortens the wait: `fetchMineRows()` chains
+  `.retry(count: 1, requestTimeout: 5s)` on the one call. A global
+  `Supabase.initialize(postgrestOptions:)` timeout was the first design and
+  is NOT what shipped -- verified directly against the pinned package source
+  that `SupabaseClient.from()` forwards only `schema` from
+  `PostgrestClientOptions`, never `requestTimeout` or `retryCount`, so it
+  would have changed nothing about the call that was actually hanging (D89)
+- `currentHouseholdProvider` now reports into `NetworkStatus`
+  (`onReachable`/`onUnreachable`), on the three screen providers' own
+  precedent -- closing the reason the global offline banner could never
+  appear on a cold start at all: every one of its producers sat behind this
+  same gate
+
+**Done when:** a cold start with no network shows cached content within
+seconds rather than hanging for minutes, and the offline banner appears. --
+**Met**, verified end to end on the Android emulator against the local
+stack, not only the 18 new Dart tests (`household_cache_test.dart`'s
+round trip and wrong-user isolation, `household_repository_offline_test.dart`'s
+full network-first/cache-fallback/cold-cache-rethrows/wrong-household-eviction
+matrix on `_FakeRemote implements RemoteHouseholdDataSource`, and
+`app_shell_test.dart`'s new redirect case for the `AsyncError.hasValue ==
+false` state). `make check` in full: `dart analyze` and
+`tool/check_layers.dart` both clean, 417 Dart tests, `lint-functions` and
+`test-functions` unaffected since no Edge Function changed.
+
+This is the same walk that found D87: sign in, translate and review a
+recipe so the caches are genuinely warm (not a fixture), pull the on-device
+cache file directly to confirm `current_household_cache` holds one row keyed
+by the signed-in user's id with a `household_id` matching the recipe's own,
+then disable the emulator's network, force-stop and relaunch cold. Where the
+pre-fix walk spun for several minutes before failing, this one showed the
+cached recipe with its *Draft* chip **and** the global offline banner --
+"You're offline -- showing saved copies. Changes won't save." -- within
+about 30 seconds of a cold launch on this same slow emulator, the banner's
+first appearance ever on a cold start. Re-enabling the network and
+relaunching cleared the banner and rendered normally. Signing out and
+reading the cache file directly showed `current_household_cache` and
+`recipe_cache` both at zero rows, with `unit_catalog_cache` still holding
+its one row -- the sign-out wipe and D70's split both holding under the new
+table.
+
+Not walked separately, because it is what the sign-out result above already
+proves: a second user signing in on the same device cannot see a leftover
+row, since sign-out left none to see. The wrong-user case itself --
+a cached row present for one user id and never returned for another -- is
+`household_cache_test.dart`'s own assertion, not left to the emulator alone.
 
 ---
 
@@ -986,9 +1075,7 @@ list rendered its one entry, chrome and content both correct.
 - Review flow: **done** (this part)
 - The remaining screens' bodies (recipes, import, meal plan, shopping list,
   households), one feature at a time
-- D87's own fix: cache `currentHouseholdIdProvider`, or bound its fetch with
-  a client-side timeout, or both -- not decided here, named so it is not
-  rediscovered
+- D87's own fix: **done**, Phase 2 part 7 (D88-D90)
 
 ---
 

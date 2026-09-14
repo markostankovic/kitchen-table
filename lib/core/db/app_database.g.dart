@@ -2171,6 +2171,278 @@ class SyncWatermarksCompanion extends UpdateCompanion<SyncWatermark> {
   }
 }
 
+class $CurrentHouseholdCacheTable extends CurrentHouseholdCache
+    with TableInfo<$CurrentHouseholdCacheTable, CurrentHouseholdCacheData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CurrentHouseholdCacheTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dataMeta = const VerificationMeta('data');
+  @override
+  late final GeneratedColumn<String> data = GeneratedColumn<String>(
+    'data',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fetchedAtMeta = const VerificationMeta(
+    'fetchedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fetchedAt = GeneratedColumn<DateTime>(
+    'fetched_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [userId, data, fetchedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'current_household_cache';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CurrentHouseholdCacheData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('data')) {
+      context.handle(
+        _dataMeta,
+        this.data.isAcceptableOrUnknown(data['data']!, _dataMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dataMeta);
+    }
+    if (data.containsKey('fetched_at')) {
+      context.handle(
+        _fetchedAtMeta,
+        fetchedAt.isAcceptableOrUnknown(data['fetched_at']!, _fetchedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fetchedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {userId};
+  @override
+  CurrentHouseholdCacheData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CurrentHouseholdCacheData(
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      data: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}data'],
+      )!,
+      fetchedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fetched_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CurrentHouseholdCacheTable createAlias(String alias) {
+    return $CurrentHouseholdCacheTable(attachedDatabase, alias);
+  }
+}
+
+class CurrentHouseholdCacheData extends DataClass
+    implements Insertable<CurrentHouseholdCacheData> {
+  final String userId;
+  final String data;
+  final DateTime fetchedAt;
+  const CurrentHouseholdCacheData({
+    required this.userId,
+    required this.data,
+    required this.fetchedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['user_id'] = Variable<String>(userId);
+    map['data'] = Variable<String>(data);
+    map['fetched_at'] = Variable<DateTime>(fetchedAt);
+    return map;
+  }
+
+  CurrentHouseholdCacheCompanion toCompanion(bool nullToAbsent) {
+    return CurrentHouseholdCacheCompanion(
+      userId: Value(userId),
+      data: Value(data),
+      fetchedAt: Value(fetchedAt),
+    );
+  }
+
+  factory CurrentHouseholdCacheData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CurrentHouseholdCacheData(
+      userId: serializer.fromJson<String>(json['userId']),
+      data: serializer.fromJson<String>(json['data']),
+      fetchedAt: serializer.fromJson<DateTime>(json['fetchedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'userId': serializer.toJson<String>(userId),
+      'data': serializer.toJson<String>(data),
+      'fetchedAt': serializer.toJson<DateTime>(fetchedAt),
+    };
+  }
+
+  CurrentHouseholdCacheData copyWith({
+    String? userId,
+    String? data,
+    DateTime? fetchedAt,
+  }) => CurrentHouseholdCacheData(
+    userId: userId ?? this.userId,
+    data: data ?? this.data,
+    fetchedAt: fetchedAt ?? this.fetchedAt,
+  );
+  CurrentHouseholdCacheData copyWithCompanion(
+    CurrentHouseholdCacheCompanion data,
+  ) {
+    return CurrentHouseholdCacheData(
+      userId: data.userId.present ? data.userId.value : this.userId,
+      data: data.data.present ? data.data.value : this.data,
+      fetchedAt: data.fetchedAt.present ? data.fetchedAt.value : this.fetchedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CurrentHouseholdCacheData(')
+          ..write('userId: $userId, ')
+          ..write('data: $data, ')
+          ..write('fetchedAt: $fetchedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(userId, data, fetchedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CurrentHouseholdCacheData &&
+          other.userId == this.userId &&
+          other.data == this.data &&
+          other.fetchedAt == this.fetchedAt);
+}
+
+class CurrentHouseholdCacheCompanion
+    extends UpdateCompanion<CurrentHouseholdCacheData> {
+  final Value<String> userId;
+  final Value<String> data;
+  final Value<DateTime> fetchedAt;
+  final Value<int> rowid;
+  const CurrentHouseholdCacheCompanion({
+    this.userId = const Value.absent(),
+    this.data = const Value.absent(),
+    this.fetchedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CurrentHouseholdCacheCompanion.insert({
+    required String userId,
+    required String data,
+    required DateTime fetchedAt,
+    this.rowid = const Value.absent(),
+  }) : userId = Value(userId),
+       data = Value(data),
+       fetchedAt = Value(fetchedAt);
+  static Insertable<CurrentHouseholdCacheData> custom({
+    Expression<String>? userId,
+    Expression<String>? data,
+    Expression<DateTime>? fetchedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (userId != null) 'user_id': userId,
+      if (data != null) 'data': data,
+      if (fetchedAt != null) 'fetched_at': fetchedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CurrentHouseholdCacheCompanion copyWith({
+    Value<String>? userId,
+    Value<String>? data,
+    Value<DateTime>? fetchedAt,
+    Value<int>? rowid,
+  }) {
+    return CurrentHouseholdCacheCompanion(
+      userId: userId ?? this.userId,
+      data: data ?? this.data,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (data.present) {
+      map['data'] = Variable<String>(data.value);
+    }
+    if (fetchedAt.present) {
+      map['fetched_at'] = Variable<DateTime>(fetchedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CurrentHouseholdCacheCompanion(')
+          ..write('userId: $userId, ')
+          ..write('data: $data, ')
+          ..write('fetchedAt: $fetchedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2185,6 +2457,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MealPlanWeekCacheTable mealPlanWeekCache =
       $MealPlanWeekCacheTable(this);
   late final $SyncWatermarksTable syncWatermarks = $SyncWatermarksTable(this);
+  late final $CurrentHouseholdCacheTable currentHouseholdCache =
+      $CurrentHouseholdCacheTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2196,6 +2470,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     recipeCache,
     mealPlanWeekCache,
     syncWatermarks,
+    currentHouseholdCache,
   ];
 }
 
@@ -3511,6 +3786,199 @@ typedef $$SyncWatermarksTableProcessedTableManager =
       SyncWatermark,
       PrefetchHooks Function()
     >;
+typedef $$CurrentHouseholdCacheTableCreateCompanionBuilder =
+    CurrentHouseholdCacheCompanion Function({
+      required String userId,
+      required String data,
+      required DateTime fetchedAt,
+      Value<int> rowid,
+    });
+typedef $$CurrentHouseholdCacheTableUpdateCompanionBuilder =
+    CurrentHouseholdCacheCompanion Function({
+      Value<String> userId,
+      Value<String> data,
+      Value<DateTime> fetchedAt,
+      Value<int> rowid,
+    });
+
+class $$CurrentHouseholdCacheTableFilterComposer
+    extends Composer<_$AppDatabase, $CurrentHouseholdCacheTable> {
+  $$CurrentHouseholdCacheTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fetchedAt => $composableBuilder(
+    column: $table.fetchedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CurrentHouseholdCacheTableOrderingComposer
+    extends Composer<_$AppDatabase, $CurrentHouseholdCacheTable> {
+  $$CurrentHouseholdCacheTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fetchedAt => $composableBuilder(
+    column: $table.fetchedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CurrentHouseholdCacheTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CurrentHouseholdCacheTable> {
+  $$CurrentHouseholdCacheTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get data =>
+      $composableBuilder(column: $table.data, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fetchedAt =>
+      $composableBuilder(column: $table.fetchedAt, builder: (column) => column);
+}
+
+class $$CurrentHouseholdCacheTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CurrentHouseholdCacheTable,
+          CurrentHouseholdCacheData,
+          $$CurrentHouseholdCacheTableFilterComposer,
+          $$CurrentHouseholdCacheTableOrderingComposer,
+          $$CurrentHouseholdCacheTableAnnotationComposer,
+          $$CurrentHouseholdCacheTableCreateCompanionBuilder,
+          $$CurrentHouseholdCacheTableUpdateCompanionBuilder,
+          (
+            CurrentHouseholdCacheData,
+            BaseReferences<
+              _$AppDatabase,
+              $CurrentHouseholdCacheTable,
+              CurrentHouseholdCacheData
+            >,
+          ),
+          CurrentHouseholdCacheData,
+          PrefetchHooks Function()
+        > {
+  $$CurrentHouseholdCacheTableTableManager(
+    _$AppDatabase db,
+    $CurrentHouseholdCacheTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CurrentHouseholdCacheTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$CurrentHouseholdCacheTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CurrentHouseholdCacheTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> userId = const Value.absent(),
+                Value<String> data = const Value.absent(),
+                Value<DateTime> fetchedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CurrentHouseholdCacheCompanion(
+                userId: userId,
+                data: data,
+                fetchedAt: fetchedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String userId,
+                required String data,
+                required DateTime fetchedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => CurrentHouseholdCacheCompanion.insert(
+                userId: userId,
+                data: data,
+                fetchedAt: fetchedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $CurrentHouseholdCacheTable,
+                    CurrentHouseholdCacheData
+                  >(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $CurrentHouseholdCacheTable,
+                    CurrentHouseholdCacheData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CurrentHouseholdCacheTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CurrentHouseholdCacheTable,
+      CurrentHouseholdCacheData,
+      $$CurrentHouseholdCacheTableFilterComposer,
+      $$CurrentHouseholdCacheTableOrderingComposer,
+      $$CurrentHouseholdCacheTableAnnotationComposer,
+      $$CurrentHouseholdCacheTableCreateCompanionBuilder,
+      $$CurrentHouseholdCacheTableUpdateCompanionBuilder,
+      (
+        CurrentHouseholdCacheData,
+        BaseReferences<
+          _$AppDatabase,
+          $CurrentHouseholdCacheTable,
+          CurrentHouseholdCacheData
+        >,
+      ),
+      CurrentHouseholdCacheData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3527,6 +3995,8 @@ class $AppDatabaseManager {
       $$MealPlanWeekCacheTableTableManager(_db, _db.mealPlanWeekCache);
   $$SyncWatermarksTableTableManager get syncWatermarks =>
       $$SyncWatermarksTableTableManager(_db, _db.syncWatermarks);
+  $$CurrentHouseholdCacheTableTableManager get currentHouseholdCache =>
+      $$CurrentHouseholdCacheTableTableManager(_db, _db.currentHouseholdCache);
 }
 
 // **************************************************************************

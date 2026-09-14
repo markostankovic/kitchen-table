@@ -55,7 +55,7 @@ final class HouseholdRepositoryProvider
 }
 
 String _$householdRepositoryHash() =>
-    r'7f0573c067c3674a410e97044bce41a0b3412938';
+    r'cfee82fdf09800adc103c7182615c237baa9b416';
 
 /// The caller's current household, or null if they have not created one.
 ///
@@ -66,6 +66,16 @@ String _$householdRepositoryHash() =>
 ///
 /// `keepAlive` is justified: the router's redirect reads this on every
 /// navigation to decide whether onboarding is finished.
+///
+/// Passes [userId] into `fetchCurrent` rather than letting the repository
+/// read `Supabase.instance.client.auth.currentUser` itself (Phase 2 part 7,
+/// D87, D88): `currentUserIdProvider` is already the one definition of "who
+/// is signed in" this app keeps, and a second one inside `data/` would be
+/// exactly the duplication that provider exists to prevent. Reports
+/// reachability into `networkStatusProvider`, on the three screen providers'
+/// own precedent (`RecipeList`, `MealPlanEditor`, `CurrentShoppingList`) --
+/// this is what makes the global offline banner reachable on a COLD start at
+/// all: today its three producers all sit behind this same gate.
 
 @ProviderFor(currentHousehold)
 final currentHouseholdProvider = CurrentHouseholdProvider._();
@@ -79,6 +89,16 @@ final currentHouseholdProvider = CurrentHouseholdProvider._();
 ///
 /// `keepAlive` is justified: the router's redirect reads this on every
 /// navigation to decide whether onboarding is finished.
+///
+/// Passes [userId] into `fetchCurrent` rather than letting the repository
+/// read `Supabase.instance.client.auth.currentUser` itself (Phase 2 part 7,
+/// D87, D88): `currentUserIdProvider` is already the one definition of "who
+/// is signed in" this app keeps, and a second one inside `data/` would be
+/// exactly the duplication that provider exists to prevent. Reports
+/// reachability into `networkStatusProvider`, on the three screen providers'
+/// own precedent (`RecipeList`, `MealPlanEditor`, `CurrentShoppingList`) --
+/// this is what makes the global offline banner reachable on a COLD start at
+/// all: today its three producers all sit behind this same gate.
 
 final class CurrentHouseholdProvider
     extends
@@ -97,6 +117,16 @@ final class CurrentHouseholdProvider
   ///
   /// `keepAlive` is justified: the router's redirect reads this on every
   /// navigation to decide whether onboarding is finished.
+  ///
+  /// Passes [userId] into `fetchCurrent` rather than letting the repository
+  /// read `Supabase.instance.client.auth.currentUser` itself (Phase 2 part 7,
+  /// D87, D88): `currentUserIdProvider` is already the one definition of "who
+  /// is signed in" this app keeps, and a second one inside `data/` would be
+  /// exactly the duplication that provider exists to prevent. Reports
+  /// reachability into `networkStatusProvider`, on the three screen providers'
+  /// own precedent (`RecipeList`, `MealPlanEditor`, `CurrentShoppingList`) --
+  /// this is what makes the global offline banner reachable on a COLD start at
+  /// all: today its three producers all sit behind this same gate.
   CurrentHouseholdProvider._()
     : super(
         from: null,
@@ -122,7 +152,7 @@ final class CurrentHouseholdProvider
   }
 }
 
-String _$currentHouseholdHash() => r'fcdf29d5844120bfc7a306ede57a8f800c21d303';
+String _$currentHouseholdHash() => r'12ce113de8f4d63d3d17d353a88474343f4fa44e';
 
 /// Everyone in the caller's household, for the member list.
 ///

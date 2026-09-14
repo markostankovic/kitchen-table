@@ -2446,8 +2446,167 @@ black-holed connection fails in seconds rather than minutes, or both. Either
 is a new decision, not a two-line patch inside a part about translation
 review.
 
+## D88 — The current household is cached per user, decoded by the same wire decoder, read network-first with a cache fallback
+
+**Decided.** Phase 2 part 7, closing D87. `CurrentHouseholdCache` (`core/db/
+app_database.dart`) is a new table keyed on `userId`, storing the raw
+`households` row `RemoteHouseholdDataSource.fetchMineRows()` returns.
+`HouseholdRepository.fetchCurrent(userId:)` reads network-first with a
+cache fallback — `IngredientRepository.fetchUnitCatalog()`'s exact shape
+(D70): on success, write the chosen row through; `on NetworkFailure`, read
+the cache; a cold cache rethrows. `dto/household_dto.dart`'s
+`householdFromWire` is the one decoder for both a fresh response and a
+cache hit (D65), replacing the private `_toHousehold` that used to live
+only inside the repository.
+
+**Why keyed by user, not a singleton row.** Every other cache table in
+this database is per-household or global; this is the first per-user one.
+Keying by `userId` makes a wrong-user read impossible by construction —
+the property a comment on a singleton row could only assert, not enforce.
+The sign-out wipe (`clearHouseholdCache`) still drops this table too, on
+`MealPlanWeekCache.uniqueKeys`' own precedent of a redundant guard beside a
+structural one: belt-and-suspenders, not the only thing keeping it correct.
+
+**Why the raw row, not `Household.toJson()`.** `Household`'s generated
+`toJson` is camelCase and has no caller today; using it here would be the
+second path into one model `HouseholdInvite`'s own doc comment says this
+project avoids. Storing the wire row verbatim and decoding it with the same
+function a network read uses is `recipe_dto.dart`'s precedent, not
+`unit_catalog_dto.dart`'s — there is no domain object built up and
+re-encoded here, only ever read off the wire and cached as-is.
+
+**Why network-first, not cache-first.** `CreateHouseholdScreen` and
+`JoinHouseholdScreen` both `invalidate(currentHouseholdProvider)` and
+re-`await` it, expecting a fresh read that reflects the write they just
+made; the router's redirect then reads the result synchronously. A
+cache-first order would risk serving the household the cook just left
+onboarding for.
+
+**Why `create()`/`redeemInvite()` clear the whole cache on success.**
+Network-first-with-fallback introduces a failure mode that did not exist
+before: household A cached, the cook redeems an invite into household B,
+and the confirming re-fetch blips offline — without clearing, the fallback
+would silently resurrect A instead of correctly leaving the redirect
+stalled in onboarding. Clearing on success closes it; caching remains
+correct independent of exactly when the next read happens to fail.
+
+**Rejected.** A singleton row (`UnitCatalogCache`'s shape) — correct only
+as long as sign-out is never skipped or raced, where a per-user key is
+correct by construction regardless. Reading `Supabase.instance.client.auth
+.currentUser?.id` from inside `data/` instead of threading `userId`
+through — legal under rule 1, but a second definition of "who is signed
+in" next to `currentUserIdProvider`, which exists specifically so nothing
+else has to define that.
+
+## D89 — The household read's bound is a per-request `.retry()`, not a global `postgrestOptions` timeout, because the global option never reaches `.from()` calls
+
+**Decided.** `RemoteHouseholdDataSource.fetchMineRows()` chains
+`.retry(count: 1, requestTimeout: const Duration(seconds: 5))` onto the one
+call that gates every household-scoped screen. Nothing else in the app is
+bounded this way, and nothing at any other call site changed.
+
+**Why not `Supabase.initialize(postgrestOptions: PostgrestClientOptions(
+requestTimeout: ...))`, which is where this started.** Verified directly
+against the pinned package source
+(`supabase-2.16.1/lib/src/supabase_client.dart`,
+`supabase_query_builder.dart`): `SupabaseClient.from()` builds a
+`SupabaseQueryBuilder` and forwards exactly one field of
+`_postgrestOptions` to it — `schema`. Not `retryEnabled`, not
+`retryCount`, not `requestTimeout`. Those only reach a call made through
+`_client.rest`, i.e. `rpc()`. `fetchMine()`/`fetchMineRows()` is a
+`.from()` call. A global timeout would have changed nothing about the bug
+it was meant to fix — the fetch would still have hung for minutes.
+
+**`retryCount` would have been dead configuration for this app even where
+the option does reach.** `postgrest_builder.dart`'s `_executeWithRetry`
+retries `GET`/`HEAD` only; every one of this app's twelve `rpc()` call
+sites is a POST, single-shot regardless of `retryCount`. Global retry
+tuning was never going to do anything here in either direction.
+
+**Why per-request rather than per-repository-method.** `.retry()` is a
+method on the postgrest builder chain, legal in `data/` where
+`supabase_flutter` is already imported (rule 1) — one line, on the one
+call, with no ripple into `runGuarded` or any call site outside
+`RemoteHouseholdDataSource`. `runGuarded`'s `TimeoutException` arm has
+caught for it since Phase 1a with nothing to produce one; this is its
+first real producer.
+
+**Why Storage, Edge Functions and auth (gotrue) are untouched, and this is
+structural, not a choice made carefully each time.** `postgrestOptions`
+cannot reach them regardless of what value it holds — confirmed in the
+same read of `supabase_client.dart` that found the `.from()` gap. D79's
+"`translate-recipe` must stay a long-running synchronous model call" is
+therefore safe by construction, not by anyone remembering not to bound it.
+
+**Why not set a global `requestTimeout` anyway, now that its real reach
+(RPC only) is known.** It would bound every `rpc()` call, including
+non-idempotent POSTs like `create_household` and `save_imported_recipe` —
+a client-side timeout on a request the server actually committed turns a
+successful write into a visible error. That needs its own idempotency
+audit and is not a side effect of fixing D87.
+
+**Rejected.** The global `postgrestOptions` timeout — verified not to
+reach the call it was meant to fix. Reducing the global `retryCount` —
+verified inert for every RPC call site and irrelevant to a `.from()` call
+in the first place. An `httpClient:` wrapper covering every sub-client —
+the only option that would also reach Storage/Functions/gotrue, at the
+cost of a hand-written `http.BaseClient` and a new decision about what
+each of those should be bounded to; out of scope for fixing one hanging
+`.from()` call.
+
+## D90 — `features/households/data/` takes the Remote/Local split, because an untested read order is what D87 is a report about
+
+**Decided.** `HouseholdRepository` is now composed from
+`RemoteHouseholdDataSource` and `LocalHouseholdDataSource`, the fourth
+Remote/Local split after shopping_list (Phase 2 part 5), recipes (part
+6a) and meal_plan (part 6b).
+
+**Why D70's precedent does not transfer.** D70 declined this same split
+for `IngredientRepository` — "one cached method out of six" — and kept a
+bare `SupabaseClient` field with the network call inlined.
+`fetchUnitCatalog()`'s own network-first-with-fallback read order has
+never had a test as a direct consequence: `unit_catalog_cache_test.dart`
+proves the cache round trip, never the repository's `try`/`on
+NetworkFailure` branching, because there was no seam to fake
+`SupabaseClient` against. D87 exists precisely because an unverified
+offline read order shipped and stayed that way for two phases. Repeating
+the same untested shape to fix it would be the wrong lesson to draw from
+it, even though households is — by the same "one cached method" count —
+exactly as small a candidate for the split as ingredients was.
+
+`household_repository_offline_test.dart` is what the split buys:
+`_FakeRemote implements RemoteHouseholdDataSource` (`recipe_repository_
+offline_test.dart`'s own shape — `implements`, not `extends`, so a test
+that accidentally reaches an unstubbed method throws by omission), proving
+the network-first/cache-fallback/cold-cache-rethrows/wrong-household-
+eviction behavior directly rather than only on the emulator.
+
+**Rejected.** Leaving `HouseholdRepository` as a single file and proving
+the fix only on the emulator walk — the walk still happened (it is how
+D87 was found in the first place), but a fix whose read order can only be
+proven by a manual walk is the exact shape of gap this decision closes.
+
 ## Open / deferred
 
+- **`signImageUrls`/`_withImageUrls` are outside `runGuarded`** — found
+  during D89's survey, not on D87's path (`_withImageUrls` never runs for a
+  recipe served from the cache — `recipe_repository.dart`'s own comment),
+  and not fixed there. Wrapping it is a behavior change, not a tightening:
+  a `StorageException` becoming a `NetworkFailure` would newly trigger
+  `fetchDetail`'s D74 cache fallback, turning "recipe loads, no photo" into
+  "recipe served stale". Needs its own decision, not a side effect of
+  bounding one unrelated call.
+- **`ImportRepository.uploadImportPhoto` still carries its own inline copy
+  of "which household"** — found during D88's survey. D52 claimed to close
+  D33's last duplicate of that query; this one survived, on a write path,
+  online-only, unaffected by the household cache. Named so it is not
+  mistaken for closed.
+- **`currentHouseholdProvider` never re-resolves within a process.**
+  `keepAlive`, so once it settles on an answer — cached or fresh — nothing
+  re-fetches until the app restarts. A household resolved from cache while
+  offline stays that way even after the network returns. Invalidating it on
+  `NetworkStatus` flipping offline→online is the natural follow-up; not
+  built, named here (D88, D89).
 - **Client vs Edge Function split** — rule of thumb written in
   `docs/ARCHITECTURE.md`. Settled enough to build on.
 - **Thin web layer** — deferred to Phase 4. Leaning Next.js App Router on
@@ -2460,12 +2619,15 @@ review.
   measured both by mass and by volume in one week renders as two entries on one
   line, which is the documented behaviour, not a gap.
 - **Handwritten card OCR quality** — unknown until there's a real card to test.
-- **No model call has ever run.** Phase 1d ships three importers, and tier 0
-  (reading prose or a page) and tier 4 (batched matching) have never executed:
-  the Anthropic account has no credit balance. Everything either side of them is
-  verified against the running stack — the JSON-LD path, the SSRF guard, the
-  storage policies, the job lifecycle, the confirm screen, the save. The prompts
-  and the request shapes are not.
+- **A model call has run, and the entry this replaces was wrong by the time
+  it was read.** It used to say no model call had ever executed, for lack
+  of Anthropic credit. Phase 1d part 6 ran all three importers against the
+  real provider once credits existed (seven calls, $0.14, every one
+  recorded in `ai_usage` with real token counts — `docs/ROADMAP.md`'s own
+  part 6 notes), and Phase 3 part 3's emulator walk ran `translate-recipe`
+  for real (`Palacinke` → `Pancakes`, then reviewed to `Crepes`). Left here
+  as a reminder to re-read a claim like this before repeating it, not
+  deleted outright.
 - **The iOS share extension** — see the 1d notes in `docs/ROADMAP.md`. Android
   shares work; iOS needs a Share Extension target, an app group and
   entitlements. SPM is already enabled and the project uses the scene lifecycle,

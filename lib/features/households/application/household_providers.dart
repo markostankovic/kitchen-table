@@ -1,7 +1,11 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/db/app_database.dart';
+import '../../../core/net/network_status.dart';
 import '../../../core/supabase/supabase_client.dart';
 import '../data/household_repository.dart';
+import '../data/local_household_datasource.dart';
+import '../data/remote_household_datasource.dart';
 import '../domain/household.dart';
 import '../domain/household_invite.dart';
 import '../domain/household_member.dart';
@@ -9,8 +13,10 @@ import '../domain/household_member.dart';
 part 'household_providers.g.dart';
 
 @Riverpod(keepAlive: true)
-HouseholdRepository householdRepository(Ref ref) =>
-    HouseholdRepository(ref.watch(supabaseClientProvider));
+HouseholdRepository householdRepository(Ref ref) => HouseholdRepository(
+  RemoteHouseholdDataSource(ref.watch(supabaseClientProvider)),
+  LocalHouseholdDataSource(ref.watch(appDatabaseProvider)),
+);
 
 /// The caller's current household, or null if they have not created one.
 ///
@@ -21,11 +27,26 @@ HouseholdRepository householdRepository(Ref ref) =>
 ///
 /// `keepAlive` is justified: the router's redirect reads this on every
 /// navigation to decide whether onboarding is finished.
+///
+/// Passes [userId] into `fetchCurrent` rather than letting the repository
+/// read `Supabase.instance.client.auth.currentUser` itself (Phase 2 part 7,
+/// D87, D88): `currentUserIdProvider` is already the one definition of "who
+/// is signed in" this app keeps, and a second one inside `data/` would be
+/// exactly the duplication that provider exists to prevent. Reports
+/// reachability into `networkStatusProvider`, on the three screen providers'
+/// own precedent (`RecipeList`, `MealPlanEditor`, `CurrentShoppingList`) --
+/// this is what makes the global offline banner reachable on a COLD start at
+/// all: today its three producers all sit behind this same gate.
 @Riverpod(keepAlive: true)
 Future<Household?> currentHousehold(Ref ref) async {
   final String? userId = ref.watch(currentUserIdProvider).value;
   if (userId == null) return null;
-  return ref.watch(householdRepositoryProvider).fetchCurrent();
+  final NetworkStatus status = ref.read(networkStatusProvider.notifier);
+  return ref.watch(householdRepositoryProvider).fetchCurrent(
+    userId: userId,
+    onReachable: status.reportReachable,
+    onUnreachable: status.reportUnreachable,
+  );
 }
 
 /// Everyone in the caller's household, for the member list.

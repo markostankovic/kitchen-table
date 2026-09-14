@@ -192,6 +192,31 @@ class SyncWatermarks extends Table {
 /// ingredient name catalog today.
 const String globalSyncScope = '_global';
 
+/// The caller's own current household (D87, D88) -- the first PER-USER table
+/// in a database that has so far only ever been per-household or global.
+/// [userId] is the primary key, not a singleton row: a wrong-user read is
+/// then impossible by construction, which is the property the sign-out wipe
+/// below exists to be belt-and-suspenders for, not the only thing keeping it
+/// correct (`MealPlanWeekCache.uniqueKeys`' own precedent for redundant
+/// guards).
+///
+/// `data` carries the raw wire row `RemoteHouseholdDataSource.fetchMineRows`
+/// returns -- `dto/household_dto.dart`'s `householdFromWire` reads a network
+/// response and a cache hit identically (D65, D88).
+///
+/// [fetchedAt] is a local-clock inspection stamp only, deliberately NOT a
+/// [SyncWatermarks] entry: `households` carries no server `updated_at` to
+/// watermark against, and D72 forbids ever advancing a watermark from a
+/// local clock in the first place.
+class CurrentHouseholdCache extends Table {
+  TextColumn get userId => text()();
+  TextColumn get data => text()();
+  DateTimeColumn get fetchedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => <Column<Object>>{userId};
+}
+
 @DriftDatabase(
   tables: <Type>[
     ShoppingListCache,
@@ -200,6 +225,7 @@ const String globalSyncScope = '_global';
     RecipeCache,
     MealPlanWeekCache,
     SyncWatermarks,
+    CurrentHouseholdCache,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -236,8 +262,12 @@ class AppDatabase extends _$AppDatabase {
   /// the delta fetch would never re-send it -- the first bump this database
   /// has needed for a change inside the blob rather than a change to a
   /// table's columns.
+  ///
+  /// Bumped to 5 in Phase 2 part 7 (D87, D88) for [CurrentHouseholdCache] --
+  /// the household-resolution gate every other cache in this file sat behind
+  /// with no cache and no bound of its own.
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -250,8 +280,10 @@ class AppDatabase extends _$AppDatabase {
         },
       );
 
-  /// Drops every household-scoped row -- the shopping list, cached recipes,
-  /// cached meal plan weeks, and any watermark that is not [globalSyncScope].
+  /// Drops every row that identifies the previous signed-in user or their
+  /// household -- the shopping list, cached recipes, cached meal plan weeks,
+  /// the caller's own cached current household (D87, D88), and any watermark
+  /// that is not [globalSyncScope].
   ///
   /// Called on sign-out, and must never block it or surface a failure of its
   /// own -- a corrupt cache file is not a reason to fail signing out, so this
@@ -266,6 +298,7 @@ class AppDatabase extends _$AppDatabase {
             await delete(shoppingListCache).go();
             await delete(recipeCache).go();
             await delete(mealPlanWeekCache).go();
+            await delete(currentHouseholdCache).go();
             await (delete(syncWatermarks)
                   ..where((SyncWatermarks t) => t.scope.equals(globalSyncScope).not()))
                 .go();

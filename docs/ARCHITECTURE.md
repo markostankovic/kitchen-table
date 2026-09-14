@@ -60,9 +60,14 @@ second (Phase 2 part 6a), with one addition D73 explains: its
 `local_recipe_datasource.dart` also owns the global ingredient-name cache
 and resolves `DisplayNameChain` against it, because that RPC has exactly one
 caller and the layer boundary forbids putting it in
-`features/ingredients/data/` without one. `features/ingredients/data/`
+`features/ingredients/data/` without one. `features/meal_plan/data/` is the
+third (Phase 2 part 6b), on the same shape. `features/households/data/` is
+the fourth (Phase 2 part 7, D90) — taken for a different reason than the
+first three: it is not about offline reading so much as about having a seam
+to test a read order against at all, the gap D87 found. `features/ingredients/data/`
 itself still caches only `fetchUnitCatalog()`, deliberately not split into a
-full Remote/Local pair — see D70.
+full Remote/Local pair — see D70, and D90 for why that precedent did not
+transfer to households.
 
 ### Dependency direction
 
@@ -238,9 +243,9 @@ Cache is not always cache-then-network. Drift is a cache, Supabase is the
 truth, never the reverse, but the read order depends on whether staleness is
 worth showing (D67, D74) — built in part 5 (D64–D71) on the shopping list and
 the unit catalog, widened in part 6a (D72–D74) to recipes and the global
-ingredient name catalog, and in part 6b to meal plans. Every entity named in
-this section's own "Done when" is cached; households are not, and D87 names
-what that costs.
+ingredient name catalog, in part 6b to meal plans, and in part 7 (D87–D90) to
+the caller's own current household — the gate every one of those reads sat
+behind, uncached and unbounded, until then.
 
 ```
 ShoppingListRepository / RecipeRepository (list) / MealPlanRepository
@@ -250,19 +255,34 @@ ShoppingListRepository / RecipeRepository (list) / MealPlanRepository
 
 RecipeRepository.fetchDetail() / IngredientRepository.fetchUnitCatalog()
   └─ network-first; the cache is read only on a NetworkFailure (D70, D74)
+
+HouseholdRepository.fetchCurrent()
+  └─ network-first, D70's shape, PLUS a per-request bound: fetchMineRows()
+     chains .retry(count: 1, requestTimeout: 5s) so the fallback below
+     arrives in ~11s worst case rather than the several minutes an
+     unbounded PostgREST call took before (D87, D89)
 ```
 
-**`currentHouseholdIdProvider` itself has no offline path (D87).** Every
-household-scoped read above gates on it first (`await
-ref.watch(currentHouseholdIdProvider.future)`), and
-`HouseholdRepository.fetchCurrent()` behind it is a plain network call with
-no cache and no client-side timeout. A cold start with no network does not
-fail fast: it hangs on that one call — several minutes, in the Phase 3 part 3
-emulator walk that first exercised this path — and nothing below it, however
-well its own cache is populated, gets a chance to answer until it does.
-Confirmed directly against the on-device cache file during that walk: a
-recipe's row and its `sync_watermarks` entry were both present and correctly
-keyed, and still could not be reached.
+**Every household-scoped read above gates on `currentHouseholdIdProvider`
+first** (`await ref.watch(currentHouseholdIdProvider.future)`), so until it
+resolves, nothing below it — however well its own cache is populated — gets a
+chance to answer. Part 7 closed the two things that made a cold, offline
+start unrecoverable: `CurrentHouseholdCache` (`core/db/`), the first
+per-user table this database has (keyed on the signed-in user's id, so a
+wrong-user read is impossible by construction, not merely avoided), and the
+per-request `.retry()` bound above, which is what actually shortens the wait
+— a global `Supabase.initialize(postgrestOptions:)` timeout was tried first
+and verified not to work: `SupabaseClient.from()` forwards only `schema`
+from `PostgrestClientOptions`, never `requestTimeout` or `retryCount` (D89).
+`features/households/data/` took the Remote/Local split to get there — the
+fourth outing, after shopping_list/recipes/meal_plan — specifically so this
+read order could be tested rather than only walked on the emulator (D90).
+
+This was found, not designed for up front: the Phase 3 part 3 emulator walk
+force-stopped the app offline and found the Recipes tab hanging for several
+minutes before failing — for a recipe whose cache row was confirmed present
+and correctly keyed by pulling the on-device SQLite file mid-walk. D87
+records the finding; D88–D90 are the fix.
 
 Part 6a also closed D71's own deferral: `SyncWatermarks` (`core/db/`) is a
 per-`(entity, scope)` delta-fetch watermark, advanced from the max
@@ -297,7 +317,10 @@ for a household-scoped snapshot; `UnitCatalogCache` carries neither, because
 `units`/`unit_names` have no household and no `updated_at` to begin with.
 `RecipeCache` and `IngredientNameCache` (part 6a) follow the same rule:
 `householdId`/`updatedAt` on the former, a global scope and no household
-column on the latter.
+column on the latter. `CurrentHouseholdCache` (part 7) extracts `userId`
+instead of `householdId` — the one table in this file keyed by who is asking
+rather than which household the answer belongs to, because the household id
+itself is what's being resolved (D88).
 
 **No `deleted_at` in the cache** (D68, a deliberate narrowing of the
 original sketch above). A row a network read no longer returns is deleted
@@ -309,10 +332,11 @@ a later delta fetch can evict it).
 Delta fetch (`updated_at > last_sync_at` per table) is `SyncWatermarks`
 (D72), built in part 6a once recipes gave the design something real to be
 right about (D71 deferred it for exactly this reason). `AppDatabase
-.schemaVersion` is `4` as of Phase 3 part 2 — `3` from part 6b's
-`MealPlanWeekCache`, `4` from `recipe_translations` riding inside
-`RecipeCache.data`'s existing blob, a shape change rather than a column one
-(D78). `onUpgrade` still drops every table and recreates it rather than
+.schemaVersion` is `5` as of Phase 2 part 7 — `3` from part 6b's
+`MealPlanWeekCache`, `4` from Phase 3 part 2's `recipe_translations` riding
+inside `RecipeCache.data`'s existing blob (a shape change rather than a
+column one, D78), `5` from part 7's `CurrentHouseholdCache` (D88).
+`onUpgrade` still drops every table and recreates it rather than
 migrating — the cache is disposable by
 construction, so a schema change costs one refetch, not a migration.
 
