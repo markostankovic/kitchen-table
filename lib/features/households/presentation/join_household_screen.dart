@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/error/failure_l10n.dart';
+import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../application/household_providers.dart';
 
@@ -24,7 +26,7 @@ class JoinHouseholdScreen extends ConsumerStatefulWidget {
 class _JoinHouseholdScreenState extends ConsumerState<JoinHouseholdScreen> {
   final TextEditingController _code = TextEditingController();
   bool _joining = false;
-  String? _error;
+  AppFailure? _failure;
 
   @override
   void dispose() {
@@ -35,7 +37,7 @@ class _JoinHouseholdScreenState extends ConsumerState<JoinHouseholdScreen> {
   Future<void> _submit() async {
     setState(() {
       _joining = true;
-      _error = null;
+      _failure = null;
     });
 
     try {
@@ -47,7 +49,7 @@ class _JoinHouseholdScreenState extends ConsumerState<JoinHouseholdScreen> {
       await ref.read(currentHouseholdProvider.future);
     } on AppFailure catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message);
+      setState(() => _failure = e);
     } finally {
       if (mounted) setState(() => _joining = false);
     }
@@ -55,6 +57,7 @@ class _JoinHouseholdScreenState extends ConsumerState<JoinHouseholdScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -89,10 +92,10 @@ class _JoinHouseholdScreenState extends ConsumerState<JoinHouseholdScreen> {
                   ),
                   onSubmitted: (_) => _submit(),
                 ),
-                if (_error != null) ...<Widget>[
+                if (_failure != null) ...<Widget>[
                   const SizedBox(height: 12),
                   Text(
-                    _error!,
+                    _failure!.localized(l10n),
                     style:
                         TextStyle(color: Theme.of(context).colorScheme.error),
                   ),

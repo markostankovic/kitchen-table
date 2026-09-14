@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/error/failure_l10n.dart';
+import '../../../core/l10n/generated/app_localizations.dart';
 import '../application/household_providers.dart';
 import '../domain/household.dart';
 import '../domain/household_invite.dart';
@@ -18,12 +20,12 @@ class HouseholdScreen extends ConsumerStatefulWidget {
 
 class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
   bool _generating = false;
-  String? _error;
+  AppFailure? _failure;
 
   Future<void> _createInvite() async {
     setState(() {
       _generating = true;
-      _error = null;
+      _failure = null;
     });
 
     try {
@@ -31,7 +33,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
       ref.invalidate(liveInvitesProvider);
     } on AppFailure catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message);
+      setState(() => _failure = e);
     } finally {
       if (mounted) setState(() => _generating = false);
     }
@@ -46,6 +48,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<Household?> household =
         ref.watch(currentHouseholdProvider);
 
@@ -56,7 +59,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
         error: (Object e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text('Could not load your household.\n\n$e',
+            child: Text(localizedErrorMessage(e, l10n),
                 textAlign: TextAlign.center),
           ),
         ),
@@ -71,10 +74,10 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
                   ),
                   const Divider(),
                   _sectionHeader(context, 'Members'),
-                  ..._members(),
+                  ..._members(l10n),
                   const Divider(),
                   _sectionHeader(context, 'Invite someone'),
-                  ..._invites(),
+                  ..._invites(l10n),
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: FilledButton.icon(
@@ -85,11 +88,11 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
                           : 'Create invite code'),
                     ),
                   ),
-                  if (_error != null)
+                  if (_failure != null)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       child: Text(
-                        _error!,
+                        _failure!.localized(l10n),
                         style: TextStyle(
                             color: Theme.of(context).colorScheme.error),
                       ),
@@ -105,13 +108,13 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
         child: Text(title, style: Theme.of(context).textTheme.titleSmall),
       );
 
-  List<Widget> _members() {
+  List<Widget> _members(AppLocalizations l10n) {
     return ref.watch(householdMembersProvider).when(
           loading: () => const <Widget>[
             ListTile(title: Text('Loading…')),
           ],
           error: (Object e, _) => <Widget>[
-            ListTile(title: Text('Could not load members.\n\n$e')),
+            ListTile(title: Text(localizedErrorMessage(e, l10n))),
           ],
           data: (List<HouseholdMember> members) => members
               .map((HouseholdMember m) => ListTile(
@@ -125,13 +128,13 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
         );
   }
 
-  List<Widget> _invites() {
+  List<Widget> _invites(AppLocalizations l10n) {
     return ref.watch(liveInvitesProvider).when(
           loading: () => const <Widget>[
             ListTile(title: Text('Loading…')),
           ],
           error: (Object e, _) => <Widget>[
-            ListTile(title: Text('Could not load invite codes.\n\n$e')),
+            ListTile(title: Text(localizedErrorMessage(e, l10n))),
           ],
           data: (List<HouseholdInvite> invites) => invites.isEmpty
               ? const <Widget>[
