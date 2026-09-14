@@ -1072,10 +1072,159 @@ list rendered its one entry, chrome and content both correct.
 
 ### Still to build
 
-- Review flow: **done** (this part)
-- The remaining screens' bodies (recipes, import, meal plan, shopping list,
-  households), one feature at a time
+- Review flow: **done** (part 3)
 - D87's own fix: **done**, Phase 2 part 7 (D88-D90)
+- The remaining screens' bodies: recipes **done** (part 4); households and
+  import next (part 5); meal plan and shopping list, plus the date-label
+  layer `plan_week.dart` deferred, last (part 6)
+
+### Part 4 — The failure vocabulary, the script fix, and the recipes feature
+
+**Status: complete.** Decisions taken during it: D91-D92.
+
+The "remaining screens" bullet above is ~234 hardcoded English strings
+across five features -- three to four times any prior part -- so it splits
+three ways rather than landing in one commit the way D77 already warned
+against for the chrome alone. This part took the two mechanisms every later
+part needs, plus the one feature (recipes) and the `core/` widgets it pulls
+in.
+
+Two things were found while planning it, both existing rather than
+introduced, and both closed here because the later parts would otherwise
+each rediscover them on their own screens.
+
+**D91: `Locale('sr')` alone renders Flutter's OWN chrome in Cyrillic.**
+Verified against the pinned SDK: the `'sr'` case in
+`generated_material_localizations.dart` picks the Latin bundle only when
+`scriptCode == 'Latn'`, and otherwise falls through to the Cyrillic one. The
+text-selection toolbar, the back-button tooltip, a date-range picker's own
+labels -- every string this app does not supply itself -- had been Cyrillic
+since Phase 3 part 1, invisible because the 48 ARB-backed strings this app
+does own were always correct. Fixed in one place, on D77's own precedent:
+`appLocaleProvider` (`core/l10n/app_locale.dart`) now returns `srLatn`
+(`Locale.fromSubtags(languageCode: 'sr', scriptCode: 'Latn')`) instead of a
+bare `Locale('sr')`, and `appSupportedLocales` replaces
+`AppLocalizations.supportedLocales` everywhere a `MaterialApp` is built --
+the generated list carries the scriptless entry, and Flutter's locale
+resolution would otherwise hand it straight back unresolved.
+`profiles.locale` still stores the bare code; CLAUDE.md's "Locale codes are
+`sr` and `en`. Nothing else." is about that column, and every
+`appLocaleProvider` consumer reads `.languageCode`, unaffected.
+
+**D92: the failure vocabulary.** ~43 UI sites rendered `AppFailure.message`
+raw -- English, unlocalized, no matter which language the rest of the
+screen was in. `supabase_failure.dart`'s own comment had already named the
+fix: *"it lets Phase 3 localize by code with the server's text as the
+fallback."* `FailureCode` (`core/error/app_failure.dart`, pure Dart) is a
+34-value enum, one nullable field on `AppFailure` alongside `message`, each
+variant defaulting its own code the way it already defaults its message.
+`core/error/failure_l10n.dart` -- the sibling file allowed to import
+Flutter, on `core/l10n/app_locale.dart`'s own precedent -- renders a code
+through the ARB with `localizedFailureMessage`/`localizedErrorMessage`, and
+falls back to `message` verbatim when `code` is null. That null case is
+deliberate, not an oversight: `quota_exceeded` has to name whose allowance
+ran out, `url_not_allowed` deliberately says nothing about why (D45),
+`empty_input`/`ai_failed` differ per caller, and Postgres/GoTrue prose is an
+unbounded set no client vocabulary can cover -- so those keep the server's
+sentence, and everything else gets a code.
+
+Planning this also found nine Edge Function slugs
+(`fetch_failed`, `not_html`, `page_too_large`, `image_too_large`,
+`job_not_found`, `job_already_done`, `job_not_parsed`, `no_recipe_found`,
+`code_generation_failed`) that `supabase_failure.dart`'s switch never
+handled at all, silently degrading to `UnknownFailure` with no message --
+"that page is too large" was reaching the cook as "Something went wrong."
+All nine now have arms and codes.
+`test/core/supabase/supabase_failure_test.dart` closes the gap for good: it
+parses every `HttpError(<status>, "<slug>"` out of `supabase/functions/**/
+*.ts` (the `AiFailure` subclass included) and asserts each has an arm,
+rather than trusting the two files to stay in sync by inspection.
+
+The known trap in this design, named so it does not get rediscovered: a
+call site that passes a custom `message:` and forgets `code:` silently
+keeps the variant's DEFAULT code and renders the wrong sentence, with no
+compile error. Three cold-cache throw sites and the `TimeoutException` arm
+were exposed by exactly this. Not preventable in Dart -- caught instead by
+three `*_repository_offline_test.dart` assertions moved from `.message` to
+`.code`, which fail together if a future edit misses one.
+
+- `FailureCode` + `localizedFailureMessage`/`AppFailureL10n.localized` --
+  **done**, wired into every application/data throw site (19) and every
+  presentation call site with one (~43, across all five features and the
+  shared `core/` picker widgets), not just recipes'
+- `sr_Latn` -- **done**, `appLocaleProvider` and `appSupportedLocales`
+- Recipe screens and the `core/` widgets they force --  **done**:
+  `offline_banner.dart`; `recipe_detail_screen.dart`'s last 5 literals;
+  `recipe_list_screen.dart` (13); `recipe_edit_screen.dart` (~28, the
+  largest); `core/ingredients/widgets/` (`ingredient_line_field.dart`,
+  `ingredient_match_chip.dart`, `ingredient_picker_sheet.dart`); `core/
+  recipes/widgets/recipe_picker_sheet.dart`
+- This repo's first ICU plurals -- `recipeServingsCount` (Serbian
+  one/few/other, which English's plain `s` suffix does not reach), plus
+  `snackSlotCount` and `ingredientsMatchedCount` added now even though their
+  own screens are parts 5-6's job, so the plural vocabulary is complete
+  before either part needs a new form
+- The Serbian sample hints (`ingredient_line_field.dart`'s example line, the
+  match chip's "No match"/suggestion labels, the ingredient picker's
+  prompts) are looked up by the RECIPE's own language
+  (`lookupAppLocalizations(Locale(widget.locale))`), never the reader's
+  chrome locale -- content beside catalog names is never translated per
+  recipe (D1), the same reasoning D86 already applied one screen over.
+  Failure messages inside those same widgets stay on the reader's chrome
+  locale: content follows the recipe, chrome and failures follow the reader
+- `make gen-l10n` folded into the `gen` Makefile target, and a new
+  `l10n-check` target (wired into `check`) regenerates and diffs
+  `lib/core/l10n/generated/` -- the same drift guard part 6b built for
+  `display_names_test.sql`, now covering the l10n generator. Verified it
+  actually catches drift, not just that it runs
+
+**Done when:** the failure vocabulary is complete and contract-tested for
+every feature, Serbian renders Latin everywhere including strings this app
+does not own, and the recipes feature reads entirely in the reader's
+language including when something goes wrong. -- **Met**, verified against
+the local stack (`make check` clean in full -- `dart analyze`,
+`tool/check_layers.dart`, 468 Dart tests, up from 417; `deno check`/`lint`/
+`fmt`; the Deno suite unaffected since no Edge Function changed; `seed-check`;
+all 19 SQL suites; `l10n-check` finding no drift) and end to end on the
+Android emulator against the local stack, not only in tests.
+
+Signed in for real (OTP read from Mailpit), created a household, and worked
+through the recipes feature from a cold build of this part's changes.
+`uiautomator`, not eyeballed coordinates, located every element precisely.
+The FAB menu read *Novi recept / Uvezi sa linka / Nalepi recept / Fotografiši
+stranicu* -- all four keys -- and the empty state *Još nema recepata.* /
+*Dodajte jedan koji znate napamet.* Opening the editor showed every field
+label (*Porcije*, *Napisano na* with *Srpski*/*English* left untranslated,
+*Status* with *Nacrt*/*Isprobano*, *Oznake*/*Odvojene zarezima*) and the
+ingredient hint *2 šolje glatkog brašna* -- looked up by the recipe's own
+language, confirmed by typing `krompir` and watching the suggestion chip
+read *krompir?*, then a nonsense string and watching it read *Nema
+poklapanja*; tapping that chip opened the picker with *Koji sastojak je
+„zzzxxq"?*, *Ništa u katalogu se ne poklapa.*, and *Napravi „zzzxxq"* /
+*Dodaje ga u katalog domaćinstva* -- correct Serbian typographic quotes
+(„…", not "…") throughout. Saving a 4-serving recipe and opening its detail page showed
+*4 porcije* -- Serbian's `few` category, not `other` -- then switching the
+Settings language toggle to English re-rendered the same page live as
+*4 servings*, `recipeServingsCount`'s `other` form, with the whole chrome
+(*Draft*, *Ingredients*, *Steps*, *No steps yet.*) following in the same
+frame.
+
+**D91 confirmed directly, not only by the widget test that models it.**
+Long-pressing a word in the sign-in screen's email field -- before any of
+this part's fix existed, this exact gesture would read Cyrillic -- opened the
+Latin-script selection toolbar: *Iseci / Kopiraj / Deli / Izaberi sve*.
+`test/core/l10n/app_locale_test.dart`'s own assertion
+(`MaterialLocalizations.of(context).pasteButtonLabel == 'Nalepi'`) is the
+repeatable form of exactly this; both agree.
+
+Not walked on-device: a live failure message and the offline banner under a
+real network failure (D92's other half). Toggling the emulator's radios did
+not actually sever its route to the local stack, and forcing it further was
+not worth the detour -- `failure_l10n_test.dart`'s fallback-and-precedence
+cases and `supabase_failure_test.dart`'s full slug table already exercise
+every sentence this mechanism can produce; only the "does a real
+`SocketException` reach the screen" wiring is unconfirmed live, and that
+wiring predates this part.
 
 ---
 

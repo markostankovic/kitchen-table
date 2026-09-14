@@ -361,26 +361,59 @@ straight to `MaterialApp.router`'s `locale`. Writing a new value goes through
 constraint and its `profiles_update_own` RLS policy have existed since
 migration 2.
 
+**Serbian is always `srLatn`, never a bare `Locale('sr')` (D91).** Verified
+against the pinned SDK: `Locale('sr')` alone resolves Flutter's *own*
+Material/Cupertino strings — the text-selection toolbar, the back-button
+tooltip, a date-range picker's chrome — to their Cyrillic bundle, regardless
+of how correct this app's own ARB strings are. `appLocaleProvider` returns
+`Locale.fromSubtags(languageCode: 'sr', scriptCode: 'Latn')`, and
+`appSupportedLocales` (not the generated `AppLocalizations.supportedLocales`,
+which still carries the scriptless entry) is what every `MaterialApp` —
+`main.dart` and every widget test that pumps one directly — is built with.
+`profiles.locale` keeps storing the bare code; every reader of
+`appLocaleProvider` uses `.languageCode`, unaffected.
+
 ```
 lib/core/l10n/
   arb/app_sr.arb        # template — CLAUDE.md's Serbian-first
   arb/app_en.arb
   generated/            # flutter gen-l10n output, committed like *.g.dart
-  app_locale.dart        # appLocaleProvider
+  app_locale.dart        # appLocaleProvider, srLatn, appSupportedLocales
 ```
 
-ARB strings are chrome only so far — the bottom nav, each tab's own AppBar
-title, Settings, sign-in / verify-OTP (Phase 3 part 1), and the recipe detail
-screen (Phase 3 part 2). Everything else renders in English until the part
-that owns that screen localizes it, one feature at a time. Language names
-themselves (*Srpski*, *English*) are never translated — a language's own
-name is not chrome.
+ARB strings cover the app's chrome (the bottom nav, each tab's own AppBar
+title, Settings, sign-in / verify-OTP — Phase 3 part 1) and, feature by
+feature as each part reaches it, that feature's own screens: recipes and the
+`core/` widgets it shares with other features (`core/ingredients/widgets/`,
+`core/recipes/widgets/recipe_picker_sheet.dart`) as of part 4. Households and
+import are still English, pending parts 5 and 6. Language names themselves
+(*Srpski*, *English*) are never translated — a language's own name is not
+chrome.
+
+**The failure vocabulary (D92).** `AppFailure` (`core/error/app_failure.dart`,
+pure Dart) carries a nullable `FailureCode` alongside its English `message`,
+each of the seven sealed variants defaulting its own code the way it already
+defaults its message. `core/error/failure_l10n.dart` — a sibling file, the
+one allowed to import Flutter, on this file's own precedent — renders a
+code through the ARB (`localizedFailureMessage`/`localizedErrorMessage`/the
+`AppFailureL10n.localized` extension); a null code means the sentence in
+`message` is server prose this client's vocabulary cannot cover (an
+unbounded Postgres or GoTrue message, a handful of Edge Function slugs whose
+specificity only the server has) and is shown verbatim. Every application/
+data throw site and every presentation call site that renders a failure goes
+through this — not scoped to one feature, since a code added by half the
+app would leave "which codes exist" unanswerable from the code alone.
+`test/core/supabase/supabase_failure_test.dart` parses every Edge Function
+slug straight out of `supabase/functions/**/*.ts` and asserts
+`supabase_failure.dart` has an arm for each, closing the file's own
+long-standing claim that the two are "two ends of the same contract" with an
+actual test rather than a comment.
 
 `recipe_translations`, `translate-recipe` and the recipe detail screen's own
-locale-aware read arrived in Phase 3 part 2; the review flow is still a
-later part. A recipe's *content* locale is resolved in exactly one place per
-concern, each reading `profiles.locale` through `appLocaleProvider` rather
-than a second notion of "what language": `RecipeDetail`'s own getters
+locale-aware read arrived in Phase 3 part 2; the review flow is part 3. A
+recipe's *content* locale is resolved in exactly one place per concern, each
+reading `profiles.locale` through `appLocaleProvider` rather than a second
+notion of "what language": `RecipeDetail`'s own getters
 (`displayTitle`/`displayDescription`/`displaySteps`, falling back to the
 original whenever `recipe_translations` has no row for the reading locale)
 decide which prose is on screen, and `ingredient_display_names`/
@@ -388,6 +421,15 @@ decide which prose is on screen, and `ingredient_display_names`/
 are. Ingredient lines are never translated per recipe — sending them to
 `translate-recipe` would ask a model to redo work the catalog already does
 for free, which is D1's whole argument applied to a second feature.
+
+That same rule extends one layer down in part 4: the sample hint in
+`ingredient_line_field.dart`, the match chip's "No match"/suggestion labels,
+and the ingredient picker's prompts are all looked up by the *recipe's* own
+language (`lookupAppLocalizations(Locale(widget.locale))`), never the
+reader's chrome locale — content that sits beside catalog names is never
+translated per recipe either way. A failure message inside those same
+widgets stays on the reader's chrome locale: content follows the recipe,
+chrome and failures follow the reader.
 
 ## Enforcement
 
