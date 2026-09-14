@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../error/app_failure.dart';
+import '../../error/failure_l10n.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../text/text_normalizer.dart';
 import '../../../features/ingredients/domain/ingredient_line_parser.dart';
 import '../../../features/ingredients/domain/ingredient_match.dart';
@@ -264,7 +266,7 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
           .read(ingredientCatalogProvider)
           .linkAlias(match.ingredientId, name, locale: widget.locale);
     } on AppFailure catch (e) {
-      _report(e.message);
+      _report(e);
     }
   }
 
@@ -285,7 +287,7 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
       if (!mounted) return;
       _applyManual(ingredientId: ingredientId, displayName: name);
     } on AppFailure catch (e) {
-      _report(e.message);
+      _report(e);
     }
   }
 
@@ -297,9 +299,10 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
 
   /// The line is already saved either way, so a failed write-back is reported
   /// and dropped rather than turned into something the cook has to resolve.
-  void _report(String message) {
+  void _report(AppFailure failure) {
     if (!mounted) return;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+        .showSnackBar(SnackBar(content: Text(failure.localized(l10n))));
   }
 }

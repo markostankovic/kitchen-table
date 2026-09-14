@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../error/failure_l10n.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../../features/recipes/domain/recipe.dart';
 import '../recipe_picker_providers.dart';
 
@@ -109,7 +111,8 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
                 ),
                 error: (Object e, _) => Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Text('Could not search recipes.\n\n$e'),
+                  child: Text(localizedErrorMessage(
+                      e, AppLocalizations.of(context))),
                 ),
                 data: (List<Recipe> found) => found.isEmpty
                     ? const Padding(
