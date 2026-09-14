@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../application/auth_providers.dart';
@@ -18,7 +19,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   final TextEditingController _email = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _sending = false;
-  String? _error;
+  AppFailure? _failure;
 
   @override
   void dispose() {
@@ -31,7 +32,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
     setState(() {
       _sending = true;
-      _error = null;
+      _failure = null;
     });
 
     final String email = _email.text.trim();
@@ -41,7 +42,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       VerifyOtpRoute(email: email).go(context);
     } on AppFailure catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message);
+      setState(() => _failure = e);
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -92,10 +93,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     },
                     onFieldSubmitted: (_) => _submit(),
                   ),
-                  if (_error != null) ...<Widget>[
+                  if (_failure != null) ...<Widget>[
                     const SizedBox(height: 12),
                     Text(
-                      _error!,
+                      _failure!.localized(loc),
                       style: TextStyle(
                           color: Theme.of(context).colorScheme.error),
                     ),

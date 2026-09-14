@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../application/auth_providers.dart';
 
@@ -23,7 +24,13 @@ class VerifyOtpScreen extends ConsumerStatefulWidget {
 class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
   final TextEditingController _code = TextEditingController();
   bool _verifying = false;
-  String? _error;
+
+  /// Either a plain, already-localized validator string (`codeEmptyError`,
+  /// looked up once at submit time) or an [AppFailure], localized lazily in
+  /// [build] so a locale switch while the error is on screen still shows the
+  /// right sentence -- the same reasoning [AppFailureL10n.localized]'s call
+  /// sites elsewhere in this part follow.
+  Object? _error;
 
   @override
   void dispose() {
@@ -50,7 +57,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
       // Deliberately no navigation here; the redirect handles it.
     } on AppFailure catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message);
+      setState(() => _error = e);
     } finally {
       if (mounted) setState(() => _verifying = false);
     }
@@ -66,7 +73,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
       );
     } on AppFailure catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message);
+      setState(() => _error = e);
     }
   }
 
@@ -112,7 +119,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                 if (_error != null) ...<Widget>[
                   const SizedBox(height: 12),
                   Text(
-                    _error!,
+                    _errorText(loc),
                     style:
                         TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
@@ -137,5 +144,12 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
         ),
       ),
     );
+  }
+
+  /// [_error] is either a plain, already-localized validator string or an
+  /// [AppFailure] to localize lazily -- see its own doc comment.
+  String _errorText(AppLocalizations loc) {
+    final Object error = _error!;
+    return error is AppFailure ? error.localized(loc) : error as String;
   }
 }

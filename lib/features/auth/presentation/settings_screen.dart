@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/db/app_database.dart';
 import '../../../core/error/app_failure.dart';
+import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../application/auth_providers.dart';
@@ -41,7 +42,7 @@ class SettingsScreen extends ConsumerWidget {
               leading: Icon(Icons.person_outline,
                   color: Theme.of(context).colorScheme.error),
               title: Text(loc.profileLoadError),
-              subtitle: Text('$e'),
+              subtitle: Text(localizedErrorMessage(e, loc)),
             ),
             data: (Profile? p) => ListTile(
               leading: const Icon(Icons.person_outline),
@@ -108,8 +109,9 @@ class SettingsScreen extends ConsumerWidget {
       ref.invalidate(ownProfileProvider);
     } on AppFailure catch (e) {
       if (!context.mounted) return;
+      final AppLocalizations loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
+        SnackBar(content: Text(e.localized(loc))),
       );
     }
   }
