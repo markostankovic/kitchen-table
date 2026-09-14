@@ -213,5 +213,142 @@
   "noTranslationToReview": "Još nema prevoda za pregled.",
   "@noTranslationToReview": {
     "description": "Translation review screen, shown if it is opened (e.g. a stale deep link) with no translation for the reading locale yet."
+  },
+
+  "failureOffline": "Nema veze sa internetom.",
+  "@failureOffline": {
+    "description": "Failure vocabulary (D92), FailureCode.offline -- offline, DNS failure, or an Edge Function that was never reached."
+  },
+  "failureServerTooSlow": "Server je previše sporo odgovorio.",
+  "@failureServerTooSlow": {
+    "description": "Failure vocabulary (D92), FailureCode.serverTooSlow -- a request timed out."
+  },
+  "failureOfflineNoSavedRecipes": "Nema veze, a na telefonu još nema sačuvanih recepata.",
+  "@failureOfflineNoSavedRecipes": {
+    "description": "Failure vocabulary (D92), FailureCode.offlineNoSavedRecipes -- a cold recipe cache with no network to fill it."
+  },
+  "failureOfflineNoSavedPlan": "Nema veze, a na telefonu još nema sačuvanog plana.",
+  "@failureOfflineNoSavedPlan": {
+    "description": "Failure vocabulary (D92), FailureCode.offlineNoSavedPlan -- a cold meal-plan cache with no network to fill it."
+  },
+  "failureOfflineNoSavedList": "Nema veze, a na telefonu još nema sačuvane liste.",
+  "@failureOfflineNoSavedList": {
+    "description": "Failure vocabulary (D92), FailureCode.offlineNoSavedList -- a cold shopping-list cache with no network to fill it."
+  },
+  "failureSignInAgain": "Prijavite se ponovo.",
+  "@failureSignInAgain": {
+    "description": "Failure vocabulary (D92), FailureCode.signInAgain -- an expired session, an RLS denial, or the unauthenticated/not_a_member Edge Function slugs."
+  },
+  "failureNoHousehold": "Još niste u domaćinstvu.",
+  "@failureNoHousehold": {
+    "description": "Failure vocabulary (D92), FailureCode.noHousehold -- the caller has no household yet."
+  },
+  "failureTooManyAttempts": "Previše pokušaja. Sačekajte minut i pokušajte ponovo.",
+  "@failureTooManyAttempts": {
+    "description": "Failure vocabulary (D92), FailureCode.tooManyAttempts -- GoTrue's rate limit on sign-in attempts."
+  },
+  "failureNotFound": "Nije pronađeno.",
+  "@failureNotFound": {
+    "description": "Failure vocabulary (D92), FailureCode.notFound -- the generic row-absent-or-invisible case."
+  },
+  "failureRecipeNotFound": "Taj recept nije dostupan.",
+  "@failureRecipeNotFound": {
+    "description": "Failure vocabulary (D92), FailureCode.recipeNotFound -- the recipe_not_found Edge Function slug."
+  },
+  "failureInviteNotFound": "Taj kod nije važeći.",
+  "@failureInviteNotFound": {
+    "description": "Failure vocabulary (D92), FailureCode.inviteNotFound -- the invite_not_found Edge Function slug."
+  },
+  "failureInviteAlreadyUsed": "Taj kod je već iskorišćen.",
+  "@failureInviteAlreadyUsed": {
+    "description": "Failure vocabulary (D92), FailureCode.inviteAlreadyUsed -- the invite_already_used and already_in_household Edge Function slugs."
+  },
+  "failureInviteExpired": "Taj kod je istekao.",
+  "@failureInviteExpired": {
+    "description": "Failure vocabulary (D92), FailureCode.inviteExpired -- the invite_expired Edge Function slug, split from the generic codeNotAccepted."
+  },
+  "failureCodeNotAccepted": "Taj kod nije prihvaćen.",
+  "@failureCodeNotAccepted": {
+    "description": "Failure vocabulary (D92), FailureCode.codeNotAccepted -- invalid_code/invalid_body/method_not_allowed, and a verifyOTP call that returned no user."
+  },
+  "failureAlreadyExists": "To već postoji.",
+  "@failureAlreadyExists": {
+    "description": "Failure vocabulary (D92), FailureCode.alreadyExists -- a unique-violation conflict."
+  },
+  "failureAiAllowanceUsedUp": "Ovo domaćinstvo je potrošilo mesečnu AI kvotu.",
+  "@failureAiAllowanceUsedUp": {
+    "description": "Failure vocabulary (D92), FailureCode.aiAllowanceUsedUp -- the quota_exceeded Edge Function slug."
+  },
+  "failureUnavailableTryLater": "To trenutno nije dostupno. Pokušajte kasnije.",
+  "@failureUnavailableTryLater": {
+    "description": "Failure vocabulary (D92), FailureCode.unavailableTryLater -- quota_unavailable/ai_rate_limited/ai_unavailable, \"not now\" rather than \"not ever\" (D17)."
+  },
+  "failureImportPhotoFailed": "Tu fotografiju nije moguće uvesti.",
+  "@failureImportPhotoFailed": {
+    "description": "Failure vocabulary (D92), FailureCode.importPhotoFailed -- invalid_storage_path/image_not_found/not_an_image."
+  },
+  "failureInvalidUrl": "To ne izgleda kao link.",
+  "@failureInvalidUrl": {
+    "description": "Failure vocabulary (D92), FailureCode.invalidUrl -- the invalid_url Edge Function slug."
+  },
+  "failureImportTextTooLong": "Taj tekst je previše dugačak za uvoz.",
+  "@failureImportTextTooLong": {
+    "description": "Failure vocabulary (D92), FailureCode.importTextTooLong -- the input_too_large Edge Function slug."
+  },
+  "failureImportUnreadable": "Taj tekst nije moguće uvesti.",
+  "@failureImportUnreadable": {
+    "description": "Failure vocabulary (D92), FailureCode.importUnreadable -- the degenerate (no server message) arm of empty_input, and import_confirm.dart's own throw for an unreadable job."
+  },
+  "failureCouldNotReadRecipe": "Nije moguće očitati taj recept.",
+  "@failureCouldNotReadRecipe": {
+    "description": "Failure vocabulary (D92), FailureCode.couldNotReadRecipe -- the degenerate (no server message) arm of ai_failed."
+  },
+  "failureAlreadyInThatLanguage": "Ovaj recept je već napisan na tom jeziku.",
+  "@failureAlreadyInThatLanguage": {
+    "description": "Failure vocabulary (D92), FailureCode.alreadyInThatLanguage -- the same_locale Edge Function slug."
+  },
+  "failureSiteUnreachable": "Ta stranica nije dostupna.",
+  "@failureSiteUnreachable": {
+    "description": "Failure vocabulary (D92), FailureCode.siteUnreachable -- the fetch_failed Edge Function slug (D45's SSRF-guarded fetch could not reach the host)."
+  },
+  "failureNotAWebPage": "Taj link nije veb stranica.",
+  "@failureNotAWebPage": {
+    "description": "Failure vocabulary (D92), FailureCode.notAWebPage -- the not_html Edge Function slug."
+  },
+  "failureImportTooLarge": "To je previše veliko za uvoz.",
+  "@failureImportTooLarge": {
+    "description": "Failure vocabulary (D92), FailureCode.importTooLarge -- page_too_large (import-url) and image_too_large (import-photo), one sentence for both."
+  },
+  "failureImportNotFound": "Taj uvoz nije pronađen.",
+  "@failureImportNotFound": {
+    "description": "Failure vocabulary (D92), FailureCode.importNotFound -- the job_not_found Edge Function slug."
+  },
+  "failureImportAlreadySaved": "Ovaj uvoz je već sačuvan.",
+  "@failureImportAlreadySaved": {
+    "description": "Failure vocabulary (D92), FailureCode.importAlreadySaved -- the job_already_done Edge Function slug (D44's retry guard)."
+  },
+  "failureImportNotReadyYet": "Ovaj uvoz još nije spreman.",
+  "@failureImportNotReadyYet": {
+    "description": "Failure vocabulary (D92), FailureCode.importNotReadyYet -- the job_not_parsed Edge Function slug."
+  },
+  "failureNoRecipeOnPage": "Na toj stranici nije pronađen recept.",
+  "@failureNoRecipeOnPage": {
+    "description": "Failure vocabulary (D92), FailureCode.noRecipeOnPage -- the no_recipe_found Edge Function slug."
+  },
+  "failureCouldNotMakeCode": "Nije moguće napraviti kod.",
+  "@failureCouldNotMakeCode": {
+    "description": "Failure vocabulary (D92), FailureCode.couldNotMakeCode -- the code_generation_failed Edge Function slug from create-invite."
+  },
+  "failureUnexpectedServerReply": "Server je poslao neočekivan odgovor.",
+  "@failureUnexpectedServerReply": {
+    "description": "Failure vocabulary (D92), FailureCode.unexpectedServerReply -- a decoder found a shape it did not expect."
+  },
+  "failureUnknown": "Nešto je pošlo naopako.",
+  "@failureUnknown": {
+    "description": "Failure vocabulary (D92), FailureCode.unknown -- also what a non-AppFailure error renders as, never that error's own toString()."
+  },
+  "photoCouldNotBeOpened": "Tu fotografiju nije moguće otvoriti.",
+  "@photoCouldNotBeOpened": {
+    "description": "Failure vocabulary (D92) -- image_picker's own PlatformException, outside the FailureCode mechanism since it never becomes an AppFailure."
   }
 }

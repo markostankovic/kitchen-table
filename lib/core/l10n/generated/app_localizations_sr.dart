@@ -158,4 +158,115 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get noTranslationToReview => 'Još nema prevoda za pregled.';
+
+  @override
+  String get failureOffline => 'Nema veze sa internetom.';
+
+  @override
+  String get failureServerTooSlow => 'Server je previše sporo odgovorio.';
+
+  @override
+  String get failureOfflineNoSavedRecipes =>
+      'Nema veze, a na telefonu još nema sačuvanih recepata.';
+
+  @override
+  String get failureOfflineNoSavedPlan =>
+      'Nema veze, a na telefonu još nema sačuvanog plana.';
+
+  @override
+  String get failureOfflineNoSavedList =>
+      'Nema veze, a na telefonu još nema sačuvane liste.';
+
+  @override
+  String get failureSignInAgain => 'Prijavite se ponovo.';
+
+  @override
+  String get failureNoHousehold => 'Još niste u domaćinstvu.';
+
+  @override
+  String get failureTooManyAttempts =>
+      'Previše pokušaja. Sačekajte minut i pokušajte ponovo.';
+
+  @override
+  String get failureNotFound => 'Nije pronađeno.';
+
+  @override
+  String get failureRecipeNotFound => 'Taj recept nije dostupan.';
+
+  @override
+  String get failureInviteNotFound => 'Taj kod nije važeći.';
+
+  @override
+  String get failureInviteAlreadyUsed => 'Taj kod je već iskorišćen.';
+
+  @override
+  String get failureInviteExpired => 'Taj kod je istekao.';
+
+  @override
+  String get failureCodeNotAccepted => 'Taj kod nije prihvaćen.';
+
+  @override
+  String get failureAlreadyExists => 'To već postoji.';
+
+  @override
+  String get failureAiAllowanceUsedUp =>
+      'Ovo domaćinstvo je potrošilo mesečnu AI kvotu.';
+
+  @override
+  String get failureUnavailableTryLater =>
+      'To trenutno nije dostupno. Pokušajte kasnije.';
+
+  @override
+  String get failureImportPhotoFailed => 'Tu fotografiju nije moguće uvesti.';
+
+  @override
+  String get failureInvalidUrl => 'To ne izgleda kao link.';
+
+  @override
+  String get failureImportTextTooLong =>
+      'Taj tekst je previše dugačak za uvoz.';
+
+  @override
+  String get failureImportUnreadable => 'Taj tekst nije moguće uvesti.';
+
+  @override
+  String get failureCouldNotReadRecipe => 'Nije moguće očitati taj recept.';
+
+  @override
+  String get failureAlreadyInThatLanguage =>
+      'Ovaj recept je već napisan na tom jeziku.';
+
+  @override
+  String get failureSiteUnreachable => 'Ta stranica nije dostupna.';
+
+  @override
+  String get failureNotAWebPage => 'Taj link nije veb stranica.';
+
+  @override
+  String get failureImportTooLarge => 'To je previše veliko za uvoz.';
+
+  @override
+  String get failureImportNotFound => 'Taj uvoz nije pronađen.';
+
+  @override
+  String get failureImportAlreadySaved => 'Ovaj uvoz je već sačuvan.';
+
+  @override
+  String get failureImportNotReadyYet => 'Ovaj uvoz još nije spreman.';
+
+  @override
+  String get failureNoRecipeOnPage => 'Na toj stranici nije pronađen recept.';
+
+  @override
+  String get failureCouldNotMakeCode => 'Nije moguće napraviti kod.';
+
+  @override
+  String get failureUnexpectedServerReply =>
+      'Server je poslao neočekivan odgovor.';
+
+  @override
+  String get failureUnknown => 'Nešto je pošlo naopako.';
+
+  @override
+  String get photoCouldNotBeOpened => 'Tu fotografiju nije moguće otvoriti.';
 }

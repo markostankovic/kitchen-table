@@ -158,4 +158,114 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noTranslationToReview => 'There is no translation to review yet.';
+
+  @override
+  String get failureOffline => 'No connection.';
+
+  @override
+  String get failureServerTooSlow => 'The server took too long to respond.';
+
+  @override
+  String get failureOfflineNoSavedRecipes =>
+      'No connection, and no saved recipes on this phone yet.';
+
+  @override
+  String get failureOfflineNoSavedPlan =>
+      'No connection, and no saved plan on this phone yet.';
+
+  @override
+  String get failureOfflineNoSavedList =>
+      'No connection, and no saved list on this phone yet.';
+
+  @override
+  String get failureSignInAgain => 'Please sign in again.';
+
+  @override
+  String get failureNoHousehold => 'You are not in a household yet.';
+
+  @override
+  String get failureTooManyAttempts =>
+      'Too many attempts. Wait a minute and try again.';
+
+  @override
+  String get failureNotFound => 'Not found.';
+
+  @override
+  String get failureRecipeNotFound => 'That recipe is not available.';
+
+  @override
+  String get failureInviteNotFound => 'That code is not valid.';
+
+  @override
+  String get failureInviteAlreadyUsed => 'That code has already been used.';
+
+  @override
+  String get failureInviteExpired => 'That code has expired.';
+
+  @override
+  String get failureCodeNotAccepted => 'That code was not accepted.';
+
+  @override
+  String get failureAlreadyExists => 'That already exists.';
+
+  @override
+  String get failureAiAllowanceUsedUp =>
+      'This household has used its AI allowance for the month.';
+
+  @override
+  String get failureUnavailableTryLater =>
+      'That is unavailable right now. Try again later.';
+
+  @override
+  String get failureImportPhotoFailed => 'That photo could not be imported.';
+
+  @override
+  String get failureInvalidUrl => 'That does not look like a link.';
+
+  @override
+  String get failureImportTextTooLong => 'That text is too long to import.';
+
+  @override
+  String get failureImportUnreadable => 'That text could not be imported.';
+
+  @override
+  String get failureCouldNotReadRecipe => 'Could not read that recipe.';
+
+  @override
+  String get failureAlreadyInThatLanguage =>
+      'This recipe is already written in that language.';
+
+  @override
+  String get failureSiteUnreachable => 'That site could not be reached.';
+
+  @override
+  String get failureNotAWebPage => 'That link is not a web page.';
+
+  @override
+  String get failureImportTooLarge => 'That is too large to import.';
+
+  @override
+  String get failureImportNotFound => 'That import was not found.';
+
+  @override
+  String get failureImportAlreadySaved => 'This import has already been saved.';
+
+  @override
+  String get failureImportNotReadyYet => 'This import is not ready yet.';
+
+  @override
+  String get failureNoRecipeOnPage => 'No recipe was found on that page.';
+
+  @override
+  String get failureCouldNotMakeCode => 'Could not create a code.';
+
+  @override
+  String get failureUnexpectedServerReply =>
+      'The server sent an unexpected reply.';
+
+  @override
+  String get failureUnknown => 'Something went wrong.';
+
+  @override
+  String get photoCouldNotBeOpened => 'That photo could not be opened.';
 }

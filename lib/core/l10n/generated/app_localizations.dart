@@ -379,6 +379,210 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Još nema prevoda za pregled.'**
   String get noTranslationToReview;
+
+  /// Failure vocabulary (D92), FailureCode.offline -- offline, DNS failure, or an Edge Function that was never reached.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema veze sa internetom.'**
+  String get failureOffline;
+
+  /// Failure vocabulary (D92), FailureCode.serverTooSlow -- a request timed out.
+  ///
+  /// In sr, this message translates to:
+  /// **'Server je previše sporo odgovorio.'**
+  String get failureServerTooSlow;
+
+  /// Failure vocabulary (D92), FailureCode.offlineNoSavedRecipes -- a cold recipe cache with no network to fill it.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema veze, a na telefonu još nema sačuvanih recepata.'**
+  String get failureOfflineNoSavedRecipes;
+
+  /// Failure vocabulary (D92), FailureCode.offlineNoSavedPlan -- a cold meal-plan cache with no network to fill it.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema veze, a na telefonu još nema sačuvanog plana.'**
+  String get failureOfflineNoSavedPlan;
+
+  /// Failure vocabulary (D92), FailureCode.offlineNoSavedList -- a cold shopping-list cache with no network to fill it.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema veze, a na telefonu još nema sačuvane liste.'**
+  String get failureOfflineNoSavedList;
+
+  /// Failure vocabulary (D92), FailureCode.signInAgain -- an expired session, an RLS denial, or the unauthenticated/not_a_member Edge Function slugs.
+  ///
+  /// In sr, this message translates to:
+  /// **'Prijavite se ponovo.'**
+  String get failureSignInAgain;
+
+  /// Failure vocabulary (D92), FailureCode.noHousehold -- the caller has no household yet.
+  ///
+  /// In sr, this message translates to:
+  /// **'Još niste u domaćinstvu.'**
+  String get failureNoHousehold;
+
+  /// Failure vocabulary (D92), FailureCode.tooManyAttempts -- GoTrue's rate limit on sign-in attempts.
+  ///
+  /// In sr, this message translates to:
+  /// **'Previše pokušaja. Sačekajte minut i pokušajte ponovo.'**
+  String get failureTooManyAttempts;
+
+  /// Failure vocabulary (D92), FailureCode.notFound -- the generic row-absent-or-invisible case.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nije pronađeno.'**
+  String get failureNotFound;
+
+  /// Failure vocabulary (D92), FailureCode.recipeNotFound -- the recipe_not_found Edge Function slug.
+  ///
+  /// In sr, this message translates to:
+  /// **'Taj recept nije dostupan.'**
+  String get failureRecipeNotFound;
+
+  /// Failure vocabulary (D92), FailureCode.inviteNotFound -- the invite_not_found Edge Function slug.
+  ///
+  /// In sr, this message translates to:
+  /// **'Taj kod nije važeći.'**
+  String get failureInviteNotFound;
+
+  /// Failure vocabulary (D92), FailureCode.inviteAlreadyUsed -- the invite_already_used and already_in_household Edge Function slugs.
+  ///
+  /// In sr, this message translates to:
+  /// **'Taj kod je već iskorišćen.'**
+  String get failureInviteAlreadyUsed;
+
+  /// Failure vocabulary (D92), FailureCode.inviteExpired -- the invite_expired Edge Function slug, split from the generic codeNotAccepted.
+  ///
+  /// In sr, this message translates to:
+  /// **'Taj kod je istekao.'**
+  String get failureInviteExpired;
+
+  /// Failure vocabulary (D92), FailureCode.codeNotAccepted -- invalid_code/invalid_body/method_not_allowed, and a verifyOTP call that returned no user.
+  ///
+  /// In sr, this message translates to:
+  /// **'Taj kod nije prihvaćen.'**
+  String get failureCodeNotAccepted;
+
+  /// Failure vocabulary (D92), FailureCode.alreadyExists -- a unique-violation conflict.
+  ///
+  /// In sr, this message translates to:
+  /// **'To već postoji.'**
+  String get failureAlreadyExists;
+
+  /// Failure vocabulary (D92), FailureCode.aiAllowanceUsedUp -- the quota_exceeded Edge Function slug.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ovo domaćinstvo je potrošilo mesečnu AI kvotu.'**
+  String get failureAiAllowanceUsedUp;
+
+  /// Failure vocabulary (D92), FailureCode.unavailableTryLater -- quota_unavailable/ai_rate_limited/ai_unavailable, "not now" rather than "not ever" (D17).
+  ///
+  /// In sr, this message translates to:
+  /// **'To trenutno nije dostupno. Pokušajte kasnije.'**
+  String get failureUnavailableTryLater;
+
+  /// Failure vocabulary (D92), FailureCode.importPhotoFailed -- invalid_storage_path/image_not_found/not_an_image.
+  ///
+  /// In sr, this message translates to:
+  /// **'Tu fotografiju nije moguće uvesti.'**
+  String get failureImportPhotoFailed;
+
+  /// Failure vocabulary (D92), FailureCode.invalidUrl -- the invalid_url Edge Function slug.
+  ///
+  /// In sr, this message translates to:
+  /// **'To ne izgleda kao link.'**
+  String get failureInvalidUrl;
+
+  /// Failure vocabulary (D92), FailureCode.importTextTooLong -- the input_too_large Edge Function slug.
+  ///
+  /// In sr, this message translates to:
+  /// **'Taj tekst je previše dugačak za uvoz.'**
+  String get failureImportTextTooLong;
+
+  /// Failure vocabulary (D92), FailureCode.importUnreadable -- the degenerate (no server message) arm of empty_input, and import_confirm.dart's own throw for an unreadable job.
+  ///
+  /// In sr, this message translates to:
+  /// **'Taj tekst nije moguće uvesti.'**
+  String get failureImportUnreadable;
+
+  /// Failure vocabulary (D92), FailureCode.couldNotReadRecipe -- the degenerate (no server message) arm of ai_failed.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nije moguće očitati taj recept.'**
+  String get failureCouldNotReadRecipe;
+
+  /// Failure vocabulary (D92), FailureCode.alreadyInThatLanguage -- the same_locale Edge Function slug.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ovaj recept je već napisan na tom jeziku.'**
+  String get failureAlreadyInThatLanguage;
+
+  /// Failure vocabulary (D92), FailureCode.siteUnreachable -- the fetch_failed Edge Function slug (D45's SSRF-guarded fetch could not reach the host).
+  ///
+  /// In sr, this message translates to:
+  /// **'Ta stranica nije dostupna.'**
+  String get failureSiteUnreachable;
+
+  /// Failure vocabulary (D92), FailureCode.notAWebPage -- the not_html Edge Function slug.
+  ///
+  /// In sr, this message translates to:
+  /// **'Taj link nije veb stranica.'**
+  String get failureNotAWebPage;
+
+  /// Failure vocabulary (D92), FailureCode.importTooLarge -- page_too_large (import-url) and image_too_large (import-photo), one sentence for both.
+  ///
+  /// In sr, this message translates to:
+  /// **'To je previše veliko za uvoz.'**
+  String get failureImportTooLarge;
+
+  /// Failure vocabulary (D92), FailureCode.importNotFound -- the job_not_found Edge Function slug.
+  ///
+  /// In sr, this message translates to:
+  /// **'Taj uvoz nije pronađen.'**
+  String get failureImportNotFound;
+
+  /// Failure vocabulary (D92), FailureCode.importAlreadySaved -- the job_already_done Edge Function slug (D44's retry guard).
+  ///
+  /// In sr, this message translates to:
+  /// **'Ovaj uvoz je već sačuvan.'**
+  String get failureImportAlreadySaved;
+
+  /// Failure vocabulary (D92), FailureCode.importNotReadyYet -- the job_not_parsed Edge Function slug.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ovaj uvoz još nije spreman.'**
+  String get failureImportNotReadyYet;
+
+  /// Failure vocabulary (D92), FailureCode.noRecipeOnPage -- the no_recipe_found Edge Function slug.
+  ///
+  /// In sr, this message translates to:
+  /// **'Na toj stranici nije pronađen recept.'**
+  String get failureNoRecipeOnPage;
+
+  /// Failure vocabulary (D92), FailureCode.couldNotMakeCode -- the code_generation_failed Edge Function slug from create-invite.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nije moguće napraviti kod.'**
+  String get failureCouldNotMakeCode;
+
+  /// Failure vocabulary (D92), FailureCode.unexpectedServerReply -- a decoder found a shape it did not expect.
+  ///
+  /// In sr, this message translates to:
+  /// **'Server je poslao neočekivan odgovor.'**
+  String get failureUnexpectedServerReply;
+
+  /// Failure vocabulary (D92), FailureCode.unknown -- also what a non-AppFailure error renders as, never that error's own toString().
+  ///
+  /// In sr, this message translates to:
+  /// **'Nešto je pošlo naopako.'**
+  String get failureUnknown;
+
+  /// Failure vocabulary (D92) -- image_picker's own PlatformException, outside the FailureCode mechanism since it never becomes an AppFailure.
+  ///
+  /// In sr, this message translates to:
+  /// **'Tu fotografiju nije moguće otvoriti.'**
+  String get photoCouldNotBeOpened;
 }
 
 class _AppLocalizationsDelegate
