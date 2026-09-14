@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../application/recipe_providers.dart';
@@ -45,6 +46,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<List<Recipe>> recipes =
         ref.watch(recipeListProvider(query: _query));
 
@@ -52,7 +54,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
       // The title shares its ARB key with the nav label (D77, Phase 3 part 1)
       // so the tab and this AppBar never disagree about the language they are
       // in, even though the rest of this screen's content is still English.
-      appBar: AppBar(title: Text(AppLocalizations.of(context).navRecipes)),
+      appBar: AppBar(title: Text(l10n.navRecipes)),
       // A menu rather than a single action, because there is now more than one
       // way to get a recipe in. `import-url` and `import-photo` are the rest
       // of Phase 1d and hang here beside Paste without another redesign.
@@ -117,7 +119,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
               error: (Object e, _) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Text('Could not load your recipes.\n\n$e',
+                  child: Text(localizedErrorMessage(e, l10n),
                       textAlign: TextAlign.center),
                 ),
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/features/recipes/application/recipe_editor.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_detail.dart';
@@ -67,7 +68,11 @@ Future<void> _pump(
       overrides: [
         recipeEditorProvider(recipeId).overrideWith(() => _StubEditor(draft)),
       ],
-      child: MaterialApp(home: RecipeEditScreen(recipeId: recipeId)),
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: RecipeEditScreen(recipeId: recipeId),
+      ),
     ),
   );
   await tester.pumpAndSettle();

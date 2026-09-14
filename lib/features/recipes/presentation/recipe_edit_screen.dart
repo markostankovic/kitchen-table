@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/error/failure_l10n.dart';
+import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../application/recipe_editor.dart';
 import '../domain/recipe.dart';
@@ -43,7 +45,11 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
   bool _saving = false;
-  String? _error;
+
+  /// Either an already-localized string -- image_picker's own platform
+  /// exception, outside the [FailureCode] mechanism entirely -- or an
+  /// [AppFailure], localized lazily in [_buildSaveBar].
+  Object? _error;
 
   /// A photo picked but not yet uploaded. Held here, not on the draft (D48):
   /// nothing is written to Storage until `_submit()` calls `save(image: ...)`,
@@ -85,9 +91,10 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
           extension: 'jpg',
         );
       });
-    } on Exception catch (e) {
+    } on Exception catch (_) {
       if (!mounted) return;
-      setState(() => _error = 'That photo could not be opened. ($e)');
+      setState(
+          () => _error = AppLocalizations.of(context).photoCouldNotBeOpened);
     }
   }
 
@@ -120,7 +127,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
       }
     } on AppFailure catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message);
+      setState(() => _error = e);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -128,6 +135,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<RecipeDraft> draft =
         ref.watch(recipeEditorProvider(widget.recipeId));
 
@@ -138,13 +146,13 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
         error: (Object e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text('Could not open this recipe.\n\n$e',
+            child: Text(localizedErrorMessage(e, l10n),
                 textAlign: TextAlign.center),
           ),
         ),
         data: _buildForm,
       ),
-      bottomNavigationBar: draft.hasValue ? _buildSaveBar(context) : null,
+      bottomNavigationBar: draft.hasValue ? _buildSaveBar(l10n) : null,
     );
   }
 
@@ -321,7 +329,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
     );
   }
 
-  Widget _buildSaveBar(BuildContext context) {
+  Widget _buildSaveBar(AppLocalizations l10n) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -331,7 +339,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
           children: <Widget>[
             if (_error != null) ...<Widget>[
               Text(
-                _error!,
+                _errorText(l10n),
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               const SizedBox(height: 8),
@@ -358,6 +366,13 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
       .map((String tag) => tag.trim())
       .where((String tag) => tag.isNotEmpty)
       .toList(growable: false);
+
+  /// [_error] is either a plain, already-localized string or an [AppFailure]
+  /// to localize lazily -- see its own doc comment.
+  String _errorText(AppLocalizations l10n) {
+    final Object error = _error!;
+    return error is AppFailure ? error.localized(l10n) : error as String;
+  }
 }
 
 /// The recipe's photo: pick from camera or gallery, preview, remove.

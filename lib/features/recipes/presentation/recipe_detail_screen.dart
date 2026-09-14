@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/app_locale.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/refresh/data_revision.dart';
@@ -106,7 +107,8 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         error: (Object e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text('${l10n.couldNotLoadRecipe}\n\n$e',
+            child: Text(
+                '${l10n.couldNotLoadRecipe}\n\n${localizedErrorMessage(e, l10n)}',
                 textAlign: TextAlign.center),
           ),
         ),
@@ -134,7 +136,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     } on AppFailure catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
     } finally {
       if (mounted) setState(() => _translating = false);
     }
@@ -176,7 +178,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       // A snackbar rather than the forms' inline error: this screen has no
       // field for the message to sit under, and the action is transient.
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
     }
   }
 }

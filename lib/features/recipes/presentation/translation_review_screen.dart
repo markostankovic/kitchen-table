@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
+import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/app_locale.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../application/translation_reviewer.dart';
@@ -47,7 +48,7 @@ class _TranslationReviewScreenState
     extends ConsumerState<TranslationReviewScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _saving = false;
-  String? _error;
+  AppFailure? _failure;
 
   late final String _locale = ref.read(appLocaleProvider).languageCode;
 
@@ -61,7 +62,7 @@ class _TranslationReviewScreenState
 
     setState(() {
       _saving = true;
-      _error = null;
+      _failure = null;
     });
 
     try {
@@ -70,7 +71,7 @@ class _TranslationReviewScreenState
       Navigator.of(context).pop();
     } on AppFailure catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message);
+      setState(() => _failure = e);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -91,7 +92,7 @@ class _TranslationReviewScreenState
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              e is NotFoundFailure ? l10n.noTranslationToReview : '$e',
+              localizedErrorMessage(e, l10n),
               textAlign: TextAlign.center,
             ),
           ),
@@ -181,9 +182,9 @@ class _TranslationReviewScreenState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (_error != null) ...<Widget>[
+            if (_failure != null) ...<Widget>[
               Text(
-                _error!,
+                _failure!.localized(l10n),
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               const SizedBox(height: 8),
