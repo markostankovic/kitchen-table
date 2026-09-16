@@ -1,0 +1,98 @@
+# Decision index
+
+One line per decision, in id order. Full text at `docs/decisions/D<n>-<slug>.md`. A code comment citing `D91` -- open `D91-*.md` directly, no need to search this file first.
+
+Deferred items that never became a decision: `docs/decisions/OPEN.md`.
+
+- **D1** — Canonical ingredient catalog, accreted not hand-curated -- `D1-canonical-ingredient-catalog-accreted-not-hand-curated.md`
+- **D2** — Split identity from properties -- `D2-split-identity-from-properties.md`
+- **D3** — One level of ingredient hierarchy, used sparingly -- `D3-one-level-of-ingredient-hierarchy-used-sparingly.md`
+- **D4** — Latin script only for storage and display; accept Cyrillic on input -- `D4-latin-script-only-for-storage-and-display.md`
+- **D5** — One normalization function, two implementations, one fixture file  [test/fixtures/normalization.json] -- `D5-one-normalization-function-two-implementations-one-fixture.md`
+- **D6** — Serbian inflection handled by fuzzy tier, not by morphology -- `D6-serbian-inflection-handled-by-fuzzy-tier-not.md`
+- **D7** — Match provenance on every recipe_ingredient row -- `D7-match-provenance-on-every-recipe_ingredient-row.md`
+- **D8** — Human confirm step on every import -- `D8-human-confirm-step-on-every-import.md`
+- **D9** — Shopping list sums within unit families only (Option A) -- `D9-shopping-list-sums-within-unit-families-only.md`
+- **D10** — Riverpod with code generation -- `D10-riverpod-with-code-generation.md`
+- **D11** — Feature-first, three layers, Supabase confined to `data/` -- `D11-feature-first-three-layers-supabase-confined-to-data.md`
+- **D12** — No local-first sync. Read cache only, and not until Phase 2 -- `D12-no-local-first-sync-read-cache-only-and.md`
+- **D13** — Shopping list is generate-and-view -- `D13-shopping-list-is-generate-and-view.md`
+- **D14** — Every import is a background job -- `D14-every-import-is-a-background-job.md`
+- **D15** — Cookbook pages go straight to a vision model, not OCR-then-parse -- `D15-cookbook-pages-go-straight-to-a-vision.md`
+- **D16** — Imported cookbook content is permanently household-scoped -- `D16-imported-cookbook-content-is-permanently-household-scoped.md`
+- **D17** — AI usage limits from day one  [_shared/usage.ts] -- `D17-ai-usage-limits-from-day-one.md`
+- **D18** — Zod on the server is the only schema definition; Dart models are generated -- `D18-zod-on-the-server-is-the-only.md`
+- **D19** — `unaccent` is not installed; `normalize_text` is hand-rolled  [supabase/migrations/20260904210716_init.sql] -- `D19-unaccent-is-not-installed-normalize_text-is-hand-rolled.md`
+- **D20** — `riverpod_lint` 3.x replaces `custom_lint` -- `D20-riverpod_lint-3x-replaces-custom_lint.md`
+- **D21** — `fromJson` / `toJson` are exempt from the raw-map ban  [tool/check_layers.dart] -- `D21-fromjson-tojson-are-exempt-from-the-raw-map.md`
+- **D22** — Toolchain floor: Flutter 3.47.2 / Dart 3.13.2 -- `D22-toolchain-floor-flutter-3472-dart-3132.md`
+- **D23** — RLS checks membership only; repositories filter `deleted_at` -- `D23-rls-checks-membership-only-repositories-filter-deleted_at.md`
+- **D24** — "Household-scoped" means "has a `household_id` column" -- `D24-household-scoped-means-has-a-household_id-column.md`
+- **D25** — `household_invites` carries neither `deleted_at` nor `updated_at` -- `D25-household_invites-carries-neither-deleted_at-nor-updated_at.md`
+- **D26** — Invite codes: six digits, single-use, seven days, service-role only -- `D26-invite-codes-six-digits-single-use-seven-days.md`
+- **D27** — `ingredients.key`, the stable seed key -- `D27-ingredientskey-the-stable-seed-key.md`
+- **D28** — `ingredient_names` keeps `updated_at` and `deleted_at` -- `D28-ingredient_names-keeps-updated_at-and-deleted_at.md`
+- **D29** — The catalog seed ships as generated migrations, not `seed.sql`  [tool/gen_ingredient_seed.dart, tool/gen_normalization_sql.dart, supabase/seed.sql] -- `D29-the-catalog-seed-ships-as-generated-migrations.md`
+- **D30** — `merge_ingredients()` is written once, guarded by `to_regclass`  [supabase/tests/merge_ingredients_test.sql, tool/check_layers.dart] -- `D30-merge_ingredients-is-written-once-guarded-by-to_regclass.md`
+- **D31** — Where each matching tier lives, and where its constants live  [test/fixtures/ingredient_lines.json] -- `D31-where-each-matching-tier-lives-and-where.md`
+- **D32** — No client write path into the catalog in Phase 1b -- `D32-no-client-write-path-into-the-catalog.md`
+- **D33** — Cross-feature access stays `domain`-only, and `recipes` pays for it  [tool/check_layers.dart, features/ingredients/, features/households/, lib/features/recipes/data/ingredient_catalog_datasource.dart] -- `D33-cross-feature-access-stays-domain-only-and-recipes-pays.md`
+- **D34** — `create_ingredient` and `link_ingredient_alias` are RPCs, not policies -- `D34-create_ingredient-and-link_ingredient_alias-are-rpcs-not-policies.md`
+- **D35** — Photo upload moves to Phase 2; `recipes.image_path` ships now -- `D35-photo-upload-moves-to-phase-2-recipesimage_path.md`
+- **D36** — `replace_recipe_lines`, because PostgREST has no transaction -- `D36-replace_recipe_lines-because-postgrest-has-no-transaction.md`
+- **D37** — A new recipe is `create()` then `saveLines()`, and the draft keeps the id -- `D37-a-new-recipe-is-create-then-savelines.md`
+- **D38** — `ai_usage` is an append-only ledger, with no lifecycle columns -- `D38-ai_usage-is-an-append-only-ledger-with-no.md`
+- **D39** — Clients never write `import_jobs`  [_shared/auth.ts] -- `D39-clients-never-write-import_jobs.md`
+- **D40** — Every household gets its AI limits row from a trigger  [_shared/usage.ts] -- `D40-every-household-gets-its-ai-limits-row.md`
+- **D41** — Two Zod schemas: `ModelRecipe` is asked for, `ParsedRecipe` is stored  [_shared/schema.ts, test/fixtures/ingredient_lines.json] -- `D41-two-zod-schemas-modelrecipe-is-asked-for.md`
+- **D42** — No machine tier writes to the catalog -- `D42-no-machine-tier-writes-to-the-catalog.md`
+- **D43** — One ingredient catalog, in `core/` — closing D33  [features/ingredients/data/ingredient_repository.dart, lib/core/ingredients/, features/recipes/data/ingredient_catalog_datasource.dart, features/import/] -- `D43-one-ingredient-catalog-in-core-closing-d33.md`
+- **D44** — `save_imported_recipe`, the atomicity D37 said to revisit -- `D44-save_imported_recipe-the-atomicity-d37-said-to-revisit.md`
+- **D45** — The SSRF policy for `import-url`  [supabase/functions/_shared/url_guard.ts] -- `D45-the-ssrf-policy-for-import-url.md`
+- **D46** — The `import-uploads` bucket, where the path is the access control  [supabase/tests/rls_storage_test.sql] -- `D46-the-import-uploads-bucket-where-the-path-is.md`
+- **D47** — Model options are per-model, in a table  [_shared/ai.ts] -- `D47-model-options-are-per-model-in-a-table.md`
+- **D48** — The recipe's own photo: a second private bucket, signed URLs, upload only on save -- `D48-the-recipes-own-photo-a-second-private.md`
+- **D49** — `meal_plan_entries` is a child table in the D24 sense, and its invariants live in triggers -- `D49-meal_plan_entries-is-a-child-table-in-the.md`
+- **D50** — The week row is written on the first write, never on a view -- `D50-the-week-row-is-written-on-the.md`
+- **D51** — `leftover_of_entry_id` and the `leftover` vocabulary ship now, unreachable -- `D51-leftover_of_entry_id-and-the-leftover-vocabulary-ship-now.md`
+- **D52** — "The caller's current household id" becomes one derived provider in `core/`, closing D33's last copy  [lib/core/household/current_household.dart, tool/check_layers.dart, core/supabase/, core/ingredients/] -- `D52-the-callers-current-household-id-becomes-one.md`
+- **D53** — The meal plan reads recipes through `core/recipes/`, and an entry carries a title, not a `Recipe`  [core/recipes/, lib/core/recipes/recipe_picker_providers.dart, core/ingredients/] -- `D53-the-meal-plan-reads-recipes-through-corerecipes.md`
+- **D54** — One visible week, a non-family provider, and every write lands immediately -- `D54-one-visible-week-a-non-family-provider-and.md`
+- **D55** — A leftover entry carries its source's `recipe_id`, derived by trigger and never sent by the client -- `D55-a-leftover-entry-carries-its-sources-recipe_id.md`
+- **D56** — A leftover's destination is a date, not a slot in the visible week -- `D56-a-leftovers-destination-is-a-date-not.md`
+- **D57** — Within-slot order is an RPC that renumbers the whole group, not a two-row swap -- `D57-within-slot-order-is-an-rpc-that-renumbers.md`
+- **D58** — The snack variety window is centred on the candidate date, not trailing, and the warning never blocks a write -- `D58-the-snack-variety-window-is-centred-on.md`
+- **D59** — `shopping_lists` carries `updated_at`; `household_pantry_prefs` carries no lifecycle columns at all -- `D59-shopping_lists-carries-updated_at-household_pantry_prefs-carries-no-lifecycle.md`
+- **D60** — The sum is carried in exact rationals, and stored as an integer pair  [lib/features/shopping_list/domain/rational.dart] -- `D60-the-sum-is-carried-in-exact-rationals.md`
+- **D61** — Generating a list is one `security invoker` RPC -- `D61-generating-a-list-is-one-security-invoker.md`
+- **D62** — A planned meal can carry its own serving count, and the scale factor is `entry.servings / recipe.servings` -- `D62-a-planned-meal-can-carry-its-own.md`
+- **D63** — Pantry staples are collapsed under "Probably have", never hidden, and the override works both ways -- `D63-pantry-staples-are-collapsed-under-probably-have.md`
+- **D64** — The Drift database lives in `core/db/`, and `check_layers.dart` gets a second `core/` exemption for it  [core/db/, lib/core/db/app_database.dart, tool/check_layers.dart, lib/core/db/] -- `D64-the-drift-database-lives-in-coredb-and.md`
+- **D65** — The cache stores the server's own wire shape in one JSON column; `ShoppingList` gains `updatedAt`, not `deletedAt`  [features/shopping_list/data/dto/shopping_list_dto.dart] -- `D65-the-cache-stores-the-servers-own-wire.md`
+- **D66** — Writing the cached list is delete-then-insert, scoped to the household, not `insertOnConflictUpdate` alone -- `D66-writing-the-cached-list-is-delete-then-insert-scoped.md`
+- **D67** — A cached read is a two-emission `Stream`; reachability is a side-channel, not folded into the provider's value  [lib/core/net/network_status.dart, core/net/] -- `D67-a-cached-read-is-a-two-emission-stream.md`
+- **D68** — The cache carries no `deleted_at`; a server tombstone is a hard delete locally -- `D68-the-cache-carries-no-deleted_at-a-server.md`
+- **D69** — A cache failure is never a read failure or a write failure  [lib/core/db/cache_guard.dart] -- `D69-a-cache-failure-is-never-a-read.md`
+- **D70** — Two kinds of cached row, and only one of them reads cache-first or dies with the session -- `D70-two-kinds-of-cached-row-and-only.md`
+- **D71** — No `last_sync_at` / delta-fetch machinery yet, and D35/D51's "ship ahead of the consumer" precedent does not transfer -- `D71-no-last_sync_at-delta-fetch-machinery-yet-and-d35d51s.md`
+- **D72** — The delta-fetch watermark is per-(entity, scope), advanced from the max `updated_at` received, and the display-name chain is ported to Dart against a shared fixture  [core/db/, features/ingredients/domain/display_name_chain.dart, test/fixtures/display_names.json, tool/gen_display_name_sql.dart] -- `D72-the-delta-fetch-watermark-is-per-entity-scope-advanced.md`
+- **D73** — The ingredient-name cache and its sync live in `features/recipes/data/`, not `features/ingredients/data/`, until a second caller exists  [features/recipes/data/, features/ingredients/data/, tool/check_layers.dart, core/ingredients/] -- `D73-the-ingredient-name-cache-and-its-sync-live.md`
+- **D74** — A single recipe's detail reads network-first with a cache fallback; the whole list reads cache-then-network -- `D74-a-single-recipes-detail-reads-network-first-with.md`
+- **D75** — The meal plan delta is household-scoped across all weeks, and a cache miss under a live watermark means "empty," not "unknown" -- `D75-the-meal-plan-delta-is-household-scoped-across.md`
+- **D76** — The global offline banner lives in `core/net/`, and does not replace the per-screen "saved copy" lines  [core/net/, lib/core/net/offline_banner.dart] -- `D76-the-global-offline-banner-lives-in-corenet.md`
+- **D77** — `profiles.locale` is the app's one locale, and the pre-auth default is Serbian  [lib/core/l10n/arb/, lib/core/l10n/generated/, core/l10n/app_locale.dart, test/core/router/app_shell_test.dart] -- `D77-profileslocale-is-the-apps-one-locale-and.md`
+- **D78** — `recipe_translations` is a child table that keeps its own lifecycle columns, and a touch trigger hands it to the existing delta fetch -- `D78-recipe_translations-is-a-child-table-that-keeps.md`
+- **D79** — `translate-recipe` is synchronous, with no `import_jobs` row -- `D79-translate-recipe-is-synchronous-with-no-import_jobs-row.md`
+- **D80** — What `translate-recipe` asks a model for, and what it never sees  [_shared/translate.ts] -- `D80-what-translate-recipe-asks-a-model-for-and.md`
+- **D81** — The reader's own locale resolves a display name, everywhere, not `'sr'` -- `D81-the-readers-own-locale-resolves-a-display.md`
+- **D82** — Reviewing a translation is a separate `security invoker` writer that updates in place and never creates a row  [test/fixtures/step_positions.json] -- `D82-reviewing-a-translation-is-a-separate-security.md`
+- **D83** — A review records provenance -- `is_machine_generated = false`, `reviewed_by` from `auth.uid()` -- and the app shows that it happened without saying who -- `D83-a-review-records-provenance-is_machine_generated-false.md`
+- **D84** — The review screen edits step text in place, keyed by position, source stacked above each field -- no add, no delete, no reorder, no ingredients -- `D84-the-review-screen-edits-step-text-in.md`
+- **D85** — Re-translating a reviewed translation is not offered, and the UI is the only guard -- `D85-re-translating-a-reviewed-translation-is-not-offered.md`
+- **D86** — The editor's display names follow the reader, closing D81's own named consequence -- `D86-the-editors-display-names-follow-the-reader.md`
+- **D87** — `currentHouseholdIdProvider` has no offline path, and every household-scoped screen inherits that gap silently -- `D87-currenthouseholdidprovider-has-no-offline-path-and-every.md`
+- **D88** — The current household is cached per user, decoded by the same wire decoder, read network-first with a cache fallback  [dto/household_dto.dart] -- `D88-the-current-household-is-cached-per-user.md`
+- **D89** — The household read's bound is a per-request `.retry()`, not a global `postgrestOptions` timeout, because the global option never reaches `.from()` calls -- `D89-the-household-reads-bound-is-a-per-request.md`
+- **D90** — `features/households/data/` takes the Remote/Local split, because an untested read order is what D87 is a report about  [features/households/data/] -- `D90-featureshouseholdsdata-takes-the-remotelocal-split-because-an.md`
+- **D91** — Serbian is `srLatn`, everywhere the app resolves a `Locale`, because `Locale('sr')` alone is Cyrillic  [core/l10n/app_locale.dart, lib/main.dart, packages/flutter_localizations/lib/src/l10n/generated_material_localizations.dart] -- `D91-serbian-is-srlatn-everywhere-the-app-resolves.md`
+- **D92** — The failure vocabulary: `FailureCode` alongside `message`, chosen where D77 already chose the reader's locale  [core/error/app_failure.dart, core/error/failure_l10n.dart, core/l10n/app_locale.dart, lib/core/] -- `D92-the-failure-vocabulary-failurecode-alongside-message-chosen.md`

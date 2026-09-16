@@ -8,24 +8,7 @@ feature at a time, not all schema then all UI.
 
 ## Phase 0 — Foundations
 
-**Status: complete** (`392ab96`). Decisions taken during it: D19–D24.
-
-No product features. This exists so nothing later has to be undone.
-
-- `flutter create`, package structure per ARCHITECTURE.md, empty feature folders
-- `analysis_options.yaml` strict, `riverpod_lint` wired via `plugins:` (D20)
-- `tool/check_layers.dart` — fails if `presentation/` imports `data/`, or if
-  `supabase_flutter` appears outside `data/` and `core/supabase/`
-- `build_runner` working; one throwaway freezed model to prove it
-- Supabase project + local `supabase start`; migration 1 = extensions,
-  `normalize_text()`, `updated_at` trigger function
-- `TextNormalizer` in Dart + `test/fixtures/normalization.json` + tests on both
-  sides (Dart test, and a SQL test that asserts the same pairs)
-- `go_router` shell with four empty tabs
-- Makefile: `types`, `gen`, `lint`, `db-reset`
-
-**Done when:** `dart analyze` is clean, layer check passes, normalization tests
-pass in both Dart and Postgres, app runs and navigates between four blank tabs.
+**Status: complete** (`392ab96`). Decisions taken during it: D19–D24. See `docs/journal/phase-0.md`.
 
 ---
 
@@ -34,268 +17,25 @@ pass in both Dart and Postgres, app runs and navigates between four blank tabs.
 ### 1a. Auth + households
 
 **Status: complete** (`7fe319a`, then the invites slice). Decisions taken
-during it: D25–D26.
+during it: D25–D26. See `docs/journal/phase-1.md`.
 
-- Supabase Auth (email OTP is simplest; skip social for now)
-- `profiles`, `households`, `household_members`, `household_invites` + RLS
-- `is_household_member()` helper, applied to one table to prove the pattern
-- Edge Functions: `create-invite`, `redeem-invite`
-- Screens: sign in, create household, join by code, member list
-
-**Done when:** two accounts on two devices are in one household, and each can
-see a row the other created. — Met. There are no recipes until 1c, so the rows
-shared are the household and the membership rows: the joiner sees the household
-the inviter named, and both members by name. `supabase/tests/` covers the same
-ground with the negative cases.
+---
 
 ### 1b. Ingredient catalog
 
-**Status: complete.** Decisions taken during it: D27–D32.
+**Status: complete.** Decisions taken during it: D27–D32. See `docs/journal/phase-1.md`.
 
-- `ingredients`, `ingredient_names`, `units`, `unit_names`, indexes
-- Seed: 200 ingredients + 618 names from CSV (see INGREDIENTS.md), applied as a
-  generated idempotent migration rather than `seed.sql` (D29)
-- `merge_ingredients()` function
-- Matching tiers 1–3 (parse, exact, fuzzy). **Tier 1 is a pure Dart parser and
-  tiers 2–3 are one Postgres RPC + Dart wrapper** — this line originally said
-  all three were the RPC, written before the client/edge split settled. Tier 1
-  touches no data, and a round trip per line would break both the 1c line
-  editor's responsiveness and Phase 2's offline entry. See D31. No LLM tier yet.
-
-**Done when:** typing "cufte" or "sargarepa" in a search RPC returns the right
-ingredient, and `merge_ingredients` correctly repoints rows. — Met, with one
-correction. `sargarepa` is asserted literally, along with `šargarepa`,
-`ШАРГАРЕПА` and `Šargarepa` all reaching the same row, plus the genitive
-`sargarepe` through a seeded alias and `flour` reaching *brašno* and rendering
-in Serbian. **`cufte` is not asserted**: ćufte is a dish, not an ingredient —
-the string comes from the normalization fixture list in INGREDIENTS.md, which
-is about `normalize_text` rather than about the catalog. The
-diacritic-insensitive search it stood for is asserted directly instead.
-`merge_ingredients` is covered by `supabase/tests/merge_ingredients_test.sql`
-including both refusals, the grant, and an FK-coverage assertion that will fail
-in 1c if `recipe_ingredients` is added without being handled.
+---
 
 ### 1c. Manual recipe entry
 
-**Status: complete.** Decisions taken during it: D33-D37.
+**Status: complete.** Decisions taken during it: D33-D37. See `docs/journal/phase-1.md`.
 
-- `recipes`, `recipe_ingredients`, `recipe_steps` + RLS, plus
-  `replace_recipe_lines` and `ingredient_display_names`
-- Recipe list (search by `title_normalized`), detail, create/edit, soft delete
-- `create_ingredient` and `link_ingredient_alias` -- the narrow catalog write
-  path D32 deferred to this phase
-- Ingredient line editor: local parse on every keystroke, debounced
-  `search_ingredients`, a chip showing quantity / unit / matched name,
-  "create new" as the last option in the picker, and alias write-back on a
-  human decision
-- ~~Photo upload to Storage~~ -- moved to Phase 2 (D35). `recipes.image_path`
-  ships in the 1c migration so that slice is a feature and not a migration
-  against existing rows.
-
-**Done when:** you can type in a recipe you know by heart, in Serbian, and
-every ingredient line either matched or deliberately created a new ingredient.
--- Met. Fraction-aware quantity input is there but not as a separate field:
-lines are raw-text-first, one field holding what the cook typed, and the
-quantity is parsed out of it and shown back as an exact fraction on the chip
-(`1½`, never `1.5`). That is rule 3 expressed as UI, and it is what lets an
-unparsed line still save and still render.
-
-The two things Phase 1b built and never exercised now have callers:
-`search_ingredients` is the line editor's autocomplete, and
-`merge_ingredients` has a real `recipe_ingredients` table to repoint.
-
-Verified end to end on the emulator against the local stack, not only in
-tests. Typing `200 g sargarepe` -- no diacritics, genitive -- auto-accepted to
-*šargarepa* and saved `match_method = 'alias'` at confidence 1.0 with
-`qty_num/qty_den = 200/1`; the detail page renders the catalog's word rather
-than the one typed (D1). A line the seed answers only weakly showed as a
-suggestion rather than being applied, and saved unmatched with its `raw_text`
-intact and its unit still parsed -- structure without a match, which is rule 3
-working rather than failing.
+---
 
 ### 1d. Import
 
-**Status: complete** (parts 1–6). Decisions taken during it: D38–D46.
-
-Every bullet below is done, with one deliberate exception noted at the end:
-share intents work on Android and not on iOS.
-
-**Verified end to end, including the model.** All three importers were run
-against the real provider once credits existed: a Serbian recipe through
-`import-text`, a JSON-LD-less page through `import-url`'s fallback, and a
-rendered two-column cookbook page with a sidebar ingredient list through
-`import-photo`. Tier 4 was exercised on ingredients a 200-item Serbian catalog
-cannot know. Seven calls, $0.14, and `ai_usage` recorded every one with real
-token counts.
-
-That run found a bug that had been present since part 2 and could not have been
-found any other way — see D47.
-
-Part 1 built `import_jobs`, `ai_usage` and `household_ai_limits` with their RLS
-and SQL tests, all five remaining `_shared/` modules, and `make types` for
-real — plus `make test-functions` and `make lint-functions`, which the Makefile
-had been asking for since Phase 0 and which `make check` now runs.
-
-It also added a seventh `AppFailure` variant, `QuotaFailure`, for the codes
-that mean "not now" rather than "not ever" — an exhausted AI allowance or an
-upstream rate limit. A `ValidationFailure` would have told the cook to change
-what they sent, which is the opposite of the right advice.
-
-Part 2 built the server half of text import: `_shared/match.ts` (tiers 1–4 over
-a whole recipe), `_shared/jobs.ts` (the `import_jobs` lifecycle), and the
-`import-text` and `match-ingredients` functions. `import-text` answers with a
-job id in 202 and does the work on `EdgeRuntime.waitUntil`, which is what D14's
-queue actually looks like in code.
-
-**D42, taken here: no machine tier writes to the catalog.** `docs/INGREDIENTS.md`
-says every resolution writes an alias back, and it is right about why — that is
-what stops the LLM tier being paid for twice. The disagreement is only about
-*when*. Writing back during import makes a machine guess global and permanent
-(D28: one string, one ingredient, forever) before any human has seen it, and
-D8 exists precisely because a human sees every import. Tier 5 is worse still:
-`za posluživanje` is a real line in the fixture, and creating an ingredient for
-it at import time would enter "for serving" into the catalog as food. So the
-write-back moves one screen later, to the confirm screen, which accepts by
-default and already calls `link_ingredient_alias` (D34) — a function that
-already writes `source = 'user'` and already means a human agreed. The cost
-curve still drops on the first import of a new string; it drops after somebody
-nodded at it.
-
-That also removed a smaller problem rather than solving it:
-`link_ingredient_alias` hardcodes `source = 'user'` and needs a non-null
-`auth.uid()`, so a machine tier calling it would have meant either lying about
-provenance — the thing D7 exists to prevent — or a migration to widen it.
-
-The bullets below are the whole phase; the ones part 1 finished are marked.
-
-- `import_jobs` table — **done**, with `ai_usage` and `household_ai_limits`
-  alongside it (D17 wanted them from day one, and they are the same migration)
-- `_shared/schema.ts` — Zod `ParsedRecipe`; `make types` producing Dart —
-  **done**. Two schemas, not one: `ModelRecipe` is what a model is asked for,
-  `ParsedRecipe` is what the job stores (see D41)
-- Edge Functions `import-url` (JSON-LD first, LLM fallback) — **done**;
-  `import-text` — **done**; `import-photo` (vision model, structured output) —
-  **done**
-- `match-ingredients` Edge Function — the LLM tier, batched per recipe —
-  **done**. One call per recipe, choosing from candidates the catalog produced,
-  so the model cannot invent an ingredient id. Also a standalone re-matching
-  entry point for a job whose unmatched lines the catalog has since learned
-- `_shared/usage.ts` quota check + `ai_usage` recording — **done**, along with
-  `ai.ts`, `normalize.ts` and `parse_line.ts`, which ARCHITECTURE.md listed for
-  1d and this bullet list never did
-- Client: create job, poll, **confirm screen** — **done**. Paste a recipe from
-  the recipe list's FAB menu, watch it being read, review what came back and
-  save it. The confirm screen reuses the 1c line editor unchanged, which is
-  what D43 moved to `core/` to allow, and it is where D42's alias write-back
-  now happens — the only place the catalog grows
-- `receive_sharing_intent` on both platforms — **Android done**; iOS
-  deferred, see below
-
-**Done when:** you can share a recipe URL from a browser into the app, review
-what it found, and save it; and photograph a cookbook page and get a usable
-draft. — **Met on Android.** Sharing a link from Chrome opens the importer
-prefilled; the JSON-LD path produces a reviewable draft with no model call at
-all; and a photographed page produced a correct draft that saved as `ocr`,
-household-scoped, with nine matched lines and six steps. The vision model read
-the sidebar ingredient list, the two-column method in reading order, and treated
-the headnote as a description rather than a first step — the three things D15
-went straight to vision for.
-
-Part 3 took two more decisions. **D43** put the ingredient catalog in `core/`,
-closing D33: the confirm screen was the third caller D33 said should reopen it,
-and the duplicated datasource is deleted rather than tripled. **D44** added
-`save_imported_recipe`, which is D37's flagged revisit arriving exactly where
-it said it would — manual entry can create-then-save-lines because the draft
-keeps its id, but an import has a third step (marking the job done) and no such
-anchor, so a retry would have made a second recipe from the same import.
-
-Part 3 also added `core/refresh/data_revision.dart`. `ref.invalidate(recipeListProvider)`
-worked while recipes was the only feature that wrote a recipe; the confirm
-screen is the second, and it may not name that provider. A counter in `core/`
-is the channel both writers share.
-
-Sequencing settled during part 1: text and URL import come next, and photo
-import is last. Photo needs a Storage bucket, `storage.objects` policies and a
-picker package — the slice D35 moved to Phase 2 — so it gets its own decision
-rather than being dragged in behind a column that already exists.
-
-**D45, taken in part 4: the SSRF policy.** `import-url` is the only place in
-the project that opens a connection to a host somebody else chose, and it does
-so from inside Supabase's network holding the service role key. The ruling
-lives in `supabase/functions/_shared/url_guard.ts`: http/https only, no
-credentials in the URL, no non-standard port, a denylist covering every private
-and reserved IPv4 and IPv6 range (including `169.254.169.254`), every
-single-label hostname (which is what stops `http://kong:8000` without a list of
-service names to maintain), a DNS resolution check on every hostname, redirects
-followed by hand with each hop re-vetted, a 10-second timeout, a 2 MB ceiling
-counted from the bytes that actually arrive, and a Content-Type check. What it
-does NOT stop is DNS rebinding between the check and the connect; Deno's
-`fetch` cannot pin a resolved address, and that is written down in the file
-rather than left to be discovered.
-
-Part 4 also made **tier 4 best-effort**. It used to be able to sink a whole
-import: a recipe read perfectly from JSON-LD would fail because an optional
-improvement to its ingredient matching was unavailable. Tiers 1–3 are
-deterministic and already done by that point, so a tier 4 failure now logs,
-records any tokens it spent, and returns the deterministic matches. The cook
-gets a draft with more lines to confirm by hand, which is the confirm screen's
-job anyway.
-
-**D46, taken in part 5: the `import-uploads` bucket.** The first Storage bucket
-and the first `storage.objects` policies in the project. Paths are
-`import-uploads/{household_id}/{uuid}.jpg`, and that prefix is not a filing
-convention — it is the access control, read by every policy. Private (D16: a
-cookbook page is somebody else's copyrighted prose and there is no public path
-to it), 10 MB, images only. Insert, select and delete are scoped by
-`is_household_member`; there is deliberately no update, because a photographed
-page is immutable and re-photographing writes a new object.
-
-The policies delegate to `storage_path_household(text)`, which returns null
-rather than raising on a path that does not start with a uuid. That is the
-whole reason it exists: a bare `::uuid` cast inside a policy turns a denied
-upload into a 500 instead of a refusal.
-
-D35 still stands for the recipe's own picture. The photograph of a page is an
-*input* to an import, not a picture of the dish, and `recipes.image_path`
-remains untouched and Phase 2's business.
-
-Part 5 also fixed a bug that would have been silent forever:
-`ImportRepository.saveImported` derived `source_type` from whether a source URL
-was present, so a photographed page — which has none — would have been recorded
-as `manual`, a recipe the app believes somebody typed out by hand. D16's
-household-only rule hangs off that column. The mapping moved to
-`ImportKind.sourceTypeFor` in the domain, where it is unit-tested.
-
-**Part 6 added share intents on Android.** Share a recipe page from Chrome and
-the app opens the link importer with the URL already in it; share prose and it
-opens the paste importer instead, keeping any link as attribution. Prefilled
-rather than auto-submitted: sharing the wrong page should cost a tap, not a
-model call.
-
-A share can arrive before the app can act on it — the router's redirect sends
-every location to `/sign-in` or `/create-household` and returns a bare path,
-carrying no destination — so a received share is parked in a `keepAlive`
-provider and delivered once the same two gates the redirect checks have passed.
-Verified on the emulator by sharing while signed out, then signing in: the URL
-survived and landed.
-
-**The iOS half is not done**, and two things the next person needs rather than
-has to discover. Swift Package Manager is already enabled here and there has
-never been a Podfile, so the package (which is SPM-only) fits without changing
-the build. And this project uses the *scene* lifecycle
-(`UIApplicationSceneManifest` + `SceneDelegate.swift`), so any README telling
-you to add an `AppDelegate` override describes a hook that will never fire.
-What is missing is a Share Extension target, an app group and the entitlements —
-Xcode work `flutter pub get` cannot do.
-
-`receive_sharing_intent` compiles against Android SDK 37, which forced the app
-to pin `compileSdk = 37` rather than inheriting Flutter's default of 36. That
-only allows newer APIs; `targetSdk` is untouched.
-
-Still open, and named here so it is not rediscovered: the iOS share extension,
-and nothing yet prunes an import photo once its job is done or dismissed —
-keeping it is deliberate so a failed job can be re-run, but the lifecycle
-belongs with Phase 2's Storage work.
+**Status: complete** (parts 1–6). Decisions taken during it: D38–D46. See `docs/journal/phase-1.md`.
 
 ---
 
@@ -303,458 +43,45 @@ belongs with Phase 2's Storage work.
 
 ### Part 1 — Recipe photo upload
 
-**Status: complete.** Decisions taken during it: D48.
+**Status: complete.** Decisions taken during it: D48. See `docs/journal/phase-2.md`.
 
-A Storage bucket, `storage.objects` policies scoped by household, a path
-convention, and a picker package (rule 8 — no new package needed;
-`image_picker` was already approved in 1d part 5). Moved here from 1c; the
-`recipes.image_path` column had shipped empty since migration 8 (D35).
-
-- `recipe-images` bucket: private, 5 MB, images only, at
-  `{household_id}/{name}.jpg` — the same shape as `import-uploads` (D46),
-  reusing `storage_path_household(text)` rather than a second copy of it
-- `RecipeRepository.uploadImage` / `deleteImage`, and `_withImageUrls`
-  resolving `Recipe.imageUrl` from `Recipe.imagePath` via
-  `createSignedUrlsResult` — one round trip per list page, the same shape as
-  `_withDisplayNames`
-- `RecipeEditor.save({image})`: the upload happens first, inside the save,
-  never at pick time — an abandoned editor writes nothing to Storage. Replacing
-  or clearing a photo deletes the old object once the row no longer points at
-  it, best-effort
-- The photo card in the edit screen (Camera / Gallery / Remove, 1200px/85%),
-  the hero image on the detail screen, and the list thumbnail
-
-**Done when:** you can photograph a dish (or pick one from the gallery) while
-editing a recipe, save, and see it on the recipe detail screen and as a
-thumbnail in the list — on a second device in the same household, and not from
-another household. — **Met**, verified end to end on the Android emulator
-against the local stack: created a recipe with a photo (the `create()` path),
-confirmed the object landed at `recipe-images/<household_id>/…` and the
-thumbnail rendered in the list; replaced the photo and confirmed the old
-object was gone; removed the photo and confirmed `image_path` went null and
-the object was deleted; picked a photo and abandoned the editor without saving
-and confirmed no object was ever written; and confirmed directly against
-`is_household_member(storage_path_household(...))` that a second household's
-member is refused the first household's object path.
+---
 
 ### Part 2 — The meal plan
 
-**Status: complete.** Decisions taken during it: D49–D54.
+**Status: complete.** Decisions taken during it: D49–D54. See `docs/journal/phase-2.md`.
 
-`meal_plans` + `meal_plan_entries` with RLS, a week grid replacing the
-`PlaceholderScreen` the Plan tab has shown since Phase 0, and the ability to
-add, move and remove a recipe or a note in any of a week's 28 slots.
-**Leftover entries and the snack variety check are explicitly out** —
-`leftover_of_entry_id` and `'leftover'` ship in the migration, unreachable,
-the same way `recipes.image_path` shipped empty under D35.
-
-- `meal_plans` (one row per household per week, created lazily on the first
-  write — D50) and `meal_plan_entries` (a child table in the D24 sense: no
-  lifecycle columns of its own, hard delete allowed — D49), plus
-  `ensure_meal_plan()`, `meal_plan_entries_before_write()` (position
-  assignment, the week-boundary guard, the leftover visibility guard) and
-  `meal_plan_entries_touch_plan()` (keeps the plan's `updated_at` current for
-  the Phase 2 delta fetch, however entries change)
-- `MealPlanRepository`: `fetchWeek`, `addRecipeEntry`, `addNoteEntry`,
-  `moveEntry`, `removeEntry` — every write lands immediately, no draft, no
-  Save (D54)
-- `VisibleWeek` (the one week on screen) and `MealPlanEditor`
-  (`AsyncNotifier`, not a family) in `application/`; `plan_week.dart` in
-  `domain/` is the one file in the feature that does date arithmetic
-- The recipe picker moved to `core/recipes/`, alongside `core/ingredients/`
-  (D43) — the second time a feature needed to reach `recipes/` read paths
-  without importing its `application/` layer (D53)
-- `currentHouseholdId` closed D33's open note: a derived provider in
-  `core/household/`, not a third copy of the query (D52)
-
-**Done when:** you can open the Plan tab, walk to any week, put recipes and
-notes into that week's 28 slots, move them between slots, take them out, and
-see the same week on a second device in the same household. — **Met**,
-verified end to end on the Android emulator against the local stack, not
-only in the 26-assertion SQL suite (`rls_meal_plans_test.sql`) and the 31
-Dart tests it sits beside. Browsing several weeks back and forward wrote
-`meal_plans`.count = **0** the whole time (D50). Adding a recipe created
-exactly one plan row for the week regardless of how many entries later
-landed in it; two recipes added to the same slot got `position` 0 and 1 from
-the server, never the client. A note was added, then moved to a different
-day via the entry's "Move to…" action — its `entry_date`/`slot` changed and
-`position` was recomputed at the new slot's tail, and `meal_plans.updated_at`
-moved on that write, live over the wire (not just inside the SQL suite's own
-frozen-transaction workaround for it). Removing an entry was a real row
-deletion, confirmed by a shrinking count, not a tombstone. Force-stopping and
-relaunching the app showed the identical week untouched — nothing here is
-client-only. Household isolation is covered by the SQL suite's own
-non-member assertions rather than repeated with a second device, the same
-call D48's verification note makes for the recipe-images bucket.
+---
 
 ### Part 3 — Leftovers, variety and order
 
-**Status: complete.** Decisions taken during it: D55–D58.
+**Status: complete.** Decisions taken during it: D55–D58. See `docs/journal/phase-2.md`.
 
-The three items D51 and D49 left named and unreachable in the meal plan:
-leftover entries actually writable, the snack variety check, and within-slot
-reordering.
-
-- `meal_plan_entries_leftover_source`, a second `before insert or update`
-  trigger alongside migration 14's own (never edited -- CLAUDE.md), derives
-  `recipe_id` onto a leftover row from its source entry and refuses anything
-  else -- a note as a source, another leftover as a source (no chains), or a
-  leftover pointing at itself (D55). This is what closes D51's deliberately
-  loose `'leftover'` check branch: the client never sends `recipe_id`, and a
-  value nothing derives or checks is a value that could otherwise quietly
-  drift from its source
-- `reorder_meal_plan_entry(entry, new_position)`, the RPC D49 named --
-  renumbers a whole `(meal_plan_id, entry_date, slot)` group in one
-  statement rather than swapping two rows, because D49 already ruled out a
-  unique index on `position`, so gaps are legal input and the renumber has to
-  tolerate them (D57)
-- `MealPlanRepository.addLeftoverEntry`, `.reorderEntry`,
-  `.countRecipeInSlot` -- the last scoped to household and to visible plans
-  through a `meal_plans!inner` embed, because RLS alone would also count a
-  slot in any *other* household the caller belongs to
-- `snack_variety.dart`: a centred +/- 7-day window around the candidate date,
-  not the trailing "last 14 days" `docs/DATA_MODEL.md` originally sketched
-  (D58) -- a meal plan is forward-looking, and a trailing window only warns
-  when slots happen to be filled in calendar order
-- Screen: *Plan leftovers...* on a recipe entry's action sheet (not offered
-  on a note or another leftover), a 14-day destination picker starting the
-  day after the source, *Move up* / *Move down* shown only where there is
-  somewhere to go, and an advisory Cancel/Add-anyway dialog before a repeated
-  snack is actually written -- the check never blocks the write itself, only
-  asks first
-
-**Done when:** a cook can put the same recipe's leftovers in a later slot,
-get warned (not stopped) about a snack repeating within a fortnight either
-side, and reorder entries sharing a slot. — **Met**, verified end to end on
-the Android emulator against the local stack (UI Automator dumps to locate
-elements precisely, not eyeballed coordinates), not only in the 20-plus new
-SQL assertions (`meal_plan_leftovers_test.sql`) and the Dart tests beside it.
-Planning Thursday dinner's leftovers defaulted the dialog to Friday, same
-slot, exactly D56's "source date + 1, source's own slot"; retargeting it to
-the following Monday's dinner produced a chip reading `Leftovers: <title>`
-with the replay icon, opened the source recipe from it, and a direct query
-confirmed the row's `recipe_id` matched the source's exactly — the client
-never sends one, so this is the derivation working through the real app, not
-just the SQL suite's separate check that a *wrong* client-sent value gets
-overwritten. That Monday write landed in a second `meal_plans` row
-(`meal_plans` count moved from 1 to 2) that did not exist a moment before,
-invisible until the grid was paged forward into the following week — D56's
-known consequence, not a bug. Removing the source entry took its leftover
-down with it, confirmed by a zero count where the leftover row used to be.
-Three entries added to one slot, the last moved up once from the action
-sheet: a direct query showed the moved row's `position` change from 2 to 1
-and its sibling shift from 1 to 2, with no gap or duplicate across the group,
-and `meal_plans.updated_at` moved on that reorder alone — the one write that
-changes no other column on the plan row, so the touch trigger is the only
-thing that could have moved it. Adding the same recipe to a third snack slot
-within a few days of two earlier ones surfaced the count in the warning text
-verbatim (`Already in 2 snack slots this fortnight.`); Cancel left the row
-count at zero, Add anyway wrote it, and three earlier additions of the same
-recipe to a lunch slot never triggered the dialog at all.
-
-One call made here for the next part rather than this one: the shopping
-list's pantry staples (salt, oil, sugar, water, pepper) will be aggregated
-and flagged like anything else, then rendered collapsed under a "Probably
-have" heading rather than hidden -- `household_pantry_prefs` stays a
-both-directions override on the flag, and nothing is ever missing from the
-snapshot itself.
+---
 
 ### Part 4 — The shopping list
 
-**Status: complete.** Decisions taken during it: D59–D63.
+**Status: complete.** Decisions taken during it: D59–D63. See `docs/journal/phase-2.md`.
 
-The List tab has shown `PlaceholderScreen` since Phase 0. A week's plan now
-aggregates into a saved, correct list.
-
-- Migration 16: `shopping_lists` (household-scoped, so full rule 4 — D59's
-  correction to the sketch, which omitted `updated_at`), `shopping_list_items`
-  (a D24 child table, RLS through its parent) and `household_pantry_prefs`
-  (a join table, hard delete, on the `household_members` precedent migration 6
-  had already applied to it), plus `save_shopping_list` — the parent and its
-  items in one transaction, `security invoker` (D61, the third outing of D36's
-  argument)
-- `Rational` and `aggregate_shopping_list` in `domain/`, pure Dart, no I/O:
-  skip leftovers and notes, scale by servings, group by `ingredient_id` and
-  fall back to `normalize_text(raw_text)`, convert to the family's base unit
-  and sum within a family only (D9), flag staples with the household's
-  override winning both ways
-- **The sum is exact all the way through** (D60). `units.to_base` is read from
-  the `numeric` as text rather than through its `double`, because every value
-  in that column is an exact decimal; `quantities` stores an integer pair, not
-  a rounded number. `Quantity`'s own doc comment predicted this slice by name
-- `RecipeRepository.fetchLinesForRecipes` — one query for a whole week's lines
-  however many recipes it names, embedding the catalog's `is_pantry_staple`
-  and `category`, reusing the existing `_withDisplayNames`
-- *Cooking for…* on the meal plan entry's action sheet (D62). This is what
-  makes scaling real: `meal_plan_entries.servings` shipped in migration 14 and
-  **nothing had ever written it**, so the documented "scale by servings" step
-  was a no-op that only the real app could expose
-- Screen: range bar (this week / next / date picker), items grouped by
-  category with uncategorised last, two families side by side on one line,
-  unmatched lines verbatim beneath their group, and staples collapsed under
-  *Probably have* — collapsed, never hidden (D63). No checkboxes, and there
-  never will be (D13)
-
-**Done when:** a week's plan produces a correct list. — **Met**, verified end
-to end on the Android emulator against the local stack, not only in the 51
-Dart tests and the new SQL suite. A week holding two recipes that share an
-ingredient, one of them also planned as leftovers, produced: *brašno* 400 g
-from `250 g` + `150 g` across two recipes as a single line; *mleko* 280 ml
-from `2 dl` + `⅓ šolje` — 200 + 80 exactly, which is the exact-rational path
-doing the one thing a `double` gets wrong; *jaje* 2 kom; and **nothing at all
-from the leftover**, which would otherwise have added another 250 g. Setting
-that entry to 8 servings against the recipe's 4 and regenerating moved those
-to 650 g, 480 ml and 4 kom — the fraction scaled exactly, not approximately.
-`prstohvat soli` came back with no quantity and its raw text intact: the
-`other` family is carried as a note and never summed, which is rule 3 and
-migration 4's own comment agreeing. Regenerating soft-deleted each previous
-list rather than removing it (1 live, 3 tombstones by the end). Toggling
-*šećer* out of the cupboard wrote an `always_have = false` row, left the
-on-screen snapshot untouched on purpose, and moved the item into the pantry
-section on the next generation. A second household was confirmed to see
-neither the list nor its items.
-
-Two things the emulator caught that tests had not. An unmatched item rendered
-its own name twice — once as the title and once as its "unmatched line",
-because for an unmatched line those are the same string; the aggregator now
-drops an unmatched line equal to the item's name. And `480 ml` first rendered
-as `4.8 dl`: the display ladder had included decilitres, which is a recipe
-unit, not a shopping one — nothing on a shelf is labelled 4.8 dl.
-
-Still open, and named here so it is not rediscovered: **a generated list is
-never compared against the plan it came from.** Changing the week after
-generating leaves a list that is quietly stale, and the only signal is the
-`Generated <date>` line. `CurrentShoppingList` already watches
-`mealPlanRevisionProvider`, so the hook is there; what to *show* is a design
-question, not a plumbing one. Unrelated to, and not resolved by, part 5's
-offline signal below — that is about whether the phone can reach the server,
-not whether the plan has moved on since the list was generated.
+---
 
 ### Part 5 — The Drift read cache, proven on the shopping list
 
-**Status: complete.** Decisions taken during it: D64–D71.
+**Status: complete.** Decisions taken during it: D64–D71. See `docs/journal/phase-2.md`.
 
-The airplane-mode half of part 4's "Done when" — a week's plan produces a
-correct list, *and that list is readable in airplane mode*. Everything in the
-tree had been arranged for this in advance and was sitting unused:
-`tool/check_layers.dart` already refused `drift` outside `data/`, D23 already
-kept tombstones visible so a delta fetch could see them, D59 already put
-`updated_at` on `shopping_lists` naming this exact part, and
-`IngredientRepository.fetchUnitCatalog`'s own doc comment already said "it
-still works offline once Phase 2 caches it." Built on the shopping list and
-the unit catalog only — the roadmap's own argument for going first: one row,
-no write path, no tombstone churn, and the reason the cache exists at all
-(D12). The unit catalog joined it out of necessity, not scope creep: without
-it, an offline list renders `1200 g` and `3 clove` instead of `1.2 kg` and
-`3 čen`, because `formatItemQuantity` finds no `kg`/`l` rung and
-`UnitCatalog.displayName` falls back to a raw code on an empty catalog —
-exactly what `shopping_list_screen.dart`'s old
-`ref.watch(unitCatalogProvider).value ?? UnitCatalog.empty()` fallback
-produced the moment the network failed.
-
-- `drift`, `drift_flutter`, `path_provider` (rule 8, asked and approved);
-  `sqlite3_flutter_libs` was the package actually approved, but its own
-  pub.dev listing now reads "Not used anymore, update to version 3.x of
-  package:sqlite3 instead" — `drift_flutter` is what drift's own setup guide
-  replaced it with, and it also removes the hand-written platform opener.
-  `connectivity_plus` was asked about and rejected: `NetworkFailure` already
-  exists and `runGuarded` already produces it from a `SocketException`, a
-  `TimeoutException`, or `FunctionException(status: 0)`
-- `lib/core/db/app_database.dart`: one `AppDatabase`, two tables
-  (`ShoppingListCache`, `UnitCatalogCache`), `schemaVersion = 1` with
-  drop-and-recreate as the whole migration strategy (D71) — `core/db/`
-  because a single SQLite file is inherently shared, on the same
-  `tool/check_layers.dart` exemption `core/supabase/` already has (D64).
-  `lib/core/db/cache_guard.dart`'s `cacheOrElse`/`cacheWrite` are what keep a
-  corrupt cache file from ever reaching `runGuarded` and rendering as
-  "Something went wrong" (D69)
-- `RemoteShoppingListDataSource`/`LocalShoppingListDataSource`, the first
-  actual instance of the Remote/Local split `docs/ARCHITECTURE.md` had only
-  sketched, composed by a much smaller `ShoppingListRepository`; one shared
-  wire decoder, `dto/shopping_list_dto.dart`, reads a PostgREST row and a
-  cache blob identically (D65). `ShoppingList` gains `updatedAt`, populated
-  truthfully from day one even with no delta fetch yet to read it (D71).
-  `LocalShoppingListDataSource.upsertLatest` deletes the household's row
-  before inserting the new one, found necessary by the first test written
-  against it — a plain `insertOnConflictUpdate` only resolves against the
-  primary key, so a regenerated list (a new id) would otherwise try to
-  insert a second row (D66)
-- `watchLatest()`: cache emission, then the network's answer, over a
-  `CurrentShoppingList` that is now a `StreamNotifier` rather than an
-  `AsyncNotifier` — the provider's value type is unchanged
-  (`AsyncValue<ShoppingList?>`), so every existing screen and test kept its
-  shape. A cache hit outlives a `NetworkFailure`; a cold cache does not, and
-  says so in its own sentence rather than rendering an empty state that
-  implies nothing was ever generated. Reachability is
-  `lib/core/net/network_status.dart`'s `NetworkStatus`, reported through
-  plain callbacks so the repository stays a `data/` file that has never heard
-  of Riverpod (D67)
-- `IngredientRepository.fetchUnitCatalog()`: network-first, the cache only as
-  a `NetworkFailure` fallback — the opposite read order from the shopping
-  list, because two dozen immutable reference rows have no `updated_at` to go
-  stale between sessions, so there is nothing to gain from showing a cached
-  answer before a fresh one a moment later (D70). Deliberately not split into
-  a full Remote/Local pair: this is one cached method out of six, and the
-  other five reach a live catalog by design
-- Sign-out wipes the household-scoped cache and deliberately leaves the unit
-  catalog alone — global reference data, readable by any authenticated user,
-  and wiping it would put `3 clove` back on the very next person's first
-  offline session (D70)
-- `_ListBody` no longer treats "the catalog is still loading" as "the catalog
-  is empty" — a real gap the old `?? UnitCatalog.empty()` fallback had online
-  too, just imperceptibly; `_GeneratedAt` gains one line, "Showing your saved
-  copy — no connection.", exactly where a cache hit is being shown. A global
-  offline banner is still a later part's job
-
-**Done when:** a week's plan produces a correct list, and that list is
-readable in airplane mode. — **Met**, verified end to end on the Android
-emulator against the local stack, not only in the 18 new Dart tests (a
-round-trip test proving the cache preserves an exact `Rational` — 280 ml from
-`2 dl` + `⅓ šolje`, 200 + 80 exactly — and `prstohvat soli`'s raw text with no
-quantity; a repository-level test proving a warm cache survives a
-`NetworkFailure` quietly while a cold one rethrows honestly; a unit-catalog
-round-trip test proving `to_base` survives as the string `28.349523125`, not
-a rounded double). Generated a list online for a week naming a mass total
-over 1 kg and a `veza peršuna`; confirmed on screen as `1.2 kg` and `1 veza`.
-Enabled airplane mode, force-stopped and relaunched cold: the full list
-rendered from the cache with no network at all, quantities and count units
-identical to the online render, with "Showing your saved copy — no
-connection." under the generated line. Tapping *Regenerate* offline produced
-a snackbar and left the on-screen list untouched — writes stayed online-only
-(D12). Disabling airplane mode and pulling to refresh cleared the saved-copy
-line and re-rendered from the network. Regenerating online, then going
-offline again, served the *new* list, not the retired one — the D59 case this
-cache exists to get right, and the case D66's delete-then-insert fix made
-correct in the first place. Signing out and reading the on-device cache file
-directly showed the household's `shopping_list_cache` row gone and the
-`unit_catalog_cache` row untouched; signing back in and going straight to
-airplane mode without generating anything rendered no list (correct) with
-count units still in Serbian (correct, D70's argument holding).
+---
 
 ### Part 6a — The delta fetch, and recipes and the ingredient catalog offline
 
-**Status: complete.** Decisions taken during it: D72–D74.
+**Status: complete.** Decisions taken during it: D72–D74. See `docs/journal/phase-2.md`.
 
-D71's own deferral, closed: `last_sync_at`-style delta fetch, and the two
-entities it needed a real multi-row fetch to be designed against.
-
-- `SyncWatermarks` (`core/db/`) — one row per `(entity, scope)`, advanced
-  from the max `updated_at` of the rows a fetch actually received, never
-  `DateTime.now()` (D72). `AppDatabase.schemaVersion` moved to `2`
-- `DisplayNameChain` (`features/ingredients/domain/`) — `ingredient_display_name()`'s
-  fallback chain, ported to Dart against `test/fixtures/display_names.json`,
-  asserted on both sides the same way `normalize_text()`/`TextNormalizer`
-  already are (rule 6, D72). `tool/gen_display_name_sql.dart` generates the
-  Postgres half exactly as `gen_normalization_sql.dart` does
-- `RecipeCache` and `IngredientNameCache` (`core/db/`), and the Remote/Local
-  split's second and third outings: `RemoteRecipeDataSource`/
-  `LocalRecipeDataSource` compose into `RecipeRepository`, which now caches
-  the household's recipes AND the global ingredient name catalog — the
-  latter a deliberate ownership choice (D73) rather than an oversight:
-  `ingredient_display_names` has exactly one caller, and the layer boundary
-  (D33) forbids `recipes/data/` reaching `ingredients/data/` directly, so
-  the cache and its sync stay where the one caller is until a second exists
-- `watchList()` — cache-then-network for the whole recipe list, the same
-  shape `ShoppingListRepository.watchLatest` established; local search
-  matches the server's old `ilike` results exactly, since both compare the
-  same `normalize_text()`-derived value (rule 6). `fetchDetail()` stays
-  network-first with a cache fallback instead (D74) — closer to
-  `fetchUnitCatalog()`'s shape than the list's, because a single recipe
-  read on demand has little to gain from a stale-then-fresh emission
-- `recipeListProvider` is now a `StreamNotifier` family; `recipeDetailProvider`
-  is unchanged, a plain `Future` — D74's whole point, and the reason only
-  the list's screen test needed a stub rewritten
-- A recipe's own online detail read now also triggers a best-effort
-  background sync of the *whole* global name catalog, not just the ids that
-  recipe mentions — closing "every ingredient renders offline, including
-  ones never viewed"
-
-**Done when:** recipes and the ingredient catalog are readable offline, the
-same way the shopping list and unit catalog were in part 5. — **Met in
-tests and against the local Postgres stack, not verified on the emulator.**
-18 new Dart tests: the watermark advancing to the max `updated_at` received
-rather than `now()`; the recipe cache's household scoping and ordering; an
-id cached without embedded lines reading back as an honest detail-cache
-miss even though it is a list-cache hit; `DisplayNameChain` resolving a
-real cached row set through every clause of the fallback order; and
-`RecipeRepository.watchList`/`fetchDetail`'s cache-then-network and
-network-first-with-fallback behaviour respectively, including a
-soft-deleted row in a delta evicting its cached copy. Six
-`display_names.json` fixture cases pass identically in
-`display_name_chain_test.dart` and in `display_names_test.sql` run against
-the real `ingredient_display_name()` function — `make test-sql` in full,
-`make check` in full, `dart analyze` and `tool/check_layers.dart` both
-clean. **Not yet exercised on the Android emulator** — the actual "open a
-recipe online, go to airplane mode, force-stop, relaunch, see it render
-with Serbian catalog names on matched lines and a photo placeholder" walk
-every prior part in this phase closed with — is the one verification step
-still open, named here rather than left to be assumed.
+---
 
 ### Part 6b — Meal plan weeks offline, and the global offline signal
 
-**Status: complete.** Decisions taken during it: D75–D76.
+**Status: complete.** Decisions taken during it: D75–D76. See `docs/journal/phase-2.md`.
 
-The last entity on Phase 2's offline list, plus the global banner the
-Done-when has always asked for. `SyncWatermarks` and the delta-fetch shape
-were already proven in part 6a; the correction here is the watermark's
-scope (D75, replacing the per-`(household_id, week_start)` sketch this
-section used to carry) and `meal_plan_entries_touch_plan()` (migration 14),
-already in place, is what makes `meal_plans.updated_at` trustworthy for it.
-
-- `MealPlanWeekCache` (`core/db/app_database.dart`), keyed by `id` on
-  `RecipeCache`'s precedent (a plan's id never changes under
-  `ensure_meal_plan`'s upsert) with a `(householdId, weekStart)` unique-key
-  belt-and-suspenders on `ShoppingListCache`'s. `weekStart` is stored as
-  text, not a `DateTimeColumn` -- `plan_week.dart` forbids `.toUtc()` on a
-  plan week, and a `DateTimeColumn` round-trips through a local-time epoch
-  conversion that would shift it. `schemaVersion` moved to `3`
-- `dto/meal_plan_week_dto.dart` -- decoders only, on `recipe_dto.dart`'s
-  precedent rather than `shopping_list_dto.dart`'s: a cached week is never
-  built from a domain object, only read off the wire and stored as-is
-- `RemoteMealPlanDataSource` / `LocalMealPlanDataSource` /
-  `MealPlanRepository`, the fourth outing of the Remote/Local split. Every
-  write from the old single-file repository moved to the Remote half
-  unchanged; the read became `watchWeek()`, cache-then-network on
-  `RecipeRepository.watchList`'s shape, widened from one week to a whole
-  household's meal-plan history so paging stays instant offline (D75)
-- `MealPlanEditor` became a `StreamNotifier<MealPlanWeek>` on `RecipeList`'s
-  own precedent -- the value type consumers see
-  (`AsyncValue<MealPlanWeek>`) is unchanged, and the only test cost was the
-  same stub-rewrite `RecipeList`'s own conversion paid
-- `OfflineBanner` (`core/net/offline_banner.dart`), rendered by `AppShell`
-  above every tab's body, and the meal plan screen's own "Showing your saved
-  copy -- no connection." line under the week bar, on the shopping list
-  screen's `_GeneratedAt` precedent (D76)
-- `Makefile`'s `test-sql` target now runs `gen_display_name_sql.dart` before
-  the SQL suite, closing a gap part 6a left open: the generator's own header
-  already claimed this, and `supabase/tests/display_names_test.sql` could
-  silently drift from `test/fixtures/display_names.json` without it
-
-**Done when:** every entity in `docs/ARCHITECTURE.md`'s offline list --
-recipes, meal plans, the shopping list, the ingredient catalog -- is readable
-offline, with a global signal saying so. -- **Met for a warm session.** All
-366 Dart tests pass (18 new: `local_meal_plan_datasource_test.dart`'s cache
-round-trip and `uniqueKeys` guard, and `meal_plan_repository_offline_test.dart`'s full
-`watchWeek` matrix -- cold cache success and failure, warm cache surviving a
-`NetworkFailure`, D75's authoritative-empty case under a live watermark, a
-soft-deleted plan evicting its cache entry with its still-embedded entries
-ignored, the watermark advancing to the max `updated_at` received rather
-than `now()`, and `onReachable`/`onUnreachable` ordering), plus new
-`app_shell_test.dart` and `meal_plan_screen_test.dart` cases for the banner
-and the saved-copy line respectively. `make check` in full: `dart analyze`
-and `tool/check_layers.dart` both clean, `make test-sql` (now regenerating
-and passing `display_names_test.sql` too), `lint-functions` and
-`test-functions` unaffected since no Edge Function changed.
-
-**"Met for a warm session" is a correction, added in Part 7.** This
-Done-when was written and verified with the household already resolved --
-every walk in this project up to and including this one signed in, then
-tested offline behavior within the same session. Part 7 (D87) found that a
-genuinely cold, offline-from-first-frame start never reached any of the
-caches this part built at all: `currentHouseholdIdProvider`, which every one
-of them gates on, had no cache and no bound of its own. The caches
-themselves were never wrong; nothing before Part 7 had reached them under
-the one condition that mattered.
+---
 
 ### Part 7 — The household cache, and a bounded household read
 
@@ -762,78 +89,7 @@ the one condition that mattered.
 (the fix). Built during Phase 3, filed here because the gap it closes was
 never on Phase 2's own offline list to begin with -- a reader looking for why
 Part 6b's claim above needed correcting finds it at the end of Phase 2, not
-in the middle of the localization phase.
-
-- `CurrentHouseholdCache` (`core/db/app_database.dart`) -- the first
-  PER-USER table in a database that has so far only ever been per-household
-  or global. Keyed on the signed-in user's id, storing the raw `households`
-  wire row; `dto/household_dto.dart`'s `householdFromWire` decodes a fresh
-  response and a cache hit identically (D65, D88). `schemaVersion` 4 -> 5.
-  `clearHouseholdCache()` (the sign-out wipe) drops it too, belt-and-braces
-  alongside the structural guarantee the per-user key already gives
-- `features/households/data/` took the Remote/Local split -- the fourth,
-  after shopping_list/recipes/meal_plan -- for a reason none of the first
-  three needed: without `RemoteHouseholdDataSource.fetchMineRows()` as a
-  fakeable seam, the read order this part depends on would have shipped
-  untested, the exact gap that let D87 through in the first place (D90)
-- `HouseholdRepository.fetchCurrent(userId:)` -- network-first with a cache
-  fallback, `IngredientRepository.fetchUnitCatalog()`'s shape (D70): success
-  writes the chosen row through (or clears it, if the caller genuinely has
-  no household -- the branch keeping a miss unambiguous); a `NetworkFailure`
-  reads the cache; a cold cache rethrows. Deliberately not cache-first --
-  `CreateHouseholdScreen`/`JoinHouseholdScreen` both invalidate and re-await
-  this provider expecting a fresh read (D88)
-- `create()`/`redeemInvite()` clear the whole cache on success, closing a
-  failure mode the fallback would otherwise introduce: switch households,
-  then hit a network blip on the confirming re-fetch, and without this the
-  old household would silently come back instead of the redirect correctly
-  stalling in onboarding (D88)
-- The bound that actually shortens the wait: `fetchMineRows()` chains
-  `.retry(count: 1, requestTimeout: 5s)` on the one call. A global
-  `Supabase.initialize(postgrestOptions:)` timeout was the first design and
-  is NOT what shipped -- verified directly against the pinned package source
-  that `SupabaseClient.from()` forwards only `schema` from
-  `PostgrestClientOptions`, never `requestTimeout` or `retryCount`, so it
-  would have changed nothing about the call that was actually hanging (D89)
-- `currentHouseholdProvider` now reports into `NetworkStatus`
-  (`onReachable`/`onUnreachable`), on the three screen providers' own
-  precedent -- closing the reason the global offline banner could never
-  appear on a cold start at all: every one of its producers sat behind this
-  same gate
-
-**Done when:** a cold start with no network shows cached content within
-seconds rather than hanging for minutes, and the offline banner appears. --
-**Met**, verified end to end on the Android emulator against the local
-stack, not only the 18 new Dart tests (`household_cache_test.dart`'s
-round trip and wrong-user isolation, `household_repository_offline_test.dart`'s
-full network-first/cache-fallback/cold-cache-rethrows/wrong-household-eviction
-matrix on `_FakeRemote implements RemoteHouseholdDataSource`, and
-`app_shell_test.dart`'s new redirect case for the `AsyncError.hasValue ==
-false` state). `make check` in full: `dart analyze` and
-`tool/check_layers.dart` both clean, 417 Dart tests, `lint-functions` and
-`test-functions` unaffected since no Edge Function changed.
-
-This is the same walk that found D87: sign in, translate and review a
-recipe so the caches are genuinely warm (not a fixture), pull the on-device
-cache file directly to confirm `current_household_cache` holds one row keyed
-by the signed-in user's id with a `household_id` matching the recipe's own,
-then disable the emulator's network, force-stop and relaunch cold. Where the
-pre-fix walk spun for several minutes before failing, this one showed the
-cached recipe with its *Draft* chip **and** the global offline banner --
-"You're offline -- showing saved copies. Changes won't save." -- within
-about 30 seconds of a cold launch on this same slow emulator, the banner's
-first appearance ever on a cold start. Re-enabling the network and
-relaunching cleared the banner and rendered normally. Signing out and
-reading the cache file directly showed `current_household_cache` and
-`recipe_cache` both at zero rows, with `unit_catalog_cache` still holding
-its one row -- the sign-out wipe and D70's split both holding under the new
-table.
-
-Not walked separately, because it is what the sign-out result above already
-proves: a second user signing in on the same device cannot see a leftover
-row, since sign-out left none to see. The wrong-user case itself --
-a cached row present for one user id and never returned for another -- is
-`household_cache_test.dart`'s own assertion, not left to the emulator alone.
+in the middle of the localization phase. See `docs/journal/phase-2.md`.
 
 ---
 
@@ -841,390 +97,45 @@ a cached row present for one user id and never returned for another -- is
 
 ### Part 1 — The locale toggle, and the app chrome in two languages
 
-**Status: complete.** Decisions taken during it: D77.
+**Status: complete.** Decisions taken during it: D77. See `docs/journal/phase-3.md`.
 
-`flutter_localizations` + ARB files, and the locale toggle they exist to
-serve — scoped to the app's chrome, not yet to recipe content.
-
-- `lib/core/l10n/arb/app_sr.arb` (template) and `app_en.arb`, generated to a
-  committed `lib/core/l10n/generated/` via `l10n.yaml`
-- `core/l10n/app_locale.dart`: `appLocaleProvider`, derived from
-  `ownProfileProvider.value?.locale`, falling back to Serbian pre-auth
-- `AuthRepository.updateLocale`, writing straight to `profiles.locale` — no
-  migration needed; the column, its check constraint and
-  `profiles_update_own` have existed since migration 2 and nothing had ever
-  written to them
-- A *Language* segmented button on Settings (*Srpski* / *English*, never
-  translated — a language's own name is not chrome)
-- Localized: the bottom nav, each tab's own AppBar title (sharing the nav
-  label's key), the Settings screen, and sign-in / verify-OTP
-
-**Done when:** switching the language in Settings changes the app's chrome
-between Serbian and English immediately, and the choice survives a
-force-stop because it lives in `profiles.locale`, not in memory. — **Met**,
-verified on the Android emulator against the local stack: a fresh sign-in
-renders Serbian with no profile loaded yet (the pre-auth default); switching
-to English in Settings changed the nav bar, every tab's AppBar title and the
-Settings screen itself immediately, with no restart; force-stopping and
-relaunching came back English, confirmed directly against
-`profiles.locale`; switching back to Serbian reversed it; and toggling the
-language while offline failed loudly with a SnackBar rather than silently
-succeeding, since writes are online-only (D12) and this one is no exception.
-
-Everything else — recipes, import, meal plan, shopping list, households —
-stays English until the part that owns each of them localizes it in turn,
-the same rhythm every phase here has used.
+---
 
 ### Part 2 — `recipe_translations`, `translate-recipe`, and the recipe read in the reader's language
 
-**Status: complete.** Decisions taken during it: D78–D81.
+**Status: complete.** Decisions taken during it: D78–D81. See `docs/journal/phase-3.md`.
 
-`recipe_translations` + RLS, the `translate-recipe` Edge Function, and the
-recipe detail screen reading title/description/steps in the reader's locale
--- ingredient and unit names included, closing a gap that had existed since
-Phase 1c: the bilingual catalog (D1) had only ever been asked for Serbian,
-because nothing anywhere in the app had ever passed anything else into
-`RecipeRepository.fetchDetail`'s `locale` parameter. **Review flow is
-deliberately out** -- `reviewed_by` and `reviewed_at` ship in this part's
-migration, unreachable, the same way `recipes.image_path` (D35) and
-`leftover_of_entry_id` (D51) shipped ahead of their writers.
-
-- Migration 17: `recipe_translations`, a child table in the D24 sense (no
-  `household_id`, hard delete, cascades with its recipe) that nonetheless
-  keeps `created_at`/`updated_at` because a translation is reviewed and
-  regenerated in place rather than being step-shaped and inert (D78).
-  `recipe_translations_touch_recipe()` -- an after-trigger on
-  `meal_plan_entries_touch_plan()`'s own shape -- is what makes a translated
-  recipe reach the existing recipe delta fetch with no new cache table:
-  `RecipeCache.data` already stores the whole PostgREST row verbatim, and
-  `recipe_translations` now rides along inside it, embedded
-  (`AppDatabase.schemaVersion` moved to `4` for exactly this reason -- a
-  change to the blob's shape, not to a table's columns). `save_recipe_translation`
-  refuses an unknown locale and refuses translating into the recipe's own
-  `original_locale`, both `security invoker`, both mirroring
-  `replace_recipe_lines`'s guard-then-upsert shape
-- `translate-recipe`: synchronous, no `import_jobs` row -- one model call
-  with no confirm gate in this part, on `match-ingredients`'s shape rather
-  than `import-text`'s (D79). `_shared/translate.ts` sends the model no
-  ingredient lines at all (they render from the catalog, never per recipe),
-  requires Latin-script Serbian as a stated rule rather than an assumption,
-  and asks for each translated step's SOURCE position back as an alignment
-  key -- `alignSteps` validates the returned positions and refuses, as a
-  billed `AiFailure`, rather than silently reordering or dropping a step
-  (D80). Idempotent, and translating into a recipe's own original locale
-  costs no model call at all
-- `RecipeDetail` gains `readingLocale` and `translations`, plus
-  `RecipeIngredient.resolvedName`'s pattern one level up -- `displayTitle`/
-  `displayDescription`/`displaySteps`/`canTranslate`/
-  `isShowingMachineTranslation`, one definition of "which words does this
-  reader see" so the AppBar, the body and any later screen cannot disagree
-- The detail screen: a *Translate to &lt;language&gt;* overflow item, shown
-  only when the reading locale differs from the recipe's own and no
-  translation exists yet; a *Machine translation* chip beside the existing
-  *Draft* chip; unit names now render in the READER's locale rather than the
-  recipe's own `original_locale`, the same fix one column over. This is also
-  the recipes feature's first screen to read `AppLocalizations` (D77's
-  rhythm, one screen at a time) -- the list and the editor still render in
-  English
-- D81, the literal fix underneath the feature: `RecipeDetailScreen` and
-  `ShoppingListEditor.generate()` now read `appLocaleProvider` and pass it
-  through, instead of the hardcoded `'sr'` both had carried since their own
-  parts shipped -- `shopping_lists.locale` exists precisely so a generated
-  list does not render half-translated after a locale switch (migration
-  16's own comment), and had been recording a falsehood the whole time.
-  Left alone deliberately: `RecipeEditor.build`'s own `fetchDetail` still
-  defaults to `'sr'`, named rather than hidden below
-
-**Done when:** one recipe entered in Serbian reads correctly in English,
-ingredient names included, without a second recipe row existing. -- **Met**,
-verified against the local stack: `make check` clean in full (`dart
-analyze`, `tool/check_layers.dart`, 368 Dart tests, `deno check`/`lint`/`fmt`,
-155 Deno tests, and `rls_recipe_translations_test.sql` alongside the other
-16 SQL suites, all passing). `rls_recipe_translations_test.sql` asserts the
-Done-when itself in the one place a SQL suite can reach it: a Serbian recipe
-translated into English reads back its English title through
-`recipe_translations`, `ingredient_display_names(..., 'en')` still answers
-`brašno` as `flour` on the same recipe's matched line, and
-`select count(*) from recipes` for that title stays at exactly 1 throughout
--- no second recipe row, at any point.
-
-Still open, and named here so it is not rediscovered: the emulator walk
-every other part in this project has closed with (translate a real recipe,
-force-stop, airplane mode, relaunch, confirm it renders from the cache) has
-not been run -- this part's verification stopped at the local Postgres
-stack and the Dart/Deno test suites. `RecipeEditor.build` reading a hardcoded
-`'sr'` (above) is the other open item.
+---
 
 ### Part 3 — The translation review flow
 
 **Status: complete.** Decisions taken during it: D82–D86 (plus D87, a
-finding rather than a build decision — see below).
+finding rather than a build decision — see below). See `docs/journal/phase-3.md`.
 
-Closes the first bullet of Phase 3's old "Still to build" list, and both
-items part 2 left open by name: the emulator walk, and `RecipeEditor.build`'s
-hardcoded `'sr'`.
-
-- Migration 18: `review_recipe_translation(recipe, loc, new_title,
-  new_description, new_steps)` — a sibling of `save_recipe_translation`, not
-  a parameter on it, because the two want opposite things from the same
-  columns on the same row: the sibling's own `on conflict` resets
-  `is_machine_generated`/`reviewed_by`/`reviewed_at` on every re-translation,
-  and a review wants the opposite (D82). Updates only, never inserts — review
-  edits a translation that exists, on the same door `save_recipe_translation`
-  already answers for a locale that doesn't. Refuses a dropped, added or
-  renumbered step by checking the incoming positions against the ROW's own
-  (not `recipe_steps`'), which is deliberately not treated as rule 6's fourth
-  cross-language pair (D82 says why). `security invoker`, no new RLS policy —
-  the existing UPDATE policy already covers it. `reviewed_by` is `auth.uid()`,
-  never a parameter (D83, on `MatchMethod.manual`'s and
-  `link_ingredient_alias`'s own precedent for what a human decision means)
-- `RecipeRepository.reviewTranslation` / `RemoteRecipeDataSource
-  .reviewTranslation` — online-only (D12), no cache write of its own: the
-  trigger migration 17 already has touches the parent recipe, so the
-  ordinary `recipeDetailProvider` invalidation re-reads and re-caches the
-  whole blob, same as `translate` above it
-- `RecipeDetail.canReview` / `.isReviewedTranslation` — `canReview`'s own
-  comment states the invariant `canTranslate` and `canReview` are never both
-  true at once, and are never both false while reading a foreign locale
-- `TranslationReviewDraft` (`domain/`) and `TranslationReviewer`
-  (`application/`, on `RecipeEditor`'s precedent — loads once, never watches
-  `recipeDetailProvider`) — steps are keyed by position, not a synthetic
-  local id: `RecipeDraft`'s rows are added, deleted and dragged, and this
-  screen's are not, so position already is the identity (D84)
-- `TranslationReviewScreen` — every field pairs the recipe's own original
-  text, read-only, directly above the editable translation for it; a fixed
-  number of step fields with no add, remove or reorder; no ingredient editor
-  anywhere on the screen (D84, D1, D80). New route,
-  `/recipes/:recipeId/review`, nested under the detail page so Back returns
-  there — no `locale` parameter, the reviewed locale is the reading locale
-  (`appLocaleProvider`), the same one-place-per-concern rule D77 and D81
-  already established. This feature's second localized screen
-- Detail screen: the overflow's *Review translation* item appears exactly
-  when `canReview` does, right after where *Translate to …* would be — the
-  two are mutually exclusive, so this is also the entire mechanism for "no
-  retranslate after a review" (D85). The *Machine translation* chip needed
-  no code change to disappear once reviewed: it already reads
-  `isShowingMachineTranslation`, which the review sets false. No *Reviewed*
-  chip, and the reviewer's name is not shown — this app's chips are caveats,
-  not endorsements, and naming the reviewer would cost a `profiles` join in
-  `recipeDetailEmbed` that changes the cached blob's shape for a line nobody
-  has asked for (D83, priced rather than built)
-- `RecipeEditor.build` now reads `appLocaleProvider` (`ref.read`, not
-  `ref.watch` — watching would discard whatever the cook had typed on a
-  language switch mid-edit) instead of `fetchDetail`'s bare `'sr'` default,
-  closing D81's own named consequence: an ingredient chip was rendering in
-  Serbian while editing an English recipe. `IngredientLineField`'s own
-  `locale:` — the search locale, and the locale a new alias is written in —
-  stays `draft.originalLocale`, untouched: display and write are different
-  concerns on this screen (D86)
-- `shopping_list_screen.dart`'s `_ItemTile` now renders count units in the
-  LIST's own stored `locale`, not the reader's current one and not the
-  `formatItemQuantity` default it had silently been falling through to since
-  D9 shipped — the same class of bug D81 named, one layer over, caught in
-  this session rather than left for a later one to rediscover
-- Backfilled: part 2 shipped `RecipeDetail`'s five translation getters with
-  no Dart test anywhere. `recipe_detail_translation_test.dart` covers all
-  seven (the five plus this part's two) across every reading-locale state,
-  including the `displayDescription` null-vs-fallback case part 2's own
-  comment was written for
-
-**Done when:** a machine translation can be corrected and approved by a
-human, and the app shows that it happened. -- **Met**, verified against the
-real model (a live `translate-recipe` call, not a stub) on the Android
-emulator, not only against the local Postgres stack and the 31 new Dart
-tests (`make check` clean in full: `dart analyze`, `tool/check_layers.dart`,
-399 Dart tests, `deno check`/`lint`/`fmt`, 155 Deno tests unaffected since no
-Edge Function changed, and 19 SQL suites including the new
-`review_recipe_translation_test.sql`).
-
-A real Serbian recipe (*Palacinke*, two steps) was translated to English for
-real -- *Pancakes*, both steps translated idiomatically, `is_machine_generated
-= true` -- and the *Machine translation* chip appeared. Opening Review showed
-the Serbian original stacked above each of the three editable fields, exactly
-as designed; editing the title to *Crepes* and saving flipped the database
-row to `is_machine_generated = false`, `reviewed_by` equal to the signed-in
-profile's id and `reviewed_at` set, confirmed by direct query, not just by
-the screen. The chip was gone with no further navigation, and the overflow
-menu now offered *Review translation* and nothing else -- no retranslate
-option, D85 working through the real app. Switching the profile back to
-Serbian showed the recipe's own original text and neither menu item, proving
-`canReview` gates on the READING locale and not merely on a translation's
-existence. Opening the editor on the reviewed recipe while reading English
-rendered the ingredient chip as *flour*, not *brašno* -- D86 confirmed live,
-the fix this session made to `RecipeEditor.build`.
-
-**The walk also found a real gap, named here rather than left to be
-assumed: D87.** Force-stopping the app with the emulator's network disabled
-and relaunching cold left the Recipes tab spinning for several minutes
-before finally showing `NetworkFailure: No connection` -- not a stale-copy
-line, an outright failure, for a recipe whose cache row was confirmed
-present and correctly keyed by pulling the on-device SQLite file directly
-mid-walk. The cause is one layer up from anything Phase 2 built:
-`currentHouseholdIdProvider` has no cache and no client-side timeout, every
-household-scoped screen awaits it before touching its own cache at all, and
-every prior offline "Done when" in this project was verified from an
-already-warm session rather than a cold, offline-from-first-frame one. Every
-offline claim this project has made stands for a warm session; none of them
-has been proven for a cold one until this walk, and D87 is what keeps that
-distinction from quietly disappearing. Re-enabling the network and
-relaunching recovered cleanly -- the household resolved, the cached recipe
-list rendered its one entry, chrome and content both correct.
+---
 
 ### Still to build
 
 - Review flow: **done** (part 3)
 - D87's own fix: **done**, Phase 2 part 7 (D88-D90)
 - The remaining screens' bodies: recipes **done** (part 4); households and
-  import next (part 5); meal plan and shopping list, plus the date-label
-  layer `plan_week.dart` deferred, last (part 6)
+  import **done** (part 5, `1f770de`); meal plan and shopping list, plus the
+  date-label layer `plan_week.dart` deferred, next (part 6)
+
+---
 
 ### Part 4 — The failure vocabulary, the script fix, and the recipes feature
 
-**Status: complete.** Decisions taken during it: D91-D92.
+**Status: complete.** Decisions taken during it: D91-D92. See `docs/journal/phase-3.md`.
 
-The "remaining screens" bullet above is ~234 hardcoded English strings
-across five features -- three to four times any prior part -- so it splits
-three ways rather than landing in one commit the way D77 already warned
-against for the chrome alone. This part took the two mechanisms every later
-part needs, plus the one feature (recipes) and the `core/` widgets it pulls
-in.
+---
 
-Two things were found while planning it, both existing rather than
-introduced, and both closed here because the later parts would otherwise
-each rediscover them on their own screens.
+### Part 5 — Households and import in two languages
 
-**D91: `Locale('sr')` alone renders Flutter's OWN chrome in Cyrillic.**
-Verified against the pinned SDK: the `'sr'` case in
-`generated_material_localizations.dart` picks the Latin bundle only when
-`scriptCode == 'Latn'`, and otherwise falls through to the Cyrillic one. The
-text-selection toolbar, the back-button tooltip, a date-range picker's own
-labels -- every string this app does not supply itself -- had been Cyrillic
-since Phase 3 part 1, invisible because the 48 ARB-backed strings this app
-does own were always correct. Fixed in one place, on D77's own precedent:
-`appLocaleProvider` (`core/l10n/app_locale.dart`) now returns `srLatn`
-(`Locale.fromSubtags(languageCode: 'sr', scriptCode: 'Latn')`) instead of a
-bare `Locale('sr')`, and `appSupportedLocales` replaces
-`AppLocalizations.supportedLocales` everywhere a `MaterialApp` is built --
-the generated list carries the scriptless entry, and Flutter's locale
-resolution would otherwise hand it straight back unresolved.
-`profiles.locale` still stores the bare code; CLAUDE.md's "Locale codes are
-`sr` and `en`. Nothing else." is about that column, and every
-`appLocaleProvider` consumer reads `.languageCode`, unaffected.
-
-**D92: the failure vocabulary.** ~43 UI sites rendered `AppFailure.message`
-raw -- English, unlocalized, no matter which language the rest of the
-screen was in. `supabase_failure.dart`'s own comment had already named the
-fix: *"it lets Phase 3 localize by code with the server's text as the
-fallback."* `FailureCode` (`core/error/app_failure.dart`, pure Dart) is a
-34-value enum, one nullable field on `AppFailure` alongside `message`, each
-variant defaulting its own code the way it already defaults its message.
-`core/error/failure_l10n.dart` -- the sibling file allowed to import
-Flutter, on `core/l10n/app_locale.dart`'s own precedent -- renders a code
-through the ARB with `localizedFailureMessage`/`localizedErrorMessage`, and
-falls back to `message` verbatim when `code` is null. That null case is
-deliberate, not an oversight: `quota_exceeded` has to name whose allowance
-ran out, `url_not_allowed` deliberately says nothing about why (D45),
-`empty_input`/`ai_failed` differ per caller, and Postgres/GoTrue prose is an
-unbounded set no client vocabulary can cover -- so those keep the server's
-sentence, and everything else gets a code.
-
-Planning this also found nine Edge Function slugs
-(`fetch_failed`, `not_html`, `page_too_large`, `image_too_large`,
-`job_not_found`, `job_already_done`, `job_not_parsed`, `no_recipe_found`,
-`code_generation_failed`) that `supabase_failure.dart`'s switch never
-handled at all, silently degrading to `UnknownFailure` with no message --
-"that page is too large" was reaching the cook as "Something went wrong."
-All nine now have arms and codes.
-`test/core/supabase/supabase_failure_test.dart` closes the gap for good: it
-parses every `HttpError(<status>, "<slug>"` out of `supabase/functions/**/
-*.ts` (the `AiFailure` subclass included) and asserts each has an arm,
-rather than trusting the two files to stay in sync by inspection.
-
-The known trap in this design, named so it does not get rediscovered: a
-call site that passes a custom `message:` and forgets `code:` silently
-keeps the variant's DEFAULT code and renders the wrong sentence, with no
-compile error. Three cold-cache throw sites and the `TimeoutException` arm
-were exposed by exactly this. Not preventable in Dart -- caught instead by
-three `*_repository_offline_test.dart` assertions moved from `.message` to
-`.code`, which fail together if a future edit misses one.
-
-- `FailureCode` + `localizedFailureMessage`/`AppFailureL10n.localized` --
-  **done**, wired into every application/data throw site (19) and every
-  presentation call site with one (~43, across all five features and the
-  shared `core/` picker widgets), not just recipes'
-- `sr_Latn` -- **done**, `appLocaleProvider` and `appSupportedLocales`
-- Recipe screens and the `core/` widgets they force --  **done**:
-  `offline_banner.dart`; `recipe_detail_screen.dart`'s last 5 literals;
-  `recipe_list_screen.dart` (13); `recipe_edit_screen.dart` (~28, the
-  largest); `core/ingredients/widgets/` (`ingredient_line_field.dart`,
-  `ingredient_match_chip.dart`, `ingredient_picker_sheet.dart`); `core/
-  recipes/widgets/recipe_picker_sheet.dart`
-- This repo's first ICU plurals -- `recipeServingsCount` (Serbian
-  one/few/other, which English's plain `s` suffix does not reach), plus
-  `snackSlotCount` and `ingredientsMatchedCount` added now even though their
-  own screens are parts 5-6's job, so the plural vocabulary is complete
-  before either part needs a new form
-- The Serbian sample hints (`ingredient_line_field.dart`'s example line, the
-  match chip's "No match"/suggestion labels, the ingredient picker's
-  prompts) are looked up by the RECIPE's own language
-  (`lookupAppLocalizations(Locale(widget.locale))`), never the reader's
-  chrome locale -- content beside catalog names is never translated per
-  recipe (D1), the same reasoning D86 already applied one screen over.
-  Failure messages inside those same widgets stay on the reader's chrome
-  locale: content follows the recipe, chrome and failures follow the reader
-- `make gen-l10n` folded into the `gen` Makefile target, and a new
-  `l10n-check` target (wired into `check`) regenerates and diffs
-  `lib/core/l10n/generated/` -- the same drift guard part 6b built for
-  `display_names_test.sql`, now covering the l10n generator. Verified it
-  actually catches drift, not just that it runs
-
-**Done when:** the failure vocabulary is complete and contract-tested for
-every feature, Serbian renders Latin everywhere including strings this app
-does not own, and the recipes feature reads entirely in the reader's
-language including when something goes wrong. -- **Met**, verified against
-the local stack (`make check` clean in full -- `dart analyze`,
-`tool/check_layers.dart`, 468 Dart tests, up from 417; `deno check`/`lint`/
-`fmt`; the Deno suite unaffected since no Edge Function changed; `seed-check`;
-all 19 SQL suites; `l10n-check` finding no drift) and end to end on the
-Android emulator against the local stack, not only in tests.
-
-Signed in for real (OTP read from Mailpit), created a household, and worked
-through the recipes feature from a cold build of this part's changes.
-`uiautomator`, not eyeballed coordinates, located every element precisely.
-The FAB menu read *Novi recept / Uvezi sa linka / Nalepi recept / Fotografiši
-stranicu* -- all four keys -- and the empty state *Još nema recepata.* /
-*Dodajte jedan koji znate napamet.* Opening the editor showed every field
-label (*Porcije*, *Napisano na* with *Srpski*/*English* left untranslated,
-*Status* with *Nacrt*/*Isprobano*, *Oznake*/*Odvojene zarezima*) and the
-ingredient hint *2 šolje glatkog brašna* -- looked up by the recipe's own
-language, confirmed by typing `krompir` and watching the suggestion chip
-read *krompir?*, then a nonsense string and watching it read *Nema
-poklapanja*; tapping that chip opened the picker with *Koji sastojak je
-„zzzxxq"?*, *Ništa u katalogu se ne poklapa.*, and *Napravi „zzzxxq"* /
-*Dodaje ga u katalog domaćinstva* -- correct Serbian typographic quotes
-(„…", not "…") throughout. Saving a 4-serving recipe and opening its detail page showed
-*4 porcije* -- Serbian's `few` category, not `other` -- then switching the
-Settings language toggle to English re-rendered the same page live as
-*4 servings*, `recipeServingsCount`'s `other` form, with the whole chrome
-(*Draft*, *Ingredients*, *Steps*, *No steps yet.*) following in the same
-frame.
-
-**D91 confirmed directly, not only by the widget test that models it.**
-Long-pressing a word in the sign-in screen's email field -- before any of
-this part's fix existed, this exact gesture would read Cyrillic -- opened the
-Latin-script selection toolbar: *Iseci / Kopiraj / Deli / Izaberi sve*.
-`test/core/l10n/app_locale_test.dart`'s own assertion
-(`MaterialLocalizations.of(context).pasteButtonLabel == 'Nalepi'`) is the
-repeatable form of exactly this; both agree.
-
-Not walked on-device: a live failure message and the offline banner under a
-real network failure (D92's other half). Toggling the emulator's radios did
-not actually sever its route to the local stack, and forcing it further was
-not worth the detour -- `failure_l10n_test.dart`'s fallback-and-precedence
-cases and `supabase_failure_test.dart`'s full slug table already exercise
-every sentence this mechanism can produce; only the "does a real
-`SocketException` reach the screen" wiring is unconfirmed live, and that
-wiring predates this part.
+**Status: complete** (`1f770de`). No journal entry — this part shipped without
+a docs update, which is the exact drift this restructuring exists to catch.
+Touched: `households/presentation/`, `import/presentation/`, the ARB files,
+`test/core/l10n/arb_parity_test.dart`.
 
 ---
 

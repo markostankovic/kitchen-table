@@ -7,9 +7,25 @@ Project rules. These are not suggestions. If a change would violate one, stop an
 A Flutter + Supabase app for family recipes and meal planning. Serbian-first,
 bilingual (sr / en) by design. Household-scoped data, not per-user.
 
-Full context lives in `docs/`. Read `docs/DECISIONS.md` before proposing any
-architectural change — most alternatives were already considered and rejected
-there, with reasons.
+## Finding context
+
+Do not read a whole doc to "get oriented". Load the smallest thing that
+answers the question in front of you.
+
+| Question | Load |
+|---|---|
+| Where are we / what's next | `docs/STATE.md` |
+| A layering or dependency rule | `docs/ARCHITECTURE.md` § relevant section |
+| A column, table, RLS policy | `docs/DATA_MODEL.md` § relevant table |
+| Matching, parsing, normalization | `docs/INGREDIENTS.md` |
+| "Why is it built this way?" | grep `docs/decisions/INDEX.md`, then open only that `Dxx` |
+| What happened in a past phase | grep `docs/journal/` — never read whole |
+
+Code comments cite decisions by id (`D91`). Seeing one, open
+`docs/decisions/D91-*.md` directly — do not scan the index or the whole set.
+
+Budget: more than ~3 decision files, or any read of `docs/journal/**`, means
+you are exploring rather than working. Say what you are looking for and why.
 
 ## Stack (fixed)
 
@@ -90,3 +106,8 @@ make types                          # regenerate Dart models from Zod schemas
 - If a task is ambiguous, ask rather than guessing a convention.
 - Do not add abstraction layers that aren't in `docs/ARCHITECTURE.md`. No
   `BaseRepository<T>`, no use-case class per operation.
+- A roadmap-sized slice of work goes `/plan-slice` (planning session) →
+  `/clear` → `/build-slice` (implementation session) → `/close-slice`
+  (records it into `docs/journal/`, `docs/decisions/`, `docs/STATE.md`,
+  `docs/ROADMAP.md`). Skipping `/close-slice` is how the docs drift — see
+  `docs/ROADMAP.md`'s Part 5 entry.
