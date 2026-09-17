@@ -1171,6 +1171,318 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'{attention} vredno pažnje pre čuvanja'**
   String importWorthALook(int attention);
+
+  /// Meal plan screen (part 6), the AppBar's jump-to-today icon tooltip.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ova nedelja'**
+  String get thisWeekTooltip;
+
+  /// Meal plan screen (part 6), the week bar's back-arrow tooltip.
+  ///
+  /// In sr, this message translates to:
+  /// **'Prethodna nedelja'**
+  String get previousWeekTooltip;
+
+  /// Meal plan screen (part 6), the week bar's forward-arrow tooltip.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sledeća nedelja'**
+  String get nextWeekTooltip;
+
+  /// Meal plan and shopping list screens (part 6), the line under the AppBar shown only while offline and only over cached data -- byte-identical in both screens, one key. Narrower than offlineBannerMessage (D76): this is a provenance claim about the data on screen, not the session-wide connectivity fact.
+  ///
+  /// In sr, this message translates to:
+  /// **'Prikazana je sačuvana kopija — nema veze.'**
+  String get savedCopyOfflineMessage;
+
+  /// Meal plan screen (part 6), a slot row's label and the day/move/leftover dialogs' slot dropdown -- one definition, MealSlot.breakfast.
+  ///
+  /// In sr, this message translates to:
+  /// **'Doručak'**
+  String get mealSlotBreakfast;
+
+  /// Meal plan screen (part 6), MealSlot.lunch -- see mealSlotBreakfast.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ručak'**
+  String get mealSlotLunch;
+
+  /// Meal plan screen (part 6), MealSlot.dinner -- see mealSlotBreakfast.
+  ///
+  /// In sr, this message translates to:
+  /// **'Večera'**
+  String get mealSlotDinner;
+
+  /// Meal plan screen (part 6), MealSlot.snack -- see mealSlotBreakfast.
+  ///
+  /// In sr, this message translates to:
+  /// **'Užina'**
+  String get mealSlotSnack;
+
+  /// Meal plan screen (part 6), the snack-repeat confirmation dialog's title (D58 -- advisory, never blocking).
+  ///
+  /// In sr, this message translates to:
+  /// **'Već nedavno planirano'**
+  String get snackRepeatWarningTitle;
+
+  /// Meal plan screen (part 6), the snack-repeat dialog's body. {countPhrase} is snackSlotCount(repeatCount), composed rather than duplicating its plural rule, on importMatchedOfTotal's own precedent.
+  ///
+  /// In sr, this message translates to:
+  /// **'Već je u {countPhrase} u ovih 14 dana.'**
+  String snackRepeatWarningBody(String countPhrase);
+
+  /// Meal plan screen (part 6), the snack-repeat dialog's proceed-anyway button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ipak dodaj'**
+  String get addAnywayButton;
+
+  /// Meal plan screen (part 6), the entry action sheet's open-recipe item -- distinct from openRecipeButton, which is the import review screen's already-saved state.
+  ///
+  /// In sr, this message translates to:
+  /// **'Otvori recept'**
+  String get openRecipeMenuItem;
+
+  /// Meal plan screen (part 6), the entry action sheet's servings item.
+  ///
+  /// In sr, this message translates to:
+  /// **'Kuvamo za...'**
+  String get cookingForMenuItem;
+
+  /// Meal plan screen (part 6), the servings dialog's default option and the action sheet's subtitle when no override is set.
+  ///
+  /// In sr, this message translates to:
+  /// **'Kako piše u receptu'**
+  String get asTheRecipeSaysLabel;
+
+  /// Meal plan screen (part 6), the servings dialog's default option when the recipe's own servings count is known.
+  ///
+  /// In sr, this message translates to:
+  /// **'Kako piše u receptu ({count})'**
+  String asTheRecipeSaysWithCount(int count);
+
+  /// Meal plan screen (part 6), the entry action sheet's item, shown only for a recipe entry (D55).
+  ///
+  /// In sr, this message translates to:
+  /// **'Isplaniraj ostatke...'**
+  String get planLeftoversMenuItem;
+
+  /// Meal plan screen (part 6), the entry action sheet's item opening the move dialog.
+  ///
+  /// In sr, this message translates to:
+  /// **'Premesti u...'**
+  String get moveToMenuItem;
+
+  /// Meal plan screen (part 6), the entry action sheet's reorder item, shown only when not already first.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pomeri gore'**
+  String get moveUpMenuItem;
+
+  /// Meal plan screen (part 6), the entry action sheet's reorder item, shown only when not already last.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pomeri dole'**
+  String get moveDownMenuItem;
+
+  /// Meal plan screen (part 6), the servings dialog's title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Kuvamo za'**
+  String get cookingForDialogTitle;
+
+  /// Meal plan screen (part 6), the servings dialog's explanation when the recipe has no servings count of its own.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ovaj recept ne kaže za koliko porcija je, pa lista za kupovinu ne može da ga preračuna.'**
+  String get servingsUnknownExplanation;
+
+  /// Meal plan screen (part 6), the servings dialog's explanation when the recipe does have a servings count.
+  ///
+  /// In sr, this message translates to:
+  /// **'Lista za kupovinu preračunava sastojke ovog obroka prema tome.'**
+  String get servingsScalesExplanation;
+
+  /// Meal plan screen (part 6), the move dialog's title -- distinct from moveToMenuItem, which has a trailing ellipsis.
+  ///
+  /// In sr, this message translates to:
+  /// **'Premesti u'**
+  String get moveToDialogTitle;
+
+  /// Meal plan screen (part 6), the move and leftover dialogs' day dropdown label.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dan'**
+  String get dayFieldLabel;
+
+  /// Meal plan screen (part 6), the move and leftover dialogs' slot dropdown label.
+  ///
+  /// In sr, this message translates to:
+  /// **'Obrok'**
+  String get slotFieldLabel;
+
+  /// Meal plan screen (part 6), the move dialog's confirm button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Premesti'**
+  String get moveButton;
+
+  /// Meal plan screen (part 6), the leftover dialog's title -- distinct from planLeftoversMenuItem, which has a trailing ellipsis.
+  ///
+  /// In sr, this message translates to:
+  /// **'Isplaniraj ostatke'**
+  String get planLeftoversDialogTitle;
+
+  /// Meal plan screen (part 6), a leftover entry's chip label -- MealPlanEntry can no longer compose this itself (a domain model cannot know a sentence, D92), so this is presentation-side, on failure_l10n.dart's own precedent.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ostaci: {title}'**
+  String leftoverEntryLabel(String title);
+
+  /// Shopping list screen (part 6), the AppBar's regenerate icon tooltip -- shown only once a list exists.
+  ///
+  /// In sr, this message translates to:
+  /// **'Osveži'**
+  String get regenerateTooltip;
+
+  /// Shopping list screen (part 6), the range bar's date-range-picker icon tooltip.
+  ///
+  /// In sr, this message translates to:
+  /// **'Izaberi datume'**
+  String get pickDatesTooltip;
+
+  /// Shopping list screen (part 6), the range bar's this-week shortcut -- distinct from thisWeekTooltip, a different widget on a different screen.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ova nedelja'**
+  String get thisWeekButton;
+
+  /// Shopping list screen (part 6), the range bar's next-week shortcut.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sledeća'**
+  String get nextWeekButton;
+
+  /// Shopping list screen (part 6), the empty state's title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Još nema liste.'**
+  String get noListYetTitle;
+
+  /// Shopping list screen (part 6), the empty state's body.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napravite je na osnovu onoga što ste isplanirali za ove datume.'**
+  String get noListYetBody;
+
+  /// Shopping list screen (part 6), the empty state's generate button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napravi listu'**
+  String get generateListButton;
+
+  /// Shopping list screen (part 6), shown inside the list body when a generated list has no items at all. Renders in list.locale (the two-locale rule) -- this describes the snapshot's own content, not the reader's chrome.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema ničega za kupovinu -- ništa nije planirano za ove datume.'**
+  String get nothingToBuyMessage;
+
+  /// Shopping list screen (part 6), the collapsed pantry-staples section's title. Renders in list.locale, on the two-locale rule -- this heading is part of the document, not the chrome.
+  ///
+  /// In sr, this message translates to:
+  /// **'Verovatno imate ({count})'**
+  String probablyHaveHeading(int count);
+
+  /// Shopping list screen (part 6), the collapsed pantry-staples section's subtitle. Renders in list.locale, same as probablyHaveHeading.
+  ///
+  /// In sr, this message translates to:
+  /// **'Namirnice iz ostave'**
+  String get cupboardStaplesSubtitle;
+
+  /// Shopping list screen (part 6), the snapshot's own provenance line. {generatedDate}/{from}/{to} are shortDateLabel(..., list.locale) results, composed rather than duplicated -- this whole line renders in list.locale (the two-locale rule), unlike the offline line beneath it (savedCopyOfflineMessage), which is the reader's own connectivity fact.
+  ///
+  /// In sr, this message translates to:
+  /// **'Generisano {generatedDate} za {from} – {to}'**
+  String generatedForRangeLine(String generatedDate, String from, String to);
+
+  /// Shopping list screen (part 6), the ingredients.category code 'produce' as a section heading. Renders in list.locale -- see categoryOther for the uncategorised bucket and the fallback rule for an unrecognised code.
+  ///
+  /// In sr, this message translates to:
+  /// **'Povrće'**
+  String get categoryProduce;
+
+  /// Shopping list screen (part 6), the category code 'fruit' -- see categoryProduce.
+  ///
+  /// In sr, this message translates to:
+  /// **'Voće'**
+  String get categoryFruit;
+
+  /// Shopping list screen (part 6), the category code 'dairy' -- see categoryProduce.
+  ///
+  /// In sr, this message translates to:
+  /// **'Mlečni proizvodi'**
+  String get categoryDairy;
+
+  /// Shopping list screen (part 6), the category code 'meat' -- see categoryProduce.
+  ///
+  /// In sr, this message translates to:
+  /// **'Meso'**
+  String get categoryMeat;
+
+  /// Shopping list screen (part 6), the category code 'fish' -- see categoryProduce.
+  ///
+  /// In sr, this message translates to:
+  /// **'Riba'**
+  String get categoryFish;
+
+  /// Shopping list screen (part 6), the category code 'pantry' -- see categoryProduce.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ostava'**
+  String get categoryPantry;
+
+  /// Shopping list screen (part 6), the category code 'spice' -- see categoryProduce.
+  ///
+  /// In sr, this message translates to:
+  /// **'Začini'**
+  String get categorySpice;
+
+  /// Shopping list screen (part 6), the category code 'bakery' -- see categoryProduce.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pekarski proizvodi'**
+  String get categoryBakery;
+
+  /// Shopping list screen (part 6), the category code 'beverage' -- see categoryProduce. supabase/seeds/ingredients.csv's category comment wraps onto a second line ('beverage nuts') that the original slice plan's citation missed -- ten codes, not eight.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pića'**
+  String get categoryBeverage;
+
+  /// Shopping list screen (part 6), the category code 'nuts' -- see categoryBeverage.
+  ///
+  /// In sr, this message translates to:
+  /// **'Orašasti plodovi'**
+  String get categoryNuts;
+
+  /// Shopping list screen (part 6), the uncategorised bucket (a null ingredients.category) -- no longer keyed by the literal string 'Other', which was both a display string and a map key before this part. An unrecognised code (neither this nor any of the ten known categories) falls through to itself rather than landing here.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ostalo'**
+  String get categoryOther;
+
+  /// Shopping list screen (part 6), the long-press confirmation when an item is marked always-have. Renders in the reader's locale (chrome) even though {name} itself (item.displayName) is snapshot data -- the same composition shape as leftoverEntryLabel.
+  ///
+  /// In sr, this message translates to:
+  /// **'{name} označeno kao stalna namirnica iz ostave. Važi od sledeće liste.'**
+  String markedAsStapleSnackbar(String name);
+
+  /// Shopping list screen (part 6), the long-press confirmation when an item's always-have override is cleared.
+  ///
+  /// In sr, this message translates to:
+  /// **'{name} će od sada biti na listi.'**
+  String willBeOnListSnackbar(String name);
 }
 
 class _AppLocalizationsDelegate

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
+import '../../../core/l10n/date_labels.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/net/network_status.dart';
 import '../../../core/recipes/widgets/recipe_picker_sheet.dart';
@@ -19,15 +20,19 @@ import '../domain/snack_variety.dart';
 /// The `AppBar` is built outside the body's `AsyncValue.when` and titled from
 /// `AppLocalizations.navPlan` -- the same key the bottom nav label uses (D77,
 /// Phase 3 part 1), so this screen's own header and its tab always agree on
-/// language even though everything else here is still English.
-/// `test/core/router/app_shell_test.dart` taps this tab and asserts that
-/// title regardless of what the underlying providers do, the same shape
+/// language. `test/core/router/app_shell_test.dart` taps this tab and asserts
+/// that title regardless of what the underlying providers do, the same shape
 /// `RecipeListScreen` already survives.
 ///
 /// Phone-first vertical list of days, each with 4 slot rows -- not a 7-column
 /// grid, which would not fit a phone's width. Tapping a slot is the primary,
 /// tested way to add or move an entry; long-press-drag is offered alongside
 /// it as a shortcut between nearby slots, not as the only path (D53).
+///
+/// A meal plan is live data, not a snapshot (unlike the shopping list, D13) --
+/// so unlike `ShoppingListScreen`, there is no split locale here. Every date
+/// label and every string on this screen renders in the reader's own locale,
+/// `AppLocalizations.of(context).localeName` throughout (Phase 3 part 6).
 class MealPlanScreen extends ConsumerWidget {
   const MealPlanScreen({super.key});
 
@@ -41,7 +46,7 @@ class MealPlanScreen extends ConsumerWidget {
         title: Text(l10n.navPlan),
         actions: <Widget>[
           IconButton(
-            tooltip: 'This week',
+            tooltip: l10n.thisWeekTooltip,
             icon: const Icon(Icons.today_outlined),
             onPressed: () => ref.read(visibleWeekProvider.notifier).today(),
           ),
@@ -83,18 +88,22 @@ class _WeekBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final PlanWeek week = ref.watch(visibleWeekProvider);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         IconButton(
-          tooltip: 'Previous week',
+          tooltip: l10n.previousWeekTooltip,
           icon: const Icon(Icons.chevron_left),
           onPressed: () => ref.read(visibleWeekProvider.notifier).previous(),
         ),
-        Text(week.label, style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          weekRangeLabel(week.start, week.end, l10n.localeName),
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         IconButton(
-          tooltip: 'Next week',
+          tooltip: l10n.nextWeekTooltip,
           icon: const Icon(Icons.chevron_right),
           onPressed: () => ref.read(visibleWeekProvider.notifier).next(),
         ),
@@ -112,7 +121,9 @@ class _WeekBar extends ConsumerWidget {
 ///
 /// Narrower and more useful than [OfflineBanner]: this says "this WEEK is
 /// not what the server has right now", the banner says "the phone cannot
-/// reach the server at all" (D76).
+/// reach the server at all" (D76). Same key as the shopping list's own copy
+/// of this line (`savedCopyOfflineMessage`) -- byte-identical text, one
+/// definition.
 class _SavedCopyLine extends ConsumerWidget {
   const _SavedCopyLine();
 
@@ -122,10 +133,11 @@ class _SavedCopyLine extends ConsumerWidget {
         ref.watch(networkStatusProvider) == Reachability.offline;
     if (!offline) return const SizedBox.shrink();
 
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Text(
-        'Showing your saved copy — no connection.',
+        l10n.savedCopyOfflineMessage,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
           color: Theme.of(context).colorScheme.error,
         ),
@@ -147,6 +159,7 @@ class _DaySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,7 +167,7 @@ class _DaySection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Text(
-            '${dayAbbrevOf(day)} ${day.day}',
+            weekdayAndDay(day, l10n.localeName),
             style: theme.textTheme.titleSmall?.copyWith(
               color: _isToday ? theme.colorScheme.primary : null,
               fontWeight: _isToday ? FontWeight.bold : null,
@@ -169,11 +182,32 @@ class _DaySection extends StatelessWidget {
   }
 }
 
-String _slotLabel(MealSlot slot) => switch (slot) {
-      MealSlot.breakfast => 'Breakfast',
-      MealSlot.lunch => 'Lunch',
-      MealSlot.dinner => 'Dinner',
-      MealSlot.snack => 'Snack',
+/// `MealSlot` cannot know a sentence (a domain model is pure Dart, CLAUDE.md
+/// rule 7) -- so, like [_entryLabel] below, this is a sibling function taking
+/// `(value, AppLocalizations)`, on `core/error/failure_l10n.dart`'s own
+/// `_sentence` precedent. No `default` arm, deliberately: a new [MealSlot]
+/// must not compile until it has a label here.
+String _slotLabel(MealSlot slot, AppLocalizations l10n) => switch (slot) {
+      MealSlot.breakfast => l10n.mealSlotBreakfast,
+      MealSlot.lunch => l10n.mealSlotLunch,
+      MealSlot.dinner => l10n.mealSlotDinner,
+      MealSlot.snack => l10n.mealSlotSnack,
+    };
+
+/// What to show on the tile: the recipe's title for a recipe entry, the note
+/// text for a note entry, and the leftover sentence for a leftover -- it must
+/// not read as a second helping cooked from scratch. `MealPlanEntry` used to
+/// define this itself (`label`), until D92 caught up with it here too: a pure
+/// Dart domain model cannot reach `AppLocalizations`, so it moved
+/// presentation-side, same shape as [_slotLabel]. No `default` arm.
+String _entryLabel(MealPlanEntry entry, AppLocalizations l10n) =>
+    switch (entry.entryKind) {
+      MealEntryKind.recipe =>
+        entry.recipeTitle ?? l10n.recipeDetailFallbackTitle,
+      MealEntryKind.leftover => l10n.leftoverEntryLabel(
+          entry.recipeTitle ?? l10n.recipeDetailFallbackTitle,
+        ),
+      MealEntryKind.note => entry.note ?? '',
     };
 
 class _SlotRow extends ConsumerWidget {
@@ -221,22 +255,22 @@ class _SlotRow extends ConsumerWidget {
   /// it only asks first. Cancelling here writes nothing; the caller checks
   /// `context.mounted` again after this returns either way.
   Future<bool> _confirmRepeat(BuildContext context, int repeatCount) async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final bool? proceed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) => AlertDialog(
-        title: const Text('Already planned recently'),
+        title: Text(l10n.snackRepeatWarningTitle),
         content: Text(
-          'Already in $repeatCount snack slot${repeatCount == 1 ? '' : 's'} '
-          'this fortnight.',
+          l10n.snackRepeatWarningBody(l10n.snackSlotCount(repeatCount)),
         ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancelButton),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Add anyway'),
+            child: Text(l10n.addAnywayButton),
           ),
         ],
       ),
@@ -258,54 +292,57 @@ class _SlotRow extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => DragTarget<String>(
-        onAcceptWithDetails: (DragTargetDetails<String> details) =>
-            _moveHere(context, ref, details.data),
-        builder: (BuildContext context, List<String?> candidate, _) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-          decoration: candidate.isEmpty
-              ? null
-              : BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primaryContainer
-                      .withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              SizedBox(
-                width: 76,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Text(_slotLabel(slot),
-                      style: Theme.of(context).textTheme.bodySmall),
-                ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return DragTarget<String>(
+      onAcceptWithDetails: (DragTargetDetails<String> details) =>
+          _moveHere(context, ref, details.data),
+      builder: (BuildContext context, List<String?> candidate, _) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        decoration: candidate.isEmpty
+            ? null
+            : BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primaryContainer
+                    .withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(8),
               ),
-              Expanded(
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: <Widget>[
-                    for (int i = 0; i < entries.length; i++)
-                      _EntryChip(
-                        entry: entries[i],
-                        index: i,
-                        total: entries.length,
-                      ),
-                    ActionChip(
-                      avatar: const Icon(Icons.add, size: 16),
-                      label: const Text('Add'),
-                      onPressed: () => _add(context, ref),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            SizedBox(
+              width: 76,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(_slotLabel(slot, l10n),
+                    style: Theme.of(context).textTheme.bodySmall),
+              ),
+            ),
+            Expanded(
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: <Widget>[
+                  for (int i = 0; i < entries.length; i++)
+                    _EntryChip(
+                      entry: entries[i],
+                      index: i,
+                      total: entries.length,
                     ),
-                  ],
-                ),
+                  ActionChip(
+                    avatar: const Icon(Icons.add, size: 16),
+                    label: Text(l10n.addButton),
+                    onPressed: () => _add(context, ref),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }
 
 enum _EntryAction { open, servings, leftovers, move, up, down, remove }
@@ -327,6 +364,7 @@ class _EntryChip extends ConsumerWidget {
   final int total;
 
   Future<void> _openActions(BuildContext context, WidgetRef ref) async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final _EntryAction? action = await showModalBottomSheet<_EntryAction>(
       context: context,
       builder: (BuildContext context) => SafeArea(
@@ -336,44 +374,44 @@ class _EntryChip extends ConsumerWidget {
             if (entry.recipeId != null)
               ListTile(
                 leading: const Icon(Icons.open_in_new),
-                title: const Text('Open recipe'),
+                title: Text(l10n.openRecipeMenuItem),
                 onTap: () => Navigator.of(context).pop(_EntryAction.open),
               ),
             if (entry.entryKind == MealEntryKind.recipe)
               ListTile(
                 leading: const Icon(Icons.people_outline),
-                title: const Text('Cooking for...'),
+                title: Text(l10n.cookingForMenuItem),
                 subtitle: Text(entry.servings == null
-                    ? 'As the recipe says'
+                    ? l10n.asTheRecipeSaysLabel
                     : '${entry.servings}'),
                 onTap: () => Navigator.of(context).pop(_EntryAction.servings),
               ),
             if (entry.entryKind == MealEntryKind.recipe)
               ListTile(
                 leading: const Icon(Icons.replay_outlined),
-                title: const Text('Plan leftovers...'),
+                title: Text(l10n.planLeftoversMenuItem),
                 onTap: () => Navigator.of(context).pop(_EntryAction.leftovers),
               ),
             ListTile(
               leading: const Icon(Icons.swap_horiz),
-              title: const Text('Move to...'),
+              title: Text(l10n.moveToMenuItem),
               onTap: () => Navigator.of(context).pop(_EntryAction.move),
             ),
             if (index > 0)
               ListTile(
                 leading: const Icon(Icons.arrow_upward),
-                title: const Text('Move up'),
+                title: Text(l10n.moveUpMenuItem),
                 onTap: () => Navigator.of(context).pop(_EntryAction.up),
               ),
             if (index < total - 1)
               ListTile(
                 leading: const Icon(Icons.arrow_downward),
-                title: const Text('Move down'),
+                title: Text(l10n.moveDownMenuItem),
                 onTap: () => Navigator.of(context).pop(_EntryAction.down),
               ),
             ListTile(
               leading: const Icon(Icons.delete_outline),
-              title: const Text('Remove'),
+              title: Text(l10n.removeTooltip),
               onTap: () => Navigator.of(context).pop(_EntryAction.remove),
             ),
           ],
@@ -411,6 +449,7 @@ class _EntryChip extends ConsumerWidget {
   /// recipe's own number: copying it would freeze a value that should follow
   /// the recipe if the recipe is later corrected.
   Future<void> _showServingsDialog(BuildContext context, WidgetRef ref) async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final int? recipeServings = entry.recipeServings;
     int? selected = entry.servings;
 
@@ -418,18 +457,18 @@ class _EntryChip extends ConsumerWidget {
       context: context,
       builder: (BuildContext context) => StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) => AlertDialog(
-          title: const Text('Cooking for'),
+          title: Text(l10n.cookingForDialogTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               DropdownButtonFormField<int?>(
                 initialValue: selected,
-                decoration: const InputDecoration(labelText: 'Servings'),
+                decoration: InputDecoration(labelText: l10n.servingsFieldLabel),
                 items: <DropdownMenuItem<int?>>[
                   DropdownMenuItem<int?>(
                     child: Text(recipeServings == null
-                        ? 'As the recipe says'
-                        : 'As the recipe says ($recipeServings)'),
+                        ? l10n.asTheRecipeSaysLabel
+                        : l10n.asTheRecipeSaysWithCount(recipeServings)),
                   ),
                   for (int n = 1; n <= 20; n++)
                     DropdownMenuItem<int?>(value: n, child: Text('$n')),
@@ -439,10 +478,8 @@ class _EntryChip extends ConsumerWidget {
               const SizedBox(height: 8),
               Text(
                 recipeServings == null
-                    ? 'This recipe does not say how many it serves, so the '
-                        'shopping list cannot scale it.'
-                    : 'The shopping list scales this meal\'s ingredients to '
-                        'match.',
+                    ? l10n.servingsUnknownExplanation
+                    : l10n.servingsScalesExplanation,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
@@ -450,11 +487,11 @@ class _EntryChip extends ConsumerWidget {
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancelButton),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Save'),
+              child: Text(l10n.saveButton),
             ),
           ],
         ),
@@ -476,6 +513,7 @@ class _EntryChip extends ConsumerWidget {
   }
 
   Future<void> _showMoveDialog(BuildContext context, WidgetRef ref) async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final PlanWeek week = ref.read(visibleWeekProvider);
     DateTime selectedDay = entry.entryDate;
     MealSlot selectedSlot = entry.slot;
@@ -484,18 +522,18 @@ class _EntryChip extends ConsumerWidget {
       context: context,
       builder: (BuildContext context) => StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) => AlertDialog(
-          title: const Text('Move to'),
+          title: Text(l10n.moveToDialogTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               DropdownButtonFormField<DateTime>(
                 initialValue: selectedDay,
-                decoration: const InputDecoration(labelText: 'Day'),
+                decoration: InputDecoration(labelText: l10n.dayFieldLabel),
                 items: <DropdownMenuItem<DateTime>>[
                   for (final DateTime day in week.days)
                     DropdownMenuItem<DateTime>(
                       value: day,
-                      child: Text('${dayAbbrevOf(day)} ${day.day}'),
+                      child: Text(weekdayAndDay(day, l10n.localeName)),
                     ),
                 ],
                 onChanged: (DateTime? value) {
@@ -504,12 +542,12 @@ class _EntryChip extends ConsumerWidget {
               ),
               DropdownButtonFormField<MealSlot>(
                 initialValue: selectedSlot,
-                decoration: const InputDecoration(labelText: 'Slot'),
+                decoration: InputDecoration(labelText: l10n.slotFieldLabel),
                 items: <DropdownMenuItem<MealSlot>>[
                   for (final MealSlot slot in MealSlot.ordered)
                     DropdownMenuItem<MealSlot>(
                       value: slot,
-                      child: Text(_slotLabel(slot)),
+                      child: Text(_slotLabel(slot, l10n)),
                     ),
                 ],
                 onChanged: (MealSlot? value) {
@@ -521,11 +559,11 @@ class _EntryChip extends ConsumerWidget {
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancelButton),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Move'),
+              child: Text(l10n.moveButton),
             ),
           ],
         ),
@@ -552,8 +590,9 @@ class _EntryChip extends ConsumerWidget {
   /// the visible week's 7 -- a leftover's range is D56's "next 14 days from
   /// the source", not bounded by what happens to be on screen, and it can
   /// cross a month boundary, hence [shortDateLabel] rather than
-  /// [dayAbbrevOf].
+  /// [weekdayAndDay].
   Future<void> _showLeftoverDialog(BuildContext context, WidgetRef ref) async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final List<DateTime> candidateDays = List<DateTime>.generate(
       14,
       (int i) => DateTime(
@@ -569,18 +608,18 @@ class _EntryChip extends ConsumerWidget {
       context: context,
       builder: (BuildContext context) => StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) => AlertDialog(
-          title: const Text('Plan leftovers'),
+          title: Text(l10n.planLeftoversDialogTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               DropdownButtonFormField<DateTime>(
                 initialValue: selectedDay,
-                decoration: const InputDecoration(labelText: 'Day'),
+                decoration: InputDecoration(labelText: l10n.dayFieldLabel),
                 items: <DropdownMenuItem<DateTime>>[
                   for (final DateTime day in candidateDays)
                     DropdownMenuItem<DateTime>(
                       value: day,
-                      child: Text(shortDateLabel(day)),
+                      child: Text(shortDateLabel(day, l10n.localeName)),
                     ),
                 ],
                 onChanged: (DateTime? value) {
@@ -589,12 +628,12 @@ class _EntryChip extends ConsumerWidget {
               ),
               DropdownButtonFormField<MealSlot>(
                 initialValue: selectedSlot,
-                decoration: const InputDecoration(labelText: 'Slot'),
+                decoration: InputDecoration(labelText: l10n.slotFieldLabel),
                 items: <DropdownMenuItem<MealSlot>>[
                   for (final MealSlot slot in MealSlot.ordered)
                     DropdownMenuItem<MealSlot>(
                       value: slot,
-                      child: Text(_slotLabel(slot)),
+                      child: Text(_slotLabel(slot, l10n)),
                     ),
                 ],
                 onChanged: (MealSlot? value) {
@@ -606,11 +645,11 @@ class _EntryChip extends ConsumerWidget {
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancelButton),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Add'),
+              child: Text(l10n.addButton),
             ),
           ],
         ),
@@ -673,15 +712,18 @@ class _EntryChip extends ConsumerWidget {
         ),
       );
 
-  Widget _chip(BuildContext context) => Chip(
-        avatar: Icon(
-          switch (entry.entryKind) {
-            MealEntryKind.note => Icons.edit_note_outlined,
-            MealEntryKind.leftover => Icons.replay_outlined,
-            MealEntryKind.recipe => Icons.restaurant_menu_outlined,
-          },
-          size: 16,
-        ),
-        label: Text(entry.label),
-      );
+  Widget _chip(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return Chip(
+      avatar: Icon(
+        switch (entry.entryKind) {
+          MealEntryKind.note => Icons.edit_note_outlined,
+          MealEntryKind.leftover => Icons.replay_outlined,
+          MealEntryKind.recipe => Icons.restaurant_menu_outlined,
+        },
+        size: 16,
+      ),
+      label: Text(_entryLabel(entry, l10n)),
+    );
+  }
 }

@@ -632,4 +632,179 @@ class AppLocalizationsEn extends AppLocalizations {
   String importWorthALook(int attention) {
     return '$attention worth a look before saving';
   }
+
+  @override
+  String get thisWeekTooltip => 'This week';
+
+  @override
+  String get previousWeekTooltip => 'Previous week';
+
+  @override
+  String get nextWeekTooltip => 'Next week';
+
+  @override
+  String get savedCopyOfflineMessage =>
+      'Showing your saved copy — no connection.';
+
+  @override
+  String get mealSlotBreakfast => 'Breakfast';
+
+  @override
+  String get mealSlotLunch => 'Lunch';
+
+  @override
+  String get mealSlotDinner => 'Dinner';
+
+  @override
+  String get mealSlotSnack => 'Snack';
+
+  @override
+  String get snackRepeatWarningTitle => 'Already planned recently';
+
+  @override
+  String snackRepeatWarningBody(String countPhrase) {
+    return 'Already in $countPhrase this fortnight.';
+  }
+
+  @override
+  String get addAnywayButton => 'Add anyway';
+
+  @override
+  String get openRecipeMenuItem => 'Open recipe';
+
+  @override
+  String get cookingForMenuItem => 'Cooking for...';
+
+  @override
+  String get asTheRecipeSaysLabel => 'As the recipe says';
+
+  @override
+  String asTheRecipeSaysWithCount(int count) {
+    return 'As the recipe says ($count)';
+  }
+
+  @override
+  String get planLeftoversMenuItem => 'Plan leftovers...';
+
+  @override
+  String get moveToMenuItem => 'Move to...';
+
+  @override
+  String get moveUpMenuItem => 'Move up';
+
+  @override
+  String get moveDownMenuItem => 'Move down';
+
+  @override
+  String get cookingForDialogTitle => 'Cooking for';
+
+  @override
+  String get servingsUnknownExplanation =>
+      'This recipe does not say how many it serves, so the shopping list cannot scale it.';
+
+  @override
+  String get servingsScalesExplanation =>
+      'The shopping list scales this meal\'s ingredients to match.';
+
+  @override
+  String get moveToDialogTitle => 'Move to';
+
+  @override
+  String get dayFieldLabel => 'Day';
+
+  @override
+  String get slotFieldLabel => 'Slot';
+
+  @override
+  String get moveButton => 'Move';
+
+  @override
+  String get planLeftoversDialogTitle => 'Plan leftovers';
+
+  @override
+  String leftoverEntryLabel(String title) {
+    return 'Leftovers: $title';
+  }
+
+  @override
+  String get regenerateTooltip => 'Regenerate';
+
+  @override
+  String get pickDatesTooltip => 'Pick dates';
+
+  @override
+  String get thisWeekButton => 'This week';
+
+  @override
+  String get nextWeekButton => 'Next';
+
+  @override
+  String get noListYetTitle => 'No list yet.';
+
+  @override
+  String get noListYetBody =>
+      'Generate one from what you have planned for these dates.';
+
+  @override
+  String get generateListButton => 'Generate list';
+
+  @override
+  String get nothingToBuyMessage =>
+      'Nothing to buy -- there was nothing planned for these dates.';
+
+  @override
+  String probablyHaveHeading(int count) {
+    return 'Probably have ($count)';
+  }
+
+  @override
+  String get cupboardStaplesSubtitle => 'Cupboard staples';
+
+  @override
+  String generatedForRangeLine(String generatedDate, String from, String to) {
+    return 'Generated $generatedDate for $from – $to';
+  }
+
+  @override
+  String get categoryProduce => 'Produce';
+
+  @override
+  String get categoryFruit => 'Fruit';
+
+  @override
+  String get categoryDairy => 'Dairy';
+
+  @override
+  String get categoryMeat => 'Meat';
+
+  @override
+  String get categoryFish => 'Fish';
+
+  @override
+  String get categoryPantry => 'Pantry';
+
+  @override
+  String get categorySpice => 'Spices';
+
+  @override
+  String get categoryBakery => 'Bakery';
+
+  @override
+  String get categoryBeverage => 'Beverages';
+
+  @override
+  String get categoryNuts => 'Nuts';
+
+  @override
+  String get categoryOther => 'Other';
+
+  @override
+  String markedAsStapleSnackbar(String name) {
+    return '$name marked as always in the cupboard. Takes effect next time you generate.';
+  }
+
+  @override
+  String willBeOnListSnackbar(String name) {
+    return '$name will be on the list from now on.';
+  }
 }

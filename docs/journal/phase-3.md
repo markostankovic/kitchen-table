@@ -385,5 +385,93 @@ every sentence this mechanism can produce; only the "does a real
 `SocketException` reach the screen" wiring is unconfirmed live, and that
 wiring predates this part.
 
+### Part 5 — Households and import in two languages
+
+**Status: complete** (`1f770de`). No journal entry was written for this part
+at the time -- recorded here, after the fact, because leaving the hole
+unacknowledged is worse than a short backfilled entry. ~56 hardcoded English
+strings across create/join/household and the four import screens; two new
+ICU plurals (`inviteExpiresInHours`/`Days`); the household role label and
+`import_review_screen.dart`'s summary card both moved off ad hoc string
+building onto the failure-vocabulary/plural machinery part 4 had already
+wired. No decisions recorded, no verification narrative -- see
+`docs/ROADMAP.md`'s own note on this part for the gap this restructuring
+exists to catch.
+
+### Part 6 — Meal plan and shopping list in two languages, and the date-label layer
+
+**Status: complete.** Decisions taken during it: D93–D94. This is the last
+part of Phase 3.
+
+`plan_week.dart` had carried a standing note since Phase 3 part 1 ("Phase
+3's job") to localize the three display helpers it had grown out of
+necessity in Phase 2: `dayAbbrevOf`, `shortDateLabel`, and `PlanWeek.label`,
+each hand-built from two hardcoded English abbreviation lists. This part
+closed that, and took the meal plan and shopping list screens -- the last
+two written in English -- with it, since both depend on those labels.
+
+- `core/l10n/date_labels.dart` -- `weekdayAndDay`, `shortDateLabel`,
+  `weekRangeLabel`, each a plain function over `(DateTime, ..., String
+  locale)`, backed by `intl`'s `DateFormat` rather than the old hand-written
+  formatting. `core/` rather than the feature, on `core/error/
+  failure_l10n.dart`'s own precedent for a `lib/core/` file that may import
+  Flutter and `intl` despite CLAUDE.md rule 7. English's field order and
+  punctuation changed as a direct consequence (`Mon 14 Sep` → `Mon, Sep 14`);
+  Serbian's own pattern table has no comma in the equivalent position
+  (`pon 14. sep`) -- verified directly against the pinned `intl` version
+  rather than assumed, since the slice plan's own worked example (`pon,
+  14. sep`) turned out not to match what `DateFormat.MMMEd('sr_Latn')`
+  actually produces (D93)
+- `plan_week.dart` loses `_dayAbbrev`, `_monthAbbrev`, `dayAbbrevOf`,
+  `shortDateLabel` and `PlanWeek.label` -- `isoDateOf` and `parseIsoDate`
+  stay, since `data/` depends on them and neither is display
+- `MealPlanEntry.label` -- the leftover-prefix sentence -- moves
+  presentation-side as `_entryLabel(entry, l10n)`, a sibling function with no
+  `default` arm, the same shape `failure_l10n.dart`'s `_sentence` already
+  established: a pure Dart domain model cannot reach `AppLocalizations`
+  (D92's own reasoning, one type over)
+- `meal_plan_screen.dart` -- fully localized, reader's locale throughout: a
+  meal plan is live data, not a snapshot, so unlike the shopping list there
+  is no split
+- `shopping_list_screen.dart` -- localized under a rule the screen did not
+  have before: `_ListBody` (category headings, `_GeneratedAt`'s dates, item
+  quantities) renders in `list.locale`, looked up once via
+  `lookupAppLocalizations` on `ingredient_line_field.dart`'s own precedent;
+  the chrome around it (`AppBar`, `_RangeBar`, `_EmptyState`, every snackbar
+  and error) renders in the reader's own locale. `_ItemTile` had already
+  drawn exactly this line for unit names, one D81-shaped fix ahead of the
+  rest of the screen -- this part generalizes it (D94)
+- Categories: `ingredients.category` is a ten-code vocabulary, not eight --
+  the slice plan's own citation of `supabase/seeds/ingredients.csv`'s
+  comment missed that it wraps onto a second line (`beverage`, `nuts`). Both
+  got keys; an unrecognised code (neither of the ten nor the uncategorised
+  sentinel) falls through to itself rather than vanishing, and the
+  uncategorised bucket is no longer keyed by the literal string `'Other'`
+  doing double duty as a display string and a map key
+- ~70 new ARB keys across both files; `test/features/meal_plan/
+  meal_plan_week_test.dart`'s own `MealPlanEntry.label` test group (not on
+  the slice plan's file list) removed along with the getter it tested,
+  folded into the presentation-level leftover-prefix test that already
+  covers the same behavior
+
+**Done when:** every remaining English literal on these two screens is
+localized, and a Serbian reader sees Latin-script dates throughout,
+including on the shopping list's own two-locale split. -- **Met** against
+`make check` (477 Dart tests, up from 468; `dart analyze` and
+`tool/check_layers.dart` clean; the Deno suite unaffected at 155 tests since
+no Edge Function changed; `l10n-check` finding no drift once regenerated).
+Two widget tests pin the regressions this part exists to prevent: one pumps
+each screen under `srLatn` and asserts a Serbian string alongside a
+Latin-script date (D91, invisible if only English is ever pumped); one
+renders a `locale: 'sr'` shopping list under an English reader and asserts
+Serbian headings beside an English `AppBar` (the two-locale rule, D94).
+
+**Not walked on-device.** Unlike parts 1, 3 and 4, this part's verification
+stopped at `make check` -- no emulator session confirmed the two screens
+live, in either language. Nothing in the diff suggests a gap the test suite
+would miss (no new offline path, no new write, no new Edge Function), but it
+is named here rather than left to be assumed, on this journal's own
+standing rule.
+
 ---
 

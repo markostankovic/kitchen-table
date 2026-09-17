@@ -131,42 +131,4 @@ void main() {
       expect(parseIsoDate(isoDateOf(date)), date);
     });
   });
-
-  group('label', () {
-    test('within one month', () {
-      expect(PlanWeek.of(DateTime(2026, 6, 3)).label, '1-7 Jun 2026');
-    });
-
-    test('across a month boundary', () {
-      expect(PlanWeek.of(DateTime(2026, 6, 30)).label, '29 Jun - 5 Jul 2026');
-    });
-
-    test('across a year boundary', () {
-      expect(
-          PlanWeek.of(DateTime(2025, 12, 31)).label, '29 Dec 2025 - 4 Jan 2026');
-    });
-  });
-
-  group('dayAbbrevOf', () {
-    test('all seven weekdays', () {
-      final PlanWeek week = PlanWeek.of(DateTime(2026, 6, 3));
-      expect(week.days.map(dayAbbrevOf), <String>[
-        'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun',
-      ]);
-    });
-  });
-
-  group('shortDateLabel', () {
-    test('day, date and month, unambiguous on its own', () {
-      expect(shortDateLabel(DateTime(2026, 9, 14)), 'Mon 14 Sep');
-    });
-
-    test('disambiguates dates that dayAbbrevOf + day cannot -- a leftover '
-        'window crossing a month boundary', () {
-      // The 14-day leftover window can straddle a month, where two
-      // different days share the same day-of-month.
-      expect(shortDateLabel(DateTime(2026, 6, 29)), 'Mon 29 Jun');
-      expect(shortDateLabel(DateTime(2026, 7, 29)), 'Wed 29 Jul');
-    });
-  });
 }

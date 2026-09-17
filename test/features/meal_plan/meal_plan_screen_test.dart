@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
+import 'package:kitchen_table/core/l10n/date_labels.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
+import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
 import 'package:kitchen_table/core/net/network_status.dart';
 import 'package:kitchen_table/core/recipes/recipe_picker_providers.dart';
 import 'package:kitchen_table/features/meal_plan/application/meal_plan_providers.dart';
@@ -132,6 +134,7 @@ Future<_Calls> _pump(
   List<Recipe> plannable = const <Recipe>[],
   int repeatCount = 0,
   Reachability? networkStatus,
+  Locale? locale,
 }) async {
   // The week list is taller than the default 800x600 test surface -- without
   // this, days below the fold simply are not there to find.
@@ -153,10 +156,14 @@ Future<_Calls> _pump(
           networkStatusProvider.overrideWithValue(networkStatus),
       ],
       // The AppBar title reads AppLocalizations now (D77, Phase 3 part 1).
-      child: const MaterialApp(
+      // No `locale:` set (the default) resolves English, same as
+      // `import_review_screen_test.dart` -- passing `locale: srLatn` is what
+      // the D91 regression test below needs to render Serbian, Latin script.
+      child: MaterialApp(
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: appSupportedLocales,
-        home: MealPlanScreen(),
+        home: const MealPlanScreen(),
       ),
     ),
   );
@@ -186,7 +193,7 @@ void main() {
     await _pump(tester, initial: MealPlanWeek.empty(_week));
 
     for (final DateTime day in _week.days) {
-      expect(find.text('${_dayAbbrev(day)} ${day.day}'), findsOneWidget);
+      expect(find.text(weekdayAndDay(day, 'en')), findsOneWidget);
     }
     // Every slot -- populated or not -- carries exactly one "Add" chip.
     expect(find.widgetWithText(ActionChip, 'Add'), findsNWidgets(28));
@@ -246,21 +253,27 @@ void main() {
       (WidgetTester tester) async {
     await _pump(tester, initial: MealPlanWeek.empty(_week));
 
-    expect(find.text(_week.label), findsOneWidget);
+    expect(find.text(weekRangeLabel(_week.start, _week.end, 'en')),
+        findsOneWidget);
 
     await tester.tap(find.byTooltip('Next week'));
     await tester.pumpAndSettle();
-    expect(find.text(_week.next.label), findsOneWidget);
+    expect(
+        find.text(weekRangeLabel(_week.next.start, _week.next.end, 'en')),
+        findsOneWidget);
 
     await tester.tap(find.byTooltip('Previous week'));
     await tester.pumpAndSettle();
-    expect(find.text(_week.label), findsOneWidget);
+    expect(find.text(weekRangeLabel(_week.start, _week.end, 'en')),
+        findsOneWidget);
 
     await tester.tap(find.byTooltip('Next week'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('This week'));
     await tester.pumpAndSettle();
-    expect(find.text(PlanWeek.of(DateTime.now()).label), findsOneWidget);
+    final PlanWeek today = PlanWeek.of(DateTime.now());
+    expect(find.text(weekRangeLabel(today.start, today.end, 'en')),
+        findsOneWidget);
   });
 
   testWidgets('tapping Add, then "Add a note instead" calls addNote',
@@ -402,7 +415,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Plan leftovers'), findsOneWidget); // dialog title
-    expect(find.text(shortDateLabel(expectedDefault)), findsOneWidget);
+    expect(find.text(shortDateLabel(expectedDefault, 'en')), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Add'));
     await tester.pumpAndSettle();
@@ -642,6 +655,26 @@ void main() {
     // The AppBar must still render even though the body errored.
     expect(find.widgetWithText(AppBar, 'Plan'), findsOneWidget);
   });
+
+  testWidgets(
+      'under srLatn, the week label and day headers render Serbian, Latin '
+      'script (D91 -- invisible if only English is ever pumped)',
+      (WidgetTester tester) async {
+    await _pump(
+      tester,
+      initial: MealPlanWeek.empty(_week),
+      locale: srLatn,
+    );
+
+    // A Serbian string nowhere in the English vocabulary.
+    expect(find.text(AppLocalizationsSr().mealSlotBreakfast), findsWidgets);
+    // A Latin-script date -- Cyrillic would fail this exact-text match.
+    expect(
+      find.text(weekRangeLabel(_week.start, _week.end, 'sr')),
+      findsOneWidget,
+    );
+    expect(find.text(weekdayAndDay(_monday, 'sr')), findsOneWidget);
+  });
 }
 
 class _ThrowingPlan extends MealPlanEditor {
@@ -650,7 +683,3 @@ class _ThrowingPlan extends MealPlanEditor {
     throw const NetworkFailure();
   }
 }
-
-String _dayAbbrev(DateTime date) =>
-    const <String>['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][
-        date.weekday - DateTime.monday];

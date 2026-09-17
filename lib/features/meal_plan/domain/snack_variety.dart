@@ -4,8 +4,9 @@
 /// Defined once, here, so `MealPlanEditor.snackRepeatCount` and the screen's
 /// warning dialog cannot each answer "how many is too many" or "over what
 /// window" differently -- the same reason `RecipeIngredient.resolvedName` and
-/// `MealPlanEntry.label` are single-definition getters rather than duplicated
-/// in a widget.
+/// the presentation-side `_entryLabel` (`meal_plan_screen.dart`, since Phase 3
+/// part 6 -- a domain model cannot know a sentence, D92) are single-definition
+/// rather than duplicated in a widget.
 ///
 /// The window is CENTRED on the candidate date, +/- [kVarietyWindowDays], not
 /// trailing as `docs/DATA_MODEL.md`'s original sketch worded it ("the last N

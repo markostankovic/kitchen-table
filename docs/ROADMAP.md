@@ -120,7 +120,8 @@ finding rather than a build decision — see below). See `docs/journal/phase-3.m
 - D87's own fix: **done**, Phase 2 part 7 (D88-D90)
 - The remaining screens' bodies: recipes **done** (part 4); households and
   import **done** (part 5, `1f770de`); meal plan and shopping list, plus the
-  date-label layer `plan_week.dart` deferred, next (part 6)
+  date-label layer `plan_week.dart` deferred, **done** (part 6) -- Phase 3
+  is now complete
 
 ---
 
@@ -132,10 +133,19 @@ finding rather than a build decision — see below). See `docs/journal/phase-3.m
 
 ### Part 5 — Households and import in two languages
 
-**Status: complete** (`1f770de`). No journal entry — this part shipped without
-a docs update, which is the exact drift this restructuring exists to catch.
+**Status: complete** (`1f770de`). Journal entry backfilled during part 6's
+close-out, after the fact -- this part originally shipped without a docs
+update, which is the exact drift this restructuring exists to catch.
 Touched: `households/presentation/`, `import/presentation/`, the ARB files,
-`test/core/l10n/arb_parity_test.dart`.
+`test/core/l10n/arb_parity_test.dart`. See `docs/journal/phase-3.md`.
+
+---
+
+### Part 6 — Meal plan and shopping list in two languages, and the date-label layer
+
+**Status: complete.** Decisions taken during it: D93-D94. See
+`docs/journal/phase-3.md`. This closes Phase 3 -- every screen now reads in
+the reader's own locale, Serbian rendering Latin script throughout.
 
 ---
 

@@ -53,22 +53,8 @@ abstract class MealPlanEntry with _$MealPlanEntry {
   factory MealPlanEntry.fromJson(Map<String, dynamic> json) =>
       _$MealPlanEntryFromJson(json);
 
-  /// What to show on the tile: the recipe's title for a recipe entry, the
-  /// note text for a note entry, and `Leftovers: <title>` for a leftover --
-  /// it must not read as a second helping cooked from scratch.
-  ///
-  /// Defined here, once, rather than in the grid widget -- the entry_kind
-  /// check constraint in migration 14 already guarantees exactly one of
-  /// [recipeTitle] / [note] is meaningful for a given [entryKind], so this is
-  /// a lookup, not a decision.
-  String get label => switch (entryKind) {
-        MealEntryKind.recipe => recipeTitle ?? 'Recipe',
-        MealEntryKind.leftover => 'Leftovers: ${recipeTitle ?? 'Recipe'}',
-        MealEntryKind.note => note ?? '',
-      };
-
-  /// Whether this is a leftover entry -- shorthand for the switch above,
-  /// used by the screen's action sheet and (Phase 2's next part) the
-  /// shopping list, which skips leftovers so nothing is bought twice.
+  /// Whether this is a leftover entry -- used by the screen's action sheet
+  /// and by the shopping list, which skips leftovers so nothing is bought
+  /// twice.
   bool get isLeftover => entryKind == MealEntryKind.leftover;
 }

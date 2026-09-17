@@ -19,22 +19,18 @@
 /// computed value object over `DateTime`, the same shape as
 /// `features/ingredients/domain/quantity.dart` (also plain).
 ///
-/// No `intl` (rule 8 -- a new dependency needs asking first, and this is one
-/// `yyyy-MM-dd` format plus a dozen hand-written English abbreviations).
-/// Localizing these labels is Phase 3's job, not this one's -- `AppShell`
-/// already took that same call for the tab bar.
+/// No `intl` here, still -- rule 7 is the reason, not rule 8: this file does
+/// arithmetic, and arithmetic is pure Dart. The display labels that used to
+/// live here (`dayAbbrevOf`, `shortDateLabel`, `PlanWeek.label`) moved to
+/// `core/l10n/date_labels.dart` in Phase 3 part 6, because rendering a date
+/// needs a locale and a domain model may never take one -- the same argument
+/// `core/error/failure_l10n.dart` already made for `AppFailure`. `isoDateOf`
+/// and `parseIsoDate` stayed: `data/` depends on them heavily
+/// (`remote_meal_plan_datasource.dart`, `remote_shopping_list_datasource.dart`,
+/// `shopping_list_dto.dart`) and neither is display.
 ///
 /// Pure Dart (CLAUDE.md rule 7).
 library;
-
-const List<String> _dayAbbrev = <String>[
-  'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun',
-];
-
-const List<String> _monthAbbrev = <String>[
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
 
 /// `yyyy-MM-dd` over a date's local calendar fields. Never derived from
 /// `.toIso8601String()`, which includes a time component this feature has
@@ -50,18 +46,6 @@ String isoDateOf(DateTime date) {
 /// local midnight with no time component, so this is a thin, explicit wrapper
 /// rather than a call site that could grow a stray `.toUtc()` later.
 DateTime parseIsoDate(String isoDate) => DateTime.parse(isoDate);
-
-/// A three-letter English day abbreviation for [date]'s weekday.
-String dayAbbrevOf(DateTime date) => _dayAbbrev[date.weekday - DateTime.monday];
-
-/// `Mon 14 Sep` -- [dayAbbrevOf] plus day and month.
-///
-/// `dayAbbrevOf(day) + day.day` (what the Move-to dialog uses) is only
-/// unambiguous within a single visible week. Phase 2 part 3's leftover
-/// dialog offers 14 consecutive dates from an arbitrary entry, which can
-/// cross a month boundary, so that shorthand is not enough there.
-String shortDateLabel(DateTime date) =>
-    '${dayAbbrevOf(date)} ${date.day} ${_monthAbbrev[date.month - 1]}';
 
 /// A calendar week, Monday through Sunday.
 ///
@@ -109,24 +93,6 @@ class PlanWeek {
   /// watches `visibleWeekProvider` directly rather than being keyed on this,
   /// but the string is what the repository sends to `ensure_meal_plan`).
   String get isoDate => isoDateOf(start);
-
-  /// `8-14 Sep 2026`, or `29 Sep - 5 Oct 2026` across a month boundary, or
-  /// `29 Dec 2025 - 4 Jan 2026` across a year boundary.
-  String get label {
-    final String startDay = start.day.toString();
-    final String endDay = end.day.toString();
-    final String startMonth = _monthAbbrev[start.month - 1];
-    final String endMonth = _monthAbbrev[end.month - 1];
-
-    if (start.year != end.year) {
-      return '$startDay $startMonth ${start.year} - '
-          '$endDay $endMonth ${end.year}';
-    }
-    if (start.month != end.month) {
-      return '$startDay $startMonth - $endDay $endMonth ${end.year}';
-    }
-    return '$startDay-$endDay $startMonth ${end.year}';
-  }
 
   @override
   bool operator ==(Object other) => other is PlanWeek && other.start == start;

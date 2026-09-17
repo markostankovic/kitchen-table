@@ -639,4 +639,179 @@ class AppLocalizationsSr extends AppLocalizations {
   String importWorthALook(int attention) {
     return '$attention vredno pažnje pre čuvanja';
   }
+
+  @override
+  String get thisWeekTooltip => 'Ova nedelja';
+
+  @override
+  String get previousWeekTooltip => 'Prethodna nedelja';
+
+  @override
+  String get nextWeekTooltip => 'Sledeća nedelja';
+
+  @override
+  String get savedCopyOfflineMessage =>
+      'Prikazana je sačuvana kopija — nema veze.';
+
+  @override
+  String get mealSlotBreakfast => 'Doručak';
+
+  @override
+  String get mealSlotLunch => 'Ručak';
+
+  @override
+  String get mealSlotDinner => 'Večera';
+
+  @override
+  String get mealSlotSnack => 'Užina';
+
+  @override
+  String get snackRepeatWarningTitle => 'Već nedavno planirano';
+
+  @override
+  String snackRepeatWarningBody(String countPhrase) {
+    return 'Već je u $countPhrase u ovih 14 dana.';
+  }
+
+  @override
+  String get addAnywayButton => 'Ipak dodaj';
+
+  @override
+  String get openRecipeMenuItem => 'Otvori recept';
+
+  @override
+  String get cookingForMenuItem => 'Kuvamo za...';
+
+  @override
+  String get asTheRecipeSaysLabel => 'Kako piše u receptu';
+
+  @override
+  String asTheRecipeSaysWithCount(int count) {
+    return 'Kako piše u receptu ($count)';
+  }
+
+  @override
+  String get planLeftoversMenuItem => 'Isplaniraj ostatke...';
+
+  @override
+  String get moveToMenuItem => 'Premesti u...';
+
+  @override
+  String get moveUpMenuItem => 'Pomeri gore';
+
+  @override
+  String get moveDownMenuItem => 'Pomeri dole';
+
+  @override
+  String get cookingForDialogTitle => 'Kuvamo za';
+
+  @override
+  String get servingsUnknownExplanation =>
+      'Ovaj recept ne kaže za koliko porcija je, pa lista za kupovinu ne može da ga preračuna.';
+
+  @override
+  String get servingsScalesExplanation =>
+      'Lista za kupovinu preračunava sastojke ovog obroka prema tome.';
+
+  @override
+  String get moveToDialogTitle => 'Premesti u';
+
+  @override
+  String get dayFieldLabel => 'Dan';
+
+  @override
+  String get slotFieldLabel => 'Obrok';
+
+  @override
+  String get moveButton => 'Premesti';
+
+  @override
+  String get planLeftoversDialogTitle => 'Isplaniraj ostatke';
+
+  @override
+  String leftoverEntryLabel(String title) {
+    return 'Ostaci: $title';
+  }
+
+  @override
+  String get regenerateTooltip => 'Osveži';
+
+  @override
+  String get pickDatesTooltip => 'Izaberi datume';
+
+  @override
+  String get thisWeekButton => 'Ova nedelja';
+
+  @override
+  String get nextWeekButton => 'Sledeća';
+
+  @override
+  String get noListYetTitle => 'Još nema liste.';
+
+  @override
+  String get noListYetBody =>
+      'Napravite je na osnovu onoga što ste isplanirali za ove datume.';
+
+  @override
+  String get generateListButton => 'Napravi listu';
+
+  @override
+  String get nothingToBuyMessage =>
+      'Nema ničega za kupovinu -- ništa nije planirano za ove datume.';
+
+  @override
+  String probablyHaveHeading(int count) {
+    return 'Verovatno imate ($count)';
+  }
+
+  @override
+  String get cupboardStaplesSubtitle => 'Namirnice iz ostave';
+
+  @override
+  String generatedForRangeLine(String generatedDate, String from, String to) {
+    return 'Generisano $generatedDate za $from – $to';
+  }
+
+  @override
+  String get categoryProduce => 'Povrće';
+
+  @override
+  String get categoryFruit => 'Voće';
+
+  @override
+  String get categoryDairy => 'Mlečni proizvodi';
+
+  @override
+  String get categoryMeat => 'Meso';
+
+  @override
+  String get categoryFish => 'Riba';
+
+  @override
+  String get categoryPantry => 'Ostava';
+
+  @override
+  String get categorySpice => 'Začini';
+
+  @override
+  String get categoryBakery => 'Pekarski proizvodi';
+
+  @override
+  String get categoryBeverage => 'Pića';
+
+  @override
+  String get categoryNuts => 'Orašasti plodovi';
+
+  @override
+  String get categoryOther => 'Ostalo';
+
+  @override
+  String markedAsStapleSnackbar(String name) {
+    return '$name označeno kao stalna namirnica iz ostave. Važi od sledeće liste.';
+  }
+
+  @override
+  String willBeOnListSnackbar(String name) {
+    return '$name će od sada biti na listi.';
+  }
 }

@@ -141,30 +141,6 @@ void main() {
     });
   });
 
-  group('MealPlanEntry.label', () {
-    test('a recipe entry shows its recipe title', () {
-      final MealPlanEntry entry = _recipeEntry(
-          id: 'e1', date: monday, slot: MealSlot.lunch, position: 0,
-          title: 'Šargarepa torta');
-      expect(entry.label, 'Šargarepa torta');
-    });
-
-    test('a note entry shows its note text', () {
-      final MealPlanEntry entry = _noteEntry(
-          id: 'e1', date: monday, slot: MealSlot.breakfast, position: 0,
-          note: 'zzz buy bread');
-      expect(entry.label, 'zzz buy bread');
-    });
-
-    test('a leftover entry is prefixed -- it must not read as a fresh '
-        'helping cooked from scratch', () {
-      final MealPlanEntry entry = _leftoverEntry(
-          id: 'e2', date: tuesday, slot: MealSlot.lunch, position: 0,
-          sourceId: 'e1', title: 'Sarma');
-      expect(entry.label, 'Leftovers: Sarma');
-    });
-  });
-
   group('MealPlanEntry.isLeftover', () {
     test('true only for a leftover entry', () {
       final MealPlanEntry recipe = _recipeEntry(

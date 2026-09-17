@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
 import 'package:kitchen_table/core/ingredients/ingredient_catalog_providers.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
+import 'package:kitchen_table/core/l10n/date_labels.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_en.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
@@ -121,6 +122,7 @@ Future<_Calls> _pump(
   WidgetTester tester, {
   ShoppingList? initial,
   AppFailure? failure,
+  Locale? locale,
 }) async {
   tester.view.physicalSize = const Size(1200, 3000);
   tester.view.devicePixelRatio = 1;
@@ -136,10 +138,13 @@ Future<_Calls> _pump(
         unitCatalogProvider.overrideWith((Ref ref) async => _units),
       ],
       // The AppBar title reads AppLocalizations now (D77, Phase 3 part 1).
-      child: const MaterialApp(
+      // No `locale:` set (the default) resolves English chrome regardless of
+      // `list.locale` -- exactly the two-locale rule this suite pins.
+      child: MaterialApp(
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: appSupportedLocales,
-        home: ShoppingListScreen(),
+        home: const ShoppingListScreen(),
       ),
     ),
   );
@@ -237,6 +242,9 @@ void main() {
 
   testWidgets('pantry staples are collapsed under Probably have, not hidden',
       (tester) async {
+    // Explicit English so the section heading is asserted in a fixed
+    // language -- it renders in list.locale (the two-locale rule), not the
+    // reader's, so this is deliberate, not a default left unexamined.
     await _pump(
       tester,
       initial: _list(<ShoppingItem>[
@@ -246,7 +254,7 @@ void main() {
             id: 'i-so',
             staple: true,
             quantities: <ItemQuantity>[_q(5, UnitFamily.mass, 'g')]),
-      ]),
+      ], locale: 'en'),
     );
 
     expect(find.text('Probably have (1)'), findsOneWidget);
@@ -261,18 +269,53 @@ void main() {
     expect(find.text('so'), findsOneWidget);
   });
 
-  testWidgets('items are grouped by category, with Other last', (tester) async {
+  testWidgets(
+      'items are grouped by category, with the uncategorised bucket last',
+      (tester) async {
+    // Explicit English: headings render in list.locale, not the reader's
+    // (the two-locale rule) -- see the Serbian-headings test below for the
+    // other half of that rule.
     await _pump(
       tester,
       initial: _list(<ShoppingItem>[
         _item('nešto', id: 'i-x', category: null),
         _item('brašno', id: 'i-b', category: 'pantry'),
+      ], locale: 'en'),
+    );
+
+    final double pantryY = tester.getTopLeft(find.text('Pantry')).dy;
+    final double otherY = tester.getTopLeft(find.text('Other')).dy;
+    expect(pantryY, lessThan(otherY));
+  });
+
+  testWidgets(
+      'an unrecognised category code falls through to itself rather than '
+      'vanishing or folding into the uncategorised bucket', (tester) async {
+    await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[
+        _item('nešto neobično', id: 'i-x', category: 'zzz-not-a-real-code'),
+      ], locale: 'en'),
+    );
+
+    expect(find.text('zzz-not-a-real-code'), findsOneWidget);
+  });
+
+  testWidgets(
+      'a locale: "sr" list renders Serbian headings beside an English '
+      'AppBar (the two-locale rule)', (tester) async {
+    // No `locale:` passed to _pump -- the reader stays on the harness
+    // default (English), while _list()'s own default locale is 'sr'.
+    await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[
+        _item('brašno', id: 'i-b', category: 'pantry'),
       ]),
     );
 
-    final double pantryY = tester.getTopLeft(find.text('pantry')).dy;
-    final double otherY = tester.getTopLeft(find.text('Other')).dy;
-    expect(pantryY, lessThan(otherY));
+    expect(find.widgetWithText(AppBar, 'List'), findsOneWidget);
+    expect(find.text('Ostava'), findsOneWidget); // categoryPantry, sr
+    expect(find.text('Pantry'), findsNothing);
   });
 
   testWidgets('long-pressing an item records a pantry override', (tester) async {
@@ -313,5 +356,23 @@ void main() {
   testWidgets('regenerating is offered once a list exists', (tester) async {
     await _pump(tester, initial: _list(<ShoppingItem>[_item('brašno')]));
     expect(find.byTooltip('Regenerate'), findsOneWidget);
+  });
+
+  testWidgets(
+      'under srLatn, the chrome renders Serbian, Latin script (D91 -- '
+      'invisible if only English is ever pumped)', (tester) async {
+    await _pump(tester, locale: srLatn);
+
+    // AppBar title, chrome, reader's locale.
+    expect(find.widgetWithText(AppBar, 'Lista'), findsOneWidget);
+    // The range bar's own date text -- chrome, so the reader's locale too,
+    // and Latin script: Cyrillic would fail this exact-text match.
+    expect(
+      find.text(
+        '${shortDateLabel(DateTime(2026, 7, 6), 'sr')} – '
+        '${shortDateLabel(DateTime(2026, 7, 12), 'sr')}',
+      ),
+      findsOneWidget,
+    );
   });
 }

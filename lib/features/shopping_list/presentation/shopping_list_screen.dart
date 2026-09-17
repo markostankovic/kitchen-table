@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
+import '../../../core/l10n/date_labels.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/net/network_status.dart';
 import '../../ingredients/domain/unit_catalog.dart';
-import '../../meal_plan/domain/plan_week.dart';
 import '../application/shopping_list_providers.dart';
 import '../domain/format_item_quantity.dart';
 import '../domain/shopping_item.dart';
@@ -18,15 +18,28 @@ import '../domain/shopping_list.dart';
 /// The `AppBar` is built outside the body's `AsyncValue.when` and titled from
 /// `AppLocalizations.navList` -- the same key the bottom nav label uses (D77,
 /// Phase 3 part 1), so this screen's own header and its tab always agree on
-/// language even though everything else here is still English.
-/// `test/core/router/app_shell_test.dart` taps this tab and asserts that
-/// title regardless of what the underlying providers do, the same shape
+/// language. `test/core/router/app_shell_test.dart` taps this tab and asserts
+/// that title regardless of what the underlying providers do, the same shape
 /// `MealPlanScreen` and `RecipeListScreen` already survive.
 ///
 /// There are no checkboxes here and there never will be. D13 made the list a
 /// snapshot rather than a live document, and that single decision is what
 /// removes offline writes, the outbox and last-write-wins reasoning from the
 /// entire app (D12). A cook reading this in a shop is reading, not editing.
+///
+/// **Two locales render at once here (Phase 3 part 6), unlike every other
+/// screen.** `_ListBody` -- category headings, `_GeneratedAt`'s dates, item
+/// quantities -- is a document that was generated in one language, and reads
+/// `list.locale` (`shopping_lists.locale`, migration 16: "the list is already
+/// a document in one language; remembering which one is what stops a list
+/// generated in Serbian rendering half-translated after a locale toggle").
+/// The chrome around it -- this `AppBar`, `_RangeBar` (which describes the
+/// list about to be generated, not the one on screen), `_EmptyState`, every
+/// snackbar and every error -- reads the reader's own locale,
+/// `AppLocalizations.of(context)` straight from the ambient one, same as
+/// every other screen. `_ItemTile` already drew this line for unit names
+/// (`formatItemQuantity(q, units, locale: locale)`) before this part; this is
+/// that same argument generalized to the rest of the document.
 class ShoppingListScreen extends ConsumerWidget {
   const ShoppingListScreen({super.key});
 
@@ -43,7 +56,7 @@ class ShoppingListScreen extends ConsumerWidget {
         actions: <Widget>[
           if (list.value != null)
             IconButton(
-              tooltip: 'Regenerate',
+              tooltip: l10n.regenerateTooltip,
               icon: const Icon(Icons.refresh_outlined),
               onPressed: () => _generate(context, ref),
             ),
@@ -78,7 +91,8 @@ class ShoppingListScreen extends ConsumerWidget {
 }
 
 /// Generating is the one write this screen makes, so the error handling lives
-/// in one place rather than being repeated per call site.
+/// in one place rather than being repeated per call site. Chrome -- the
+/// reader's locale.
 Future<void> _generate(BuildContext context, WidgetRef ref) async {
   try {
     await ref.read(currentShoppingListProvider.notifier).generate();
@@ -91,12 +105,15 @@ Future<void> _generate(BuildContext context, WidgetRef ref) async {
 }
 
 /// Which dates the next list will cover, and the two shortcuts that cover
-/// almost every case.
+/// almost every case. Chrome -- this describes the list about to be
+/// generated, not the one on screen, so it reads the reader's locale even
+/// while `_ListBody` below it is reading `list.locale`.
 class _RangeBar extends ConsumerWidget {
   const _RangeBar();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final ({DateTime from, DateTime to}) range = ref.watch(
       shoppingRangeProvider,
     );
@@ -107,22 +124,23 @@ class _RangeBar extends ConsumerWidget {
         children: <Widget>[
           Expanded(
             child: Text(
-              '${shortDateLabel(range.from)} – ${shortDateLabel(range.to)}',
+              '${shortDateLabel(range.from, l10n.localeName)} – '
+              '${shortDateLabel(range.to, l10n.localeName)}',
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
           TextButton(
             onPressed: () =>
                 ref.read(shoppingRangeProvider.notifier).thisWeek(),
-            child: const Text('This week'),
+            child: Text(l10n.thisWeekButton),
           ),
           TextButton(
             onPressed: () =>
                 ref.read(shoppingRangeProvider.notifier).nextWeek(),
-            child: const Text('Next'),
+            child: Text(l10n.nextWeekButton),
           ),
           IconButton(
-            tooltip: 'Pick dates',
+            tooltip: l10n.pickDatesTooltip,
             icon: const Icon(Icons.date_range_outlined),
             onPressed: () => _pickRange(context, ref, range),
           ),
@@ -149,37 +167,71 @@ class _RangeBar extends ConsumerWidget {
   }
 }
 
+/// Chrome -- the reader's locale, same as [_RangeBar].
 class _EmptyState extends ConsumerWidget {
   const _EmptyState();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => ListView(
-    children: <Widget>[
-      const SizedBox(height: 64),
-      const Center(child: Icon(Icons.checklist_outlined, size: 56)),
-      const SizedBox(height: 16),
-      const Center(child: Text('No list yet.')),
-      const SizedBox(height: 8),
-      const Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 32),
-          child: Text(
-            'Generate one from what you have planned for these dates.',
-            textAlign: TextAlign.center,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return ListView(
+      children: <Widget>[
+        const SizedBox(height: 64),
+        const Center(child: Icon(Icons.checklist_outlined, size: 56)),
+        const SizedBox(height: 16),
+        Center(child: Text(l10n.noListYetTitle)),
+        const SizedBox(height: 8),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              l10n.noListYetBody,
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
-      ),
-      const SizedBox(height: 24),
-      Center(
-        child: FilledButton.icon(
-          onPressed: () => _generate(context, ref),
-          icon: const Icon(Icons.playlist_add_check_outlined),
-          label: const Text('Generate list'),
+        const SizedBox(height: 24),
+        Center(
+          child: FilledButton.icon(
+            onPressed: () => _generate(context, ref),
+            icon: const Icon(Icons.playlist_add_check_outlined),
+            label: Text(l10n.generateListButton),
+          ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
+
+/// The `ingredients.category` code for an item the catalog never assigned
+/// one -- a sentinel distinct from any real code (never entered as a category
+/// in `supabase/seeds/ingredients.csv`), so the uncategorised bucket is no
+/// longer keyed by the literal display string `'Other'`, which used to be
+/// both a display string and a map key at once.
+const String _uncategorisedCategory = '_uncategorised';
+
+/// A category code's heading, in [l10n]'s own locale -- [l10n] is always
+/// looked up from `list.locale` here (never the reader's), on the two-locale
+/// rule. An unrecognised code (not one of the ten
+/// `supabase/seeds/ingredients.csv` knows, and not [_uncategorisedCategory])
+/// falls through to itself rather than vanishing or being folded into
+/// "Other" -- a category the catalog adds later must still show something.
+/// No `default` arm for the known ten, so a new one compiles only once it has
+/// a label here.
+String _categoryLabel(String code, AppLocalizations l10n) => switch (code) {
+      'produce' => l10n.categoryProduce,
+      'fruit' => l10n.categoryFruit,
+      'dairy' => l10n.categoryDairy,
+      'meat' => l10n.categoryMeat,
+      'fish' => l10n.categoryFish,
+      'pantry' => l10n.categoryPantry,
+      'spice' => l10n.categorySpice,
+      'bakery' => l10n.categoryBakery,
+      'beverage' => l10n.categoryBeverage,
+      'nuts' => l10n.categoryNuts,
+      _uncategorisedCategory => l10n.categoryOther,
+      _ => code,
+    };
 
 class _ListBody extends ConsumerWidget {
   const _ListBody({required this.list});
@@ -188,6 +240,14 @@ class _ListBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // The snapshot's own locale (the two-locale rule) -- never the reader's
+    // ambient one. `lookupAppLocalizations` on `core/ingredients/widgets/
+    // ingredient_line_field.dart`'s own precedent (D86: a value stored in one
+    // language is read back in that language, not the chrome's).
+    final AppLocalizations bodyL10n = lookupAppLocalizations(
+      Locale(list.locale),
+    );
+
     final AsyncValue<UnitCatalog> catalogAsync = ref.watch(
       unitCatalogProvider,
     );
@@ -207,20 +267,18 @@ class _ListBody extends ConsumerWidget {
 
     return ListView(
       children: <Widget>[
-        _GeneratedAt(list: list),
+        _GeneratedAt(list: list, bodyL10n: bodyL10n),
         if (toBuy.isEmpty && staples.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(24),
+          Padding(
+            padding: const EdgeInsets.all(24),
             child: Text(
-              'Nothing to buy -- there was nothing planned for these dates.',
+              bodyL10n.nothingToBuyMessage,
               textAlign: TextAlign.center,
             ),
           ),
-        for (final MapEntry<String, List<ShoppingItem>> group in _byCategory(
-          toBuy,
-        ).entries) ...<Widget>[
-          _CategoryHeading(label: group.key),
-          for (final ShoppingItem item in group.value)
+        for (final _CategoryGroup group in _byCategory(toBuy, bodyL10n)) ...<Widget>[
+          _CategoryHeading(label: group.label),
+          for (final ShoppingItem item in group.items)
             _ItemTile(item: item, units: units, locale: list.locale),
         ],
         if (staples.isNotEmpty)
@@ -228,8 +286,8 @@ class _ListBody extends ConsumerWidget {
           // itself -- the pantry flag changes where a line appears, not
           // whether it exists.
           ExpansionTile(
-            title: Text('Probably have (${staples.length})'),
-            subtitle: const Text('Cupboard staples'),
+            title: Text(bodyL10n.probablyHaveHeading(staples.length)),
+            subtitle: Text(bodyL10n.cupboardStaplesSubtitle),
             children: <Widget>[
               for (final ShoppingItem item in staples)
                 _ItemTile(item: item, units: units, locale: list.locale),
@@ -241,32 +299,59 @@ class _ListBody extends ConsumerWidget {
   }
 
   /// Groups by `ingredients.category`, with uncategorised items last under a
-  /// neutral heading rather than being dropped or shuffled in.
-  Map<String, List<ShoppingItem>> _byCategory(List<ShoppingItem> items) {
+  /// neutral heading rather than being dropped or shuffled in. Sorted by the
+  /// LOCALIZED label, not the raw code, so the order reads correctly in
+  /// whichever language `list.locale` is.
+  List<_CategoryGroup> _byCategory(
+    List<ShoppingItem> items,
+    AppLocalizations bodyL10n,
+  ) {
     final Map<String, List<ShoppingItem>> groups =
         <String, List<ShoppingItem>>{};
     for (final ShoppingItem item in items) {
       groups
-          .putIfAbsent(item.category ?? 'Other', () => <ShoppingItem>[])
+          .putIfAbsent(
+              item.category ?? _uncategorisedCategory, () => <ShoppingItem>[])
           .add(item);
     }
 
-    final List<String> keys = groups.keys.toList()
-      ..sort((String a, String b) {
-        if (a == 'Other') return 1;
-        if (b == 'Other') return -1;
-        return a.compareTo(b);
-      });
-    return <String, List<ShoppingItem>>{
-      for (final String key in keys) key: groups[key]!,
-    };
+    final List<_CategoryGroup> result = <_CategoryGroup>[
+      for (final MapEntry<String, List<ShoppingItem>> entry in groups.entries)
+        _CategoryGroup(
+          code: entry.key,
+          label: _categoryLabel(entry.key, bodyL10n),
+          items: entry.value,
+        ),
+    ];
+    result.sort((_CategoryGroup a, _CategoryGroup b) {
+      if (a.code == _uncategorisedCategory) return 1;
+      if (b.code == _uncategorisedCategory) return -1;
+      return a.label.compareTo(b.label);
+    });
+    return result;
   }
 }
 
+class _CategoryGroup {
+  const _CategoryGroup({
+    required this.code,
+    required this.label,
+    required this.items,
+  });
+
+  final String code;
+  final String label;
+  final List<ShoppingItem> items;
+}
+
 class _GeneratedAt extends ConsumerWidget {
-  const _GeneratedAt({required this.list});
+  const _GeneratedAt({required this.list, required this.bodyL10n});
 
   final ShoppingList list;
+
+  /// The snapshot's own `list.locale`, already resolved by the caller
+  /// (`_ListBody` looks it up once, not per widget).
+  final AppLocalizations bodyL10n;
 
   /// This widget's own claim is narrower than [OfflineBanner]'s (Phase 2
   /// part 6b, D76): it renders exclusively when a list is on screen, which
@@ -275,10 +360,18 @@ class _GeneratedAt extends ConsumerWidget {
   /// -- the banner says "the phone cannot reach the server at all". Neither
   /// replaces the other: the banner is a session-wide fact, this line is a
   /// provenance claim about the data actually on screen.
+  ///
+  /// Its own date line renders in [bodyL10n] (`list.locale`, the two-locale
+  /// rule -- this is the snapshot's own provenance, part of the document).
+  /// The offline sub-line beneath it does not: whether the READER is
+  /// offline right now is a fact about them, not about the document, so it
+  /// reads `AppLocalizations.of(context)` like the rest of the chrome, same
+  /// key as `MealPlanScreen`'s `_SavedCopyLine`.
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bool offline =
         ref.watch(networkStatusProvider) == Reachability.offline;
+    final AppLocalizations l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
@@ -286,14 +379,16 @@ class _GeneratedAt extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            'Generated ${shortDateLabel(list.generatedAt)} '
-            'for ${shortDateLabel(list.dateFrom)} – '
-            '${shortDateLabel(list.dateTo)}',
+            bodyL10n.generatedForRangeLine(
+              shortDateLabel(list.generatedAt, list.locale),
+              shortDateLabel(list.dateFrom, list.locale),
+              shortDateLabel(list.dateTo, list.locale),
+            ),
             style: Theme.of(context).textTheme.bodySmall,
           ),
           if (offline)
             Text(
-              'Showing your saved copy — no connection.',
+              l10n.savedCopyOfflineMessage,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.error,
               ),
@@ -369,6 +464,10 @@ class _ItemTile extends ConsumerWidget {
   /// was when it was generated (D13). The override lands on the next
   /// generation, and the confirmation says so rather than silently
   /// rearranging a document the cook is reading in a shop.
+  ///
+  /// The confirmation is chrome -- the reader's locale -- even though
+  /// `item.displayName` inside it is snapshot data, the same composition
+  /// shape `MealPlanScreen`'s `leftoverEntryLabel` uses for a recipe title.
   Future<void> _togglePantry(BuildContext context, WidgetRef ref) async {
     final bool nowStaple = !item.isPantryStaple;
     try {
@@ -387,13 +486,13 @@ class _ItemTile extends ConsumerWidget {
     }
 
     if (!context.mounted) return;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           nowStaple
-              ? '${item.displayName} marked as always in the cupboard. '
-                    'Takes effect next time you generate.'
-              : '${item.displayName} will be on the list from now on.',
+              ? l10n.markedAsStapleSnackbar(item.displayName)
+              : l10n.willBeOnListSnackbar(item.displayName),
         ),
       ),
     );
