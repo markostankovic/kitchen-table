@@ -20,12 +20,18 @@ answers the question in front of you.
 | Matching, parsing, normalization | `docs/INGREDIENTS.md` |
 | "Why is it built this way?" | grep `docs/decisions/INDEX.md`, then open only that `Dxx` |
 | What happened in a past phase | grep `docs/journal/` — never read whole |
+| A future idea worth remembering | `/idea "<text>"`, or `docs/IDEAS.md` |
 
 Code comments cite decisions by id (`D91`). Seeing one, open
 `docs/decisions/D91-*.md` directly — do not scan the index or the whole set.
 
 Budget: more than ~3 decision files, or any read of `docs/journal/**`, means
 you are exploring rather than working. Say what you are looking for and why.
+
+`docs/IDEAS.md` is raw, unvetted product ideas — deliberately excluded from
+`/plan-slice`'s orientation step, the same way `ARCHITECTURE.md`,
+`DATA_MODEL.md`, and `INGREDIENTS.md` already are. Load it only when someone
+is explicitly asking what ideas exist, not while planning or building a slice.
 
 ## Stack (fixed)
 
