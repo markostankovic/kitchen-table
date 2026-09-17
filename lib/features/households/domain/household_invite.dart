@@ -8,7 +8,7 @@ part 'household_invite.g.dart';
 /// No `deletedAt` and no `updatedAt` (D25). An invite is append-only: created
 /// once, stamped dead once, and `usedAt` is its lifecycle column.
 ///
-/// No `token` either. The column exists so Phase 4's public invite links do
+/// No `token` either. The column exists so Phase 5's public invite links do
 /// not need a migration, but nothing reads it yet and the Edge Functions
 /// deliberately never return it.
 @freezed

@@ -13,7 +13,7 @@ adults. Redemption is a conditional `UPDATE ... where used_at is null`, not
 SELECT-then-UPDATE, which would let one code grant two memberships.
 
 The `token uuid` column exists but is never read or returned. It is there so
-Phase 4's public invite links do not need a migration.
+Phase 5's public invite links do not need a migration.
 
 **Redeeming into a second household is rejected** with 409. The schema permits
 multiple memberships, but the app does not: `fetchCurrent()` returns

@@ -59,7 +59,7 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
       .single();
 
     if (!error) {
-      // token is deliberately not returned. Nothing reads it until the Phase 4
+      // token is deliberately not returned. Nothing reads it until the Phase 5
       // web layer, and an unused link secret in a response body is how it leaks.
       return jsonResponse({
         id: data.id,

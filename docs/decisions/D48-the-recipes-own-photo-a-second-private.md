@@ -18,7 +18,7 @@ unauthenticated URL, exactly the path D16 says does not exist. There is no
 public reader in the app regardless — `recipes.visibility` has one legal
 value — so this costs one round trip (`createSignedUrlsResult`, batched per
 list page) for a guarantee D16 already promised. Revisit only alongside
-Phase 4's read-only web page.
+Phase 5's read-only web page.
 
 **The upload happens inside `RecipeEditor.save()`, never at pick time.** The
 edit screen holds a picked photo's bytes in memory (`RecipeImageUpload`) and

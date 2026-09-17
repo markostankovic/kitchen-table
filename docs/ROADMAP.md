@@ -149,7 +149,43 @@ the reader's own locale, Serbian rendering Latin script throughout.
 
 ---
 
-## Phase 4 — Everything deferred
+## Phase 4 — Going real: a real backend, a real phone, a real sign-in
+
+### Part 1 — A real Supabase project
+
+**Status: not started.** Create a hosted Supabase project; apply existing
+migrations to it (`supabase db push` / `supabase link`); add a gitignored
+`env/hosted.json` next to `env/local.example.json`; configure Edge Function
+secrets on the hosted project; set Auth Site URL / Redirect URLs; verify
+email OTP end-to-end against it (a real inbox, not Mailpit); document the
+local-vs-hosted convention in `docs/ARCHITECTURE.md`.
+
+---
+
+### Part 2 — Run on a real device
+
+**Status: not started.** Build and install on a physical iOS and/or Android
+device (personal signing only, no store distribution) against the hosted
+project from Part 1. Closes the live on-device verification gap noted under
+D92 in `docs/decisions/OPEN.md` — confirm the offline cache and
+network-failure paths actually behave on real network transitions, not just
+in the emulator.
+
+---
+
+### Part 3 — Google sign-in
+
+**Status: not started.** Enable the Google provider on the hosted Supabase
+project; register OAuth client IDs for iOS + Android; add
+`signInWithGoogle()` to `AuthRepository` alongside the existing OTP methods;
+add a Google button to `sign_in_screen.dart`; confirm the
+`on_auth_user_created` profile trigger fires the same way for a
+Google-created user. Needs a Google sign-in Flutter package — new
+third-party dependency, ask before adding it (CLAUDE.md rule 8).
+
+---
+
+## Phase 5 — Everything deferred
 
 Not before Phase 3 ships.
 

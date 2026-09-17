@@ -13,7 +13,7 @@
 #                      flours, sugars, dairy fat, paprika, yeast, oil, chicken
 #                      cuts -- and never for "these are both vegetables".
 # category             produce fruit dairy meat fish pantry spice bakery
-#                      beverage nuts. Nullable; only aisle grouping in Phase 4
+#                      beverage nuts. Nullable; only aisle grouping in Phase 5
 #                      reads it.
 # default_unit_family  mass | volume | count | blank. What the ingredient is
 #                      usually measured in, for the shopping list's display

@@ -149,7 +149,7 @@ Edge Functions:
 | `import-text` | LLM parse of pasted text |
 | `match-ingredients` | LLM tier of matching; costs money and holds the key |
 | `translate-recipe` | LLM, API key |
-| `suggest-meals` | LLM, API key (Phase 4) |
+| `suggest-meals` | LLM, API key (Phase 5) |
 | `create-invite` / `redeem-invite` | must be trusted; writes membership |
 
 Client (direct Supabase, protected by RLS):
@@ -458,4 +458,4 @@ Conventions in a document get ignored around session forty. These fail the build
   enough structure for one person.
 - No dependency injection framework beyond Riverpod.
 - No Realtime, no presence, no conflict resolution.
-- No web layer until Phase 4.
+- No web layer until Phase 5.

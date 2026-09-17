@@ -28,7 +28,7 @@ part of the numbered decision sequence.
   built, named here (D88, D89).
 - **Client vs Edge Function split** — rule of thumb written in
   `docs/ARCHITECTURE.md`. Settled enough to build on.
-- **Thin web layer** — deferred to Phase 4. Leaning Next.js App Router on
+- **Thin web layer** — deferred to Phase 5. Leaning Next.js App Router on
   Vercel against the same Supabase project, for public invite links and
   a shareable read-only recipe page. Not decided in detail. Do not build in
   Phase 1–3.
