@@ -1,0 +1,12 @@
+# Ideas
+
+Raw future product ideas — not vetted, not prioritized, not committed to.
+Capture here so a fleeting thought isn't lost; nothing here is a promise to
+build it.
+
+Not `docs/ROADMAP.md`'s Phase 5 (already-ordered, committed future work) and
+not `docs/decisions/OPEN.md` (technical follow-ups tied to a specific
+decision id). An idea only becomes real work when a human copies it into
+`docs/ROADMAP.md` by hand and deletes the line here.
+
+---
