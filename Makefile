@@ -5,8 +5,8 @@
 DART_DEFINE := --dart-define-from-file=env/local.json
 
 .PHONY: help gen watch lint lint-functions test test-functions test-sql seed \
-	seed-check l10n-check db-reset db-start db-stop types check \
-	functions-serve functions-deploy run run-android
+	seed-check l10n-check db-reset db-start db-stop db-push config-push \
+	types check functions-serve functions-deploy run run-android run-hosted
 
 help:
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -71,6 +71,17 @@ db-stop: ## Stop the local Supabase stack
 db-reset: ## Rebuild the local database from migrations
 	supabase db reset
 
+# The two targets that write to the linked hosted project. Both are one-way:
+# read what they print before confirming. db-push applies every migration the
+# remote has not seen; config-push replaces the whole remote [auth] block with
+# what config.toml says, not just the keys you changed.
+db-push: ## Apply pending migrations to the linked hosted project
+	supabase migration list --linked
+	supabase db push
+
+config-push: ## Push config.toml (auth settings, email templates) to the linked project
+	supabase config push
+
 # NOTE: every deno invocation passes --config explicitly. Deno resolves its
 # import map from the nearest deno.json to the CWD, and these run from the repo
 # root, which has none -- without the flag `import { z } from "zod"` is simply
@@ -101,6 +112,12 @@ run: ## Run the app on iOS/desktop (requires env/local.json)
 # emulator itself. 10.0.2.2 is its alias for the host loopback.
 run-android: ## Run the app on the Android emulator (requires env/android.json)
 	flutter run --dart-define-from-file=env/android.json
+
+# The hosted project. Same binary, different compile-time config (D95) -- the
+# only way to exercise a real inbox, a real device, or the deployed Edge
+# Functions. Local stays the default; reach for this deliberately.
+run-hosted: ## Run the app against hosted Supabase (requires env/hosted.json)
+	flutter run --dart-define-from-file=env/hosted.json
 
 types: ## Regenerate Dart models from the Zod schemas
 	@# docs/ARCHITECTURE.md, "Type flow". schema.ts is the source of truth for

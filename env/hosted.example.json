@@ -1,0 +1,5 @@
+{
+  "_comment": "The hosted Supabase project. Use this instead of env/local.json when you need a real inbox, a real device, or the deployed Edge Functions; local.json stays the default for day-to-day work. SUPABASE_ANON_KEY is the publishable/anon key from `supabase projects api-keys` -- it is public by design and protected by RLS. The service-role key never belongs in this file, or in any file the app compiles against (CLAUDE.md rule 2).",
+  "SUPABASE_URL": "https://<project-ref>.supabase.co",
+  "SUPABASE_ANON_KEY": "paste the anon/publishable key from `supabase projects api-keys`"
+}

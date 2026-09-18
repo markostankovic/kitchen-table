@@ -431,6 +431,105 @@ translated per recipe either way. A failure message inside those same
 widgets stays on the reader's chrome locale: content follows the recipe,
 chrome and failures follow the reader.
 
+## Environments (Phase 4)
+
+Two environments, one codebase: the local Supabase stack and one hosted
+project. They are not two configurations of the app — they are the same binary
+handed a different `SUPABASE_URL` and anon key at compile time (D95).
+
+```
+env/local.json      make run           # the default; iOS and desktop
+env/android.json    make run-android   # the same local stack, via 10.0.2.2
+env/hosted.json     make run-hosted    # the hosted project
+```
+
+Nothing in `lib/` knows which one it got. There is no `isProduction`, no
+environment enum, no branch on the URL — `core/env/Env` reads two strings and
+`core/supabase/` hands them to `Supabase.initialize`. That is the whole
+mechanism, and keeping it that small is the point: an environment the code can
+detect is an environment the code will eventually behave differently in.
+
+Everything else is shared and versioned:
+
+- **One migration set.** `supabase/migrations/` is applied to local by
+  `make db-reset` and to hosted by `make db-push`. The ingredient catalog rides
+  along as generated migrations rather than `seed.sql` (D29), so a fresh hosted
+  database comes up with the catalog already in it.
+- **One `config.toml`.** Auth settings and email templates are pushed to hosted
+  with `make config-push`, never edited in the dashboard. The dashboard has no
+  history and no review; a settings change that only exists there is a change
+  nobody can find later.
+- **One set of Edge Functions**, deployed with `make functions-deploy`.
+
+The sign-in email is the part of this that is easy to get wrong. Sign-in is
+code-entry OTP — `signInWithOtp` with no `emailRedirectTo`, then `verifyOTP`
+with a typed 6-digit token — and the app registers no deep link on either
+platform. `supabase/templates/magic_link.html` carries `{{ .Token }}` and is
+registered as `[auth.email.template.magic_link]` so that the mail contains a
+readable code at all (D95).
+
+**An email template is the one thing `config push` will not carry.** A free tier
+project on the built-in email sender rejects any template, and the CLI sends
+`[auth]` as a single payload, so one template block fails the entire push —
+`otp_length`, `site_url`, an external provider, all of it — with
+`Email template modification is not available for free tier projects using the
+default email provider`. Both halves of that were established against the live
+project rather than inferred: with the block present nothing landed and hosted
+kept minting 8-character codes; with it commented out the same push succeeded
+and hosted began minting 6.
+
+The consequence is a genuinely awkward state, recorded here because it looks
+like a mistake otherwise:
+
+| | Local | Hosted |
+|---|---|---|
+| `[auth.email.template.magic_link]` | on — and required | cannot be pushed |
+| sign-in email | 6-digit code, sr + en | stock "Your sign-in link", no code |
+| email OTP sign-in | works | **does not work** |
+
+Local needs the template: GoTrue's default template carries only
+`{{ .ConfirmationURL }}` on both sides, so without it the Mailpit mail has no
+code to type. Hosted cannot have it. To push any auth setting, comment the block
+out, push, and restore it.
+
+This is not worth engineering around, because email sign-in is being retired.
+Google sign-in replaces it, and Google is configured through
+`[auth.external.google]` — which pushes fine, being nothing to do with email.
+When it lands, the template, its `config.toml` block, `requestOtp`/`verifyOtp`,
+both sign-in screens and their ARB strings go, and this table goes with them.
+Everything else on hosted already works: schema, RLS, the
+`on_auth_user_created` trigger, `create_household`, and both a no-AI and an AI
+Edge Function round trip were verified end to end using a token minted through
+`/auth/v1/admin/generate_link`, which is also how to exercise hosted auth before
+Google arrives.
+
+Do not resolve any of this by editing auth settings in the dashboard — that is
+the drift this whole section exists to prevent.
+
+Secrets split three ways, and the split is the rule that matters:
+
+| Where | What | Why |
+|---|---|---|
+| `env/*.json` (gitignored) | URL + anon key | public by design, protected by RLS |
+| Edge Function secrets | `ANTHROPIC_API_KEY` | never reaches the client (CLAUDE.md rule 2) |
+| Password manager | DB password, service-role key | never in the repo at all |
+
+`env/*.example.json` is committed and carries placeholders only. The
+`SUPABASE_` prefix is reserved on the platform: `SUPABASE_URL`,
+`SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are injected into deployed
+functions automatically, and `supabase secrets set` rejects that prefix.
+
+Where local and hosted genuinely need to differ, the difference goes in a
+`[remotes.<alias>]` block in `config.toml` rather than in the dashboard — the
+CLI merges it over the base config for that project ref only. There is exactly
+one today: `max_frequency`, which is `"1s"` locally so a reset-and-retry loop is
+not spent waiting, and `"1m0s"` on hosted because `[auth.rate_limit]
+email_sent` is 2 per hour and a double-tapped "Send a new code" would otherwise
+burn the hour's budget in two seconds.
+
+`config push` replaces the *whole* remote `[auth]` block, not just the keys you
+changed, so read its diff before confirming — `make config-push` prints it.
+
 ## Enforcement
 
 Conventions in a document get ignored around session forty. These fail the build:

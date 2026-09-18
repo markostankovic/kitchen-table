@@ -236,10 +236,50 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# LOCAL-ONLY IN PRACTICE, and load-bearing until Google sign-in lands.
+#
+# Sign-in is code-entry OTP: the app asks for a typed 6-digit code and registers
+# no deep link on either platform. GoTrue's default template -- local and hosted
+# alike -- is "Your sign-in link" carrying only {{ .ConfirmationURL }}, with the
+# token nowhere in it. Verified by commenting this block out and restarting: the
+# Mailpit message arrives with no code to type and local sign-in is dead. So
+# this block is what makes local development possible at all.
+#
+# It also cannot be pushed. A free tier project on the built-in email sender
+# rejects any email template, and `config push` sends [auth] as one payload, so
+# with this block present the whole push fails with
+#
+#   Email template modification is not available for free tier projects
+#
+# and nothing lands -- not otp_length, not site_url, not an external provider.
+# Comment it out for the duration of a `config push`, then restore it. That is
+# ugly and deliberately temporary: email OTP is being retired in favour of
+# Google sign-in, and this block and supabase/templates/magic_link.html are
+# deleted together at that point (D95).
+[auth.email.template.magic_link]
+subject = "Kod za prijavu / Your sign-in code"
+content_path = "./supabase/templates/magic_link.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
+
+# The one place local and hosted are allowed to differ (D95). `config push`
+# replaces the whole remote [auth] block, so without this the hosted project
+# would inherit max_frequency = "1s" -- a local-dev convenience that exists so a
+# reset-and-retry loop is not spent waiting. On hosted that is actively harmful:
+# [auth.rate_limit] email_sent is 2 per hour, so a double-tapped "Send a new
+# code" would burn the whole hour's budget in two seconds and strand the user.
+# 1m0s is the platform default and the right answer for a real inbox.
+#
+# Everything else stays shared on purpose. A second override here is a decision,
+# not a convenience -- each one is a way for the two environments to drift.
+[remotes.hosted]
+project_id = "cbajkezfhssrvbdbedqt"
+
+[remotes.hosted.auth.email]
+max_frequency = "1m0s"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

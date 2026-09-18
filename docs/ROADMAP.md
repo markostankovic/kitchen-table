@@ -153,12 +153,17 @@ the reader's own locale, Serbian rendering Latin script throughout.
 
 ### Part 1 — A real Supabase project
 
-**Status: not started.** Create a hosted Supabase project; apply existing
-migrations to it (`supabase db push` / `supabase link`); add a gitignored
-`env/hosted.json` next to `env/local.example.json`; configure Edge Function
-secrets on the hosted project; set Auth Site URL / Redirect URLs; verify
-email OTP end-to-end against it (a real inbox, not Mailpit); document the
-local-vs-hosted convention in `docs/ARCHITECTURE.md`.
+**Status: complete** (`b2400e1`). Decisions taken during it: D95–D96. See
+`docs/journal/phase-4.md`.
+
+Shipped narrower than planned. The hosted project (`cbajkezfhssrvbdbedqt`,
+West EU) carries all 18 migrations, the catalog, the function secret and all
+seven Edge Functions, with `env/hosted.json`, `make run-hosted` / `db-push` /
+`config-push`, and a new `## Environments` section in `docs/ARCHITECTURE.md`.
+The one criterion not met — "verify email OTP end-to-end against a real
+inbox" — was **withdrawn, not deferred**: a free tier project cannot send a
+custom email template, so that criterion describes a feature being deleted
+(D96). Verified instead through every path that does not go through the mail.
 
 ---
 
@@ -175,13 +180,45 @@ in the emulator.
 
 ### Part 3 — Google sign-in
 
-**Status: not started.** Enable the Google provider on the hosted Supabase
-project; register OAuth client IDs for iOS + Android; add
-`signInWithGoogle()` to `AuthRepository` alongside the existing OTP methods;
-add a Google button to `sign_in_screen.dart`; confirm the
-`on_auth_user_created` profile trigger fires the same way for a
-Google-created user. Needs a Google sign-in Flutter package — new
-third-party dependency, ask before adding it (CLAUDE.md rule 8).
+**Status: not started.** Enable the Google provider through
+`[auth.external.google]` in `config.toml` and `make config-push` — comment
+`[auth.email.template.magic_link]` out for the duration of the push, or it
+fails the whole `[auth]` block (D95). Register OAuth client IDs for iOS +
+Android; add `signInWithGoogle()` to `AuthRepository`; add a Google button to
+`sign_in_screen.dart`; confirm the `on_auth_user_created` profile trigger
+fires the same way for a Google-created user, against hosted. Needs a Google
+sign-in Flutter package — new third-party dependency, ask before adding it
+(CLAUDE.md rule 8).
+
+Google lands **alongside** OTP here and does not replace it yet: Part 4 is
+what removes the old path, once this one is proven (D96).
+
+---
+
+### Part 4 — Remove email OTP
+
+**Status: not started.** Depends on Part 3 being proven on hosted. Remove
+`requestOtp` / `verifyOtp` from `AuthRepository`, both the sign-in and
+verify-OTP screens and their routes, the ARB strings on both sides
+(`signInSubtitle`, `sendCode`, `checkEmailTitle`, `codeSentTo`,
+`codeEmptyError`, `resendCode`, `verify`, `failureCodeNotAccepted`),
+`FailureCode.codeNotAccepted`, `supabase/templates/magic_link.html` and its
+`config.toml` block. With the template gone, `make config-push` stops needing
+the comment-out dance (D96).
+
+Household invite codes are a different system and stay. Local development
+loses Mailpit sign-in; the replacement is minting a token via
+`POST /auth/v1/admin/generate_link`, not a dev-only button.
+
+---
+
+### Part 5 — Apple sign-in
+
+**Status: not started.** Required before any App Store submission, not
+optional polish: Guideline 4.8 requires an equivalent privacy-preserving
+option wherever a third-party login is offered, so Google-only ships for
+personal signing and TestFlight but not to the store (D96). Needs a Sign in
+with Apple package — new third-party dependency, ask first.
 
 ---
 
