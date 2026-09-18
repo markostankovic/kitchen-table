@@ -153,7 +153,7 @@ the reader's own locale, Serbian rendering Latin script throughout.
 
 ### Part 1 — A real Supabase project
 
-**Status: complete** (`b2400e1`). Decisions taken during it: D95–D96. See
+**Status: complete** (`69c94ea`). Decisions taken during it: D95–D96. See
 `docs/journal/phase-4.md`.
 
 Shipped narrower than planned. The hosted project (`cbajkezfhssrvbdbedqt`,

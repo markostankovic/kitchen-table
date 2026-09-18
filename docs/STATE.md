@@ -1,7 +1,7 @@
 # State — 2026-09-18
 
 **Branch:** `main`
-**Last shipped:** Phase 4 part 1 (`b2400e1`) — a real Supabase project. Hosted project
+**Last shipped:** Phase 4 part 1 (`69c94ea`) — a real Supabase project. Hosted project
 `cbajkezfhssrvbdbedqt` (West EU) carries all 18 migrations, the ingredient
 catalog, `ANTHROPIC_API_KEY` and all seven Edge Functions; `env/hosted.json`
 + `make run-hosted` / `db-push` / `config-push`; `## Environments` in
