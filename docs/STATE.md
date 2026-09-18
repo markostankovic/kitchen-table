@@ -1,7 +1,7 @@
 # State — 2026-09-18
 
 **Branch:** `main`
-**Last shipped:** Phase 4 part 2 (`<PART2_COMMIT>`) — a signed release build,
+**Last shipped:** Phase 4 part 2 (`cab2ee0`) — a signed release build,
 walked end to end on a physical Galaxy S25 against the hosted project.
 `android/key.properties` (gitignored, falls back to the debug keystore when
 absent — D97) + `make install-hosted` build and install a release APK;

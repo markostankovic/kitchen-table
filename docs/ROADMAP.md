@@ -169,7 +169,7 @@ custom email template, so that criterion describes a feature being deleted
 
 ### Part 2 — Run on a real device
 
-**Status: complete** (`<PART2_COMMIT>`). Decisions taken during it: D97. See
+**Status: complete** (`cab2ee0`). Decisions taken during it: D97. See
 `docs/journal/phase-4.md`.
 
 Android only (iOS is its own slice — no `ios/Podfile` has ever been
