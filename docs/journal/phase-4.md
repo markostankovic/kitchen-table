@@ -314,3 +314,64 @@ to idle), so it is useful for UI work and useless for sign-in itself.
 still tracked as its own slice.
 
 ---
+
+### Part 4 — Remove email OTP
+
+**Status: complete** (`37a837f`). Decisions taken during it: D99. Google
+becomes the only way in, as D96 planned once part 3 proved it on hosted.
+
+`AuthRepository.requestOtp` / `verifyOtp` are gone, along with
+`verify_otp_screen.dart` and `VerifyOtpRoute`. The sign-in screen drops the
+email `Form`, the "ili" divider, and `_OrDivider`; the Google button --
+unchanged from part 3 -- is now the primary `FilledButton` instead of the
+`OutlinedButton` sitting second. `supabase/templates/magic_link.html` and its
+`[auth.email.template.magic_link]` block in `config.toml` are deleted
+together, which is the whole reason this slice mattered operationally: that
+block was the one thing `supabase config push` could never carry on a
+free-tier project, so every push meant commenting it out, pushing, and
+restoring it by hand (D95). With it gone, `make config-push` sends the whole
+`[auth]` payload in one shot.
+
+- **Both the ROADMAP's Part 4 list and D96 itself were wrong about
+  `FailureCode.codeNotAccepted`.** Both named it for deletion alongside the
+  rest of the OTP vocabulary. It stays: `supabase_failure.dart` maps the
+  invite-redemption Edge Function's `invalid_code` / `invalid_body` /
+  `method_not_allowed` slugs onto the same code, and
+  `supabase_failure_test.dart` asserts it -- household invites are a
+  separate system (D96 says so) and were never actually in scope. Only the
+  OTP-specific clauses came out: the throw site in `auth_repository.dart`,
+  the "client-side verifyOTP returned no user" clause in the enum's doc
+  comment, and the matching clause in `app_sr.arb`'s
+  `@failureCodeNotAccepted` description. D99 records this so the next reader
+  does not hit the same contradiction and re-delete it.
+- **`[auth.email]` stays enabled server-side**, `otp_length` / `otp_expiry`
+  untouched -- smallest diff, and nothing about this slice or part 3's
+  identity-linking work was shown to depend on turning it off.
+- **`docs/ARCHITECTURE.md`'s deployment section collapsed** from a
+  three-paragraph awkward-state writeup plus a Local/Hosted table down to one
+  short paragraph: sign-in is Google-only via a native ID token and
+  `signInWithIdToken`, and D95's free-tier template limitation is now
+  historical background for *why*, not a live constraint to route around.
+- Two test files (`app_shell_test.dart`, `shared_import_listener_test.dart`)
+  used `sr.sendCode` as a marker string for "the sign-in screen is showing" --
+  not named in the slice's own file list, caught by `dart analyze` after
+  deleting the ARB key. Repointed to `sr.signInWithGoogle`.
+
+**How it was verified.** `make lint lint-functions test test-functions
+test-sql l10n-check` all green (`seed-check` stays red from `c8be2bc`,
+unrelated and already tracked). Then, on the same physical Galaxy S25 as
+parts 2 and 3, against hosted: a fresh release install (the prior test
+build's signature no longer matched, so it needed an uninstall first) showed
+the sign-in screen with only the brand name, the reworded subtitle, and one
+Google button -- no email field, no divider. Tapping it opened the native
+account chooser; selecting the account landed directly in the existing
+household's recipe list, with no verify-code screen anywhere in the flow.
+
+**Not re-run this slice.** The brand-new-Google-user-lands-on
+`CreateHouseholdRoute` path that part 3 flagged as unwatched is still
+unwatched -- this slice signed in with an account that already has a
+household. The emulator's inability to complete a real Google sign-in
+(part 3's finding) is unchanged and applies here too: it can show the new
+UI but not exercise the flow.
+
+---

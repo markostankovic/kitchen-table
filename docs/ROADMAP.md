@@ -210,18 +210,24 @@ Google's `full_name`.
 
 ### Part 4 — Remove email OTP
 
-**Status: not started.** Depends on Part 3 being proven on hosted. Remove
-`requestOtp` / `verifyOtp` from `AuthRepository`, both the sign-in and
-verify-OTP screens and their routes, the ARB strings on both sides
-(`signInSubtitle`, `sendCode`, `checkEmailTitle`, `codeSentTo`,
-`codeEmptyError`, `resendCode`, `verify`, `failureCodeNotAccepted`),
-`FailureCode.codeNotAccepted`, `supabase/templates/magic_link.html` and its
-`config.toml` block. With the template gone, `make config-push` stops needing
-the comment-out dance (D96).
+**Status: complete** (`37a837f`). Decisions taken during it: D99. See
+`docs/journal/phase-4.md`.
 
-Household invite codes are a different system and stay. Local development
-loses Mailpit sign-in; the replacement is minting a token via
-`POST /auth/v1/admin/generate_link`, not a dev-only button.
+Google is now the only way in. Removed `requestOtp` / `verifyOtp` from
+`AuthRepository`, the verify-OTP screen and its route, the email form and
+"ili" divider on the sign-in screen, the OTP ARB strings on both sides,
+`supabase/templates/magic_link.html` and its `config.toml` block. With the
+template gone, `make config-push` sends the whole `[auth]` payload in one
+shot -- no more commenting the block out, pushing, and restoring it (D95's
+dance, retired).
+
+This list originally named `FailureCode.codeNotAccepted` for deletion too;
+that was wrong (D99) -- household invite redemption maps three Edge Function
+slugs onto the same code, so it stays, and only its OTP-specific references
+were trimmed. Household invite codes remain a different system, otherwise
+untouched. Verified end to end on the physical Galaxy S25 against hosted:
+fresh install, sign-in screen shows one Google button, and tapping it lands
+straight in the existing household with no verify-code screen anywhere.
 
 ---
 
