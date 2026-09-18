@@ -471,12 +471,22 @@ Everything else is shared and versioned:
   nobody can find later.
 - **One set of Edge Functions**, deployed with `make functions-deploy`.
 
-The sign-in email is the part of this that is easy to get wrong. Sign-in is
-code-entry OTP — `signInWithOtp` with no `emailRedirectTo`, then `verifyOTP`
+The sign-in email is the part of this that is easy to get wrong. Email sign-in
+is code-entry OTP — `signInWithOtp` with no `emailRedirectTo`, then `verifyOTP`
 with a typed 6-digit token — and the app registers no deep link on either
 platform. `supabase/templates/magic_link.html` carries `{{ .Token }}` and is
 registered as `[auth.email.template.magic_link]` so that the mail contains a
 readable code at all (D95).
+
+Google sign-in (D96) runs alongside it and keeps the no-deep-link property
+intact, which is most of why it was chosen: `google_sign_in` obtains an ID
+token natively and hands it to `signInWithIdToken`, so there is no browser
+redirect to come back from, nothing to register in `AndroidManifest.xml`, and
+`site_url` / `additional_redirect_urls` stay untouched. Its client IDs are
+committed constants rather than `env/*.json` keys — the one carve-out from
+"env files carry only what differs" — because they are public and identical in
+both environments (D98). Email OTP is retired in Phase 4 part 4; until then
+both paths are live.
 
 **An email template is the one thing `config push` will not carry.** A free tier
 project on the built-in email sender rejects any template, and the CLI sends

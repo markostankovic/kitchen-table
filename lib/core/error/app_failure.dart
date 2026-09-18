@@ -60,6 +60,18 @@ enum FailureCode {
   /// GoTrue 429.
   tooManyAttempts,
 
+  /// Native Google sign-in failed for a reason the user can do nothing about:
+  /// `clientConfigurationError`, `providerConfigurationError`, `interrupted`,
+  /// `uiUnavailable`, `userMismatch`, `unknownError`. One sentence for all of
+  /// them, because they differ only in what the *developer* should go fix.
+  ///
+  /// `canceled` deliberately never reaches here: dismissing the account
+  /// chooser returns null from `AuthRepository.signInWithGoogle` rather than
+  /// throwing, since it is neither an error nor a result. Offline does not
+  /// reach here either -- `runGuarded` maps `SocketException` to
+  /// [NetworkFailure] first.
+  googleSignInFailed,
+
   // --- Not found -------------------------------------------------------------
   /// [NotFoundFailure]'s default: `PGRST116`.
   notFound,

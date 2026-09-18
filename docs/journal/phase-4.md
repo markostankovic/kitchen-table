@@ -208,3 +208,109 @@ card was on hand. Handwritten-card OCR quality stays an open question in
 still tracked as its own slice.
 
 ---
+
+### Part 3 — Google sign-in
+
+**Status: complete.** Decisions taken during it: D98. Google lands alongside
+email OTP, not instead of it -- part 4 is what removes the old path (D96).
+
+`AuthRepository.signInWithGoogle()` runs the native `google_sign_in` v7 flow
+and feeds the resulting ID token to `signInWithIdToken`, so nothing registers
+a deep link on either platform and `site_url` was never touched -- most of
+why the native flow was chosen over a browser redirect. The sign-in screen
+grows a Google button below the existing email form behind an "ili" divider.
+`google_sign_in` is a new dependency under rule 8, asked for and approved,
+and `tool/check_layers.dart` now holds it inside `data/` the same way it
+holds `supabase_flutter`, with `GoogleSignInException` added to the banned
+cross-layer types.
+
+- **v7 is a hard break from v6**, and Supabase's own Flutter snippet is
+  wrong for a button press twice over. It calls
+  `attemptLightweightAuthentication()`, which is the *silent* restore path
+  and returns null when there is no session to restore; `authenticate()` is
+  what a tap wants. It also calls `authorizeScopes(['email', 'profile'])`
+  purely to obtain an `accessToken` -- which is optional on
+  `signInWithIdToken`, since GoTrue validates the `idToken` by itself. The
+  slice flagged that as its one genuine uncertainty. **Settled on device:
+  the bare `idToken` is accepted, and the account chooser is a single sheet
+  with no second consent prompt.** The `authorizeScopes` call stays out.
+- **A cancelled account chooser returns null, not an `AppFailure`.** Backing
+  out of the picker is neither an error nor a result, and D92's vocabulary
+  has no sentence for it that would not be a lie on screen. One new
+  `FailureCode.googleSignInFailed` covers every other
+  `GoogleSignInExceptionCode`; `failure_l10n.dart`'s `default`-less switch
+  refused to compile until it had a sentence in both ARBs, which is the
+  guard working exactly as designed.
+- **Two departures from the slice's own sketch.** The `idToken == null`
+  throw now carries `code: FailureCode.googleSignInFailed` -- the sketch left
+  it uncoded, which under D92 would have put an English log line on screen
+  verbatim. And the lazy `initialize()` guard is a **static** bool rather
+  than an instance field, because `GoogleSignIn.instance` is a process-wide
+  singleton and a flag tied to the provider's lifetime would let a rebuilt
+  `authRepositoryProvider` re-initialize an already-initialized SDK.
+  `AuthRepository` stays `const` as a result.
+- **The plan was wrong about the Android OAuth clients** and the walk proved
+  it. It called for one client registered with both SHA-1s; a Google Cloud
+  Android client binds to one package name plus exactly *one* fingerprint,
+  so D97's two keystores are two separate clients and `client_id` is a
+  four-entry list -- web, Android-debug, Android-upload, iOS. Neither
+  Android ID appears in `lib/` at all: Android authenticates by package plus
+  signature and asks for a token audienced at the web client. Where the IDs
+  live, and why they are committed rather than in `env/*.json`, is D98.
+- **`minSdk` needed no change**, verified rather than assumed: Flutter's
+  default is 24 (`FlutterExtension.kt`) and `google_sign_in_android` requires
+  exactly 24.
+
+**How it was verified.** `make config-push` landed the
+`[auth.external.google]` block on the hosted project with
+`[auth.email.template.magic_link]` commented out for the duration and
+restored immediately after (D95's dance, still ugly, still temporary). Then
+on the same physical Galaxy S25 as part 2, against hosted:
+
+- **An existing email-OTP user signing in with Google lands in their
+  existing household**, not as a fresh user -- the check that would have hurt
+  most if it were wrong, since `enable_manual_linking = false` means it rests
+  entirely on GoTrue linking a provider-verified email. Confirmed twice, on
+  both builds. The evidence is stronger than the recipe list looking right:
+  the profile's locale was still English, which a newly created row could not
+  be (D77 makes a fresh profile Serbian-first), and the install was fresh
+  both times, so the Drift cache was empty and the recipes came over the wire
+  on the new session rather than off disk.
+- **Both Android clients are proven**, which is what a release-only walk
+  would have missed. The release APK signs with the upload key
+  (`A8:CA:F7:B0:…:ED:61:D8:89`, matched against the keystore with
+  `apksigner`) and the debug APK with the debug key
+  (`21:20:FB:60:…:DE:2B:2E:95`); both signed in against hosted. A wrong
+  fingerprint on the debug client would have broken every future
+  `make run-android` and surfaced at the worst possible moment.
+- Cancelling the chooser returns the button to idle with no error text --
+  the null-return path, confirmed by the absence of the sentence that any
+  non-`canceled` code would have rendered.
+- The signed-out screen renders in Serbian, as D77 says it must: nobody is
+  signed in, so there is no `profiles.locale` and the device locale is never
+  consulted.
+
+**Not run.** A brand-new Google user landing on `CreateHouseholdRoute`
+through `on_auth_user_created` -- the trigger is unchanged from part 1 and
+fires on `auth.users` regardless of provider, but this slice did not watch it
+do so, and the ROADMAP asked for it explicitly. Expect `display_name` to come
+out as the email local-part when someone does: `handle_new_user()` does
+`split_part(new.email, '@', 1)` and ignores Google's `full_name`, which is
+worth noticing and not worth fixing here. Airplane mode against the Google
+button, and a `make otp` regression check, were also skipped -- the first
+because the emulator could not reach the network stage at all, the second
+because it needs the service-role key.
+
+**The emulator cannot do this walk**, and that is worth recording so the next
+session does not spend the time. An API 37 / Android 17 Play image refuses to
+add a Google account at all ("Something went wrong", `Accounts: 0`), with the
+usual causes ruled out -- clock in sync, network up, Play Services and Play
+Store both current. It is Google's device-integrity gating, not a
+configuration fault. Everything short of the token exchange did work there
+(screen renders, plugin initializes, Credential Manager opens, cancel returns
+to idle), so it is useful for UI work and useless for sign-in itself.
+
+`make check` is clean apart from `seed-check`, unchanged since part 1 and
+still tracked as its own slice.
+
+---

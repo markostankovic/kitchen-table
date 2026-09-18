@@ -55,6 +55,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sendCode => 'Send code';
 
   @override
+  String get orDivider => 'or';
+
+  @override
+  String get signInWithGoogle => 'Sign in with Google';
+
+  @override
   String get checkEmailTitle => 'Check your email';
 
   @override
@@ -186,6 +192,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get failureTooManyAttempts =>
       'Too many attempts. Wait a minute and try again.';
+
+  @override
+  String get failureGoogleSignInFailed => 'Google sign-in failed. Try again.';
 
   @override
   String get failureNotFound => 'Not found.';

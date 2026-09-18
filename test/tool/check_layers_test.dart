@@ -87,6 +87,32 @@ void main() {
     expect(result.exitCode, 0, reason: result.output);
   });
 
+  test('rejects google_sign_in outside data/', () {
+    final result = runChecker(<String, String>{
+      'lib/features/auth/presentation/sign_in_screen.dart':
+          "import 'package:google_sign_in/google_sign_in.dart';\n",
+    });
+    expect(result.exitCode, 1);
+    expect(result.output, contains('google_sign_in may only be imported in'));
+  });
+
+  test('allows google_sign_in in data/', () {
+    final result = runChecker(<String, String>{
+      'lib/features/auth/data/auth_repository.dart':
+          "import 'package:google_sign_in/google_sign_in.dart';\n",
+    });
+    expect(result.exitCode, 0, reason: result.output);
+  });
+
+  test('rejects GoogleSignInException escaping data/', () {
+    final result = runChecker(<String, String>{
+      'lib/features/auth/application/auth_providers.dart':
+          "void f(GoogleSignInException e) {}\n",
+    });
+    expect(result.exitCode, 1);
+    expect(result.output, contains('GoogleSignInException'));
+  });
+
   test('rejects Flutter imports in domain/ (rule 7)', () {
     final result = runChecker(<String, String>{
       'lib/features/recipes/domain/recipe.dart':

@@ -185,18 +185,26 @@ from a real camera (step 8) was not run — no physical recipe card on hand.
 
 ### Part 3 — Google sign-in
 
-**Status: not started.** Enable the Google provider through
-`[auth.external.google]` in `config.toml` and `make config-push` — comment
-`[auth.email.template.magic_link]` out for the duration of the push, or it
-fails the whole `[auth]` block (D95). Register OAuth client IDs for iOS +
-Android; add `signInWithGoogle()` to `AuthRepository`; add a Google button to
-`sign_in_screen.dart`; confirm the `on_auth_user_created` profile trigger
-fires the same way for a Google-created user, against hosted. Needs a Google
-sign-in Flutter package — new third-party dependency, ask before adding it
-(CLAUDE.md rule 8).
+**Status: complete** (`<PART3_COMMIT>`). Decisions taken during it: D98. See
+`docs/journal/phase-4.md`.
 
-Google lands **alongside** OTP here and does not replace it yet: Part 4 is
-what removes the old path, once this one is proven (D96).
+Native `google_sign_in` v7 feeding `signInWithIdToken`, not a browser
+redirect — so no deep link is registered on either platform and `site_url`
+is untouched. Google lands **alongside** OTP, as D96 planned; Part 4 is what
+removes the old path. Verified on the physical Galaxy S25 against hosted:
+an existing email-OTP user signing in with Google lands in their **existing**
+household, and both Android OAuth clients work — release (upload key) and
+debug (debug key), which is what proves D97's fallback path. The bare
+`idToken` is accepted without `authorizeScopes`, so there is no second
+consent sheet. Client IDs are committed constants (D98); the Android side
+needed two clients, not one with two fingerprints.
+
+**Not run:** a brand-new Google user landing on `CreateHouseholdRoute`
+through `on_auth_user_created`. The trigger is unchanged and fires on
+`auth.users` regardless of provider, but this slice did not watch it do so.
+Note for whoever does: `display_name` will be the email local-part, since
+`handle_new_user()` does `split_part(new.email, '@', 1)` and ignores
+Google's `full_name`.
 
 ---
 

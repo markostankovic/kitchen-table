@@ -35,6 +35,11 @@ const Map<String, String> _bannedTypes = <String, String>{
       'Supabase errors must be translated to an AppFailure inside data/',
   'AuthException':
       'Supabase errors must be translated to an AppFailure inside data/',
+  // The import rule above already stops the plugin from being imported
+  // outside data/; this catches the type being named without one, which is
+  // what a re-export or a `dynamic`-typed catch would look like.
+  'GoogleSignInException':
+      'Google sign-in errors must be translated to an AppFailure inside data/',
   // Edge Function errors. Note this does not match the Functions* subtypes
   // (FunctionsHttpException and friends -- plural), because the match is a
   // substring test. The declared type anyone actually writes in a catch is the
@@ -118,6 +123,20 @@ void _checkImport({
     if (!allowed) {
       violations.add(Violation(fromPath, lineNo,
           'supabase_flutter may only be imported in data/ or core/supabase/'));
+    }
+  }
+
+  // Narrower than supabase_flutter's rule on purpose: there is no
+  // `core/google_sign_in/` and no reason for one. The whole plugin surface --
+  // `GoogleSignIn`, `GoogleSignInAccount`, `GoogleSignInException` -- lives in
+  // one method of `auth/data/auth_repository.dart`, and the client IDs it
+  // needs are plain strings in `core/env/google_auth.dart`, which imports
+  // nothing.
+  if (uri.startsWith('package:google_sign_in')) {
+    if (layer != 'data') {
+      violations.add(Violation(fromPath, lineNo,
+          'google_sign_in may only be imported in data/ -- a Google sign-in '
+          'failure becomes an AppFailure there (D92)'));
     }
   }
 

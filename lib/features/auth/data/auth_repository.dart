@@ -1,9 +1,17 @@
 /// Auth data access. The only place in this feature that touches Supabase
 /// (CLAUDE.md rule 1).
+///
+/// `google_sign_in` is held to the same boundary: every `GoogleSignIn*` type,
+/// `GoogleSignInException` included, is confined to this file, exactly as
+/// `AuthException` is (`tool/check_layers.dart`).
 library;
 
+import 'dart:io' show Platform;
+
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/env/google_auth.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/supabase/supabase_failure.dart';
 import '../domain/app_user.dart';
@@ -13,6 +21,20 @@ class AuthRepository {
   const AuthRepository(this._client);
 
   final SupabaseClient _client;
+
+  /// Whether [GoogleSignIn.initialize] has already run in this process.
+  ///
+  /// Static because what it tracks is static: `GoogleSignIn.instance` is a
+  /// process-wide singleton, so a flag on the repository instance would let a
+  /// rebuilt `authRepositoryProvider` re-initialize an SDK that is already
+  /// initialized. (It is `keepAlive`, so that does not happen today -- but the
+  /// flag should describe the singleton, not the provider's lifetime.)
+  ///
+  /// Initialization is lazy rather than done at startup: the client IDs are
+  /// compile-time constants, so there is nothing to await before the first
+  /// frame, and a user who only ever signs in by email never pays for the
+  /// native SDK waking up.
+  static bool _googleInitialized = false;
 
   /// The current user, synchronously.
   ///
@@ -60,6 +82,70 @@ class AuthRepository {
         }
         return user;
       });
+
+  /// Signs in with Google. Returns null when the user dismissed the chooser.
+  ///
+  /// Null rather than an [AppFailure] is deliberate: backing out of the
+  /// account picker is not an error, and D92's vocabulary has no sentence for
+  /// it that would not be a lie on screen.
+  ///
+  /// The native ID-token flow, not a browser redirect -- which is why neither
+  /// platform registers a deep link and `site_url` is untouched. The token
+  /// goes straight to GoTrue, which terminates it in an ordinary Supabase
+  /// session; it reaches [watchAuthState] through `onAuthStateChange` like
+  /// every other sign-in, so nothing downstream needed a change.
+  ///
+  /// No `authorizeScopes(['email', 'profile'])` call, which Supabase's own
+  /// Flutter snippet has: it exists only to obtain an `accessToken`,
+  /// `accessToken` is optional on `signInWithIdToken`, GoTrue validates the
+  /// `idToken` by itself, and asking for it costs a second consent sheet on
+  /// Android. (The same snippet uses `attemptLightweightAuthentication()`,
+  /// which is the *silent* restore path and returns null when there is no
+  /// session to restore -- wrong for a button press. [authenticate] is right.)
+  ///
+  /// `AppUser` models only `id` and `email`; Google's `full_name` and
+  /// `avatar_url` land in `user_metadata` and are left unmodelled.
+  Future<AppUser?> signInWithGoogle() => runGuarded(() async {
+        await _ensureGoogleInitialized();
+        try {
+          final GoogleSignInAccount account =
+              await GoogleSignIn.instance.authenticate();
+          final String? idToken = account.authentication.idToken;
+          if (idToken == null) {
+            // Not reachable through any documented path -- `idToken` is
+            // nullable on the token container only so the class can grow.
+            throw const UnknownFailure(
+                message: 'Google returned no ID token.',
+                code: FailureCode.googleSignInFailed);
+          }
+
+          final AuthResponse response = await _client.auth.signInWithIdToken(
+            provider: OAuthProvider.google,
+            idToken: idToken,
+          );
+          return _toAppUser(response.user);
+        } on GoogleSignInException catch (e) {
+          if (e.code == GoogleSignInExceptionCode.canceled) return null;
+          throw UnknownFailure(
+              message: 'Google sign-in failed: ${e.code.name}.',
+              code: FailureCode.googleSignInFailed,
+              cause: e);
+        }
+      });
+
+  /// Runs the plugin's one-shot `initialize()`, once.
+  ///
+  /// Android wants [GoogleAuth.serverClientId] alone -- the Android client is
+  /// matched by package name and signing SHA-1 (D97), not by an ID passed
+  /// here. iOS additionally needs its own `clientId`.
+  Future<void> _ensureGoogleInitialized() async {
+    if (_googleInitialized) return;
+    await GoogleSignIn.instance.initialize(
+      serverClientId: GoogleAuth.serverClientId,
+      clientId: Platform.isIOS ? GoogleAuth.iosClientId : null,
+    );
+    _googleInitialized = true;
+  }
 
   Future<void> signOut() => runGuarded(() async {
         await _client.auth.signOut();

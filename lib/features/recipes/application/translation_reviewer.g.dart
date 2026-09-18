@@ -106,7 +106,7 @@ final class TranslationReviewerProvider
 }
 
 String _$translationReviewerHash() =>
-    r'b57249c2af6a093f4748d98372393d5568b8c6f5';
+    r'4ba65c087840c973a5621a05a8295ee6369d92c1';
 
 /// The translation review screen's state and the save that ends it (Phase 3,
 /// part 3).

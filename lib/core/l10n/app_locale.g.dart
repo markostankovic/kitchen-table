@@ -48,4 +48,4 @@ final class AppLocaleProvider
   }
 }
 
-String _$appLocaleHash() => r'0561239d42745653c36cd371195272cd96ea6ae8';
+String _$appLocaleHash() => r'b178424aed33e5c8d84d42a1e9d9b9a1a5c53f68';

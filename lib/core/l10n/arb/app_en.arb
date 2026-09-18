@@ -18,6 +18,8 @@
   "emailEmptyError": "Enter your email address.",
   "emailInvalidError": "That does not look like an email address.",
   "sendCode": "Send code",
+  "orDivider": "or",
+  "signInWithGoogle": "Sign in with Google",
 
   "checkEmailTitle": "Check your email",
   "codeSentTo": "We sent a code to {email}.",
@@ -62,6 +64,7 @@
   "failureSignInAgain": "Please sign in again.",
   "failureNoHousehold": "You are not in a household yet.",
   "failureTooManyAttempts": "Too many attempts. Wait a minute and try again.",
+  "failureGoogleSignInFailed": "Google sign-in failed. Try again.",
   "failureNotFound": "Not found.",
   "failureRecipeNotFound": "That recipe is not available.",
   "failureInviteNotFound": "That code is not valid.",

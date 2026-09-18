@@ -48,6 +48,7 @@ String _sentence(FailureCode code, AppLocalizations l10n) => switch (code) {
       FailureCode.signInAgain => l10n.failureSignInAgain,
       FailureCode.noHousehold => l10n.failureNoHousehold,
       FailureCode.tooManyAttempts => l10n.failureTooManyAttempts,
+      FailureCode.googleSignInFailed => l10n.failureGoogleSignInFailed,
       FailureCode.notFound => l10n.failureNotFound,
       FailureCode.recipeNotFound => l10n.failureRecipeNotFound,
       FailureCode.noTranslationToReview => l10n.noTranslationToReview,

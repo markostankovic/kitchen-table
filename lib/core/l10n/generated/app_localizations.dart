@@ -188,6 +188,18 @@ abstract class AppLocalizations {
   /// **'Pošalji kod'**
   String get sendCode;
 
+  /// Sign-in screen, the divider between the email form and the Google button.
+  ///
+  /// In sr, this message translates to:
+  /// **'ili'**
+  String get orDivider;
+
+  /// Sign-in screen, the Google sign-in button. 'Google' is a brand name and stays untranslated, the same way 'Kitchen Table' does.
+  ///
+  /// In sr, this message translates to:
+  /// **'Prijavi se Google nalogom'**
+  String get signInWithGoogle;
+
   /// Verify-OTP screen title.
   ///
   /// In sr, this message translates to:
@@ -427,6 +439,12 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Previše pokušaja. Sačekajte minut i pokušajte ponovo.'**
   String get failureTooManyAttempts;
+
+  /// Failure vocabulary (D92), FailureCode.googleSignInFailed -- every GoogleSignInException code except canceled, which returns null instead of throwing.
+  ///
+  /// In sr, this message translates to:
+  /// **'Prijava Google nalogom nije uspela. Pokušajte ponovo.'**
+  String get failureGoogleSignInFailed;
 
   /// Failure vocabulary (D92), FailureCode.notFound -- the generic row-absent-or-invisible case.
   ///

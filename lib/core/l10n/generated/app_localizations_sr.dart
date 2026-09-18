@@ -55,6 +55,12 @@ class AppLocalizationsSr extends AppLocalizations {
   String get sendCode => 'Pošalji kod';
 
   @override
+  String get orDivider => 'ili';
+
+  @override
+  String get signInWithGoogle => 'Prijavi se Google nalogom';
+
+  @override
   String get checkEmailTitle => 'Proverite imejl';
 
   @override
@@ -186,6 +192,10 @@ class AppLocalizationsSr extends AppLocalizations {
   @override
   String get failureTooManyAttempts =>
       'Previše pokušaja. Sačekajte minut i pokušajte ponovo.';
+
+  @override
+  String get failureGoogleSignInFailed =>
+      'Prijava Google nalogom nije uspela. Pokušajte ponovo.';
 
   @override
   String get failureNotFound => 'Nije pronađeno.';

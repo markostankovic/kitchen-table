@@ -62,6 +62,13 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.3
+  # Phase 4 part 3 (D96): native Google sign-in, feeding `signInWithIdToken`
+  # rather than a browser redirect -- which is why nothing here registers a
+  # deep link. A new dependency under rule 8, asked for and approved. v7 is a
+  # hard break from v6: a singleton with an explicit `initialize()`, and no
+  # `signIn()` at all. Contained inside `auth/data/` like `supabase_flutter`
+  # (`tool/check_layers.dart`).
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:

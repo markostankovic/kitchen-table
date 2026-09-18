@@ -369,6 +369,46 @@ email_optional = false
 
 # Allow Solana wallet holders to sign in to your project via the Sign in with Solana (SIWS, EIP-4361) standard.
 # You can configure "web3" rate limit in the [auth.rate_limit] section and set up [auth.captcha] if self-hosting.
+# Google sign-in (D96), the replacement for email OTP -- which a free-tier
+# project cannot make work, because it cannot send a custom email template and
+# so the magic-link mail carries no code to type (D95).
+#
+# Enabled here and pushed with `make config-push`, never toggled in the
+# dashboard: local and hosted are one config.toml (D95), and `config push`
+# replaces the whole remote [auth] block, so a dashboard edit would be silently
+# reverted by the next push. Comment out [auth.email.template.magic_link] for
+# the duration of that push -- see the note on it above.
+#
+# `client_id` is one comma-separated list of every audience GoTrue will accept.
+# Four entries, in order: web, Android (debug key), Android (upload key), iOS.
+#
+# Four rather than three because a Google Cloud Android OAuth client binds to
+# one package name plus *one* signing SHA-1 -- so D97's two keystores are two
+# separate clients, not one client with two fingerprints. Registering only the
+# upload key's would leave `make run-android` unable to sign in, since a debug
+# build falls back to the debug keystore when android/key.properties is absent;
+# registering only the debug key's would break the release APK. Both, always.
+#
+# iOS is registered now even though only Android is wired up in this slice, so
+# that appending it later does not mean another push and another comment-out
+# dance.
+#
+# The web client is the one the app sends as `serverClientId`
+# (lib/core/env/google_auth.dart) and the only one with a secret; the Android
+# and iOS clients carry no secret at all.
+#
+# skip_nonce_check stays false: google_sign_in sets no nonce, so there is
+# nothing to mismatch. If hosted GoTrue ever returns a nonce error this is the
+# knob, but flipping it is a decision to record, not a silent fix.
+[auth.external.google]
+enabled = true
+client_id = "170737862197-eml0dti7is91l4q43p1622aoa37qnqu5.apps.googleusercontent.com,170737862197-o263uuvh305vl68bkgk4rskfq08f2pjc.apps.googleusercontent.com,170737862197-u2sem2v5kf1a5l615qlq08r285danle0.apps.googleusercontent.com,170737862197-2sgi0fe9f9pgilffv5bdiqqh79p91g3k.apps.googleusercontent.com"
+# DO NOT commit your OAuth provider secret to git. Use environment variable
+# substitution instead: export SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=<web client
+# secret> before running `make config-push`.
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+skip_nonce_check = false
+
 [auth.web3.solana]
 enabled = false
 
