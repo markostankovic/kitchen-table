@@ -185,7 +185,7 @@ from a real camera (step 8) was not run — no physical recipe card on hand.
 
 ### Part 3 — Google sign-in
 
-**Status: complete** (`<PART3_COMMIT>`). Decisions taken during it: D98. See
+**Status: complete** (`e10a66b`). Decisions taken during it: D98. See
 `docs/journal/phase-4.md`.
 
 Native `google_sign_in` v7 feeding `signInWithIdToken`, not a browser

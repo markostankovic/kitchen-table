@@ -1,7 +1,7 @@
 # State — 2026-09-18
 
 **Branch:** `main`
-**Last shipped:** Phase 4 part 3 (`<PART3_COMMIT>`) — Google sign-in, proven
+**Last shipped:** Phase 4 part 3 (`e10a66b`) — Google sign-in, proven
 on the physical Galaxy S25 against hosted. Native `google_sign_in` v7 feeding
 `signInWithIdToken` (no browser redirect, so no deep link on either platform
 and `site_url` untouched); a Google button below the email form behind an
