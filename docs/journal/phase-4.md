@@ -133,3 +133,78 @@ semantics mid-slice.
 recipe and one invite. Household-scoped, so invisible to a real account.
 
 ---
+
+### Part 2 — Run on a real device
+
+**Status: complete.** Decisions taken during it: D97. Closes the D92
+on-device gap named in `docs/decisions/OPEN.md`.
+
+The app now runs as a signed release build on a physical Galaxy S25
+(`RFCY61SRQ3B`, Android 16 / API 36) against the hosted project from part 1,
+survives the USB cable coming out, and was walked through a real
+airplane-mode cycle -- the thing an emulator cannot do at all.
+
+- **Two unmodified Flutter-template leftovers, both release-only.**
+  `INTERNET` was declared in the debug and profile manifests -- for the
+  Flutter tool's own hot-reload use -- but never in
+  `android/app/src/main/AndroidManifest.xml`, the one a release APK actually
+  merges. A release build ran and looked healthy, with every Supabase call
+  silently failing behind an offline banner stuck up over full signal bars.
+  Fixed by declaring the permission in the main manifest.
+  `android/app/build.gradle.kts` still carried both stock template TODOs;
+  the `applicationId` TODO comment is gone (the value is unchanged -- it is
+  load-bearing elsewhere), and release signing is D97.
+- **`make otp EMAIL=...`** mints a 6-digit sign-in code via
+  `POST /auth/v1/admin/generate_link`, reading `SUPABASE_SERVICE_ROLE_KEY`
+  from the environment and never writing it to a file -- the only way to
+  sign into the app on a device now that hosted email OTP delivers no code
+  (D96). The slice plan assumed the response nests `email_otp` under
+  `properties`; the live response carries it at the top level instead,
+  caught and fixed during the walk (the Makefile checks both shapes).
+- **`make install-hosted`** builds a release APK against `env/hosted.json`
+  and installs it on whatever device `adb` sees attached.
+
+**How it was verified.** The full walk ran on the S25 over its own Wi-Fi and
+carrier radio, cable unplugged for the offline steps:
+
+- Release install launches, no crash.
+- Signed in with a `make otp` code; a fresh household was created through
+  `on_auth_user_created` / `create_household`, confirming the device and the
+  build rather than re-proving the backend, which part 1 already verified.
+- Online baseline: recipe list loads from hosted, no banner.
+- Real airplane mode (both radios actually down, not a Settings toggle
+  alone -- see D92's `OPEN.md` entry for the exact commands): the global
+  banner and the shopping list's narrower "saved copy" line both appeared,
+  and saving a new recipe surfaced **"Nema veze sa internetom."** -- a real
+  `SocketException` reaching the screen as the written failure sentence.
+- Reconnected: the banner cleared on the next successful read, not on the
+  radio event itself, exactly as `network_status.dart`'s header comment
+  says it should.
+- A genuine Wi-Fi→cellular transition (Wi-Fi off, data left on) -- the case
+  an emulator cannot produce -- worked with no visible seam.
+- One AI round trip over cellular: a short ingredient line pasted through
+  "Nalepi recept" was parsed by `import-text` and matched to "brašno" by
+  `match-ingredients`, then saved to hosted.
+- The device's own language toggle (`Podešavanja` → `Jezik`), not system
+  locale, is what the app follows; it was already on Srpski and rendered
+  diacritics correctly throughout -- the slice plan's step assumed the app
+  follows system locale, which it deliberately does not.
+- Sharing a Chrome page via Android's `SEND` intent landed on the
+  "Uvezi sa linka" screen with the URL pre-filled, confirming the
+  `singleTop` share path on a real share sheet.
+
+**What the plan got wrong, caught during the walk.** Two things, neither
+blocking: `generate_link`'s real response shape (above), and Supabase's
+built-in email validator rejecting `.test`-TLD addresses on `signInWithOtp`
+even though `generate_link` itself bypasses that check -- worked around by
+signing in with a real-domain address for the walk, with no change to
+`lib/`.
+
+**Not run:** import-photo from a real camera (step 8) -- no physical recipe
+card was on hand. Handwritten-card OCR quality stays an open question in
+`docs/decisions/OPEN.md`.
+
+`make check` is clean apart from `seed-check`, unchanged from part 1 and
+still tracked as its own slice.
+
+---

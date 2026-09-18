@@ -1,4 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The debug and profile manifests declare this too, but only for the
+         Flutter tool's own use (hot reload, breakpoints) — that copy never
+         ships. A release build merges only this main manifest, so without an
+         explicit declaration here the release APK has no network permission
+         at all: every Supabase call fails, but the app itself does not
+         crash, so this is easy to miss until you're staring at an offline
+         banner with full signal bars. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="Kitchen Table"
         android:name="${applicationName}"

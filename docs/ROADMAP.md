@@ -169,12 +169,17 @@ custom email template, so that criterion describes a feature being deleted
 
 ### Part 2 — Run on a real device
 
-**Status: not started.** Build and install on a physical iOS and/or Android
-device (personal signing only, no store distribution) against the hosted
-project from Part 1. Closes the live on-device verification gap noted under
-D92 in `docs/decisions/OPEN.md` — confirm the offline cache and
-network-failure paths actually behave on real network transitions, not just
-in the emulator.
+**Status: complete** (`<PART2_COMMIT>`). Decisions taken during it: D97. See
+`docs/journal/phase-4.md`.
+
+Android only (iOS is its own slice — no `ios/Podfile` has ever been
+generated in this repo). Verified end to end on a physical Galaxy S25
+against the hosted project from Part 1: release install, sign-in via
+`make otp`, a real airplane-mode cycle closing the D92 on-device gap in
+`docs/decisions/OPEN.md`, a genuine Wi-Fi→cellular transition, and an AI
+round trip over cellular. Release signing reads `android/key.properties`
+locally, falling back to the debug keystore when absent (D97). Import-photo
+from a real camera (step 8) was not run — no physical recipe card on hand.
 
 ---
 

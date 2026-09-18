@@ -449,6 +449,16 @@ environment enum, no branch on the URL — `core/env/Env` reads two strings and
 mechanism, and keeping it that small is the point: an environment the code can
 detect is an environment the code will eventually behave differently in.
 
+A release build is the one place this touches native config rather than
+`lib/`. Android only merges `android/app/src/main/AndroidManifest.xml` into a
+release APK, so `INTERNET` has to be declared there too — the debug and
+profile manifests' copies are for the Flutter tool's own use (hot reload,
+breakpoints) and never ship. Release signing reads `android/key.properties`
+(gitignored; `android/key.properties.example` is the template) and falls
+back to the debug keystore when that file is absent, so a fresh clone still
+builds. `make install-hosted` does both steps — release APK against
+`env/hosted.json`, installed on the attached device.
+
 Everything else is shared and versioned:
 
 - **One migration set.** `supabase/migrations/` is applied to local by
@@ -501,7 +511,10 @@ Everything else on hosted already works: schema, RLS, the
 `on_auth_user_created` trigger, `create_household`, and both a no-AI and an AI
 Edge Function round trip were verified end to end using a token minted through
 `/auth/v1/admin/generate_link`, which is also how to exercise hosted auth before
-Google arrives.
+Google arrives: `make otp EMAIL=...` calls it with `SUPABASE_SERVICE_ROLE_KEY`
+from the environment and prints the 6-digit code to type into the verify
+screen. `generate_link` mints without sending mail, so it isn't subject to the
+`email_sent` rate limit below.
 
 Do not resolve any of this by editing auth settings in the dashboard — that is
 the drift this whole section exists to prevent.

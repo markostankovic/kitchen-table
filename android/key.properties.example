@@ -1,0 +1,19 @@
+# The release signing key for device installs and, eventually, Play Store
+# uploads. Copy this file to android/key.properties (gitignored) and fill it
+# in -- without it, the release build falls back to the debug keystore, which
+# still works for `make install-hosted` but is not what should ever reach a
+# store listing.
+#
+# Generate the keystore once, keep it forever (losing it means losing the
+# ability to publish updates under this applicationId):
+#
+#   keytool -genkey -v -keystore ~/upload-keystore.jks -keyalg RSA \
+#     -keysize 2048 -validity 10000 -alias upload
+#
+# storeFile takes an absolute path (or one relative to android/app/) -- keep
+# the .jks itself outside the repo entirely. It and both passwords belong in
+# the password manager, never here.
+storePassword=
+keyPassword=
+keyAlias=upload
+storeFile=/absolute/path/to/upload-keystore.jks

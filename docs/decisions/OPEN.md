@@ -103,12 +103,15 @@ part of the numbered decision sequence.
   side of the question; this part only made the *client* side of staleness
   (no connection, showing a saved copy) visible, which is a different
   question answered a different way.
-- **D92's live failure-message walk stopped at the widget-test/SQL-suite
-  boundary, not on-device.** Phase 3 part 4's emulator walk confirmed D91
-  directly (the text-selection toolbar) and every recipes-feature ARB
-  string, but toggling the emulator's radios did not sever its route to the
-  local stack, and forcing that further was judged not worth the detour --
-  `failure_l10n_test.dart` and `supabase_failure_test.dart` already exercise
-  every sentence the mechanism can produce. What is unconfirmed live is
-  narrower than it sounds: only "does a real `SocketException` reach the
-  screen," which is `runGuarded`'s own wiring and predates this part.
+- **D92's live failure-message walk closed in Phase 4 part 2**, on a
+  physical Galaxy S25 rather than an emulator whose radio toggles never
+  actually sever its route to the local stack. Real airplane mode
+  (`adb shell svc wifi disable` + `svc data disable` -- Android 16's shell no
+  longer permits the `AIRPLANE_MODE` broadcast) confirmed: the global offline
+  banner and the shopping list's narrower "showing your saved copy" line
+  both render, a write attempt against `save_imported_recipe` surfaces
+  **"Nema veze sa internetom."** from a real `SocketException` rather than a
+  generic error, and the banner clears on the next successful read after
+  reconnecting, not on the radio event itself. A genuine Wi-Fi→cellular
+  transition, which an emulator cannot produce at all, was exercised too.
+  Closed.
