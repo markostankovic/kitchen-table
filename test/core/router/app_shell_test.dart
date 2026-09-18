@@ -105,7 +105,7 @@ void main() {
       await pumpApp(tester, userId: null, household: null);
       // No profile exists before sign-in, so the pre-auth default (Serbian,
       // D77) is what renders here regardless of any profile fixture.
-      expect(find.text(sr.sendCode), findsOneWidget);
+      expect(find.text(sr.signInWithGoogle), findsOneWidget);
       expect(find.byType(NavigationBar), findsNothing,
           reason: 'onboarding routes sit outside the shell');
     });
@@ -156,7 +156,7 @@ void main() {
         // anywhere. What matters is what it did NOT do: bounce to
         // onboarding, which reading the error as "no household" would have.
         expect(find.text(sr.createHouseholdTitle), findsNothing);
-        expect(find.text(sr.sendCode), findsNothing);
+        expect(find.text(sr.signInWithGoogle), findsNothing);
       },
     );
   });

@@ -40,45 +40,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageSectionTitle => 'Language';
 
   @override
-  String get signInSubtitle => 'Sign in with a code sent to your email.';
-
-  @override
-  String get emailLabel => 'Email';
-
-  @override
-  String get emailEmptyError => 'Enter your email address.';
-
-  @override
-  String get emailInvalidError => 'That does not look like an email address.';
-
-  @override
-  String get sendCode => 'Send code';
-
-  @override
-  String get orDivider => 'or';
+  String get signInSubtitle => 'Sign in with your Google account.';
 
   @override
   String get signInWithGoogle => 'Sign in with Google';
-
-  @override
-  String get checkEmailTitle => 'Check your email';
-
-  @override
-  String codeSentTo(String email) {
-    return 'We sent a code to $email.';
-  }
-
-  @override
-  String get codeEmptyError => 'Enter the code from your email.';
-
-  @override
-  String get verify => 'Verify';
-
-  @override
-  String get resendCode => 'Send a new code';
-
-  @override
-  String get newCodeSent => 'New code sent.';
 
   @override
   String get recipeDetailFallbackTitle => 'Recipe';

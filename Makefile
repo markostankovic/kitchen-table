@@ -7,7 +7,7 @@ DART_DEFINE := --dart-define-from-file=env/local.json
 .PHONY: help gen watch lint lint-functions test test-functions test-sql seed \
 	seed-check l10n-check db-reset db-start db-stop db-push config-push \
 	types check functions-serve functions-deploy run run-android run-hosted \
-	install-hosted otp
+	install-hosted
 
 help:
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -121,35 +121,11 @@ run-hosted: ## Run the app against hosted Supabase (requires env/hosted.json)
 	flutter run --dart-define-from-file=env/hosted.json
 
 # The pair for a real device rather than `flutter run` over USB debug: a
-# signed *release* build, and a way to sign into it once installed. Hosted
-# email OTP delivers no code (D96 -- Google sign-in is what actually fixes
-# this, later), so `otp` mints a code out of band via generate_link and you
-# type it into the existing verify-code screen by hand.
+# signed *release* build, and a way to sign into it once installed. Sign in
+# with Google on the device once it's installed.
 install-hosted: ## Build a release APK against hosted Supabase and install it on the attached device
 	flutter build apk --release --dart-define-from-file=env/hosted.json
 	@PATH="$$HOME/Library/Android/sdk/platform-tools:$$PATH" adb install -r build/app/outputs/flutter-apk/app-release.apk
-
-otp: ## Mint a 6-digit sign-in code, e.g. `make otp EMAIL=you@example.com` (requires SUPABASE_SERVICE_ROLE_KEY)
-	@if [ -z "$$SUPABASE_SERVICE_ROLE_KEY" ]; then \
-		echo "SUPABASE_SERVICE_ROLE_KEY is not set -- read it from the password manager and export it. It never belongs in a file (CLAUDE.md rule 2)." >&2; \
-		exit 1; \
-	fi
-	@if [ -z "$(EMAIL)" ]; then \
-		echo "Usage: make otp EMAIL=you@example.com" >&2; \
-		exit 1; \
-	fi
-	@resp="$$(curl -s https://cbajkezfhssrvbdbedqt.supabase.co/auth/v1/admin/generate_link \
-		-H "apikey: $$SUPABASE_SERVICE_ROLE_KEY" \
-		-H "Authorization: Bearer $$SUPABASE_SERVICE_ROLE_KEY" \
-		-H "Content-Type: application/json" \
-		-d "{\"type\": \"magiclink\", \"email\": \"$(EMAIL)\"}")"; \
-	otp="$$(echo "$$resp" | jq -r '.email_otp // .properties.email_otp // empty')"; \
-	if [ -z "$$otp" ]; then \
-		echo "generate_link did not return a code:" >&2; \
-		echo "$$resp" >&2; \
-		exit 1; \
-	fi; \
-	echo "$$otp"
 
 types: ## Regenerate Dart models from the Zod schemas
 	@# docs/ARCHITECTURE.md, "Type flow". schema.ts is the source of truth for

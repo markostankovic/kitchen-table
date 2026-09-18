@@ -40,45 +40,10 @@ class AppLocalizationsSr extends AppLocalizations {
   String get languageSectionTitle => 'Jezik';
 
   @override
-  String get signInSubtitle => 'Prijavite se kodom poslatim na vaš imejl.';
-
-  @override
-  String get emailLabel => 'Imejl';
-
-  @override
-  String get emailEmptyError => 'Unesite svoju imejl adresu.';
-
-  @override
-  String get emailInvalidError => 'To ne izgleda kao imejl adresa.';
-
-  @override
-  String get sendCode => 'Pošalji kod';
-
-  @override
-  String get orDivider => 'ili';
+  String get signInSubtitle => 'Prijavite se svojim Google nalogom.';
 
   @override
   String get signInWithGoogle => 'Prijavi se Google nalogom';
-
-  @override
-  String get checkEmailTitle => 'Proverite imejl';
-
-  @override
-  String codeSentTo(String email) {
-    return 'Poslali smo kod na $email.';
-  }
-
-  @override
-  String get codeEmptyError => 'Unesite kod iz imejla.';
-
-  @override
-  String get verify => 'Potvrdi';
-
-  @override
-  String get resendCode => 'Pošalji novi kod';
-
-  @override
-  String get newCodeSent => 'Novi kod je poslat.';
 
   @override
   String get recipeDetailFallbackTitle => 'Recept';

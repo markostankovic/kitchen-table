@@ -32,8 +32,8 @@ class AuthRepository {
   ///
   /// Initialization is lazy rather than done at startup: the client IDs are
   /// compile-time constants, so there is nothing to await before the first
-  /// frame, and a user who only ever signs in by email never pays for the
-  /// native SDK waking up.
+  /// frame, and a warm start that restores a stored session never wakes the
+  /// native SDK at all.
   static bool _googleInitialized = false;
 
   /// The current user, synchronously.
@@ -53,35 +53,6 @@ class AuthRepository {
     yield* _client.auth.onAuthStateChange
         .map((AuthState event) => _toAppUser(event.session?.user));
   }
-
-  /// Sends a one-time code to [email].
-  ///
-  /// `shouldCreateUser` is left at its default: signing in and signing up are
-  /// the same act for email OTP, and the `on_auth_user_created` trigger
-  /// creates the profile row either way.
-  Future<void> requestOtp(String email) => runGuarded(() async {
-        await _client.auth.signInWithOtp(email: email.trim());
-      });
-
-  /// Exchanges [token] for a session.
-  Future<AppUser> verifyOtp({
-    required String email,
-    required String token,
-  }) =>
-      runGuarded(() async {
-        final AuthResponse response = await _client.auth.verifyOTP(
-          email: email.trim(),
-          token: token.trim(),
-          type: OtpType.email,
-        );
-        final AppUser? user = _toAppUser(response.user);
-        if (user == null) {
-          throw const UnauthorizedFailure(
-              message: 'That code was not accepted.',
-              code: FailureCode.codeNotAccepted);
-        }
-        return user;
-      });
 
   /// Signs in with Google. Returns null when the user dismissed the chooser.
   ///

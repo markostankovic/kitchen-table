@@ -96,8 +96,7 @@ enum FailureCode {
   /// expired code and a malformed one call for different next steps.
   inviteExpired,
 
-  /// `invalid_code`, `invalid_body`, `method_not_allowed`, and the client-side
-  /// "verifyOTP returned no user" case.
+  /// `invalid_code`, `invalid_body`, `method_not_allowed`.
   codeNotAccepted,
 
   // --- Conflict & allowance ----------------------------------------------------

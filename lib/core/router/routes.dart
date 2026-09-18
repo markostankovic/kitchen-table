@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/sign_in_screen.dart';
-import '../../features/auth/presentation/verify_otp_screen.dart';
 import '../../features/auth/presentation/settings_screen.dart';
 import '../../features/households/presentation/create_household_screen.dart';
 import '../../features/households/presentation/household_screen.dart';
@@ -41,21 +40,6 @@ class SignInRoute extends GoRouteData with $SignInRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       const SignInScreen();
-}
-
-@TypedGoRoute<VerifyOtpRoute>(path: VerifyOtpRoute.path)
-class VerifyOtpRoute extends GoRouteData with $VerifyOtpRoute {
-  const VerifyOtpRoute({required this.email});
-
-  /// Carried as a query parameter, so a resend has the address without
-  /// re-asking for it.
-  final String email;
-
-  static const String path = '/sign-in/verify';
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      VerifyOtpScreen(email: email);
 }
 
 @TypedGoRoute<CreateHouseholdRoute>(path: CreateHouseholdRoute.path)

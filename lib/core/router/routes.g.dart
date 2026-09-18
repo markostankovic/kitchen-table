@@ -8,7 +8,6 @@ part of 'routes.dart';
 
 List<RouteBase> get $appRoutes => [
   $signInRoute,
-  $verifyOtpRoute,
   $createHouseholdRoute,
   $joinHouseholdRoute,
   $appShellRoute,
@@ -25,38 +24,6 @@ mixin $SignInRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/sign-in');
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-RouteBase get $verifyOtpRoute => GoRouteData.$route(
-  path: '/sign-in/verify',
-  hasOverriddenOnExit: false,
-  factory: $VerifyOtpRoute._fromState,
-);
-
-mixin $VerifyOtpRoute on GoRouteData {
-  static VerifyOtpRoute _fromState(GoRouterState state) =>
-      VerifyOtpRoute(email: state.uri.queryParameters['email']!);
-
-  VerifyOtpRoute get _self => this as VerifyOtpRoute;
-
-  @override
-  String get location => GoRouteData.$location(
-    '/sign-in/verify',
-    queryParams: {'email': _self.email},
-  );
 
   @override
   void go(BuildContext context) => context.go(location);

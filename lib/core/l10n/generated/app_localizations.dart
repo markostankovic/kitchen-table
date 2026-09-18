@@ -158,83 +158,17 @@ abstract class AppLocalizations {
   /// **'Jezik'**
   String get languageSectionTitle;
 
-  /// Sign-in screen subtitle.
+  /// Sign-in screen subtitle. The screen is Google-only.
   ///
   /// In sr, this message translates to:
-  /// **'Prijavite se kodom poslatim na vaš imejl.'**
+  /// **'Prijavite se svojim Google nalogom.'**
   String get signInSubtitle;
-
-  /// Sign-in screen, the email field's label.
-  ///
-  /// In sr, this message translates to:
-  /// **'Imejl'**
-  String get emailLabel;
-
-  /// Sign-in screen, validator error when the email field is blank.
-  ///
-  /// In sr, this message translates to:
-  /// **'Unesite svoju imejl adresu.'**
-  String get emailEmptyError;
-
-  /// Sign-in screen, validator error when the email field is not an address.
-  ///
-  /// In sr, this message translates to:
-  /// **'To ne izgleda kao imejl adresa.'**
-  String get emailInvalidError;
-
-  /// Sign-in screen, the submit button.
-  ///
-  /// In sr, this message translates to:
-  /// **'Pošalji kod'**
-  String get sendCode;
-
-  /// Sign-in screen, the divider between the email form and the Google button.
-  ///
-  /// In sr, this message translates to:
-  /// **'ili'**
-  String get orDivider;
 
   /// Sign-in screen, the Google sign-in button. 'Google' is a brand name and stays untranslated, the same way 'Kitchen Table' does.
   ///
   /// In sr, this message translates to:
   /// **'Prijavi se Google nalogom'**
   String get signInWithGoogle;
-
-  /// Verify-OTP screen title.
-  ///
-  /// In sr, this message translates to:
-  /// **'Proverite imejl'**
-  String get checkEmailTitle;
-
-  /// Verify-OTP screen subtitle, naming the address the code went to.
-  ///
-  /// In sr, this message translates to:
-  /// **'Poslali smo kod na {email}.'**
-  String codeSentTo(String email);
-
-  /// Verify-OTP screen, shown when the code field is submitted blank.
-  ///
-  /// In sr, this message translates to:
-  /// **'Unesite kod iz imejla.'**
-  String get codeEmptyError;
-
-  /// Verify-OTP screen, the submit button.
-  ///
-  /// In sr, this message translates to:
-  /// **'Potvrdi'**
-  String get verify;
-
-  /// Verify-OTP screen, the resend link.
-  ///
-  /// In sr, this message translates to:
-  /// **'Pošalji novi kod'**
-  String get resendCode;
-
-  /// Verify-OTP screen, the SnackBar shown after a successful resend.
-  ///
-  /// In sr, this message translates to:
-  /// **'Novi kod je poslat.'**
-  String get newCodeSent;
 
   /// Recipe detail screen, AppBar title shown before the recipe has loaded.
   ///
@@ -476,7 +410,7 @@ abstract class AppLocalizations {
   /// **'Taj kod je istekao.'**
   String get failureInviteExpired;
 
-  /// Failure vocabulary (D92), FailureCode.codeNotAccepted -- invalid_code/invalid_body/method_not_allowed, and a verifyOTP call that returned no user.
+  /// Failure vocabulary (D92), FailureCode.codeNotAccepted -- invalid_code/invalid_body/method_not_allowed.
   ///
   /// In sr, this message translates to:
   /// **'Taj kod nije prihvaćen.'**

@@ -43,63 +43,13 @@
     "description": "Settings screen, heading above the language toggle."
   },
 
-  "signInSubtitle": "Prijavite se kodom poslatim na vaš imejl.",
+  "signInSubtitle": "Prijavite se svojim Google nalogom.",
   "@signInSubtitle": {
-    "description": "Sign-in screen subtitle."
-  },
-  "emailLabel": "Imejl",
-  "@emailLabel": {
-    "description": "Sign-in screen, the email field's label."
-  },
-  "emailEmptyError": "Unesite svoju imejl adresu.",
-  "@emailEmptyError": {
-    "description": "Sign-in screen, validator error when the email field is blank."
-  },
-  "emailInvalidError": "To ne izgleda kao imejl adresa.",
-  "@emailInvalidError": {
-    "description": "Sign-in screen, validator error when the email field is not an address."
-  },
-  "sendCode": "Pošalji kod",
-  "@sendCode": {
-    "description": "Sign-in screen, the submit button."
-  },
-  "orDivider": "ili",
-  "@orDivider": {
-    "description": "Sign-in screen, the divider between the email form and the Google button."
+    "description": "Sign-in screen subtitle. The screen is Google-only."
   },
   "signInWithGoogle": "Prijavi se Google nalogom",
   "@signInWithGoogle": {
     "description": "Sign-in screen, the Google sign-in button. 'Google' is a brand name and stays untranslated, the same way 'Kitchen Table' does."
-  },
-
-  "checkEmailTitle": "Proverite imejl",
-  "@checkEmailTitle": {
-    "description": "Verify-OTP screen title."
-  },
-  "codeSentTo": "Poslali smo kod na {email}.",
-  "@codeSentTo": {
-    "description": "Verify-OTP screen subtitle, naming the address the code went to.",
-    "placeholders": {
-      "email": {
-        "type": "String"
-      }
-    }
-  },
-  "codeEmptyError": "Unesite kod iz imejla.",
-  "@codeEmptyError": {
-    "description": "Verify-OTP screen, shown when the code field is submitted blank."
-  },
-  "verify": "Potvrdi",
-  "@verify": {
-    "description": "Verify-OTP screen, the submit button."
-  },
-  "resendCode": "Pošalji novi kod",
-  "@resendCode": {
-    "description": "Verify-OTP screen, the resend link."
-  },
-  "newCodeSent": "Novi kod je poslat.",
-  "@newCodeSent": {
-    "description": "Verify-OTP screen, the SnackBar shown after a successful resend."
   },
 
   "recipeDetailFallbackTitle": "Recept",
@@ -281,7 +231,7 @@
   },
   "failureCodeNotAccepted": "Taj kod nije prihvaćen.",
   "@failureCodeNotAccepted": {
-    "description": "Failure vocabulary (D92), FailureCode.codeNotAccepted -- invalid_code/invalid_body/method_not_allowed, and a verifyOTP call that returned no user."
+    "description": "Failure vocabulary (D92), FailureCode.codeNotAccepted -- invalid_code/invalid_body/method_not_allowed."
   },
   "failureAlreadyExists": "To već postoji.",
   "@failureAlreadyExists": {

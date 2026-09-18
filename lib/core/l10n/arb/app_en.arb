@@ -13,20 +13,8 @@
   "signOut": "Sign out",
   "languageSectionTitle": "Language",
 
-  "signInSubtitle": "Sign in with a code sent to your email.",
-  "emailLabel": "Email",
-  "emailEmptyError": "Enter your email address.",
-  "emailInvalidError": "That does not look like an email address.",
-  "sendCode": "Send code",
-  "orDivider": "or",
+  "signInSubtitle": "Sign in with your Google account.",
   "signInWithGoogle": "Sign in with Google",
-
-  "checkEmailTitle": "Check your email",
-  "codeSentTo": "We sent a code to {email}.",
-  "codeEmptyError": "Enter the code from your email.",
-  "verify": "Verify",
-  "resendCode": "Send a new code",
-  "newCodeSent": "New code sent.",
 
   "recipeDetailFallbackTitle": "Recipe",
   "couldNotLoadRecipe": "Could not load this recipe.",

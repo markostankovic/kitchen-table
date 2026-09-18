@@ -108,7 +108,7 @@ void main() {
     await _pump(tester, share: const SharedUrl(_url), userId: null,
         household: null);
 
-    expect(find.text(_sr.sendCode), findsOneWidget,
+    expect(find.text(_sr.signInWithGoogle), findsOneWidget,
         reason: 'sign-in still wins; the share must not jump the queue');
     expect(find.widgetWithText(AppBar, _sr.importUrlTitle), findsNothing);
   });

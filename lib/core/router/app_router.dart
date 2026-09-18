@@ -41,8 +41,7 @@ GoRouter goRouter(Ref ref) {
       if (!auth.hasValue) return null;
 
       final String location = state.matchedLocation;
-      final bool signingIn = location == SignInRoute.path ||
-          location.startsWith(VerifyOtpRoute.path);
+      final bool signingIn = location == SignInRoute.path;
 
       if (auth.value == null) {
         return signingIn ? null : SignInRoute.path;

@@ -382,7 +382,7 @@ lib/core/l10n/
 ```
 
 ARB strings cover the app's chrome (the bottom nav, each tab's own AppBar
-title, Settings, sign-in / verify-OTP — Phase 3 part 1) and, feature by
+title, Settings, sign-in — Phase 3 part 1) and, feature by
 feature as each part reaches it, that feature's own screens: recipes and the
 `core/` widgets it shares with other features (`core/ingredients/widgets/`,
 `core/recipes/widgets/recipe_picker_sheet.dart`) as of part 4. Households and
@@ -471,63 +471,23 @@ Everything else is shared and versioned:
   nobody can find later.
 - **One set of Edge Functions**, deployed with `make functions-deploy`.
 
-The sign-in email is the part of this that is easy to get wrong. Email sign-in
-is code-entry OTP — `signInWithOtp` with no `emailRedirectTo`, then `verifyOTP`
-with a typed 6-digit token — and the app registers no deep link on either
-platform. `supabase/templates/magic_link.html` carries `{{ .Token }}` and is
-registered as `[auth.email.template.magic_link]` so that the mail contains a
-readable code at all (D95).
-
-Google sign-in (D96) runs alongside it and keeps the no-deep-link property
-intact, which is most of why it was chosen: `google_sign_in` obtains an ID
-token natively and hands it to `signInWithIdToken`, so there is no browser
-redirect to come back from, nothing to register in `AndroidManifest.xml`, and
+Sign-in is Google-only (D96). `google_sign_in` obtains an ID token natively and
+hands it to `signInWithIdToken`, so there is no browser redirect to come back
+from, nothing to register in `AndroidManifest.xml` on either platform, and
 `site_url` / `additional_redirect_urls` stay untouched. Its client IDs are
 committed constants rather than `env/*.json` keys — the one carve-out from
 "env files carry only what differs" — because they are public and identical in
-both environments (D98). Email OTP is retired in Phase 4 part 4; until then
-both paths are live.
+both environments (D98).
 
-**An email template is the one thing `config push` will not carry.** A free tier
-project on the built-in email sender rejects any template, and the CLI sends
-`[auth]` as a single payload, so one template block fails the entire push —
-`otp_length`, `site_url`, an external provider, all of it — with
-`Email template modification is not available for free tier projects using the
-default email provider`. Both halves of that were established against the live
-project rather than inferred: with the block present nothing landed and hosted
-kept minting 8-character codes; with it commented out the same push succeeded
-and hosted began minting 6.
+Email sign-in used to complicate this: a free tier project on the built-in
+email sender rejects any email template, and the CLI sends `[auth]` as a
+single payload, so the one template block that made a code readable in Mailpit
+failed the entire push. `config.toml` carries no email template any more
+(Phase 4 part 4), so `make config-push` pushes the whole `[auth]` block in one
+shot — that history is why this section used to warn about it.
 
-The consequence is a genuinely awkward state, recorded here because it looks
-like a mistake otherwise:
-
-| | Local | Hosted |
-|---|---|---|
-| `[auth.email.template.magic_link]` | on — and required | cannot be pushed |
-| sign-in email | 6-digit code, sr + en | stock "Your sign-in link", no code |
-| email OTP sign-in | works | **does not work** |
-
-Local needs the template: GoTrue's default template carries only
-`{{ .ConfirmationURL }}` on both sides, so without it the Mailpit mail has no
-code to type. Hosted cannot have it. To push any auth setting, comment the block
-out, push, and restore it.
-
-This is not worth engineering around, because email sign-in is being retired.
-Google sign-in replaces it, and Google is configured through
-`[auth.external.google]` — which pushes fine, being nothing to do with email.
-When it lands, the template, its `config.toml` block, `requestOtp`/`verifyOtp`,
-both sign-in screens and their ARB strings go, and this table goes with them.
-Everything else on hosted already works: schema, RLS, the
-`on_auth_user_created` trigger, `create_household`, and both a no-AI and an AI
-Edge Function round trip were verified end to end using a token minted through
-`/auth/v1/admin/generate_link`, which is also how to exercise hosted auth before
-Google arrives: `make otp EMAIL=...` calls it with `SUPABASE_SERVICE_ROLE_KEY`
-from the environment and prints the 6-digit code to type into the verify
-screen. `generate_link` mints without sending mail, so it isn't subject to the
-`email_sent` rate limit below.
-
-Do not resolve any of this by editing auth settings in the dashboard — that is
-the drift this whole section exists to prevent.
+Do not resolve any auth drift by editing settings in the dashboard — that is
+the thing `config push` exists to prevent.
 
 Secrets split three ways, and the split is the rule that matters:
 
@@ -546,9 +506,8 @@ Where local and hosted genuinely need to differ, the difference goes in a
 `[remotes.<alias>]` block in `config.toml` rather than in the dashboard — the
 CLI merges it over the base config for that project ref only. There is exactly
 one today: `max_frequency`, which is `"1s"` locally so a reset-and-retry loop is
-not spent waiting, and `"1m0s"` on hosted because `[auth.rate_limit]
-email_sent` is 2 per hour and a double-tapped "Send a new code" would otherwise
-burn the hour's budget in two seconds.
+not spent waiting, and `"1m0s"` on hosted so it does not inherit that
+convenience if anything ever does send mail.
 
 `config push` replaces the *whole* remote `[auth]` block, not just the keys you
 changed, so read its diff before confirming — `make config-push` prints it.
