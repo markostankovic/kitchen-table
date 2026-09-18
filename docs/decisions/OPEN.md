@@ -28,10 +28,11 @@ part of the numbered decision sequence.
   built, named here (D88, D89).
 - **Client vs Edge Function split** — rule of thumb written in
   `docs/ARCHITECTURE.md`. Settled enough to build on.
-- **Thin web layer** — deferred to Phase 5. Leaning Next.js App Router on
-  Vercel against the same Supabase project, for public invite links and
-  a shareable read-only recipe page. Not decided in detail. Do not build in
-  Phase 1–3.
+- **Thin web layer** — deferred, and as of Phase 5's planning no longer on
+  the roadmap at all. Leaning Next.js App Router on Vercel against the same
+  Supabase project, for public invite links and a shareable read-only recipe
+  page. Not decided in detail. Named here so the idea survives the roadmap
+  entry that used to carry it.
 - **Cross-family unit conversion** — deferred, see D9. `ingredients.density_g_per_ml`
   and `piece_weight_g` still exist and are still never populated. Phase 2 part 4
   shipped the shopping list without them, as D9 said it could: an ingredient

@@ -13,10 +13,18 @@ fresh release install, one Google button on the sign-in screen, and a tap
 through the native account chooser landing straight in the existing
 household — no verify-code screen anywhere in the flow.
 **In flight:** none
-**Next:** Phase 4 Part 5 — Apple sign-in, gated on App Store distribution
-(Guideline 4.8). Needs a Sign in with Apple package — new third-party
-dependency, ask first.
+**Next:** Phase 5 Part 1 — favorites and a five-star rating, both
+household-scoped columns on `recipes`. Phase 5 is six features promoted from
+`docs/IDEAS.md`; see `docs/ROADMAP.md`.
 **Latest decision:** D99
+
+**Apple sign-in was dropped, not deferred.** Phase 4 Part 5 no longer exists
+in the roadmap. The consequence is real and was accepted deliberately: while
+Google is the only third-party login, the app cannot be submitted to the App
+Store (Guideline 4.8 requires an equivalent privacy-preserving option).
+Personal signing and TestFlight are unaffected. Phase 5's old deferred list
+(`suggest-meals`, novel recipe generation, unit conversion via densities, OCR,
+a web layer, aisle grouping) was dropped in the same pass.
 
 **`make config-push` no longer needs the comment-out dance.** That was this
 slice's whole operational point: with `[auth.email.template.magic_link]`

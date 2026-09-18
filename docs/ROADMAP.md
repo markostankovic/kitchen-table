@@ -231,27 +231,171 @@ straight in the existing household with no verify-code screen anywhere.
 
 ---
 
-### Part 5 — Apple sign-in
+## Phase 5 — Everyday use: finding a recipe, planning from it, taking the list
 
-**Status: not started.** Required before any App Store submission, not
-optional polish: Guideline 4.8 requires an equivalent privacy-preserving
-option wherever a third-party login is offered, so Google-only ships for
-personal signing and TestFlight but not to the store (D96). Needs a Sign in
-with Apple package — new third-party dependency, ask first.
+Phase 4 made the app real on a real phone. This phase is about the six small
+frictions that show up once a household actually cooks from it: you can't mark
+what you love, you can't narrow a growing list, you can't get from a recipe to
+the plan, the plan always opens on a whole week, the shopping list can't leave
+the app, and translating is hidden behind a condition.
+
+Promoted from `docs/IDEAS.md`. Parts 1 and 2 are ordered — the filter is built
+once, over both tags and favorites, so favorites has to exist first. Parts 3–6
+are independent of each other and of 1–2; reorder them freely.
 
 ---
 
-## Phase 5 — Everything deferred
+### Part 1 — Favorites and a five-star rating
 
-Not before Phase 3 ships.
+**Status: not started.**
 
-- `suggest-meals` Edge Function (from existing recipes + what's in the fridge)
-- Novel recipe generation (lowest value; always `status = 'draft'`)
-- Cross-family unit conversion via densities on the top ~50 ingredients
-- Handwritten recipe card OCR (same path as cookbook photos, worse accuracy)
-- Thin web layer — leaning Next.js on Vercel, same Supabase project, for invite
-  links and read-only recipe pages. Decide properly when you get here.
-- Aisle grouping on the shopping list via `ingredients.category`
+Two columns on `recipes`: `is_favorite boolean not null default false` and
+`rating smallint check (rating between 1 and 5)`, nullable — unrated is not
+zero stars. Both are **household facts, not personal ones**: the rule in
+CLAUDE.md is household-scoped data, and `profiles` is the only table in the
+app with `auth.uid()`-based RLS. The trade is real and deliberate — one
+member's tap changes the rating for everyone.
+
+No RLS change: the existing `recipes` policies already cover new columns.
+This would be the **first `alter table ... add column` migration in the
+repo** — every migration so far creates its tables whole — so it sets the
+house style for extending an applied table.
+
+Both columns join `recipeColumns` in `recipe_dto.dart`, which changes what the
+Drift `data` blob holds, which means **`schemaVersion` 5 → 6** in
+`lib/core/db/app_database.dart` (drop-and-refetch, D71 — no per-version
+migration code). Domain: `Recipe`, `RecipeDraft`, `RecipeEditor` setters. UI:
+the toggle and the stars on the detail screen, and whatever the list tile
+shows.
+
+Open for its planning session: does the list tile let you favorite in place,
+or only display? A star row on a `dense` tile is a lot of tile.
+
+---
+
+### Part 2 — Filtering the recipe list
+
+**Status: not started.**
+
+Filter the landing page by tag and by favorite. `recipes.tags` has existed
+since migration 8 and is already carried by every read — this part adds no
+schema. The tag vocabulary is the distinct tags across the household's cached
+recipes, matched through the existing `TextNormalizer` so `Posno` and `posno`
+are one tag.
+
+Touches `recipeListProvider`'s family args (today `query` only, debounced
+250 ms in the screen because each distinct value creates a provider entry),
+`RecipeRepository._filtered` (today
+`TextNormalizer.normalize(r.title).contains(term)`), and a filter row under
+the existing search box. Note that `plannableRecipeSourceProvider` in
+`lib/core/recipes/` builds its own repository over the same code, so the
+meal-plan picker inherits whatever lands here.
+
+Filtering in Dart after decode is the cheap route and matches what search
+already does. Promoting `tags` to a queryable Drift column — the way
+`titleNormalized` was promoted out of the blob — is the alternative, and costs
+another `schemaVersion` bump. Decide with a real recipe count in front of you,
+not now.
+
+---
+
+### Part 3 — Add to meal plan from a recipe
+
+**Status: not started.**
+
+Today the only recipe→plan link runs the other way: the plan's slot row opens
+`showRecipePicker` from `lib/core/recipes/widgets/recipe_picker_sheet.dart`.
+This part is its mirror — you have the recipe, you need the day and slot.
+
+The layering constraint is the mirror image too.
+`features/meal_plan/presentation/` may not import
+`features/recipes/application/`, which is exactly why the recipe picker lives
+in `core/`; a button on the recipe detail screen faces the same wall in
+reverse, so the day+slot sheet and a thin write shim go in `core/meal_plan/`.
+Copy the picker's shape: the sheet returns a decision value, the caller
+performs the write.
+
+Reuses `MealPlanEditor.addRecipe(entryDate:, slot:, recipeId:)` unchanged — no
+repository or datasource work. `PlanWeek` for the day list,
+`core/l10n/date_labels.dart` for the labels, and `snackRepeatCount` /
+`shouldWarnOnRepeat` if the chosen slot is a snack, so the variety warning
+(D58, advisory) fires here the same way it fires in the plan.
+
+---
+
+### Part 4 — The meal plan's Today and This week views
+
+**Status: not started.**
+
+The plan screen is a vertical list of seven `_DaySection`s with a week bar on
+top. Add a Today view beside the existing week view.
+
+There is **no `TabBar`, `TabController` or `PageView` anywhere in `lib/`**. The
+app's existing answer to "two views, one screen" is `SegmentedButton`
+(settings, recipe edit) and `ExpansionTile` (the shopping list's pantry
+section). Picking `TabBar` here is a real choice and gets a decision record;
+picking the segmented control is the conservative one.
+
+The sharp edge is `visibleWeekProvider`, which is a single notifier, not a
+family: what does Today show after you have paged to a week three weeks out?
+Recommended — Today pins to `DateTime.now()` and hides the week chevrons
+entirely; This week keeps `_WeekBar` as it is. Also fold the inline y/m/d
+comparison in `_DaySection._isToday` into a shared helper rather than writing
+it a second time.
+
+---
+
+### Part 5 — Export the shopping list to the clipboard
+
+**Status: not started.**
+
+An app bar action beside the existing refresh button: format the list as plain
+text, `Clipboard.setData`, SnackBar. The pattern already exists at
+`lib/features/households/presentation/household_screen.dart` (invite code
+copy) — copy it exactly, including the ARB key shape.
+
+No new package. `flutter/services` carries `Clipboard`; `share_plus` is not a
+dependency and adding one needs asking first (rule 8). Copy-to-clipboard is
+the whole ask here — a share sheet is a different, later conversation.
+
+The formatter is pure Dart in `features/shopping_list/domain/`, so it is
+testable without a widget: reuse `formatItemQuantity` and mirror
+`_ListBody._byCategory`'s grouping and its "uncategorised sorts last" rule.
+
+One real decision: the screen renders two locales at once on purpose — the
+snapshot in `list.locale`, the chrome in the reader's (D94). Exported text has
+no chrome, so it should follow `list.locale` throughout. Say so explicitly in
+the slice, or it will drift.
+
+---
+
+### Part 6 — Translating from the editor
+
+**Status: not started.**
+
+Translation is reachable today, but only from the detail screen's overflow
+menu and only when `canTranslate` holds: you must be reading in the other
+language *and* no translation may exist yet. Once one exists the menu offers
+Review instead and Translate never returns. From the editor there is no path
+at all.
+
+The call path itself is done and needs nothing:
+`RecipeRepository.translate(recipeId, targetLocale)` →
+`RemoteRecipeDataSource.translate` → the `translate-recipe` Edge Function.
+This part is entry point and gating only. The edit screen's app bar has no
+actions at all today — its affordance lives in the bottom save bar — so this
+adds the first one.
+
+Two questions to settle before building, both capable of breaking something:
+
+- **An unsaved draft cannot be translated.** The Edge Function reads the
+  recipe from the database. So does the action save first, or is it disabled
+  while the form is dirty? A new recipe has no id at all.
+- **Do not break D85.** Re-translating a *reviewed* translation is
+  deliberately not offered, and the UI is the only guard — there is no
+  server-side check. A second entry point is a second place that guard has to
+  hold. Re-translating a machine translation may be fine; overwriting a
+  human's review is not.
 
 ---
 

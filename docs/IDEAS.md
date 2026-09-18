@@ -11,14 +11,7 @@ decision id). An idea only becomes real work when a human copies it into
 
 ---
 
-- add to meal plan from recepie
-- filter
-  - by tags
-- export shopping list (copy to clipboard)
-- translate to other language from edit mode (currenlty only from review)
-- Favorites + simple rating
-- Tags / collections
-- meal plan - add tabs (today, this week)
+- collections (grouping recipes; tags themselves already exist)
 - design (redesign)
 - Scale recipe
 - Stale shopping-list warning
