@@ -94,7 +94,28 @@ flutter test
 supabase db reset                   # rebuild local db from migrations
 supabase functions serve
 make types                          # regenerate Dart models from Zod schemas
+make help                           # every target, with a line each
 ```
+
+### Running the app
+
+**Running the app means a release build against hosted Supabase.** Not
+`flutter run`, not local Supabase. Sign-in is Google-only, and the Edge
+Functions that matter are the deployed ones, so a debug build pointed at
+`127.0.0.1` cannot exercise the paths worth looking at.
+
+```
+make install-hosted     # release APK against env/hosted.json, installed on the attached device
+make run-hosted         # attached run against hosted, when you need logs or hot reload
+```
+
+`make run` and `make run-android` point at local Supabase. They exist for
+debugging the local stack itself — don't reach for them to demo or verify a
+slice, and don't offer a local-stack run as the way to "see it working".
+
+This is about the *app*. Test suites stay where they are: `make check`,
+`flutter test` and `make test-sql` run offline or against the local database,
+and must never be pointed at hosted.
 
 ## Conventions
 
