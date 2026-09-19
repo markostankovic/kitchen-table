@@ -227,6 +227,16 @@ void main() {
 
       expect(find.byType(Image), findsNothing);
     });
+
+    testWidgets('a favorited, rated recipe shows a star and the rating',
+        (WidgetTester tester) async {
+      final Recipe favorited =
+          _torta.copyWith(isFavorite: true, rating: 4);
+      await _pumpList(tester, recipes: <Recipe>[favorited, _pita]);
+
+      expect(find.byIcon(Icons.star), findsOneWidget);
+      expect(find.textContaining('★ 4'), findsOneWidget);
+    });
   });
 
   group('recipe detail', () {
@@ -303,6 +313,39 @@ void main() {
       await _pumpDetail(tester, _detail);
 
       expect(find.byType(Image), findsNothing);
+    });
+
+    testWidgets('three filled and two outlined stars for rating: 3',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(recipe: _torta.copyWith(rating: 3)),
+      );
+
+      final Finder stars = find.byKey(const Key('ratingStars'));
+      expect(
+        find.descendant(of: stars, matching: find.byIcon(Icons.star)),
+        findsNWidgets(3),
+      );
+      expect(
+        find.descendant(of: stars, matching: find.byIcon(Icons.star_border)),
+        findsNWidgets(2),
+      );
+    });
+
+    testWidgets('five outlined stars for rating: null',
+        (WidgetTester tester) async {
+      await _pumpDetail(tester, _detail);
+
+      final Finder stars = find.byKey(const Key('ratingStars'));
+      expect(
+        find.descendant(of: stars, matching: find.byIcon(Icons.star)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: stars, matching: find.byIcon(Icons.star_border)),
+        findsNWidgets(5),
+      );
     });
   });
 

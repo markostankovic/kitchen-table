@@ -789,4 +789,25 @@ class AppLocalizationsSr extends AppLocalizations {
   String willBeOnListSnackbar(String name) {
     return '$name će od sada biti na listi.';
   }
+
+  @override
+  String get addToFavoritesTooltip => 'Dodaj u omiljene';
+
+  @override
+  String get removeFromFavoritesTooltip => 'Ukloni iz omiljenih';
+
+  @override
+  String ratingStarsTooltip(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count zvezdica',
+      few: '$count zvezdice',
+      one: '$count zvezdica',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get clearRatingTooltip => 'Ukloni ocenu';
 }

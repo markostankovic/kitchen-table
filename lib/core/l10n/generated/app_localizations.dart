@@ -1435,6 +1435,30 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'{name} će od sada biti na listi.'**
   String willBeOnListSnackbar(String name);
+
+  /// Recipe detail screen (Phase 5, part 1), the AppBar star's tooltip when the recipe is not yet a favorite.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaj u omiljene'**
+  String get addToFavoritesTooltip;
+
+  /// Recipe detail screen (Phase 5, part 1), the AppBar star's tooltip when the recipe is already a favorite.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ukloni iz omiljenih'**
+  String get removeFromFavoritesTooltip;
+
+  /// Recipe detail screen (Phase 5, part 1), the tooltip on a rating star that is not the current rating -- tapping it sets the rating to this many stars.
+  ///
+  /// In sr, this message translates to:
+  /// **'{count, plural, one{{count} zvezdica} few{{count} zvezdice} other{{count} zvezdica}}'**
+  String ratingStarsTooltip(int count);
+
+  /// Recipe detail screen (Phase 5, part 1), the tooltip on the rating star that already is the current rating -- tapping it again clears the rating back to unrated.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ukloni ocenu'**
+  String get clearRatingTooltip;
 }
 
 class _AppLocalizationsDelegate

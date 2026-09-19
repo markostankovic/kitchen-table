@@ -29,7 +29,7 @@ import '../../../ingredients/domain/quantity.dart';
 const String recipeColumns = '''
 id, household_id, title, description, servings, prep_minutes, cook_minutes,
 original_locale, source_type, source_url, source_attribution, status,
-image_path, tags, created_by, updated_at, deleted_at''';
+image_path, tags, is_favorite, rating, created_by, updated_at, deleted_at''';
 
 /// The embedded lines, steps and translations a detail-shaped fetch asks
 /// for, on top of [recipeColumns].
@@ -62,6 +62,8 @@ Recipe recipeFromWire(Map<String, dynamic> row) => Recipe(
       status: RecipeStatus.values.byName(row['status'] as String),
       imagePath: row['image_path'] as String?,
       tags: (row['tags'] as List<dynamic>? ?? <dynamic>[]).cast<String>(),
+      isFavorite: row['is_favorite'] as bool? ?? false,
+      rating: row['rating'] as int?,
       createdBy: row['created_by'] as String,
       updatedAt: _toDate(row['updated_at']),
       deletedAt: _toDate(row['deleted_at']),

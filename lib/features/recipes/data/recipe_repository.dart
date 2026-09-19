@@ -336,6 +336,15 @@ class RecipeRepository {
   /// race that.
   Future<void> softDelete(String id) => _remote.softDelete(id);
 
+  /// Sets a recipe's household-wide favorite flag (D24, D100).
+  Future<void> setFavorite(String id, {required bool isFavorite}) =>
+      _remote.setFavorite(id, isFavorite: isFavorite);
+
+  /// Sets a recipe's household-wide rating, or clears it with `null`
+  /// (D24, D100).
+  Future<void> setRating(String id, int? rating) =>
+      _remote.setRating(id, rating);
+
   // ---------------------------------------------------------------------
   // Internals
   // ---------------------------------------------------------------------

@@ -266,8 +266,14 @@ class AppDatabase extends _$AppDatabase {
   /// Bumped to 5 in Phase 2 part 7 (D87, D88) for [CurrentHouseholdCache] --
   /// the household-resolution gate every other cache in this file sat behind
   /// with no cache and no bound of its own.
+  ///
+  /// Bumped to 6 in Phase 5 part 1 for the same reason as the bump to 4: no
+  /// new table, but [RecipeCache.data]'s own shape changed again --
+  /// `is_favorite` and `rating` (D72). A row cached before this part has no
+  /// `is_favorite` key and its `updated_at` has not moved, so the delta fetch
+  /// would never re-send it.
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

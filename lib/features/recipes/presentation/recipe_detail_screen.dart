@@ -45,6 +45,21 @@ class RecipeDetailScreen extends ConsumerStatefulWidget {
 class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   bool _translating = false;
 
+  // Local echo (decision 3): the detail provider is a plain Future, and
+  // invalidating it after every tap would flash a spinner over the whole
+  // recipe for a value the screen already knows. `_pendingFavorite` and
+  // `_pendingRating` hold that known value until the next real fetch
+  // replaces it; `_hasPendingRating` distinguishes "no override yet" from
+  // "overridden to null (unrated)".
+  bool? _pendingFavorite;
+  bool _hasPendingRating = false;
+  int? _pendingRating;
+
+  bool _isFavorite(Recipe recipe) => _pendingFavorite ?? recipe.isFavorite;
+
+  int? _rating(Recipe recipe) =>
+      _hasPendingRating ? _pendingRating : recipe.rating;
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -52,11 +67,22 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     final AsyncValue<RecipeDetail> detail = ref.watch(
       recipeDetailProvider(widget.recipeId, locale: readingLocale),
     );
+    final Recipe? recipe = detail.value?.recipe;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(detail.value?.displayTitle ?? l10n.recipeDetailFallbackTitle),
         actions: <Widget>[
+          IconButton(
+            tooltip: recipe != null && _isFavorite(recipe)
+                ? l10n.removeFromFavoritesTooltip
+                : l10n.addToFavoritesTooltip,
+            icon: Icon(recipe != null && _isFavorite(recipe)
+                ? Icons.star
+                : Icons.star_border),
+            onPressed:
+                recipe != null ? () => _setFavorite(recipe, l10n) : null,
+          ),
           IconButton(
             tooltip: l10n.editTooltip,
             icon: const Icon(Icons.edit_outlined),
@@ -112,8 +138,13 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                 textAlign: TextAlign.center),
           ),
         ),
-        data: (RecipeDetail d) =>
-            _Body(detail: d, l10n: l10n, translating: _translating),
+        data: (RecipeDetail d) => _Body(
+          detail: d,
+          l10n: l10n,
+          translating: _translating,
+          rating: _rating(d.recipe),
+          onSetRating: (int star) => _setRating(d.recipe, star, l10n),
+        ),
       ),
     );
   }
@@ -139,6 +170,52 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
     } finally {
       if (mounted) setState(() => _translating = false);
+    }
+  }
+
+  /// Toggles the household-wide favorite flag (D24, D100).
+  ///
+  /// Local echo, not `ref.invalidate` (decision 3): the screen already knows
+  /// the value it just wrote, so it renders that immediately and reverts it
+  /// on failure, exactly as [_confirmDelete] reverts nothing because it never
+  /// guesses -- this is the first mutation in the app that does.
+  Future<void> _setFavorite(Recipe recipe, AppLocalizations l10n) async {
+    final bool next = !_isFavorite(recipe);
+    setState(() => _pendingFavorite = next);
+    try {
+      await ref
+          .read(recipeRepositoryProvider)
+          .setFavorite(widget.recipeId, isFavorite: next);
+      ref.read(recipesRevisionProvider.notifier).bump();
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      setState(() => _pendingFavorite = !next);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
+    }
+  }
+
+  /// Sets the household-wide rating to [star], or clears it if [star] is
+  /// already the current rating (decision 6: re-tap clears, unrated is
+  /// null, not zero). Local echo, same shape as [_setFavorite].
+  Future<void> _setRating(Recipe recipe, int star, AppLocalizations l10n) async {
+    final int? previous = _rating(recipe);
+    final int? next = previous == star ? null : star;
+    setState(() {
+      _hasPendingRating = true;
+      _pendingRating = next;
+    });
+    try {
+      await ref.read(recipeRepositoryProvider).setRating(widget.recipeId, next);
+      ref.read(recipesRevisionProvider.notifier).bump();
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _hasPendingRating = true;
+        _pendingRating = previous;
+      });
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
     }
   }
 
@@ -186,11 +263,24 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
 enum _DetailAction { translate, review, delete }
 
 class _Body extends ConsumerWidget {
-  const _Body({required this.detail, required this.l10n, required this.translating});
+  const _Body({
+    required this.detail,
+    required this.l10n,
+    required this.translating,
+    required this.rating,
+    required this.onSetRating,
+  });
 
   final RecipeDetail detail;
   final AppLocalizations l10n;
   final bool translating;
+
+  /// The rating to render, with the screen's own local echo already
+  /// resolved (decision 3) -- may differ from `detail.recipe.rating` for the
+  /// moment between a tap and its write landing.
+  final int? rating;
+
+  final ValueChanged<int> onSetRating;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -269,6 +359,7 @@ class _Body extends ConsumerWidget {
           const SizedBox(height: 8),
         if (meta.isNotEmpty)
           Text(meta.join(' · '), style: Theme.of(context).textTheme.bodySmall),
+        _RatingStars(rating: rating, onRate: onSetRating, l10n: l10n),
         if (detail.displayDescription != null &&
             detail.displayDescription!.isNotEmpty) ...<Widget>[
           const SizedBox(height: 12),
@@ -415,6 +506,44 @@ class _StepRow extends StatelessWidget {
             Expanded(child: Text(step.text)),
           ],
         ),
+      );
+}
+
+/// Five tap targets, filled up to the current rating. Tapping the star that
+/// already *is* the rating clears it back to unrated (decision 6) -- unrated
+/// is `rating == null`, never zero.
+class _RatingStars extends StatelessWidget {
+  const _RatingStars({
+    required this.rating,
+    required this.onRate,
+    required this.l10n,
+  });
+
+  final int? rating;
+  final ValueChanged<int> onRate;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        // Keyed so widget tests can scope to these five stars without
+        // conflating them with the AppBar's own favorite star/star_border
+        // icon.
+        key: const Key('ratingStars'),
+        mainAxisSize: MainAxisSize.min,
+        children: List<Widget>.generate(5, (int i) {
+          final int star = i + 1;
+          final bool filled = rating != null && star <= rating!;
+          return IconButton(
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            tooltip: star == rating
+                ? l10n.clearRatingTooltip
+                : l10n.ratingStarsTooltip(star),
+            icon: Icon(filled ? Icons.star : Icons.star_border),
+            onPressed: () => onRate(star),
+          );
+        }),
       );
 }
 

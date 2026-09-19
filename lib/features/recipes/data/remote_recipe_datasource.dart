@@ -369,6 +369,25 @@ ingredients(is_pantry_staple, category)''')
         }).eq('id', id);
       });
 
+  /// Sets a recipe's household-wide favorite flag (D24, D100). A narrow
+  /// write, not a column on the twelve-arg `update` payload -- mirrors
+  /// [softDelete].
+  Future<void> setFavorite(String id, {required bool isFavorite}) =>
+      runGuarded(() async {
+        await _client.from('recipes').update(<String, dynamic>{
+          'is_favorite': isFavorite,
+        }).eq('id', id);
+      });
+
+  /// Sets a recipe's household-wide rating, or clears it with `null`
+  /// (D24, D100). A narrow write, not a column on the twelve-arg `update`
+  /// payload -- mirrors [softDelete].
+  Future<void> setRating(String id, int? rating) => runGuarded(() async {
+        await _client.from('recipes').update(<String, dynamic>{
+          'rating': rating,
+        }).eq('id', id);
+      });
+
   static String? _blankToNull(String? value) {
     final String? trimmed = value?.trim();
     return (trimmed == null || trimmed.isEmpty) ? null : trimmed;

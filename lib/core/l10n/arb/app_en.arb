@@ -245,5 +245,9 @@
   "categoryNuts": "Nuts",
   "categoryOther": "Other",
   "markedAsStapleSnackbar": "{name} marked as always in the cupboard. Takes effect next time you generate.",
-  "willBeOnListSnackbar": "{name} will be on the list from now on."
+  "willBeOnListSnackbar": "{name} will be on the list from now on.",
+  "addToFavoritesTooltip": "Add to favorites",
+  "removeFromFavoritesTooltip": "Remove from favorites",
+  "ratingStarsTooltip": "{count, plural, one{{count} star} other{{count} stars}}",
+  "clearRatingTooltip": "Clear rating"
 }

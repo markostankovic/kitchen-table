@@ -81,6 +81,15 @@ abstract class Recipe with _$Recipe {
     /// ingredient line: a recipe still renders without its picture.
     String? imageUrl,
     @Default(<String>[]) List<String> tags,
+
+    /// A household fact, not a personal one (D24): any member's tap changes
+    /// it for everyone. Written only by `setFavorite`, never by the recipe
+    /// editor's `update` (D100).
+    @Default(false) bool isFavorite,
+
+    /// 1-5, or null for unrated. Same household-fact scoping as [isFavorite],
+    /// written only by `setRating`.
+    int? rating,
     DateTime? updatedAt,
     DateTime? deletedAt,
   }) = _Recipe;

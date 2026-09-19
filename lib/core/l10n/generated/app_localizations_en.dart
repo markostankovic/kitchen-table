@@ -781,4 +781,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String willBeOnListSnackbar(String name) {
     return '$name will be on the list from now on.';
   }
+
+  @override
+  String get addToFavoritesTooltip => 'Add to favorites';
+
+  @override
+  String get removeFromFavoritesTooltip => 'Remove from favorites';
+
+  @override
+  String ratingStarsTooltip(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stars',
+      one: '$count star',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get clearRatingTooltip => 'Clear rating';
 }

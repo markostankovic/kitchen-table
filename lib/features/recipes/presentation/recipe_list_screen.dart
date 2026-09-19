@@ -157,6 +157,15 @@ class _RecipeTile extends StatelessWidget {
         l10n.recipePrepMinutes(recipe.prepMinutes!),
       if (recipe.cookMinutes != null)
         l10n.recipeCookMinutes(recipe.cookMinutes!),
+      if (recipe.rating != null) '★ ${recipe.rating}',
+    ];
+
+    // Display-only (decision 5): no in-place toggle here, favoriting and
+    // rating both happen on the detail screen.
+    final List<Widget> trailingChildren = <Widget>[
+      if (recipe.isFavorite) const Icon(Icons.star, size: 20),
+      if (recipe.status == RecipeStatus.draft)
+        Chip(label: Text(l10n.draftChipLabel)),
     ];
 
     return ListTile(
@@ -178,9 +187,17 @@ class _RecipeTile extends StatelessWidget {
       subtitle: meta.isEmpty ? null : Text(meta.join(' · ')),
       // A draft is a recipe nobody has vouched for yet -- the standing rule
       // that keeps AI-produced recipes marked applies to hand-entered ones too.
-      trailing: recipe.status == RecipeStatus.draft
-          ? Chip(label: Text(l10n.draftChipLabel))
-          : null,
+      trailing: trailingChildren.isEmpty
+          ? null
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                for (int i = 0; i < trailingChildren.length; i++) ...<Widget>[
+                  if (i > 0) const SizedBox(width: 4),
+                  trailingChildren[i],
+                ],
+              ],
+            ),
       onTap: () => RecipeDetailRoute(recipe.id).go(context),
     );
   }

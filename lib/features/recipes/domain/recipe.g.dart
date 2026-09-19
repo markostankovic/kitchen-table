@@ -25,6 +25,8 @@ _Recipe _$RecipeFromJson(Map<String, dynamic> json) => _Recipe(
   tags:
       (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const <String>[],
+  isFavorite: json['isFavorite'] as bool? ?? false,
+  rating: (json['rating'] as num?)?.toInt(),
   updatedAt: json['updatedAt'] == null
       ? null
       : DateTime.parse(json['updatedAt'] as String),
@@ -50,6 +52,8 @@ Map<String, dynamic> _$RecipeToJson(_Recipe instance) => <String, dynamic>{
   'imagePath': instance.imagePath,
   'imageUrl': instance.imageUrl,
   'tags': instance.tags,
+  'isFavorite': instance.isFavorite,
+  'rating': instance.rating,
   'updatedAt': instance.updatedAt?.toIso8601String(),
   'deletedAt': instance.deletedAt?.toIso8601String(),
 };

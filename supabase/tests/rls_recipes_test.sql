@@ -241,6 +241,57 @@ begin
   end if;
 
   ---------------------------------------------------------------------------
+  -- is_favorite / rating: a member can write both, rating's check holds
+  -- (Phase 5, part 1)
+  ---------------------------------------------------------------------------
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_e, 'role', 'authenticated')::text, true);
+
+  update recipes set is_favorite = true where id = rid;
+
+  select count(*) into n from recipes where id = rid and is_favorite;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'a member could not set is_favorite';
+  end if;
+
+  update recipes set rating = 5 where id = rid;
+
+  select count(*) into n from recipes where id = rid and rating = 5;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'a member could not set rating to 5';
+  end if;
+
+  update recipes set rating = 1 where id = rid;
+
+  select count(*) into n from recipes where id = rid and rating = 1;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'a member could not set rating to 1';
+  end if;
+
+  got_error := false;
+  begin
+    update recipes set rating = 0 where id = rid;
+  exception when others then got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'rating = 0 was accepted (must be between 1 and 5)';
+  end if;
+
+  got_error := false;
+  begin
+    update recipes set rating = 6 where id = rid;
+  exception when others then got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'rating = 6 was accepted (must be between 1 and 5)';
+  end if;
+
+  ---------------------------------------------------------------------------
   -- Soft delete: a tombstone stays visible to the policy (D23)
   ---------------------------------------------------------------------------
   update recipes set deleted_at = now() where id = rid;

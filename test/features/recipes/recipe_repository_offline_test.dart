@@ -156,6 +156,13 @@ class _FakeRemote implements RemoteRecipeDataSource {
 
   @override
   Future<void> softDelete(String id) => throw UnimplementedError();
+
+  @override
+  Future<void> setFavorite(String id, {required bool isFavorite}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> setRating(String id, int? rating) => throw UnimplementedError();
 }
 
 void main() {

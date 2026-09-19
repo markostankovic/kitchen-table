@@ -1044,5 +1044,26 @@
         "type": "String"
       }
     }
+  },
+  "addToFavoritesTooltip": "Dodaj u omiljene",
+  "@addToFavoritesTooltip": {
+    "description": "Recipe detail screen (Phase 5, part 1), the AppBar star's tooltip when the recipe is not yet a favorite."
+  },
+  "removeFromFavoritesTooltip": "Ukloni iz omiljenih",
+  "@removeFromFavoritesTooltip": {
+    "description": "Recipe detail screen (Phase 5, part 1), the AppBar star's tooltip when the recipe is already a favorite."
+  },
+  "ratingStarsTooltip": "{count, plural, one{{count} zvezdica} few{{count} zvezdice} other{{count} zvezdica}}",
+  "@ratingStarsTooltip": {
+    "description": "Recipe detail screen (Phase 5, part 1), the tooltip on a rating star that is not the current rating -- tapping it sets the rating to this many stars.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clearRatingTooltip": "Ukloni ocenu",
+  "@clearRatingTooltip": {
+    "description": "Recipe detail screen (Phase 5, part 1), the tooltip on the rating star that already is the current rating -- tapping it again clears the rating back to unrated."
   }
 }
