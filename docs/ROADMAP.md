@@ -279,27 +279,30 @@ list.
 
 ### Part 2 — Filtering the recipe list
 
-**Status: not started.**
+**Status: complete** (`6c5b207`). Decisions taken during it: D102. See
+`docs/journal/phase-5.md`.
 
-Filter the landing page by tag and by favorite. `recipes.tags` has existed
-since migration 8 and is already carried by every read — this part adds no
-schema. The tag vocabulary is the distinct tags across the household's cached
-recipes, matched through the existing `TextNormalizer` so `Posno` and `posno`
-are one tag.
+Filters the landing page by tag and by favorite. `recipes.tags` existed since
+migration 8 and was already carried by every read — this part added no
+schema. The tag vocabulary is the distinct tags across the household's
+cached recipes, collapsed through the existing `TextNormalizer` so `Posno`
+and `posno` render as one chip (`RecipeTag.vocabularyOf`).
 
-Touches `recipeListProvider`'s family args (today `query` only, debounced
-250 ms in the screen because each distinct value creates a provider entry),
-`RecipeRepository._filtered` (today
-`TextNormalizer.normalize(r.title).contains(term)`), and a filter row under
-the existing search box. Note that `plannableRecipeSourceProvider` in
-`lib/core/recipes/` builds its own repository over the same code, so the
-meal-plan picker inherits whatever lands here.
+Widened `recipeListProvider`'s family args from `query` alone to `query`,
+`tag`, `favoritesOnly` (still two primitives, not a filter object — D102),
+`RecipeRepository._filtered`, and added a filter row under the existing
+search box: single-select tag chips plus one Favorites chip, AND-composed.
+`plannableRecipeSourceProvider` in `lib/core/recipes/` passes neither new
+arg, so the meal-plan picker is unchanged.
 
-Filtering in Dart after decode is the cheap route and matches what search
-already does. Promoting `tags` to a queryable Drift column — the way
-`titleNormalized` was promoted out of the blob — is the alternative, and costs
-another `schemaVersion` bump. Decide with a real recipe count in front of you,
-not now.
+Filtered in Dart after decode, matching what search already does — D102
+records why, and that promoting `tags` to a queryable Drift column remains
+the escape hatch once a household's recipe count makes it worth doing.
+
+One gap surfaced during the device walk, not fixed in this part: the filter
+row — Favorites chip included — only renders once the tag vocabulary is
+non-empty or a filter is already selected, so a household with zero tags
+currently cannot reach the Favorites filter at all (D102's Consequences).
 
 ---
 

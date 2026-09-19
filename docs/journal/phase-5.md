@@ -99,3 +99,67 @@ the sketch was wrong. `RecipeDraft`/`RecipeEditor` deliberately gained
 neither field; see the narrow-writer note above.
 
 ---
+
+### Part 2 — Filtering the recipe list
+
+**Status: complete** (`6c5b207`). Decisions taken during it: D102.
+
+A filter row under the search box: one **Favorites** toggle and one chip
+per tag in the household's vocabulary, single-select, AND-composed with
+the search term and with each other. No schema change -- `recipes.tags`
+and `is_favorite` (Part 1) already existed; this part is Dart-only.
+
+- **`RecipeTag.vocabularyOf`** (new domain type, `recipe_tag.dart`) groups a
+  recipe list's `tags` by `TextNormalizer.normalize`, so `Posno` and `posno`
+  collapse to one chip, picks the alphabetically-first original spelling as
+  the deterministic label, drops blank tags, and sorts by key so chip order
+  never depends on recipe order.
+- **`RecipeRepository._filtered`** widened from `(recipes, query)` to also
+  take `tag` and `favoritesOnly`, AND-composed with the title match, applied
+  to both the cached and the post-sync emission of `watchList` -- D67's
+  shape, unchanged in kind, just wider.
+- **The filter's family args are two primitives** (`tag`, `favoritesOnly`),
+  not a freezed filter object -- Riverpod keys a family by value for
+  primitives, but by identity for a `List`/object, which would mint a fresh
+  provider entry on every rebuild. `tag` is the *normalized* key, not the
+  display spelling, so `Posno` and `posno` select the same entry (D102).
+- **`recipeTagsProvider`** is synchronous, deriving the vocabulary from
+  `recipeListProvider()` at its default args (the unfiltered list) via
+  `ref.watch(...).value` -- so chips never vanish as the list is narrowed,
+  and the row is simply absent while the list is loading or errored.
+- **The filter row hides itself** when the vocabulary is empty *and*
+  nothing is selected -- a household with no tags at all currently has no
+  way to reach the Favorites chip either, since it renders inside the same
+  row. Discovered manually on-device (below), not called out in the slice
+  plan; recorded as a consequence in D102 rather than reworked here.
+- A **stale selected tag** (its last recipe was deleted, so it fell out of
+  the vocabulary) still renders as a chip, labelled with its own key -- the
+  filter is never a dead end.
+- **One deviation from the slice plan:** `recipeTagsProvider` was specified
+  against `AsyncValue.valueOrNull`, which this repo's pinned Riverpod
+  (3.4.3) does not expose -- that version's equivalent nullable accessor is
+  `.value`. Used `.value`; behaviour is identical.
+
+**How it was verified.** `dart analyze`, `dart run tool/check_layers.dart`,
+`deno check`/`lint`/`fmt`, `flutter test` (496 tests -- new:
+`recipe_tag_test.dart`'s `vocabularyOf` cases, widened
+`recipe_repository_offline_test.dart` `watchList` cases for tag/favorites/
+compose/diacritic-insensitivity, and widget tests for the chip row,
+tap-to-narrow, and Favorites+tag composing), `deno test` for the Edge
+Functions, and `make test-sql` against the running local stack all passed.
+`make check`'s `seed-check` step is red for the pre-existing, unrelated
+reason tracked since `c8be2bc` (see `docs/STATE.md`) -- confirmed it is the
+same failure, not something this slice caused.
+
+Installed as a release build against hosted (`env/hosted.json`) on the
+physical Galaxy S25 (`RFCY61SRQ3B`) and confirmed running -- no migration in
+this slice, so no `make db-push` step was needed (unlike Part 1). The filter
+row's actual on-device interaction (tapping a tag, tapping Favorites) was
+**not** confirmed with real data in this pass: the test household's recipes
+carried no tags, so the row -- Favorites included -- stayed hidden by the
+design above, and the session ended with instructions for adding a tag
+through the recipe editor rather than a confirmed manual walk. A future
+session should close that loop before trusting the on-device behaviour
+beyond what the widget tests already cover.
+
+---
