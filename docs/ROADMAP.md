@@ -308,25 +308,22 @@ currently cannot reach the Favorites filter at all (D102's Consequences).
 
 ### Part 3 — Add to meal plan from a recipe
 
-**Status: not started.**
+**Status: complete** (`e3245e0`). Decisions taken during it: D103. See
+`docs/journal/phase-5.md`.
 
-Today the only recipe→plan link runs the other way: the plan's slot row opens
-`showRecipePicker` from `lib/core/recipes/widgets/recipe_picker_sheet.dart`.
-This part is its mirror — you have the recipe, you need the day and slot.
+The recipe detail screen's overflow menu gains **Add to meal plan...**,
+mirroring the plan's own `showRecipePicker`: a bottom sheet offers four slot
+chips and the next 14 days, picking one writes a `meal_plan_entries` row and
+confirms with a snackbar. The layering wall is the mirror image too — the
+day+slot sheet and its write shim live in `core/meal_plan/`, the same escape
+hatch `core/recipes/` already used in the other direction (D53/D43).
 
-The layering constraint is the mirror image too.
-`features/meal_plan/presentation/` may not import
-`features/recipes/application/`, which is exactly why the recipe picker lives
-in `core/`; a button on the recipe detail screen faces the same wall in
-reverse, so the day+slot sheet and a thin write shim go in `core/meal_plan/`.
-Copy the picker's shape: the sheet returns a decision value, the caller
-performs the write.
-
-Reuses `MealPlanEditor.addRecipe(entryDate:, slot:, recipeId:)` unchanged — no
-repository or datasource work. `PlanWeek` for the day list,
-`core/l10n/date_labels.dart` for the labels, and `snackRepeatCount` /
-`shouldWarnOnRepeat` if the chosen slot is a snack, so the variety warning
-(D58, advisory) fires here the same way it fires in the plan.
+This part's own sketch called for reusing
+`MealPlanEditor.addRecipe(...)` unchanged; planning caught two reasons that
+doesn't work (the visible-week write funnel, and `mealPlanEditorProvider`
+being `autoDispose`) before any code was written, so a small keepAlive
+`MealPlanWriter` was built instead, deriving its destination week from the
+chosen date (D56's rule, D103). No schema change, no migration.
 
 ---
 

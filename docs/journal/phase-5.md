@@ -163,3 +163,90 @@ session should close that loop before trusting the on-device behaviour
 beyond what the widget tests already cover.
 
 ---
+
+### Part 3 — Add to meal plan from a recipe
+
+**Status: complete** (`e3245e0`). Decisions taken during it: D103.
+
+The recipe detail screen's overflow menu gains **Add to meal plan...**,
+opening a bottom sheet with four slot chips and the next 14 days; picking
+one writes a `meal_plan_entries` row and confirms with a snackbar. The
+snack variety warning (D58, advisory) fires here exactly as it does on the
+Plan tab. No schema change, no migration.
+
+- **Correction to the ROADMAP sketch.** Part 3's own sketch (written during
+  planning) said this would reuse `MealPlanEditor.addRecipe(...)`
+  unchanged. Planning caught two problems with that before any code was
+  written: `MealPlanEditor._write` derives the destination week from
+  `visibleWeekProvider`, which this screen has none of, and the
+  `meal_plan_entries_before_write` trigger (migration 14) would refuse an
+  `entry_date` outside whatever week that provider happened to hold; and
+  `mealPlanEditorProvider` is `autoDispose`, so reading its `.notifier` from
+  a screen that never watches it risks the notifier being torn down
+  mid-`await`. A new keepAlive `MealPlanWriter` in `core/meal_plan/` was
+  built instead, over its own `MealPlanRepository`, deriving the
+  destination week from the chosen date the same way
+  `MealPlanEditor.addLeftover` already does for a leftover (D56). D103
+  records this.
+- **The layering wall is the mirror image of `core/recipes/`.**
+  `features/recipes/presentation/` may not import
+  `features/meal_plan/application/`, so the day+slot sheet
+  (`meal_slot_picker_sheet.dart`) and the write shim
+  (`meal_plan_writer.dart`) live in `core/meal_plan/`, outside
+  `tool/check_layers.dart`'s feature rule entirely — the same escape hatch
+  D53/D43 already established for `core/recipes/recipe_picker_providers
+  .dart`, one direction over.
+  `features/meal_plan/domain/meal_slot.dart` and
+  `features/meal_plan/domain/snack_variety.dart` are imported directly by
+  the recipe screen, which is legal: cross-feature into `domain/` is the
+  one permitted direction, and `meal_plan_screen.dart` already imports
+  `features/recipes/domain/` the same way.
+- **`mealSlotLabel`** moved out of `meal_plan_screen.dart`'s private
+  `_slotLabel` into `core/l10n/meal_slot_labels.dart`, a sibling function
+  taking `(MealSlot, AppLocalizations)` on `core/error/failure_l10n.dart`'s
+  own precedent (D92) — needed because the picker sheet, living in `core/`,
+  has no feature-local copy to reach for and may not import
+  `features/meal_plan/presentation/`.
+- **The sheet returns a decision, the caller writes** — `MealSlotPick(date,
+  slot)`, one value rather than a sealed hierarchy like `RecipePick`, since
+  there is only one kind of decision here. Fourteen days from today via
+  `DateTime(y, m, d + n)` (never a `Duration` add — `plan_week.dart`'s DST
+  rule applies here too), `ChoiceChip`s over `MealSlot.ordered` defaulting
+  to dinner, and a `Chip` badge on today's row rather than replacing its
+  date label outright.
+- **A success snackbar is deliberate here**, unlike the silent favorite
+  star and rating stars (Part 1): this screen shows no other visible change
+  once the write lands, so `addedToPlanSnackbar` names the day and slot,
+  on `shopping_list_screen.dart`'s `markedAsStapleSnackbar` precedent.
+- One incidental fix, not part of this slice's own scope: `make gen`
+  regenerated `recipe_providers.g.dart`'s doc comments (`valueOrNull` →
+  `value`), which had gone stale since Part 2 actually shipped `.value`
+  (Riverpod 3.4.3 has no `valueOrNull`) without a `.g.dart` rebuild to
+  match. Left in rather than reverted — it only brings a generated file
+  back in sync with its own already-committed source.
+
+**How it was verified.** `dart analyze`, `dart run tool/check_layers.dart`,
+and `flutter test` (full suite, including the new
+`meal_slot_picker_sheet_test.dart` and the six new `recipe_screens_test.dart`
+cases: menu item renders, a day+slot pick calls `addRecipe` with exactly
+that date and slot, a snack slot over the repeat threshold warns and
+Cancel/Add anyway behave, a non-snack slot never calls
+`snackRepeatCount`, and an `AppFailure` renders a snackbar) all passed.
+`make l10n-check` showed a diff only because the ARB/generated changes were
+still uncommitted at the time it ran — confirmed with a second
+`flutter gen-l10n` producing a byte-identical file, so the generated files
+were already correctly in sync. `make test-sql` passed against the running
+local stack (untouched by this slice, no migration). `make check`'s
+`seed-check` step stayed red for the pre-existing, unrelated reason tracked
+since `c8be2bc` (see `docs/STATE.md`).
+
+Installed as a release build against hosted (`env/hosted.json`) on the
+physical Galaxy S25 (`RFCY61SRQ3B`), reinstalled after Part 2. The on-device
+walk itself — adding a recipe to a day in next week, confirming the entry
+appears after paging the Plan tab forward, and triggering the snack-repeat
+dialog from this screen — was **not** confirmed manually in this pass; only
+the app's install and launch were. A future session should close that loop
+before trusting the on-device behaviour beyond what the widget tests above
+already cover.
+
+---
