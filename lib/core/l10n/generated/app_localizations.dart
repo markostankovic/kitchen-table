@@ -1465,6 +1465,30 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Omiljeni'**
   String get favoritesFilterLabel;
+
+  /// Recipe detail screen (Phase 5, part 3), the overflow menu item that opens the day/slot sheet.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaj u plan...'**
+  String get addToPlanMenuItem;
+
+  /// Recipe detail screen (Phase 5, part 3), the meal slot picker sheet's title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaj u plan obroka'**
+  String get addToPlanSheetTitle;
+
+  /// Recipe detail screen (Phase 5, part 3), the meal slot picker sheet's badge on the first (today's) day row.
+  ///
+  /// In sr, this message translates to:
+  /// **'danas'**
+  String get todayChipLabel;
+
+  /// Recipe detail screen (Phase 5, part 3), the confirmation snackbar after adding a recipe to the plan from its own screen -- deliberate, unlike the silent favorite/rating writes, since this screen shows no other evidence the write landed.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodato: {day}, {slot}.'**
+  String addedToPlanSnackbar(String day, String slot);
 }
 
 class _AppLocalizationsDelegate

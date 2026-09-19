@@ -250,5 +250,9 @@
   "removeFromFavoritesTooltip": "Remove from favorites",
   "ratingStarsTooltip": "{count, plural, one{{count} star} other{{count} stars}}",
   "clearRatingTooltip": "Clear rating",
-  "favoritesFilterLabel": "Favorites"
+  "favoritesFilterLabel": "Favorites",
+  "addToPlanMenuItem": "Add to meal plan...",
+  "addToPlanSheetTitle": "Add to meal plan",
+  "todayChipLabel": "today",
+  "addedToPlanSnackbar": "Added to {day}, {slot}."
 }

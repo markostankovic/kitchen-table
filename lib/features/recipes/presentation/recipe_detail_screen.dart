@@ -4,11 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/app_locale.dart';
+import '../../../core/l10n/date_labels.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
+import '../../../core/l10n/meal_slot_labels.dart';
+import '../../../core/meal_plan/meal_plan_writer.dart';
+import '../../../core/meal_plan/widgets/meal_slot_picker_sheet.dart';
 import '../../../core/refresh/data_revision.dart';
 import '../../../core/router/routes.dart';
 import '../../ingredients/domain/unit_catalog.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
+import '../../meal_plan/domain/meal_slot.dart';
+import '../../meal_plan/domain/snack_variety.dart';
 import '../application/recipe_providers.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_detail.dart';
@@ -98,6 +104,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               _DetailAction.translate => _translate(detail.value!, l10n),
               _DetailAction.review =>
                 RecipeTranslationReviewRoute(widget.recipeId).go(context),
+              _DetailAction.addToPlan => _addToPlan(detail.value!.recipe, l10n),
               _DetailAction.delete => _confirmDelete(l10n),
             },
             itemBuilder: (BuildContext context) => <PopupMenuEntry<_DetailAction>>[
@@ -120,6 +127,10 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                   value: _DetailAction.review,
                   child: Text(l10n.reviewTranslationMenuItem),
                 ),
+              PopupMenuItem<_DetailAction>(
+                value: _DetailAction.addToPlan,
+                child: Text(l10n.addToPlanMenuItem),
+              ),
               PopupMenuItem<_DetailAction>(
                 value: _DetailAction.delete,
                 child: Text(l10n.deleteRecipeMenuItem),
@@ -171,6 +182,73 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     } finally {
       if (mounted) setState(() => _translating = false);
     }
+  }
+
+  /// Opens the day/slot sheet and writes the pick through `core/meal_plan`'s
+  /// own [MealPlanWriter] -- not [MealPlanEditor], which derives its
+  /// destination from a visible week this screen does not have (D103).
+  ///
+  /// The snack-warning-then-write sequence mirrors `_SlotRow._add` /
+  /// `_confirmRepeat` in `meal_plan_screen.dart` exactly: advisory only
+  /// (D58), never blocking the write on its own.
+  Future<void> _addToPlan(Recipe recipe, AppLocalizations l10n) async {
+    final MealSlotPick? pick = await showMealSlotPicker(context);
+    if (pick == null || !mounted) return;
+
+    if (pick.slot == MealSlot.snack) {
+      final int repeatCount = await ref
+          .read(mealPlanWriterProvider.notifier)
+          .snackRepeatCount(recipeId: recipe.id, entryDate: pick.date);
+      if (!mounted) return;
+      if (shouldWarnOnRepeat(repeatCount)) {
+        final bool proceed = await _confirmSnackRepeat(repeatCount, l10n);
+        if (!proceed || !mounted) return;
+      }
+    }
+
+    try {
+      await ref.read(mealPlanWriterProvider.notifier).addRecipe(
+            entryDate: pick.date,
+            slot: pick.slot,
+            recipeId: recipe.id,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.addedToPlanSnackbar(
+          shortDateLabel(pick.date, l10n.localeName),
+          mealSlotLabel(pick.slot, l10n),
+        )),
+      ));
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
+    }
+  }
+
+  /// Advisory only -- cancelling here writes nothing. `_SlotRow._confirmRepeat`
+  /// in `meal_plan_screen.dart` is this dialog's exact precedent.
+  Future<bool> _confirmSnackRepeat(int repeatCount, AppLocalizations l10n) async {
+    final bool? proceed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: Text(l10n.snackRepeatWarningTitle),
+        content: Text(
+          l10n.snackRepeatWarningBody(l10n.snackSlotCount(repeatCount)),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancelButton),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.addAnywayButton),
+          ),
+        ],
+      ),
+    );
+    return proceed ?? false;
   }
 
   /// Toggles the household-wide favorite flag (D24, D100).
@@ -260,7 +338,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   }
 }
 
-enum _DetailAction { translate, review, delete }
+enum _DetailAction { translate, review, addToPlan, delete }
 
 class _Body extends ConsumerWidget {
   const _Body({

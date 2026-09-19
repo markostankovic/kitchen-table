@@ -813,4 +813,18 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get favoritesFilterLabel => 'Omiljeni';
+
+  @override
+  String get addToPlanMenuItem => 'Dodaj u plan...';
+
+  @override
+  String get addToPlanSheetTitle => 'Dodaj u plan obroka';
+
+  @override
+  String get todayChipLabel => 'danas';
+
+  @override
+  String addedToPlanSnackbar(String day, String slot) {
+    return 'Dodato: $day, $slot.';
+  }
 }

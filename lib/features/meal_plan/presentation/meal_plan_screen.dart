@@ -5,6 +5,7 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/date_labels.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
+import '../../../core/l10n/meal_slot_labels.dart';
 import '../../../core/net/network_status.dart';
 import '../../../core/recipes/widgets/recipe_picker_sheet.dart';
 import '../../../core/router/routes.dart';
@@ -182,24 +183,12 @@ class _DaySection extends StatelessWidget {
   }
 }
 
-/// `MealSlot` cannot know a sentence (a domain model is pure Dart, CLAUDE.md
-/// rule 7) -- so, like [_entryLabel] below, this is a sibling function taking
-/// `(value, AppLocalizations)`, on `core/error/failure_l10n.dart`'s own
-/// `_sentence` precedent. No `default` arm, deliberately: a new [MealSlot]
-/// must not compile until it has a label here.
-String _slotLabel(MealSlot slot, AppLocalizations l10n) => switch (slot) {
-      MealSlot.breakfast => l10n.mealSlotBreakfast,
-      MealSlot.lunch => l10n.mealSlotLunch,
-      MealSlot.dinner => l10n.mealSlotDinner,
-      MealSlot.snack => l10n.mealSlotSnack,
-    };
-
 /// What to show on the tile: the recipe's title for a recipe entry, the note
 /// text for a note entry, and the leftover sentence for a leftover -- it must
 /// not read as a second helping cooked from scratch. `MealPlanEntry` used to
 /// define this itself (`label`), until D92 caught up with it here too: a pure
 /// Dart domain model cannot reach `AppLocalizations`, so it moved
-/// presentation-side, same shape as [_slotLabel]. No `default` arm.
+/// presentation-side, same shape as `mealSlotLabel`. No `default` arm.
 String _entryLabel(MealPlanEntry entry, AppLocalizations l10n) =>
     switch (entry.entryKind) {
       MealEntryKind.recipe =>
@@ -315,7 +304,7 @@ class _SlotRow extends ConsumerWidget {
               width: 76,
               child: Padding(
                 padding: const EdgeInsets.only(top: 10),
-                child: Text(_slotLabel(slot, l10n),
+                child: Text(mealSlotLabel(slot, l10n),
                     style: Theme.of(context).textTheme.bodySmall),
               ),
             ),
@@ -547,7 +536,7 @@ class _EntryChip extends ConsumerWidget {
                   for (final MealSlot slot in MealSlot.ordered)
                     DropdownMenuItem<MealSlot>(
                       value: slot,
-                      child: Text(_slotLabel(slot, l10n)),
+                      child: Text(mealSlotLabel(slot, l10n)),
                     ),
                 ],
                 onChanged: (MealSlot? value) {
@@ -633,7 +622,7 @@ class _EntryChip extends ConsumerWidget {
                   for (final MealSlot slot in MealSlot.ordered)
                     DropdownMenuItem<MealSlot>(
                       value: slot,
-                      child: Text(_slotLabel(slot, l10n)),
+                      child: Text(mealSlotLabel(slot, l10n)),
                     ),
                 ],
                 onChanged: (MealSlot? value) {

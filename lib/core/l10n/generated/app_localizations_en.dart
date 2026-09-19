@@ -804,4 +804,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get favoritesFilterLabel => 'Favorites';
+
+  @override
+  String get addToPlanMenuItem => 'Add to meal plan...';
+
+  @override
+  String get addToPlanSheetTitle => 'Add to meal plan';
+
+  @override
+  String get todayChipLabel => 'today';
+
+  @override
+  String addedToPlanSnackbar(String day, String slot) {
+    return 'Added to $day, $slot.';
+  }
 }

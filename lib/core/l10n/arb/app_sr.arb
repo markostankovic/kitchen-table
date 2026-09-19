@@ -1069,5 +1069,29 @@
   "favoritesFilterLabel": "Omiljeni",
   "@favoritesFilterLabel": {
     "description": "Recipe list screen (Phase 5, part 2), the filter chip that narrows to favorites."
+  },
+  "addToPlanMenuItem": "Dodaj u plan...",
+  "@addToPlanMenuItem": {
+    "description": "Recipe detail screen (Phase 5, part 3), the overflow menu item that opens the day/slot sheet."
+  },
+  "addToPlanSheetTitle": "Dodaj u plan obroka",
+  "@addToPlanSheetTitle": {
+    "description": "Recipe detail screen (Phase 5, part 3), the meal slot picker sheet's title."
+  },
+  "todayChipLabel": "danas",
+  "@todayChipLabel": {
+    "description": "Recipe detail screen (Phase 5, part 3), the meal slot picker sheet's badge on the first (today's) day row."
+  },
+  "addedToPlanSnackbar": "Dodato: {day}, {slot}.",
+  "@addedToPlanSnackbar": {
+    "description": "Recipe detail screen (Phase 5, part 3), the confirmation snackbar after adding a recipe to the plan from its own screen -- deliberate, unlike the silent favorite/rating writes, since this screen shows no other evidence the write landed.",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "slot": {
+        "type": "String"
+      }
+    }
   }
 }

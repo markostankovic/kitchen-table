@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/error/app_failure.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
+import 'package:kitchen_table/core/meal_plan/meal_plan_writer.dart';
 import 'package:kitchen_table/features/ingredients/domain/ingredient_match.dart';
 import 'package:kitchen_table/features/ingredients/domain/quantity.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit_catalog.dart';
 import 'package:kitchen_table/core/ingredients/ingredient_catalog_providers.dart';
+import 'package:kitchen_table/features/meal_plan/domain/meal_slot.dart';
 import 'package:kitchen_table/features/recipes/application/recipe_providers.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_detail.dart';
@@ -154,7 +157,68 @@ Future<void> _pumpList(
   await tester.pumpAndSettle();
 }
 
-Future<void> _pumpDetail(WidgetTester tester, RecipeDetail detail) async {
+/// Captured `MealPlanWriter` calls, kept off the notifier itself:
+/// `riverpod_lint`'s `avoid_public_notifier_properties` forbids public fields
+/// on a `Notifier`, so the spy lives in this plain class instead, on
+/// `meal_plan_screen_test.dart`'s own `_Calls` precedent.
+class _Calls {
+  ({DateTime date, MealSlot slot, String recipeId})? addedRecipe;
+  bool snackRepeatCountCalled = false;
+}
+
+/// The notifier is overridden, not mocked (Riverpod's own override
+/// mechanism, CLAUDE.md rule 8) -- `meal_plan_screen_test.dart`'s `_StubPlan`
+/// is this class's exact precedent, one notifier over.
+class _StubWriter extends MealPlanWriter {
+  _StubWriter(this.calls, {this.repeatCount = 0});
+
+  final _Calls calls;
+  final int repeatCount;
+
+  @override
+  void build() {}
+
+  @override
+  Future<int> snackRepeatCount({
+    required String recipeId,
+    required DateTime entryDate,
+  }) async {
+    calls.snackRepeatCountCalled = true;
+    return repeatCount;
+  }
+
+  @override
+  Future<void> addRecipe({
+    required DateTime entryDate,
+    required MealSlot slot,
+    required String recipeId,
+  }) async {
+    calls.addedRecipe = (date: entryDate, slot: slot, recipeId: recipeId);
+  }
+}
+
+class _ThrowingWriter extends MealPlanWriter {
+  @override
+  void build() {}
+
+  @override
+  Future<void> addRecipe({
+    required DateTime entryDate,
+    required MealSlot slot,
+    required String recipeId,
+  }) async {
+    throw const NotFoundFailure(
+      message: 'You are not in a household yet.',
+      code: FailureCode.noHousehold,
+    );
+  }
+}
+
+Future<void> _pumpDetail(
+  WidgetTester tester,
+  RecipeDetail detail, {
+  MealPlanWriter? writer,
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -167,6 +231,7 @@ Future<void> _pumpDetail(WidgetTester tester, RecipeDetail detail) async {
         recipeDetailProvider('r1', locale: detail.readingLocale)
             .overrideWith((Ref ref) async => detail),
         unitCatalogProvider.overrideWith((Ref ref) async => _units),
+        if (writer != null) mealPlanWriterProvider.overrideWith(() => writer),
       ],
       // The screen now reads AppLocalizations too (Phase 3 part 2), on
       // `_pumpList`'s own precedent above.
@@ -519,6 +584,131 @@ void main() {
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
       expect(find.text('Review translation'), findsOneWidget);
+    });
+  });
+
+  // Phase 5, part 3: the overflow menu's "Add to meal plan..." entry point,
+  // mirroring `meal_plan_screen_test.dart`'s own snack-warning-then-write
+  // coverage of `_SlotRow._add` / `_confirmRepeat`.
+  group('add to meal plan', () {
+    testWidgets('the menu item renders', (WidgetTester tester) async {
+      await _pumpDetail(tester, _detail);
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add to meal plan...'), findsOneWidget);
+    });
+
+    testWidgets(
+        'picking a day and slot calls addRecipe with exactly that date and '
+        'slot', (WidgetTester tester) async {
+      final _Calls calls = _Calls();
+      await _pumpDetail(tester, _detail, writer: _StubWriter(calls));
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add to meal plan...'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Lunch'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ListTile).at(2));
+      await tester.pumpAndSettle();
+
+      final DateTime now = DateTime.now();
+      final DateTime expected = DateTime(now.year, now.month, now.day + 2);
+
+      expect(calls.addedRecipe, isNotNull);
+      expect(calls.addedRecipe!.recipeId, 'r1');
+      expect(calls.addedRecipe!.date, expected);
+      expect(calls.addedRecipe!.slot, MealSlot.lunch);
+    });
+
+    testWidgets('a non-snack slot never calls snackRepeatCount, and adds '
+        'immediately', (WidgetTester tester) async {
+      final _Calls calls = _Calls();
+      await _pumpDetail(tester, _detail,
+          writer: _StubWriter(calls, repeatCount: 99));
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add to meal plan...'));
+      await tester.pumpAndSettle();
+
+      // Dinner is the sheet's default slot -- no chip tap needed.
+      await tester.tap(find.byType(ListTile).first);
+      await tester.pumpAndSettle();
+
+      expect(calls.snackRepeatCountCalled, isFalse);
+      expect(find.text('Already planned recently'), findsNothing);
+      expect(calls.addedRecipe, isNotNull);
+      expect(calls.addedRecipe!.slot, MealSlot.dinner);
+    });
+
+    testWidgets('a repeated snack slot warns, and Cancel writes nothing',
+        (WidgetTester tester) async {
+      final _Calls calls = _Calls();
+      await _pumpDetail(tester, _detail,
+          writer: _StubWriter(calls, repeatCount: 2));
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add to meal plan...'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Snack'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ListTile).first);
+      await tester.pumpAndSettle();
+
+      expect(calls.snackRepeatCountCalled, isTrue);
+      expect(find.text('Already planned recently'), findsOneWidget);
+      expect(find.text('Already in 2 snack slots this fortnight.'),
+          findsOneWidget);
+
+      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(calls.addedRecipe, isNull);
+    });
+
+    testWidgets('a repeated snack slot, then Add anyway calls addRecipe',
+        (WidgetTester tester) async {
+      final _Calls calls = _Calls();
+      await _pumpDetail(tester, _detail,
+          writer: _StubWriter(calls, repeatCount: 2));
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add to meal plan...'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Snack'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ListTile).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Add anyway'));
+      await tester.pumpAndSettle();
+
+      expect(calls.addedRecipe, isNotNull);
+      expect(calls.addedRecipe!.slot, MealSlot.snack);
+    });
+
+    testWidgets('an AppFailure from the writer renders a snackbar',
+        (WidgetTester tester) async {
+      await _pumpDetail(tester, _detail, writer: _ThrowingWriter());
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add to meal plan...'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(ListTile).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('You are not in a household yet.'), findsOneWidget);
     });
   });
 }

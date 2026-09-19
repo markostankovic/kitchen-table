@@ -292,9 +292,9 @@ abstract class _$RecipeList extends $StreamNotifier<List<Recipe>> {
 /// (Phase 5, part 2) so chips don't vanish as the list is narrowed.
 ///
 /// Synchronous on purpose: while [recipeListProvider] is loading or errored
-/// there is no data to derive a vocabulary from, `valueOrNull` is null, and
-/// the empty list [RecipeTag.vocabularyOf] gets back is the right rendering
-/// for both -- the chip row simply isn't there.
+/// there is no data to derive a vocabulary from, `value` is null, and the
+/// empty list [RecipeTag.vocabularyOf] gets back is the right rendering for
+/// both -- the chip row simply isn't there.
 
 @ProviderFor(recipeTags)
 final recipeTagsProvider = RecipeTagsProvider._();
@@ -303,9 +303,9 @@ final recipeTagsProvider = RecipeTagsProvider._();
 /// (Phase 5, part 2) so chips don't vanish as the list is narrowed.
 ///
 /// Synchronous on purpose: while [recipeListProvider] is loading or errored
-/// there is no data to derive a vocabulary from, `valueOrNull` is null, and
-/// the empty list [RecipeTag.vocabularyOf] gets back is the right rendering
-/// for both -- the chip row simply isn't there.
+/// there is no data to derive a vocabulary from, `value` is null, and the
+/// empty list [RecipeTag.vocabularyOf] gets back is the right rendering for
+/// both -- the chip row simply isn't there.
 
 final class RecipeTagsProvider
     extends
@@ -315,9 +315,9 @@ final class RecipeTagsProvider
   /// (Phase 5, part 2) so chips don't vanish as the list is narrowed.
   ///
   /// Synchronous on purpose: while [recipeListProvider] is loading or errored
-  /// there is no data to derive a vocabulary from, `valueOrNull` is null, and
-  /// the empty list [RecipeTag.vocabularyOf] gets back is the right rendering
-  /// for both -- the chip row simply isn't there.
+  /// there is no data to derive a vocabulary from, `value` is null, and the
+  /// empty list [RecipeTag.vocabularyOf] gets back is the right rendering for
+  /// both -- the chip row simply isn't there.
   RecipeTagsProvider._()
     : super(
         from: null,
@@ -351,7 +351,7 @@ final class RecipeTagsProvider
   }
 }
 
-String _$recipeTagsHash() => r'b5dcc6f41f7e056bd79b238aa9ea3361b14a9e49';
+String _$recipeTagsHash() => r'a5c71050006be9deb3bcf8293ce5eabe4ea66e60';
 
 /// One recipe with its lines and steps, names resolved from the catalog.
 ///
