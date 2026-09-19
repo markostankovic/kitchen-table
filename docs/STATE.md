@@ -1,49 +1,48 @@
-# State — 2026-09-18
+# State — 2026-09-19
 
 **Branch:** `main`
-**Last shipped:** Phase 4 part 4 (`37a837f`) — email OTP removed, Google is
-the only sign-in path. `requestOtp` / `verifyOtp`, the verify-code screen and
-route, the email form and "ili" divider, the OTP ARB strings, and
-`supabase/templates/magic_link.html` (with its `config.toml` block) are gone.
-`FailureCode.codeNotAccepted` survives — both D96 and the old ROADMAP entry
-were wrong to name it for deletion; it's still what invite redemption maps
-three Edge Function slugs onto (D99). `[auth.email]` stays enabled
-server-side, untouched. Verified on the physical Galaxy S25 against hosted: a
-fresh release install, one Google button on the sign-in screen, and a tap
-through the native account chooser landing straight in the existing
-household — no verify-code screen anywhere in the flow.
+**Last shipped:** Phase 5 part 1 (`d80bf74`) — favorites and a five-star
+rating on recipes, both household facts (`is_favorite`, `rating` on
+`recipes`, migration 19 — the repo's first additive `alter table ... add
+column`, D100). Narrow writers (`setFavorite`/`setRating`), an AppBar star
+and a five-star row with local echo instead of invalidate (D101), a
+display-only list tile (filled star + `★ N`). `RecipeDraft`/`RecipeEditor`
+deliberately gained neither field — the ROADMAP's original sketch calling
+for editor setters was wrong. Verified with `make lint test db-reset
+test-sql` locally, then end-to-end on the physical Galaxy S25 against
+hosted, after discovering hosted was still on migration 18 (see below).
 **In flight:** none
-**Next:** Phase 5 Part 1 — favorites and a five-star rating, both
-household-scoped columns on `recipes`. Phase 5 is six features promoted from
-`docs/IDEAS.md`; see `docs/ROADMAP.md`.
-**Latest decision:** D99
+**Next:** Phase 5 Part 2 — filtering the recipe list by tag and by
+favorite, built once over both since favorites now exists. See
+`docs/ROADMAP.md`.
+**Latest decision:** D101
 
-**Apple sign-in was dropped, not deferred.** Phase 4 Part 5 no longer exists
-in the roadmap. The consequence is real and was accepted deliberately: while
-Google is the only third-party login, the app cannot be submitted to the App
-Store (Guideline 4.8 requires an equivalent privacy-preserving option).
-Personal signing and TestFlight are unaffected. Phase 5's old deferred list
-(`suggest-meals`, novel recipe generation, unit conversion via densities, OCR,
-a web layer, aisle grouping) was dropped in the same pass.
+**A slice with a migration needs `make db-push`, not just `make
+db-reset`, before testing against hosted.** This slice's own release-build
+walk hit it directly: migration 19 was applied locally and the code shipped
+querying the new columns, but hosted was still on migration 18, so the
+hosted recipe list 400'd with a generic "Nešto je pošlo naopako." — no
+Dart stack trace reaches logcat in a release build, so this took a direct
+`information_schema.columns` query against hosted to diagnose. Fixed with
+`supabase db push`. Any future slice touching a migration should push it to
+hosted before a device walk, not just reset local.
 
-**`make config-push` no longer needs the comment-out dance.** That was this
-slice's whole operational point: with `[auth.email.template.magic_link]`
-deleted, `supabase config push` carries the entire `[auth]` block in one
-shot. D95's free-tier template limitation is now historical background in
-`docs/ARCHITECTURE.md`, not a live constraint to route around.
+**Local sign-in requires a device that can hold a Google account**
+(Phase 4 part 3's finding). The Android emulator cannot add one at all —
+Google's device-integrity gating — so it stays useful for UI work and
+useless for exercising sign-in. A physical device's silent credential
+restore can sign in with no visible tap at all, which is worth knowing when
+a screenshot shows the recipe list with no sign-in step in between.
 
-**Local sign-in requires a device that can hold a Google account** (part 3's
-finding, unchanged by part 4). The Android emulator cannot add a Google
-account at all — Google's device-integrity gating, not a configuration
-fault — so it stays useful for UI work and useless for exercising sign-in
-itself. Local development lost Mailpit's frictionless email sign-in when OTP
-went; there is no replacement UI, by design (D96) — a dev-only sign-in button
-would have meant not actually deleting the code.
+**Google-only sign-in means no App Store submission** (Phase 4 part 4).
+Guideline 4.8 requires an equivalent privacy-preserving login option;
+Apple sign-in was dropped from the roadmap outright, not deferred.
+Personal signing and TestFlight are unaffected.
 
 **Not yet watched:** a brand-new Google user landing on
-`CreateHouseholdRoute` through `on_auth_user_created`, flagged since part 3.
-The trigger is unchanged and fires on `auth.users` regardless of provider,
-but no slice has watched it fire for a Google-created user yet.
+`CreateHouseholdRoute` through `on_auth_user_created`, flagged since Phase 4
+part 3. The trigger is unchanged and fires on `auth.users` regardless of
+provider, but no slice has watched it fire for a Google-created user yet.
 `display_name` will be the email local-part when someone checks —
 `handle_new_user()` does `split_part(new.email, '@', 1)` and ignores
 Google's `full_name`.

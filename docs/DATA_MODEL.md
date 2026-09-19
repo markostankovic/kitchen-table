@@ -382,6 +382,8 @@ create table recipes (
     check (visibility in ('household')),   -- D16: no public path, yet
   image_path text,                  -- Supabase Storage, recipe-images bucket
   tags text[] not null default '{}',
+  is_favorite boolean not null default false,  -- household fact, not personal (D24)
+  rating smallint check (rating between 1 and 5),  -- null is unrated, never 0
   created_by uuid not null references profiles(id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -453,6 +455,12 @@ but no writer, on `recipes.image_path`'s own precedent (D35). Migration 18
 `save_recipe_translation`, not a parameter on it, because the two want
 opposite things from the same columns on the same row (D82) — see that
 migration's own header for the full reasoning.
+
+`is_favorite` and `rating` arrived in migration 19 (Phase 5, part 1) — the
+first `alter table ... add column` against an already-applied table (D100).
+Both are household facts, not personal ones (D24): any member's tap changes
+either for everyone. No RLS or trigger change was needed — the existing
+`recipes` policies and `recipes_set_updated_at` are already column-agnostic.
 
 ---
 

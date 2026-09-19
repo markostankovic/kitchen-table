@@ -247,7 +247,8 @@ are independent of each other and of 1–2; reorder them freely.
 
 ### Part 1 — Favorites and a five-star rating
 
-**Status: not started.**
+**Status: complete** (`d80bf74`). Decisions taken during it: D100–D101. See
+`docs/journal/phase-5.md`.
 
 Two columns on `recipes`: `is_favorite boolean not null default false` and
 `rating smallint check (rating between 1 and 5)`, nullable — unrated is not
@@ -256,20 +257,23 @@ CLAUDE.md is household-scoped data, and `profiles` is the only table in the
 app with `auth.uid()`-based RLS. The trade is real and deliberate — one
 member's tap changes the rating for everyone.
 
-No RLS change: the existing `recipes` policies already cover new columns.
-This would be the **first `alter table ... add column` migration in the
-repo** — every migration so far creates its tables whole — so it sets the
-house style for extending an applied table.
+No RLS change: the existing `recipes` policies already covered the new
+columns. Migration 19 is the **first `alter table ... add column` migration
+in the repo** — every migration before it creates its tables whole — and
+D100 records the house style that sets for extending an applied table.
 
-Both columns join `recipeColumns` in `recipe_dto.dart`, which changes what the
-Drift `data` blob holds, which means **`schemaVersion` 5 → 6** in
+Both columns joined `recipeColumns` in `recipe_dto.dart`, which changed what
+the Drift `data` blob holds, so **`schemaVersion` bumped 5 → 6** in
 `lib/core/db/app_database.dart` (drop-and-refetch, D71 — no per-version
-migration code). Domain: `Recipe`, `RecipeDraft`, `RecipeEditor` setters. UI:
-the toggle and the stars on the detail screen, and whatever the list tile
-shows.
+migration code). Narrow writers (`setFavorite`/`setRating`), not
+`RecipeDraft`/`RecipeEditor` setters — this list's original sketch was wrong
+about that; the editor deliberately never touches either column. UI: an AppBar
+star and a five-star row on the detail screen (local echo, not invalidate —
+D101), a filled star plus `★ N` on the list tile.
 
-Open for its planning session: does the list tile let you favorite in place,
-or only display? A star row on a `dense` tile is a lot of tile.
+This list's own open question — does the list tile favorite in place, or
+only display? — resolved to **display-only**; no in-place toggle from the
+list.
 
 ---
 
