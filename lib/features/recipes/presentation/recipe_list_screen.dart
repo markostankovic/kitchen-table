@@ -8,6 +8,7 @@ import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../application/recipe_providers.dart';
 import '../domain/recipe.dart';
+import '../domain/recipe_tag.dart';
 
 /// The household's recipes, searchable by title.
 ///
@@ -28,6 +29,8 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
   /// leave one cached provider behind for each prefix.
   Timer? _debounce;
   String _query = '';
+  String _tag = '';
+  bool _favoritesOnly = false;
 
   @override
   void dispose() {
@@ -44,11 +47,26 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
     });
   }
 
+  /// A chip tap is discrete, unlike typing (which mints a provider entry per
+  /// keystroke prefix), so this calls `setState` directly -- no debounce.
+  void _toggleTag(String key) {
+    setState(() => _tag = _tag == key ? '' : key);
+  }
+
+  void _toggleFavoritesOnly() {
+    setState(() => _favoritesOnly = !_favoritesOnly);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AsyncValue<List<Recipe>> recipes =
-        ref.watch(recipeListProvider(query: _query));
+    final AsyncValue<List<Recipe>> recipes = ref.watch(
+      recipeListProvider(
+        query: _query,
+        tag: _tag,
+        favoritesOnly: _favoritesOnly,
+      ),
+    );
 
     return Scaffold(
       // The title shares its ARB key with the nav label (D77, Phase 3 part 1)
@@ -113,6 +131,13 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
               ),
             ),
           ),
+          _FilterRow(
+            selectedTag: _tag,
+            favoritesOnly: _favoritesOnly,
+            onTagTap: _toggleTag,
+            onFavoritesTap: _toggleFavoritesOnly,
+            l10n: l10n,
+          ),
           Expanded(
             child: recipes.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -124,10 +149,20 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
                 ),
               ),
               data: (List<Recipe> items) => items.isEmpty
-                  ? _EmptyState(searching: _query.isNotEmpty, l10n: l10n)
+                  ? _EmptyState(
+                      narrowed: _query.isNotEmpty ||
+                          _tag.isNotEmpty ||
+                          _favoritesOnly,
+                      l10n: l10n,
+                    )
                   : RefreshIndicator(
-                      onRefresh: () async =>
-                          ref.invalidate(recipeListProvider(query: _query)),
+                      onRefresh: () async => ref.invalidate(
+                        recipeListProvider(
+                          query: _query,
+                          tag: _tag,
+                          favoritesOnly: _favoritesOnly,
+                        ),
+                      ),
                       child: ListView.separated(
                         itemCount: items.length,
                         separatorBuilder: (_, _) => const Divider(height: 1),
@@ -203,10 +238,72 @@ class _RecipeTile extends StatelessWidget {
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.searching, required this.l10n});
+/// The Favorites toggle plus one chip per tag in the household's vocabulary
+/// (Phase 5, part 2). A horizontally scrolling row, not a `Wrap` -- a `Wrap`
+/// would grow downward and eat the list below it.
+class _FilterRow extends ConsumerWidget {
+  const _FilterRow({
+    required this.selectedTag,
+    required this.favoritesOnly,
+    required this.onTagTap,
+    required this.onFavoritesTap,
+    required this.l10n,
+  });
 
-  final bool searching;
+  final String selectedTag;
+  final bool favoritesOnly;
+  final ValueChanged<String> onTagTap;
+  final VoidCallback onFavoritesTap;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final List<RecipeTag> vocabulary = ref.watch(recipeTagsProvider);
+
+    // The selected tag may have fallen out of the vocabulary (its last
+    // recipe was deleted) -- still show a chip for it, labelled with the
+    // key, so the filter is never a dead end.
+    final List<RecipeTag> chips = selectedTag.isEmpty ||
+            vocabulary.any((RecipeTag t) => t.key == selectedTag)
+        ? vocabulary
+        : <RecipeTag>[
+            ...vocabulary,
+            RecipeTag(key: selectedTag, label: selectedTag),
+          ]..sort((RecipeTag a, RecipeTag b) => a.key.compareTo(b.key));
+
+    if (chips.isEmpty && !favoritesOnly) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: <Widget>[
+            FilterChip(
+              avatar: const Icon(Icons.star, size: 18),
+              label: Text(l10n.favoritesFilterLabel),
+              selected: favoritesOnly,
+              onSelected: (_) => onFavoritesTap(),
+            ),
+            for (final RecipeTag tag in chips) ...<Widget>[
+              const SizedBox(width: 8),
+              FilterChip(
+                label: Text(tag.label),
+                selected: tag.key == selectedTag,
+                onSelected: (_) => onTagTap(tag.key),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.narrowed, required this.l10n});
+
+  final bool narrowed;
   final AppLocalizations l10n;
 
   @override
@@ -214,7 +311,7 @@ class _EmptyState extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Text(
-            searching ? l10n.noRecipesMatch : l10n.noRecipesYet,
+            narrowed ? l10n.noRecipesMatch : l10n.noRecipesYet,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge,
           ),

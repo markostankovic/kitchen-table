@@ -1065,5 +1065,9 @@
   "clearRatingTooltip": "Ukloni ocenu",
   "@clearRatingTooltip": {
     "description": "Recipe detail screen (Phase 5, part 1), the tooltip on the rating star that already is the current rating -- tapping it again clears the rating back to unrated."
+  },
+  "favoritesFilterLabel": "Omiljeni",
+  "@favoritesFilterLabel": {
+    "description": "Recipe list screen (Phase 5, part 2), the filter chip that narrows to favorites."
   }
 }

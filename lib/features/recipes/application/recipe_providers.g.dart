@@ -123,7 +123,7 @@ final class RecipeListProvider
   /// under test, `CurrentShoppingList`'s own reasoning).
   RecipeListProvider._({
     required RecipeListFamily super.from,
-    required String super.argument,
+    required ({String query, String tag, bool favoritesOnly}) super.argument,
   }) : super(
          retry: null,
          name: r'recipeListProvider',
@@ -139,7 +139,7 @@ final class RecipeListProvider
   String toString() {
     return r'recipeListProvider'
         ''
-        '($argument)';
+        '$argument';
   }
 
   @$internal
@@ -157,7 +157,7 @@ final class RecipeListProvider
   }
 }
 
-String _$recipeListHash() => r'126f99b4ba574c289668069cd7396abf4dc8bbd9';
+String _$recipeListHash() => r'551d5a93e7a377788d45903fb87a2d0cdf926c08';
 
 /// The household's recipes, matching [query] -- cache immediately, then the
 /// network (Phase 2 part 6a, D67's shape widened from one row to many).
@@ -187,7 +187,7 @@ final class RecipeListFamily extends $Family
           AsyncValue<List<Recipe>>,
           List<Recipe>,
           Stream<List<Recipe>>,
-          String
+          ({String query, String tag, bool favoritesOnly})
         > {
   RecipeListFamily._()
     : super(
@@ -219,8 +219,14 @@ final class RecipeListFamily extends $Family
   /// `Supabase.instance.client` (the shell's tab loop relies on exactly this
   /// under test, `CurrentShoppingList`'s own reasoning).
 
-  RecipeListProvider call({String query = ''}) =>
-      RecipeListProvider._(argument: query, from: this);
+  RecipeListProvider call({
+    String query = '',
+    String tag = '',
+    bool favoritesOnly = false,
+  }) => RecipeListProvider._(
+    argument: (query: query, tag: tag, favoritesOnly: favoritesOnly),
+    from: this,
+  );
 
   @override
   String toString() => r'recipeListProvider';
@@ -248,10 +254,17 @@ final class RecipeListFamily extends $Family
 /// under test, `CurrentShoppingList`'s own reasoning).
 
 abstract class _$RecipeList extends $StreamNotifier<List<Recipe>> {
-  late final _$args = ref.$arg as String;
-  String get query => _$args;
+  late final _$args =
+      ref.$arg as ({String query, String tag, bool favoritesOnly});
+  String get query => _$args.query;
+  String get tag => _$args.tag;
+  bool get favoritesOnly => _$args.favoritesOnly;
 
-  Stream<List<Recipe>> build({String query = ''});
+  Stream<List<Recipe>> build({
+    String query = '',
+    String tag = '',
+    bool favoritesOnly = false,
+  });
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
@@ -264,9 +277,81 @@ abstract class _$RecipeList extends $StreamNotifier<List<Recipe>> {
               Object?,
               Object?
             >;
-    return element.handleCreate(ref, () => build(query: _$args));
+    return element.handleCreate(
+      ref,
+      () => build(
+        query: _$args.query,
+        tag: _$args.tag,
+        favoritesOnly: _$args.favoritesOnly,
+      ),
+    );
   }
 }
+
+/// The household's tag vocabulary, derived from the unfiltered recipe list
+/// (Phase 5, part 2) so chips don't vanish as the list is narrowed.
+///
+/// Synchronous on purpose: while [recipeListProvider] is loading or errored
+/// there is no data to derive a vocabulary from, `valueOrNull` is null, and
+/// the empty list [RecipeTag.vocabularyOf] gets back is the right rendering
+/// for both -- the chip row simply isn't there.
+
+@ProviderFor(recipeTags)
+final recipeTagsProvider = RecipeTagsProvider._();
+
+/// The household's tag vocabulary, derived from the unfiltered recipe list
+/// (Phase 5, part 2) so chips don't vanish as the list is narrowed.
+///
+/// Synchronous on purpose: while [recipeListProvider] is loading or errored
+/// there is no data to derive a vocabulary from, `valueOrNull` is null, and
+/// the empty list [RecipeTag.vocabularyOf] gets back is the right rendering
+/// for both -- the chip row simply isn't there.
+
+final class RecipeTagsProvider
+    extends
+        $FunctionalProvider<List<RecipeTag>, List<RecipeTag>, List<RecipeTag>>
+    with $Provider<List<RecipeTag>> {
+  /// The household's tag vocabulary, derived from the unfiltered recipe list
+  /// (Phase 5, part 2) so chips don't vanish as the list is narrowed.
+  ///
+  /// Synchronous on purpose: while [recipeListProvider] is loading or errored
+  /// there is no data to derive a vocabulary from, `valueOrNull` is null, and
+  /// the empty list [RecipeTag.vocabularyOf] gets back is the right rendering
+  /// for both -- the chip row simply isn't there.
+  RecipeTagsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'recipeTagsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$recipeTagsHash();
+
+  @$internal
+  @override
+  $ProviderElement<List<RecipeTag>> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  List<RecipeTag> create(Ref ref) {
+    return recipeTags(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(List<RecipeTag> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<List<RecipeTag>>(value),
+    );
+  }
+}
+
+String _$recipeTagsHash() => r'b5dcc6f41f7e056bd79b238aa9ea3361b14a9e49';
 
 /// One recipe with its lines and steps, names resolved from the catalog.
 ///

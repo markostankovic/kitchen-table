@@ -41,6 +41,12 @@ class RecipeRepository {
   /// the household owns is a full sync away from being searchable offline,
   /// not just the ones a query happened to match while still connected.
   ///
+  /// [tag] and [favoritesOnly] (Phase 5, part 2) apply the same way, on both
+  /// emissions, AND-composed with [query] and with each other: [tag] is the
+  /// normalized key a recipe's `tags` must contain one match of, and
+  /// [favoritesOnly] narrows to `isFavorite` -- a household fact (D24), not a
+  /// per-member one.
+  ///
   /// A cache hit outlives a [NetworkFailure]; a cold cache does not -- an
   /// honest "no connection, and nothing saved yet" beats an empty list that
   /// implies the household has no recipes at all (matches
@@ -48,6 +54,8 @@ class RecipeRepository {
   Stream<List<Recipe>> watchList({
     required String householdId,
     String query = '',
+    String tag = '',
+    bool favoritesOnly = false,
     void Function()? onReachable,
     void Function()? onUnreachable,
   }) async* {
@@ -57,7 +65,9 @@ class RecipeRepository {
     // `ShoppingListRepository.watchLatest` skips a null one, so a
     // NetworkFailure on a truly cold cache errors the stream outright
     // rather than emitting an empty list moment before it.
-    if (cached.isNotEmpty) yield _filtered(cached, query);
+    if (cached.isNotEmpty) {
+      yield _filtered(cached, query, tag, favoritesOnly);
+    }
 
     try {
       final DateTime? since = await _local.readRecipesWatermark(householdId);
@@ -71,7 +81,7 @@ class RecipeRepository {
       onReachable?.call();
       final List<Recipe> fresh =
           await _local.readAll(householdId: householdId);
-      yield _filtered(fresh, query);
+      yield _filtered(fresh, query, tag, favoritesOnly);
     } on NetworkFailure {
       onUnreachable?.call();
       if (cached.isNotEmpty) return;
@@ -201,7 +211,14 @@ class RecipeRepository {
   Future<List<Recipe>> searchOnce({
     required String householdId,
     String query = '',
-  }) => watchList(householdId: householdId, query: query).last;
+    String tag = '',
+    bool favoritesOnly = false,
+  }) => watchList(
+    householdId: householdId,
+    query: query,
+    tag: tag,
+    favoritesOnly: favoritesOnly,
+  ).last;
 
   /// Every ingredient line of several recipes at once, with catalog names,
   /// pantry flags and categories resolved -- the shopping list's read path.
@@ -349,12 +366,26 @@ class RecipeRepository {
   // Internals
   // ---------------------------------------------------------------------
 
-  List<Recipe> _filtered(List<Recipe> recipes, String query) {
+  List<Recipe> _filtered(
+    List<Recipe> recipes,
+    String query,
+    String tag,
+    bool favoritesOnly,
+  ) {
     final String term = TextNormalizer.normalize(query);
-    if (term.isEmpty) return recipes;
+    final String tagKey = TextNormalizer.normalize(tag);
+    if (term.isEmpty && tagKey.isEmpty && !favoritesOnly) return recipes;
+
     return recipes
         .where(
-          (Recipe r) => TextNormalizer.normalize(r.title).contains(term),
+          (Recipe r) =>
+              (term.isEmpty ||
+                  TextNormalizer.normalize(r.title).contains(term)) &&
+              (tagKey.isEmpty ||
+                  r.tags.any(
+                    (String t) => TextNormalizer.normalize(t) == tagKey,
+                  )) &&
+              (!favoritesOnly || r.isFavorite),
         )
         .toList(growable: false);
   }

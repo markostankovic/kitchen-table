@@ -249,5 +249,6 @@
   "addToFavoritesTooltip": "Add to favorites",
   "removeFromFavoritesTooltip": "Remove from favorites",
   "ratingStarsTooltip": "{count, plural, one{{count} star} other{{count} stars}}",
-  "clearRatingTooltip": "Clear rating"
+  "clearRatingTooltip": "Clear rating",
+  "favoritesFilterLabel": "Favorites"
 }

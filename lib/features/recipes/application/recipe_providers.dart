@@ -10,6 +10,7 @@ import '../data/recipe_repository.dart';
 import '../data/remote_recipe_datasource.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_detail.dart';
+import '../domain/recipe_tag.dart';
 
 part 'recipe_providers.g.dart';
 
@@ -42,7 +43,11 @@ RecipeRepository recipeRepository(Ref ref) => RecipeRepository(
 @riverpod
 class RecipeList extends _$RecipeList {
   @override
-  Stream<List<Recipe>> build({String query = ''}) async* {
+  Stream<List<Recipe>> build({
+    String query = '',
+    String tag = '',
+    bool favoritesOnly = false,
+  }) async* {
     ref.watch(recipesRevisionProvider);
 
     final String? householdId = await ref.watch(
@@ -59,11 +64,25 @@ class RecipeList extends _$RecipeList {
         .watchList(
           householdId: householdId,
           query: query,
+          tag: tag,
+          favoritesOnly: favoritesOnly,
           onReachable: status.reportReachable,
           onUnreachable: status.reportUnreachable,
         );
   }
 }
+
+/// The household's tag vocabulary, derived from the unfiltered recipe list
+/// (Phase 5, part 2) so chips don't vanish as the list is narrowed.
+///
+/// Synchronous on purpose: while [recipeListProvider] is loading or errored
+/// there is no data to derive a vocabulary from, `value` is null, and the
+/// empty list [RecipeTag.vocabularyOf] gets back is the right rendering for
+/// both -- the chip row simply isn't there.
+@riverpod
+List<RecipeTag> recipeTags(Ref ref) => RecipeTag.vocabularyOf(
+      ref.watch(recipeListProvider()).value ?? const <Recipe>[],
+    );
 
 /// One recipe with its lines and steps, names resolved from the catalog.
 ///

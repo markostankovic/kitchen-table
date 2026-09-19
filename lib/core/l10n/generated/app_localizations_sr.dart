@@ -810,4 +810,7 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get clearRatingTooltip => 'Ukloni ocenu';
+
+  @override
+  String get favoritesFilterLabel => 'Omiljeni';
 }

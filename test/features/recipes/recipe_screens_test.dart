@@ -22,24 +22,37 @@ import 'package:kitchen_table/features/recipes/presentation/recipe_list_screen.d
 
 /// A stub for the `StreamNotifier` family `recipeListProvider` became in
 /// Phase 2 part 6a -- on `shopping_list_screen_test.dart`'s `_StubList`
-/// precedent. Filters [recipes] by `query` itself, matching the old
-/// override's own inline logic, since [RecipeList.build] is never reached
-/// through a stub.
+/// precedent. Filters [recipes] by `query`, `tag` and `favoritesOnly` itself,
+/// matching the old override's own inline logic, since [RecipeList.build] is
+/// never reached through a stub.
 class _StubRecipeList extends RecipeList {
   _StubRecipeList(this.recipes);
 
   final List<Recipe> recipes;
 
   @override
-  Stream<List<Recipe>> build({String query = ''}) async* {
-    yield query.isEmpty
-        ? recipes
-        : recipes
-            .where(
-              (Recipe r) =>
-                  r.title.toLowerCase().contains(query.toLowerCase()),
-            )
-            .toList();
+  Stream<List<Recipe>> build({
+    String query = '',
+    String tag = '',
+    bool favoritesOnly = false,
+  }) async* {
+    Iterable<Recipe> filtered = recipes;
+    if (query.isNotEmpty) {
+      filtered = filtered.where(
+        (Recipe r) => r.title.toLowerCase().contains(query.toLowerCase()),
+      );
+    }
+    if (tag.isNotEmpty) {
+      filtered = filtered.where(
+        (Recipe r) => r.tags
+            .map((String t) => t.toLowerCase())
+            .contains(tag.toLowerCase()),
+      );
+    }
+    if (favoritesOnly) {
+      filtered = filtered.where((Recipe r) => r.isFavorite);
+    }
+    yield filtered.toList();
   }
 }
 
@@ -236,6 +249,79 @@ void main() {
 
       expect(find.byIcon(Icons.star), findsOneWidget);
       expect(find.textContaining('★ 4'), findsOneWidget);
+    });
+
+    testWidgets('shows a chip per distinct tag', (WidgetTester tester) async {
+      await _pumpList(
+        tester,
+        recipes: <Recipe>[
+          _torta.copyWith(tags: <String>['Posno']),
+          _pita.copyWith(tags: <String>['Brzo']),
+        ],
+      );
+
+      expect(find.text('Posno'), findsOneWidget);
+      expect(find.text('Brzo'), findsOneWidget);
+    });
+
+    testWidgets('tapping a tag chip narrows the list',
+        (WidgetTester tester) async {
+      await _pumpList(
+        tester,
+        recipes: <Recipe>[
+          _torta.copyWith(tags: <String>['Posno']),
+          _pita.copyWith(tags: <String>['Brzo']),
+        ],
+      );
+
+      await tester.tap(find.text('Posno'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Šargarepa torta'), findsOneWidget);
+      expect(find.text('Pita sa sirom'), findsNothing);
+    });
+
+    testWidgets('the Favorites chip narrows to starred recipes',
+        (WidgetTester tester) async {
+      await _pumpList(
+        tester,
+        recipes: <Recipe>[
+          // A tag on each -- the filter row is hidden when the vocabulary is
+          // empty and nothing is selected, so the Favorites chip needs the
+          // row to actually be there.
+          _torta.copyWith(isFavorite: true, tags: <String>['Posno']),
+          _pita.copyWith(tags: <String>['Posno']),
+        ],
+      );
+
+      await tester.tap(find.text('Favorites'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Šargarepa torta'), findsOneWidget);
+      expect(find.text('Pita sa sirom'), findsNothing);
+    });
+
+    testWidgets('favorites and a tag combine', (WidgetTester tester) async {
+      await _pumpList(
+        tester,
+        recipes: <Recipe>[
+          _torta.copyWith(isFavorite: true, tags: <String>['Posno']),
+          // Favorited too, but a different tag -- must drop out once both
+          // filters are on, proving the AND rather than either alone.
+          _pita.copyWith(isFavorite: true, tags: <String>['Brzo']),
+        ],
+      );
+
+      await tester.tap(find.text('Favorites'));
+      await tester.pumpAndSettle();
+      expect(find.text('Šargarepa torta'), findsOneWidget);
+      expect(find.text('Pita sa sirom'), findsOneWidget);
+
+      await tester.tap(find.text('Posno'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Šargarepa torta'), findsOneWidget);
+      expect(find.text('Pita sa sirom'), findsNothing);
     });
   });
 

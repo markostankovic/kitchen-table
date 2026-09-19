@@ -1459,6 +1459,12 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Ukloni ocenu'**
   String get clearRatingTooltip;
+
+  /// Recipe list screen (Phase 5, part 2), the filter chip that narrows to favorites.
+  ///
+  /// In sr, this message translates to:
+  /// **'Omiljeni'**
+  String get favoritesFilterLabel;
 }
 
 class _AppLocalizationsDelegate

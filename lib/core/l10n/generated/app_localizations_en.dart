@@ -801,4 +801,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clearRatingTooltip => 'Clear rating';
+
+  @override
+  String get favoritesFilterLabel => 'Favorites';
 }

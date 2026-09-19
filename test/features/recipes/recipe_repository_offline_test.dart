@@ -21,6 +21,8 @@ Map<String, dynamic> _row(
   String updatedAt = '2026-01-01T00:00:00Z',
   String? deletedAt,
   List<Map<String, dynamic>> lines = const <Map<String, dynamic>>[],
+  List<String> tags = const <String>[],
+  bool isFavorite = false,
 }) => <String, dynamic>{
   'id': id,
   'household_id': 'h1',
@@ -35,7 +37,9 @@ Map<String, dynamic> _row(
   'source_attribution': null,
   'status': 'draft',
   'image_path': null,
-  'tags': <String>[],
+  'tags': tags,
+  'is_favorite': isFavorite,
+  'rating': null,
   'created_by': 'u1',
   'updated_at': updatedAt,
   'deleted_at': deletedAt,
@@ -267,6 +271,111 @@ void main() {
 
       // Diacritic- and case-insensitive, the same normalized comparison the
       // old server-side ilike made (rule 6).
+      for (final batch in emitted) {
+        expect(batch.map((r) => r.id), <String>['r1']);
+      }
+    });
+
+    test('a tag filters both the cached and the fresh emission', () async {
+      await LocalRecipeDataSource(db).upsertMany(
+        householdId: 'h1',
+        rows: <Map<String, dynamic>>[
+          _row('r1', tags: <String>['Posno']),
+          _row('r2', tags: <String>['Brzo']),
+        ],
+      );
+      remote.changed = <Map<String, dynamic>>[];
+
+      final emitted = await repository
+          .watchList(householdId: 'h1', tag: 'posno')
+          .toList();
+
+      for (final batch in emitted) {
+        expect(batch.map((r) => r.id), <String>['r1']);
+      }
+    });
+
+    test('favoritesOnly filters both the cached and the fresh emission', () async {
+      await LocalRecipeDataSource(db).upsertMany(
+        householdId: 'h1',
+        rows: <Map<String, dynamic>>[
+          _row('r1', isFavorite: true),
+          _row('r2', isFavorite: false),
+        ],
+      );
+      remote.changed = <Map<String, dynamic>>[];
+
+      final emitted = await repository
+          .watchList(householdId: 'h1', favoritesOnly: true)
+          .toList();
+
+      for (final batch in emitted) {
+        expect(batch.map((r) => r.id), <String>['r1']);
+      }
+    });
+
+    test('tag, favoritesOnly and query compose (AND)', () async {
+      await LocalRecipeDataSource(db).upsertMany(
+        householdId: 'h1',
+        rows: <Map<String, dynamic>>[
+          _row(
+            'r1',
+            title: 'Šargarepa torta',
+            tags: <String>['Posno'],
+            isFavorite: true,
+          ),
+          // Fails the query.
+          _row(
+            'r2',
+            title: 'Pita sa sirom',
+            tags: <String>['Posno'],
+            isFavorite: true,
+          ),
+          // Fails the tag.
+          _row(
+            'r3',
+            title: 'Šargarepa salata',
+            tags: <String>['Brzo'],
+            isFavorite: true,
+          ),
+          // Fails favoritesOnly.
+          _row(
+            'r4',
+            title: 'Šargarepa pita',
+            tags: <String>['Posno'],
+            isFavorite: false,
+          ),
+        ],
+      );
+      remote.changed = <Map<String, dynamic>>[];
+
+      final emitted = await repository
+          .watchList(
+            householdId: 'h1',
+            query: 'sargarepa',
+            tag: 'posno',
+            favoritesOnly: true,
+          )
+          .toList();
+
+      for (final batch in emitted) {
+        expect(batch.map((r) => r.id), <String>['r1']);
+      }
+    });
+
+    test('a tag matches case- and diacritic-insensitively', () async {
+      await LocalRecipeDataSource(db).upsertMany(
+        householdId: 'h1',
+        rows: <Map<String, dynamic>>[
+          _row('r1', tags: <String>['ĐUVEČ']),
+        ],
+      );
+      remote.changed = <Map<String, dynamic>>[];
+
+      final emitted = await repository
+          .watchList(householdId: 'h1', tag: 'djuvec')
+          .toList();
+
       for (final batch in emitted) {
         expect(batch.map((r) => r.id), <String>['r1']);
       }
