@@ -329,23 +329,18 @@ chosen date (D56's rule, D103). No schema change, no migration.
 
 ### Part 4 — The meal plan's Today and This week views
 
-**Status: not started.**
+**Status: complete** (`0e24704`). Decisions taken during it: D104. See
+`docs/journal/phase-5.md`.
 
-The plan screen is a vertical list of seven `_DaySection`s with a week bar on
-top. Add a Today view beside the existing week view.
-
-There is **no `TabBar`, `TabController` or `PageView` anywhere in `lib/`**. The
-app's existing answer to "two views, one screen" is `SegmentedButton`
-(settings, recipe edit) and `ExpansionTile` (the shopping list's pantry
-section). Picking `TabBar` here is a real choice and gets a decision record;
-picking the segmented control is the conservative one.
-
-The sharp edge is `visibleWeekProvider`, which is a single notifier, not a
-family: what does Today show after you have paged to a week three weeks out?
-Recommended — Today pins to `DateTime.now()` and hides the week chevrons
-entirely; This week keeps `_WeekBar` as it is. Also fold the inline y/m/d
-comparison in `_DaySection._isToday` into a shared helper rather than writing
-it a second time.
+`MealPlanScreen` gained a `SegmentedButton` (Today / This week) under the
+AppBar, on the same shape `settings_screen.dart` already used and the same
+local-`setState` view-state pattern `recipe_list_screen.dart` already used.
+Today is the default and pins `visibleWeekProvider` to the current week
+rather than reading a week of its own (D104), hiding the week chevrons and
+the AppBar's jump-to-today action, which mean nothing pinned to one day.
+`isSameDate` in `plan_week.dart` is now the one definition of
+same-calendar-day, replacing the inline comparisons in both
+`MealPlanWeek.entriesFor` and `_DaySection._isToday`.
 
 ---
 

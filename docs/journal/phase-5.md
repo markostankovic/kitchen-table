@@ -250,3 +250,70 @@ before trusting the on-device behaviour beyond what the widget tests above
 already cover.
 
 ---
+
+### Part 4 — The meal plan's Today and This week views
+
+**Status: complete** (`0e24704`). Decisions taken during it: D104.
+
+`MealPlanScreen` gains a `SegmentedButton<_PlanView>` (Today / This week)
+between the AppBar and the body, on `settings_screen.dart`'s existing
+`SegmentedButton` shape and `recipe_list_screen.dart`'s existing pattern for
+a screen's own ephemeral view state (`setState`, not a provider). Today is
+the default, closing one of the six frictions Phase 5's own intro named:
+"the plan always opens on a whole week."
+
+- **Today pins, it doesn't own, the visible week.** Selecting Today calls
+  `ref.read(visibleWeekProvider.notifier).today()` and then renders one
+  `_DaySection` for `DateTime.now()` from the same `mealPlanEditorProvider`
+  data the week view reads — no second week provider, on D54's precedent
+  that `visibleWeekProvider` stays a single non-family notifier. D104
+  records this and its consequence: switching to Today after paging the
+  week view forward snaps back to the real today, discarding the page
+  position, deliberately. The week view's own chevrons and the AppBar's
+  `Icons.today_outlined` jump-to-today action are hidden entirely in
+  Today — pinned to one day, neither means anything.
+- **One definition of same-calendar-day.** `isSameDate(a, b)` is new in
+  `plan_week.dart`; both `MealPlanWeek.entriesFor`'s inline three-field
+  comparison and `_DaySection._isToday` now call it instead of each
+  keeping their own copy (CLAUDE.md rule 6's instinct, even though this
+  pair is same-language, not cross-boundary). `_DaySection` also gains
+  `showFullDate` (default `false`): Today's header calls `shortDateLabel`
+  instead of `weekdayAndDay`, since a lone day section has no week around
+  it to disambiguate the month — `_showLeftoverDialog`'s own reason for
+  the same choice on its 14-day list, applied here to a header instead of
+  a dropdown.
+- Two new ARB keys, `todayViewLabel` / `weekViewLabel`, kept apart from the
+  existing `thisWeekTooltip` (AppBar icon) and the shopping list's
+  `thisWeekButton` on the file's existing per-widget-key principle, even
+  though the Serbian text is identical to `thisWeekTooltip`'s ("Ova
+  nedelja"). No schema change, no migration, no new package.
+
+**How it was verified.** `dart analyze`, `flutter test` (full suite,
+including the extended `plan_week_test.dart` and the widened
+`meal_plan_screen_test.dart` — every pre-existing grid/entry test now
+reaches the week grid through a new `weekView: true` `_pump` parameter,
+since Today is the default; new cases cover the Today default, the Today
+header's `shortDateLabel`, switching to This week, the pin invariant after
+paging, and a Today-view assertion added to the existing D91 srLatn
+regression), `make lint`, `test-functions`, and `test-sql` all passed.
+`make l10n-check` showed a diff only because the ARB/generated files were
+still uncommitted when it ran — the diff was exactly the two new keys, no
+drift. `make check`'s `seed-check` step stayed red for the pre-existing,
+unrelated reason tracked since `c8be2bc` (see `docs/STATE.md`).
+
+Installed as a release build against hosted on the physical Galaxy S25
+(`RFCY61SRQ3B`) and walked by hand end to end, unlike Parts 2 and 3: Plan
+opened on Today showing the real date with an existing dinner entry
+visible; added a recipe to Today's breakfast slot and it landed correctly;
+switched to This week and saw the full 7-day grid with chevrons and the
+jump-to-today icon back, today's header still emphasised within the week;
+paged forward a week, switched back to Today, and confirmed it rendered
+the real today, not the paged-to week (the D104 invariant, confirmed on
+device as well as in the widget test). Also closed both loops STATE.md was
+carrying from Parts 2 and 3 while on the device: the tag filter (tapping
+"doručak" correctly narrowed the recipe list to one match) and the
+add-to-plan flow (recipe detail → overflow → "Add to meal plan…" → a day
+next week → paging the Plan tab forward confirmed the entry). Neither loop
+was this slice's own code; both simply worked.
+
+---
