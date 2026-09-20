@@ -47,6 +47,10 @@ String isoDateOf(DateTime date) {
 /// rather than a call site that could grow a stray `.toUtc()` later.
 DateTime parseIsoDate(String isoDate) => DateTime.parse(isoDate);
 
+/// Whether [a] and [b] fall on the same calendar day, ignoring time of day.
+bool isSameDate(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
 /// A calendar week, Monday through Sunday.
 ///
 /// Two weeks with the same [start] are equal, which is what lets

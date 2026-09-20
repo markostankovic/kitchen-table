@@ -625,6 +625,12 @@ class AppLocalizationsSr extends AppLocalizations {
   String get nextWeekTooltip => 'Sledeća nedelja';
 
   @override
+  String get todayViewLabel => 'Danas';
+
+  @override
+  String get weekViewLabel => 'Ova nedelja';
+
+  @override
   String get savedCopyOfflineMessage =>
       'Prikazana je sačuvana kopija — nema veze.';
 

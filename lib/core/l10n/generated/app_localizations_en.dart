@@ -617,6 +617,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nextWeekTooltip => 'Next week';
 
   @override
+  String get todayViewLabel => 'Today';
+
+  @override
+  String get weekViewLabel => 'This week';
+
+  @override
   String get savedCopyOfflineMessage =>
       'Showing your saved copy — no connection.';
 

@@ -45,10 +45,7 @@ class MealPlanWeek {
   List<MealPlanEntry> entriesFor(DateTime day, MealSlot slot) {
     final List<MealPlanEntry> matches = entries
         .where((MealPlanEntry e) =>
-            e.slot == slot &&
-            e.entryDate.year == day.year &&
-            e.entryDate.month == day.month &&
-            e.entryDate.day == day.day)
+            e.slot == slot && isSameDate(e.entryDate, day))
         .toList(growable: false);
     matches.sort(
         (MealPlanEntry a, MealPlanEntry b) => a.position.compareTo(b.position));

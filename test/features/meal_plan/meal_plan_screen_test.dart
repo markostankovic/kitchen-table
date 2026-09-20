@@ -135,6 +135,7 @@ Future<_Calls> _pump(
   int repeatCount = 0,
   Reachability? networkStatus,
   Locale? locale,
+  bool weekView = false,
 }) async {
   // The week list is taller than the default 800x600 test surface -- without
   // this, days below the fold simply are not there to find.
@@ -168,6 +169,13 @@ Future<_Calls> _pump(
     ),
   );
   await tester.pumpAndSettle();
+  if (weekView) {
+    // Today is the default view (phase5-part4); every test written for the
+    // week grid switches into it first, on the segmented button's English
+    // label -- locale-specific callers switch views themselves instead.
+    await tester.tap(find.text('This week'));
+    await tester.pumpAndSettle();
+  }
   return calls;
 }
 
@@ -190,7 +198,7 @@ void main() {
 
   testWidgets('shows all 7 day headers and 28 slot rows',
       (WidgetTester tester) async {
-    await _pump(tester, initial: MealPlanWeek.empty(_week));
+    await _pump(tester, initial: MealPlanWeek.empty(_week), weekView: true);
 
     for (final DateTime day in _week.days) {
       expect(find.text(weekdayAndDay(day, 'en')), findsOneWidget);
@@ -203,6 +211,51 @@ void main() {
       (WidgetTester tester) async {
     await _pump(tester, initial: MealPlanWeek.empty(_week));
     expect(find.byType(Chip), findsNothing);
+  });
+
+  testWidgets(
+      'Today is the default view: one day section, four Add chips, no week '
+      'chevrons', (WidgetTester tester) async {
+    await _pump(tester, initial: MealPlanWeek.empty(_week));
+
+    // One _DaySection -- each ends in exactly one Divider.
+    expect(find.byType(Divider), findsOneWidget);
+    expect(find.widgetWithText(ActionChip, 'Add'), findsNWidgets(4));
+    expect(find.byTooltip('Previous week'), findsNothing);
+    expect(find.byTooltip('Next week'), findsNothing);
+    expect(find.byTooltip('This week'), findsNothing);
+  });
+
+  testWidgets('the Today header renders shortDateLabel(DateTime.now(), en)',
+      (WidgetTester tester) async {
+    await _pump(tester, initial: MealPlanWeek.empty(_week));
+    expect(find.text(shortDateLabel(DateTime.now(), 'en')), findsOneWidget);
+  });
+
+  testWidgets(
+      'switching to This week shows seven headers and 28 Add chips, and '
+      'the chevrons come back', (WidgetTester tester) async {
+    await _pump(tester, initial: MealPlanWeek.empty(_week), weekView: true);
+
+    expect(find.byType(Divider), findsNWidgets(7));
+    expect(find.widgetWithText(ActionChip, 'Add'), findsNWidgets(28));
+    expect(find.byTooltip('Previous week'), findsOneWidget);
+    expect(find.byTooltip('Next week'), findsOneWidget);
+  });
+
+  testWidgets(
+      'the pin: paging forward in week view then switching back to Today '
+      'still renders the real today, not wherever the week view had paged '
+      'to', (WidgetTester tester) async {
+    await _pump(tester, initial: MealPlanWeek.empty(_week), weekView: true);
+
+    await tester.tap(find.byTooltip('Next week'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Today'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(shortDateLabel(DateTime.now(), 'en')), findsOneWidget);
   });
 
   testWidgets('a recipe entry renders its title in the right slot',
@@ -224,7 +277,7 @@ void main() {
       ],
     );
 
-    await _pump(tester, initial: plan);
+    await _pump(tester, initial: plan, weekView: true);
     expect(find.text('Šargarepa torta'), findsOneWidget);
   });
 
@@ -245,13 +298,13 @@ void main() {
       ],
     );
 
-    await _pump(tester, initial: plan);
+    await _pump(tester, initial: plan, weekView: true);
     expect(find.text('zzz kupi mleko'), findsOneWidget);
   });
 
   testWidgets('next / previous / today navigate the visible week',
       (WidgetTester tester) async {
-    await _pump(tester, initial: MealPlanWeek.empty(_week));
+    await _pump(tester, initial: MealPlanWeek.empty(_week), weekView: true);
 
     expect(find.text(weekRangeLabel(_week.start, _week.end, 'en')),
         findsOneWidget);
@@ -278,8 +331,8 @@ void main() {
 
   testWidgets('tapping Add, then "Add a note instead" calls addNote',
       (WidgetTester tester) async {
-    final _Calls calls =
-        await _pump(tester, initial: MealPlanWeek.empty(_week));
+    final _Calls calls = await _pump(tester,
+        initial: MealPlanWeek.empty(_week), weekView: true);
 
     await tester.tap(find.widgetWithText(ActionChip, 'Add').first);
     await tester.pumpAndSettle();
@@ -315,7 +368,7 @@ void main() {
         ),
       ],
     );
-    final _Calls calls = await _pump(tester, initial: plan);
+    final _Calls calls = await _pump(tester, initial: plan, weekView: true);
 
     await tester.tap(find.text('zzz removable'));
     await tester.pumpAndSettle();
@@ -364,7 +417,7 @@ void main() {
         ),
       ],
     );
-    await _pump(tester, initial: plan);
+    await _pump(tester, initial: plan, weekView: true);
 
     await tester.tap(find.text('zzz recipe entry'));
     await tester.pumpAndSettle();
@@ -405,7 +458,7 @@ void main() {
         ),
       ],
     );
-    final _Calls calls = await _pump(tester, initial: plan);
+    final _Calls calls = await _pump(tester, initial: plan, weekView: true);
     final DateTime expectedDefault =
         DateTime(_monday.year, _monday.month, _monday.day + 1);
 
@@ -462,7 +515,7 @@ void main() {
         ),
       ],
     );
-    await _pump(tester, initial: plan);
+    await _pump(tester, initial: plan, weekView: true);
 
     await tester.tap(find.text('zzz note 0'));
     await tester.pumpAndSettle();
@@ -514,7 +567,7 @@ void main() {
         ),
       ],
     );
-    final _Calls calls = await _pump(tester, initial: plan);
+    final _Calls calls = await _pump(tester, initial: plan, weekView: true);
 
     await tester.tap(find.text('zzz note 2'));
     await tester.pumpAndSettle();
@@ -665,6 +718,16 @@ void main() {
       initial: MealPlanWeek.empty(_week),
       locale: srLatn,
     );
+
+    // Today's own header, in Latin-script Serbian -- the D91 regression
+    // covers the new header path too, not just the week view's.
+    expect(find.text(shortDateLabel(DateTime.now(), 'sr')), findsOneWidget);
+
+    // Switch to the week view for the rest of this test's assertions --
+    // `_pump`'s `weekView` flag taps the English label, so this test does it
+    // itself on the localized one.
+    await tester.tap(find.text(AppLocalizationsSr().weekViewLabel));
+    await tester.pumpAndSettle();
 
     // A Serbian string nowhere in the English vocabulary.
     expect(find.text(AppLocalizationsSr().mealSlotBreakfast), findsWidgets);

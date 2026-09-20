@@ -807,6 +807,14 @@
   "@nextWeekTooltip": {
     "description": "Meal plan screen (part 6), the week bar's forward-arrow tooltip."
   },
+  "todayViewLabel": "Danas",
+  "@todayViewLabel": {
+    "description": "Meal plan screen (part 5, phase5-part4), the SegmentedButton's Today segment -- distinct from thisWeekTooltip, a different widget on the same screen."
+  },
+  "weekViewLabel": "Ova nedelja",
+  "@weekViewLabel": {
+    "description": "Meal plan screen (part 5, phase5-part4), the SegmentedButton's This week segment -- distinct from thisWeekTooltip and thisWeekButton, a different widget."
+  },
   "savedCopyOfflineMessage": "Prikazana je sačuvana kopija — nema veze.",
   "@savedCopyOfflineMessage": {
     "description": "Meal plan and shopping list screens (part 6), the line under the AppBar shown only while offline and only over cached data -- byte-identical in both screens, one key. Narrower than offlineBannerMessage (D76): this is a provenance claim about the data on screen, not the session-wide connectivity fact."

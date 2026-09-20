@@ -34,11 +34,25 @@ import '../domain/snack_variety.dart';
 /// so unlike `ShoppingListScreen`, there is no split locale here. Every date
 /// label and every string on this screen renders in the reader's own locale,
 /// `AppLocalizations.of(context).localeName` throughout (Phase 3 part 6).
-class MealPlanScreen extends ConsumerWidget {
+///
+/// Today (the default) or This week -- Phase 5's own answer to "the plan
+/// always opens on a whole week" (one of the six frictions the phase's intro
+/// names). Local `setState` state, not a provider, on `recipe_list_screen
+/// .dart`'s precedent for a screen's own ephemeral view selection.
+class MealPlanScreen extends ConsumerStatefulWidget {
   const MealPlanScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MealPlanScreen> createState() => _MealPlanScreenState();
+}
+
+enum _PlanView { today, week }
+
+class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
+  _PlanView _view = _PlanView.today;
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<MealPlanWeek> week = ref.watch(mealPlanEditorProvider);
 
@@ -46,16 +60,35 @@ class MealPlanScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.navPlan),
         actions: <Widget>[
-          IconButton(
-            tooltip: l10n.thisWeekTooltip,
-            icon: const Icon(Icons.today_outlined),
-            onPressed: () => ref.read(visibleWeekProvider.notifier).today(),
-          ),
+          if (_view == _PlanView.week)
+            IconButton(
+              tooltip: l10n.thisWeekTooltip,
+              icon: const Icon(Icons.today_outlined),
+              onPressed: () => ref.read(visibleWeekProvider.notifier).today(),
+            ),
         ],
       ),
       body: Column(
         children: <Widget>[
-          const _WeekBar(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SegmentedButton<_PlanView>(
+              segments: <ButtonSegment<_PlanView>>[
+                ButtonSegment<_PlanView>(
+                    value: _PlanView.today, label: Text(l10n.todayViewLabel)),
+                ButtonSegment<_PlanView>(
+                    value: _PlanView.week, label: Text(l10n.weekViewLabel)),
+              ],
+              selected: <_PlanView>{_view},
+              onSelectionChanged: (Set<_PlanView> selection) {
+                setState(() => _view = selection.first);
+                if (selection.first == _PlanView.today) {
+                  ref.read(visibleWeekProvider.notifier).today();
+                }
+              },
+            ),
+          ),
+          if (_view == _PlanView.week) const _WeekBar(),
           if (week.isLoading) const LinearProgressIndicator(minHeight: 2),
           Expanded(
             child: week.when(
@@ -71,8 +104,15 @@ class MealPlanScreen extends ConsumerWidget {
                 child: ListView(
                   children: <Widget>[
                     const _SavedCopyLine(),
-                    for (final DateTime day in plan.week.days)
-                      _DaySection(day: day, plan: plan),
+                    if (_view == _PlanView.week)
+                      for (final DateTime day in plan.week.days)
+                        _DaySection(day: day, plan: plan)
+                    else
+                      _DaySection(
+                        day: DateTime.now(),
+                        plan: plan,
+                        showFullDate: true,
+                      ),
                   ],
                 ),
               ),
@@ -148,15 +188,22 @@ class _SavedCopyLine extends ConsumerWidget {
 }
 
 class _DaySection extends StatelessWidget {
-  const _DaySection({required this.day, required this.plan});
+  const _DaySection({
+    required this.day,
+    required this.plan,
+    this.showFullDate = false,
+  });
 
   final DateTime day;
   final MealPlanWeek plan;
 
-  bool get _isToday {
-    final DateTime now = DateTime.now();
-    return day.year == now.year && day.month == now.month && day.day == now.day;
-  }
+  /// Whether the header carries the month (`shortDateLabel`) instead of just
+  /// the weekday (`weekdayAndDay`). The Today view sets this: there is no
+  /// week around a lone day section to disambiguate the month, the same
+  /// argument `_showLeftoverDialog` already makes for its 14-day list.
+  final bool showFullDate;
+
+  bool get _isToday => isSameDate(day, DateTime.now());
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +215,9 @@ class _DaySection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Text(
-            weekdayAndDay(day, l10n.localeName),
+            showFullDate
+                ? shortDateLabel(day, l10n.localeName)
+                : weekdayAndDay(day, l10n.localeName),
             style: theme.textTheme.titleSmall?.copyWith(
               color: _isToday ? theme.colorScheme.primary : null,
               fontWeight: _isToday ? FontWeight.bold : null,

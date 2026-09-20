@@ -1142,6 +1142,18 @@ abstract class AppLocalizations {
   /// **'Sledeća nedelja'**
   String get nextWeekTooltip;
 
+  /// Meal plan screen (part 5, phase5-part4), the SegmentedButton's Today segment -- distinct from thisWeekTooltip, a different widget on the same screen.
+  ///
+  /// In sr, this message translates to:
+  /// **'Danas'**
+  String get todayViewLabel;
+
+  /// Meal plan screen (part 5, phase5-part4), the SegmentedButton's This week segment -- distinct from thisWeekTooltip and thisWeekButton, a different widget.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ova nedelja'**
+  String get weekViewLabel;
+
   /// Meal plan and shopping list screens (part 6), the line under the AppBar shown only while offline and only over cached data -- byte-identical in both screens, one key. Narrower than offlineBannerMessage (D76): this is a provenance claim about the data on screen, not the session-wide connectivity fact.
   ///
   /// In sr, this message translates to:

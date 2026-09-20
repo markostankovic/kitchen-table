@@ -131,4 +131,21 @@ void main() {
       expect(parseIsoDate(isoDateOf(date)), date);
     });
   });
+
+  group('isSameDate', () {
+    test('true for the same calendar day at different times of day', () {
+      expect(
+        isSameDate(DateTime(2026, 6, 1, 8), DateTime(2026, 6, 1, 23, 30)),
+        isTrue,
+      );
+    });
+
+    test('false for adjacent days', () {
+      expect(isSameDate(DateTime(2026, 6, 1), DateTime(2026, 6, 2)), isFalse);
+    });
+
+    test('false for the same day-of-month in different months', () {
+      expect(isSameDate(DateTime(2026, 6, 1), DateTime(2026, 7, 1)), isFalse);
+    });
+  });
 }

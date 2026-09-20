@@ -196,6 +196,8 @@
   "thisWeekTooltip": "This week",
   "previousWeekTooltip": "Previous week",
   "nextWeekTooltip": "Next week",
+  "todayViewLabel": "Today",
+  "weekViewLabel": "This week",
   "savedCopyOfflineMessage": "Showing your saved copy — no connection.",
   "mealSlotBreakfast": "Breakfast",
   "mealSlotLunch": "Lunch",
