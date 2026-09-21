@@ -391,3 +391,86 @@ confirmed back as of this entry -- a future session should close that loop
 if it wasn't done, the same gap Part 3 left open before Part 4 closed it.
 
 ---
+
+### Part 6 — Translating from the editor
+
+**Status: complete** (`d7dcb81`). Decisions taken during it: D106.
+
+`RecipeEditScreen`'s AppBar gains its first action: a translate
+`IconButton`, shown exactly when `RecipeDraft.canTranslate` holds --
+following the detail screen's own choice to omit the affordance rather
+than grey it out. One tap validates the form, saves the draft, translates
+the id `save()` returns, and shows a snackbar naming the target language.
+The call path itself -- `RecipeRepository.translate` →
+`RemoteRecipeDataSource.translate` → the `translate-recipe` Edge Function
+-- was already built in Phase 3 and needed no change; this part is entry
+point and gating only, exactly as the slice plan scoped it.
+
+- **`RecipeEditor.saveAndTranslate({image})`** calls `save()` first, then
+  `RecipeRepository.translate(id, target)`, then folds the target locale
+  onto the draft and invalidates `recipeDetailProvider` -- D106 records
+  why the save happens unconditionally rather than the action being
+  disabled while dirty: there is no dirty-tracking machinery on
+  `RecipeDraft`, and `save()` is the only thing that mints an id for a
+  brand-new recipe, so disabling while dirty would leave a new recipe with
+  no way to reach Translate at all.
+- **The target locale follows `draft.originalLocale`, not the reader.**
+  `RecipeDraft.translationTargetLocale` flips with the `SegmentedButton`
+  the cook can move mid-edit -- the mirror image of D86's read-side
+  exception for `RecipeDetail.readingLocale`, which follows the app's
+  ambient locale instead.
+- **One gate, not two.** `otherLocale()` and `canTranslateInto()` are new
+  pure top-level functions in `recipe_translation.dart`;
+  `RecipeDetail.canTranslate` and the new `RecipeDraft.canTranslate` both
+  delegate to `canTranslateInto()` instead of each restating D85's rule
+  that a translation, once made, is never offered again regardless of
+  review state. `RecipeDraft` gained one field, `translatedLocales`
+  (populated from `RecipeDetail.translations` in `fromDetail`), and one
+  pure method, `withTranslatedLocale()`, so the action disappears the
+  moment a translation lands without a second fetch.
+- **`languageName(l10n, locale)`** moved out of
+  `recipe_detail_screen.dart`'s private `_targetLanguageName` into
+  `lib/core/l10n/language_labels.dart` (D93's precedent, beside
+  `meal_slot_labels.dart` and `date_labels.dart`), since the editor needed
+  the same locale-to-name mapping and the detail screen's version already
+  took a resolved target rather than an original locale to flip.
+- One new ARB key, `recipeTranslatedSnackbar`, on `translateAction`'s
+  existing template/no-`@` split. No migration, no schema change, no new
+  package.
+
+**How it was verified.** `make gen` (ARB changed), then `dart analyze`,
+`dart run tool/check_layers.dart`, the full `deno check`/`lint`/`fmt` and
+`deno test` for the Edge Functions (unchanged, confirmed still green), and
+`flutter test` (534 tests, including the new pure-domain cases for
+`canTranslateInto` and `RecipeDraft.translationTargetLocale`/
+`withTranslatedLocale` in `recipe_draft_test.dart`, and four new widget
+cases in `recipe_edit_screen_test.dart`: a new recipe shows the action, an
+`sr` draft with no translations shows it with the tooltip "Translate to
+English", an `sr` draft already translated into English does not show it
+-- the D85 guard, the single most important test in this slice -- and the
+action never fires on an invalid form) all passed.
+`recipe_detail_translation_test.dart` passed unmodified, confirming the
+rewrite of `RecipeDetail.canTranslate` changed nothing about its
+behaviour. `make check`'s `seed-check` step stayed red for the
+pre-existing, unrelated reason tracked since `c8be2bc` (see
+`docs/STATE.md`); everything else was green. `make l10n-check` showed a
+diff only because the ARB/generated files were still uncommitted when it
+first ran -- confirmed the diff was exactly the one new key, no drift.
+
+Installed on the physical Galaxy S25 (`RFCY61SRQ3B`) against hosted, in
+two steps this time: first a debug build via `make run-hosted` (uninstalled
+a previously-installed release build automatically, over the same
+signature-mismatch it always hits), then switched to a release build --
+`flutter build apk --release --dart-define-from-file=env/hosted.json`
+followed by `adb -s RFCY61SRQ3B install -r` after uninstalling the debug
+build first, needed explicitly both because an Android emulator was also
+attached (`adb install` is ambiguous with two devices, Part 5's same
+finding) and because a debug-signed and a release-signed APK can never
+overwrite each other in place. The release build launched successfully;
+the on-device walk itself -- opening the editor, tapping Translate,
+confirming the snackbar and that Review replaces Translate afterward --
+was handed to the user to run by hand and had not been confirmed back as
+of this entry. A future session should close that loop, the same gap Part
+5 left open before this part started.
+
+---

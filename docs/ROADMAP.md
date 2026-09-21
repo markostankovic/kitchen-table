@@ -371,7 +371,8 @@ the slice, or it will drift.
 
 ### Part 6 — Translating from the editor
 
-**Status: not started.**
+**Status: complete** (`d7dcb81`). Decisions taken during it: D106. See
+`docs/journal/phase-5.md`.
 
 Translation is reachable today, but only from the detail screen's overflow
 menu and only when `canTranslate` holds: you must be reading in the other
