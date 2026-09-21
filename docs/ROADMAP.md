@@ -411,60 +411,48 @@ name it once, at creation, and never touch it again.
 
 Parts 1 and 2 are ordered — part 2 needs a settled answer to "what is a tag's
 identity in two languages" before search can decide which spelling a typed
-query matches. Part 3 is independent of both and split into three ordered
-sub-parts of its own, on Phase 2 part 6a/6b's precedent, because its four
-pieces carry very different risk.
+query matches; part 1a settled it (D107), so part 2 is unblocked regardless
+of whether 1b has shipped. Part 1 itself split into 1a/1b in the planning
+session that built 1a, on Phase 2 part 6a/6b's own precedent. Part 3 is
+independent of both and split into three ordered sub-parts of its own, on
+that same precedent, because its four pieces carry very different risk.
 
 ---
 
-### Part 1 — Tags in two languages
+### Part 1a — Tags carry a sr/en pair
+
+**Status: complete** (`b22a327`). Decisions taken during it: D107–D108. See
+`docs/journal/phase-6.md`.
+
+---
+
+### Part 1b — `translate-tags`, the writer of the pair
 
 **Not built.**
 
-Tags stay free text — a closed, ARB-backed tag vocabulary was considered and
-rejected, so this isn't revisited later. A tag gets a sr/en pair, stored
-household-scoped, and the chip renders in the reader's locale; a tag with no
-pair falls back to the spelling as typed.
+Part 1a shipped the table, its RLS, the cache and the read path, but nothing
+that mints a translation pair — the household-hand-inserted rows used to
+verify 1a's read path are the only ones that exist so far. This part is the
+writer: a dedicated `translate-tags` Edge Function on `translate-recipe`'s
+shape, taking a household's untranslated tag keys, skipping any already
+paired so nothing to do never costs a token, writing rows with
+`source = 'llm'` into `recipe_tag_names` (migration 21 already grants it the
+insert/update RLS it needs — no second migration). Fired best-effort after a
+recipe save introduces a new tag, on `RecipeRepository._syncNamesBestEffort`'s
+own precedent for a background call that must not fail the save it rides in
+on.
 
-`recipes.tags` is `text[]` with no id per tag
-(`supabase/migrations/20260907201501_recipes.sql:58`), so the new table has to
-key on the normalized string — the same D5 / rule-6 normalization contract
-`TextNormalizer` / `normalize_text()` already share, which likely means a new
-fixture pair. The shape to copy is `ingredient_names`
-(`supabase/migrations/20260907092944_ingredient_catalog.sql:331-344`):
-normalized key + `locale` + `household_id` (null = global) +
-`source in ('curated','llm','user')` with a total unique index — this is
-vocabulary translation, not prose translation, so `recipe_translations` is the
-wrong precedent even though it's the nearer-looking one.
+Rejected already, in the planning session that produced 1a: folding tags into
+`translate-recipe` (a household-wide vocabulary should not depend on whether
+some *recipe* was ever translated, and D85 means a reviewed recipe's tags
+would get no second chance at translation); a hand-entry screen (a chore
+nobody does, plus a whole screen and route for it).
 
-`RecipeTag` (`lib/features/recipes/domain/recipe_tag.dart`) grows a locale.
-Its `label` rule today (alphabetically-first original spelling, line 46) is
-exactly what a translated label replaces — decide whether `vocabularyOf` takes
-a locale and a lookup, or a resolution step sits beside it. Tags render in
-three places and only two should translate: the filter chips
-(`recipe_list_screen.dart:241-302`) and the detail screen's chips
-(`recipe_detail_screen.dart:440-446`, which today shows original spellings, not
-vocabulary labels). The editor's comma-joined field
-(`recipe_edit_screen.dart:306-314`) must **not** translate — you edit what you
-typed, and round-tripping it through translation would silently rewrite a
-cook's own words.
-
-Open question this part has to answer, not defer: who writes the pair —
-hand-entered, or a model call on `translate-recipe`'s pattern?
-`ingredient_names.source` already models all three answers (`curated`, `llm`,
-`user`), which is a hint, not a decision.
-
-Caching needs its own table or a locale-keyed lookup — tags live only inside
-the `RecipeCache.data` blob today, and `IngredientNameCache`
-(`lib/core/db/app_database.dart:98-106`) already has a `locale` column as
-precedent. `schemaVersion` (currently 6) almost certainly bumps to 7, by this
-file's own rule that every change to the cached shape bumps it, even inside a
-JSON blob.
-
-**Done-when:** a tag typed in Serbian renders in English for an English reader
-and vice versa, on both the list chips and the detail screen; an untranslated
-tag renders as typed; the editor still shows exactly what was typed; filtering
-still matches across both spellings.
+**Done-when:** saving a recipe with a new tag results in that tag having a
+translated pair shortly afterward, with no user action beyond the save
+itself; a tag already paired costs no model call on a later save; a
+translation failure never blocks or rolls back the recipe save that
+triggered it.
 
 ---
 
