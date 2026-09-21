@@ -17,6 +17,7 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/text/text_normalizer.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_detail.dart';
+import '../domain/recipe_filter.dart';
 import '../domain/recipe_ingredient.dart';
 import '../domain/recipe_step.dart';
 import 'dto/recipe_dto.dart';
@@ -33,13 +34,17 @@ class RecipeRepository {
   /// shape `ShoppingListRepository.watchLatest` established (D67), widened
   /// from one row to many.
   ///
-  /// [query] is matched locally, against [TextNormalizer]-normalised titles,
-  /// on BOTH the cached emission and the post-sync emission -- there is no
-  /// separate server-side search any more. This produces identical results
-  /// to the old `ilike '%term%'` search (both sides compare the same
-  /// `normalize_text()`-derived value, rule 6), and it means every recipe
-  /// the household owns is a full sync away from being searchable offline,
-  /// not just the ones a query happened to match while still connected.
+  /// [query] is matched locally, against [TextNormalizer]-normalised titles
+  /// AND tags, on BOTH the cached emission and the post-sync emission --
+  /// there is no separate server-side search any more. A tag hit checks
+  /// every known spelling of the tag: its own, plus each locale's row in
+  /// `recipe_tag_names` (Phase 6, part 2), so a query in either language
+  /// finds a recipe tagged in the other. The spelling map is resolved once,
+  /// from the local cache only, before either emission, and applied to
+  /// both -- a cold `recipe_tag_names` cache degrades silently to as-typed
+  /// matching rather than failing the read. This means every recipe the
+  /// household owns is a full sync away from being searchable offline, not
+  /// just the ones a query happened to match while still connected.
   ///
   /// [tag] and [favoritesOnly] (Phase 5, part 2) apply the same way, on both
   /// emissions, AND-composed with [query] and with each other: [tag] is the
@@ -59,6 +64,10 @@ class RecipeRepository {
     void Function()? onReachable,
     void Function()? onUnreachable,
   }) async* {
+    final Map<String, Set<String>> spellingsByKey = query.isEmpty
+        ? const <String, Set<String>>{}
+        : _spellingsByKey(await _local.readTagNames(householdId));
+
     final List<Recipe> cached =
         await _local.readAll(householdId: householdId);
     // A cold cache is empty, not null -- skip the emission the same way
@@ -66,7 +75,7 @@ class RecipeRepository {
     // NetworkFailure on a truly cold cache errors the stream outright
     // rather than emitting an empty list moment before it.
     if (cached.isNotEmpty) {
-      yield _filtered(cached, query, tag, favoritesOnly);
+      yield _filtered(cached, query, tag, favoritesOnly, spellingsByKey);
     }
 
     try {
@@ -81,7 +90,7 @@ class RecipeRepository {
       onReachable?.call();
       final List<Recipe> fresh =
           await _local.readAll(householdId: householdId);
-      yield _filtered(fresh, query, tag, favoritesOnly);
+      yield _filtered(fresh, query, tag, favoritesOnly, spellingsByKey);
     } on NetworkFailure {
       onUnreachable?.call();
       if (cached.isNotEmpty) return;
@@ -419,24 +428,14 @@ class RecipeRepository {
     String query,
     String tag,
     bool favoritesOnly,
-  ) {
-    final String term = TextNormalizer.normalize(query);
-    final String tagKey = TextNormalizer.normalize(tag);
-    if (term.isEmpty && tagKey.isEmpty && !favoritesOnly) return recipes;
-
-    return recipes
-        .where(
-          (Recipe r) =>
-              (term.isEmpty ||
-                  TextNormalizer.normalize(r.title).contains(term)) &&
-              (tagKey.isEmpty ||
-                  r.tags.any(
-                    (String t) => TextNormalizer.normalize(t) == tagKey,
-                  )) &&
-              (!favoritesOnly || r.isFavorite),
-        )
-        .toList(growable: false);
-  }
+    Map<String, Set<String>> spellingsByKey,
+  ) => RecipeFilter.apply(
+    recipes,
+    query: query,
+    tag: tag,
+    favoritesOnly: favoritesOnly,
+    spellingsByKey: spellingsByKey,
+  );
 
   bool _hasEmbeddedLines(Map<String, dynamic> row) =>
       row.containsKey('recipe_ingredients');
@@ -521,6 +520,21 @@ class RecipeRepository {
           row['name'] as String;
     }
     return byLocale;
+  }
+
+  /// Flattens [_tagLabelsByLocale]'s `locale -> tagKey -> name` shape into
+  /// `tagKey -> {normalize(name), ...}` -- every known spelling of a tag,
+  /// normalized so [RecipeFilter.apply] can compare like-for-like with a
+  /// normalized query (Phase 6, part 2).
+  Map<String, Set<String>> _spellingsByKey(List<Map<String, dynamic>> rows) {
+    final Map<String, Set<String>> spellingsByKey = <String, Set<String>>{};
+    for (final Map<String, String> byKey in _tagLabelsByLocale(rows).values) {
+      for (final MapEntry<String, String> entry in byKey.entries) {
+        (spellingsByKey[entry.key] ??= <String>{})
+            .add(TextNormalizer.normalize(entry.value));
+      }
+    }
+    return spellingsByKey;
   }
 
   /// Delta-syncs the global ingredient name cache. Best-effort and never

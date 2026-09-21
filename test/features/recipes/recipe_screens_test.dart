@@ -14,6 +14,7 @@ import 'package:kitchen_table/features/meal_plan/domain/meal_slot.dart';
 import 'package:kitchen_table/features/recipes/application/recipe_providers.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_detail.dart';
+import 'package:kitchen_table/features/recipes/domain/recipe_filter.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_ingredient.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_step.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_translation.dart';
@@ -25,9 +26,10 @@ import 'package:kitchen_table/features/recipes/presentation/recipe_list_screen.d
 
 /// A stub for the `StreamNotifier` family `recipeListProvider` became in
 /// Phase 2 part 6a -- on `shopping_list_screen_test.dart`'s `_StubList`
-/// precedent. Filters [recipes] by `query`, `tag` and `favoritesOnly` itself,
-/// matching the old override's own inline logic, since [RecipeList.build] is
-/// never reached through a stub.
+/// precedent. Filters [recipes] through the real [RecipeFilter.apply] (Phase
+/// 6, part 2) rather than a hand-rolled inline filter, so a widget test can
+/// never again assert semantics the repository has moved past, since
+/// [RecipeList.build] is never reached through a stub.
 class _StubRecipeList extends RecipeList {
   _StubRecipeList(this.recipes);
 
@@ -39,23 +41,12 @@ class _StubRecipeList extends RecipeList {
     String tag = '',
     bool favoritesOnly = false,
   }) async* {
-    Iterable<Recipe> filtered = recipes;
-    if (query.isNotEmpty) {
-      filtered = filtered.where(
-        (Recipe r) => r.title.toLowerCase().contains(query.toLowerCase()),
-      );
-    }
-    if (tag.isNotEmpty) {
-      filtered = filtered.where(
-        (Recipe r) => r.tags
-            .map((String t) => t.toLowerCase())
-            .contains(tag.toLowerCase()),
-      );
-    }
-    if (favoritesOnly) {
-      filtered = filtered.where((Recipe r) => r.isFavorite);
-    }
-    yield filtered.toList();
+    yield RecipeFilter.apply(
+      recipes,
+      query: query,
+      tag: tag,
+      favoritesOnly: favoritesOnly,
+    );
   }
 }
 
@@ -296,6 +287,24 @@ void main() {
       expect(find.text('Šargarepa torta'), findsNothing);
     });
 
+    testWidgets('typing a tag name into the search field narrows the list',
+        (WidgetTester tester) async {
+      await _pumpList(
+        tester,
+        recipes: <Recipe>[
+          _torta.copyWith(tags: <String>['Posno']),
+          _pita.copyWith(tags: <String>['Brzo']),
+        ],
+      );
+
+      await tester.enterText(find.byType(TextField), 'posno');
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Šargarepa torta'), findsOneWidget);
+      expect(find.text('Pita sa sirom'), findsNothing);
+    });
+
     testWidgets('a recipe with a photo shows a thumbnail',
         (WidgetTester tester) async {
       final Recipe withPhoto =
@@ -324,7 +333,16 @@ void main() {
           _torta.copyWith(isFavorite: true, rating: 4);
       await _pumpList(tester, recipes: <Recipe>[favorited, _pita]);
 
-      expect(find.byIcon(Icons.star), findsOneWidget);
+      // Scoped to the tile, not `find.byIcon(Icons.star)` alone: the
+      // Favorites filter chip (Phase 6, part 2's row, now visible even with
+      // no tags) carries its own star icon as an avatar.
+      expect(
+        find.descendant(
+          of: find.byType(ListTile),
+          matching: find.byIcon(Icons.star),
+        ),
+        findsOneWidget,
+      );
       expect(find.textContaining('★ 4'), findsOneWidget);
     });
 
@@ -410,9 +428,6 @@ void main() {
       await _pumpList(
         tester,
         recipes: <Recipe>[
-          // A tag on each -- the filter row is hidden when the vocabulary is
-          // empty and nothing is selected, so the Favorites chip needs the
-          // row to actually be there.
           _torta.copyWith(isFavorite: true, tags: <String>['Posno']),
           _pita.copyWith(tags: <String>['Posno']),
         ],
@@ -423,6 +438,22 @@ void main() {
 
       expect(find.text('Šargarepa torta'), findsOneWidget);
       expect(find.text('Pita sa sirom'), findsNothing);
+    });
+
+    testWidgets(
+        'a household with recipes but no tags still shows the Favorites '
+        'chip', (WidgetTester tester) async {
+      // No tags on either recipe -- the filter row's visibility is bound to
+      // the recipe list, not the tag vocabulary (Phase 6, part 2, closing
+      // D102's open consequence), so Favorites must still have a home.
+      await _pumpList(tester, recipes: <Recipe>[_torta, _pita]);
+
+      expect(find.text('Favorites'), findsOneWidget);
+
+      await tester.tap(find.text('Favorites'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('No recipes match'), findsOneWidget);
     });
 
     testWidgets('favorites and a tag combine', (WidgetTester tester) async {

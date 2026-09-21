@@ -11,10 +11,12 @@ import '../application/recipe_providers.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_tag.dart';
 
-/// The household's recipes, searchable by title.
+/// The household's recipes, searchable by title or tag.
 ///
-/// Search runs against `title_normalized`, so diacritics and case do not
-/// matter: `Šargarepa`, `sargarepa` and `ШАРГАРЕПА` all find the same recipe.
+/// Search is diacritic- and case-insensitive: `Šargarepa`, `sargarepa` and
+/// `ШАРГАРЕПА` all find the same recipe, and typing any known spelling of a
+/// tag -- the spelling on the recipe, or any locale's translated pair --
+/// finds it too (Phase 6, part 2).
 class RecipeListScreen extends ConsumerStatefulWidget {
   const RecipeListScreen({super.key});
 
@@ -281,7 +283,18 @@ class _FilterRow extends ConsumerWidget {
             RecipeTag(key: selectedTag, label: selectedTag),
           ]..sort((RecipeTag a, RecipeTag b) => a.key.compareTo(b.key));
 
-    if (chips.isEmpty && !favoritesOnly) return const SizedBox.shrink();
+    // Bound to the unfiltered household list, not the tag vocabulary (Phase
+    // 6, part 2, closing D102's open consequence): a household with recipes
+    // but no tags yet would otherwise strand the Favorites chip with nowhere
+    // to render. Zero recipes is still zero row. A filter already selected
+    // keeps the row up even if the unfiltered list is momentarily
+    // unavailable (still loading, say), so it never disappears out from
+    // under a selection.
+    final bool hasAnyRecipe =
+        (ref.watch(recipeListProvider()).value ?? const <Recipe>[])
+            .isNotEmpty;
+    final bool filterActive = selectedTag.isNotEmpty || favoritesOnly;
+    if (!hasAnyRecipe && !filterActive) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),

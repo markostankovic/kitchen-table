@@ -393,6 +393,66 @@ void main() {
         expect(batch.map((r) => r.id), <String>['r1']);
       }
     });
+
+    test('a query matching a translated spelling narrows both emissions',
+        () async {
+      await LocalRecipeDataSource(db).upsertMany(
+        householdId: 'h1',
+        rows: <Map<String, dynamic>>[
+          _row('r1', tags: <String>['Posno']),
+          _row('r2', tags: <String>['Brzo']),
+        ],
+      );
+      await LocalRecipeDataSource(db).replaceTagNames(
+        householdId: 'h1',
+        rows: <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'n1',
+            'household_id': 'h1',
+            'tag_key': 'posno',
+            'name': 'Lenten',
+            'locale': 'en',
+            'updated_at': '2026-01-01T00:00:00Z',
+          },
+        ],
+      );
+      remote.changed = <Map<String, dynamic>>[];
+
+      final emitted = await repository
+          .watchList(householdId: 'h1', query: 'lent')
+          .toList();
+
+      for (final batch in emitted) {
+        expect(batch.map((r) => r.id), <String>['r1']);
+      }
+    });
+
+    test('a query works with a cold tag-name cache (as-typed only)',
+        () async {
+      await LocalRecipeDataSource(db).upsertMany(
+        householdId: 'h1',
+        rows: <Map<String, dynamic>>[
+          _row('r1', tags: <String>['Posno']),
+        ],
+      );
+      remote.changed = <Map<String, dynamic>>[];
+
+      final emitted = await repository
+          .watchList(householdId: 'h1', query: 'posno')
+          .toList();
+
+      for (final batch in emitted) {
+        expect(batch.map((r) => r.id), <String>['r1']);
+      }
+
+      // The translated spelling has no cached pair yet, so it does not match.
+      final emittedByTranslation = await repository
+          .watchList(householdId: 'h1', query: 'lent')
+          .toList();
+      for (final batch in emittedByTranslation) {
+        expect(batch, isEmpty);
+      }
+    });
   });
 
   group('fetchDetail', () {
