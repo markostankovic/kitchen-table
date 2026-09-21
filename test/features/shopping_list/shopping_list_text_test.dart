@@ -62,8 +62,8 @@ void main() {
   final AppLocalizations sr = lookupAppLocalizations(const Locale('sr'));
   final AppLocalizations en = lookupAppLocalizations(const Locale('en'));
 
-  test('renders category headings and items in the LIST locale, not the '
-      'reader\'s (D94/D86, same direction as the screen)', () {
+  test('renders items in the LIST locale, not the reader\'s (D94/D86, same '
+      'direction as the screen), with no dash prefix and no heading', () {
     final String text = formatShoppingListAsText(
       _list(<ShoppingItem>[
         _item('mleko', id: 'i-mleko', category: 'dairy',
@@ -73,8 +73,9 @@ void main() {
       sr,
     );
 
-    expect(text, contains('Mlečni proizvodi'));
-    expect(text, contains('- mleko: 500 ml'));
+    expect(text, isNot(contains('Mlečni proizvodi')));
+    expect(text, isNot(contains('-')));
+    expect(text, contains('mleko: 500 ml'));
   });
 
   test('a list with locale "en" formats in English even when built with the '
@@ -88,11 +89,13 @@ void main() {
       en,
     );
 
-    expect(text, contains('Dairy'));
-    expect(text, contains('- eggs: 6 pc'));
+    expect(text, isNot(contains('Dairy')));
+    expect(text, contains('eggs: 6 pc'));
   });
 
-  test('uncategorised items sort last', () {
+  test('items still group by category and sort uncategorised last, even '
+      'though no heading renders any more (order survives, D105 amended)',
+      () {
     final String text = formatShoppingListAsText(
       _list(<ShoppingItem>[
         _item('nešto', id: 'i-x', category: null),
@@ -102,7 +105,21 @@ void main() {
       sr,
     );
 
-    expect(text.indexOf('Ostava'), lessThan(text.indexOf('Ostalo')));
+    expect(text.indexOf('brašno'), lessThan(text.indexOf('nešto')));
+  });
+
+  test('an unrecognised category code sorts by itself rather than folding '
+      'into the uncategorised bucket', () {
+    final List<CategoryGroup> groups = groupByCategory(
+      <ShoppingItem>[
+        _item('nešto neobično', id: 'i-x', category: 'zzz-not-a-real-code'),
+      ],
+      en,
+    );
+
+    expect(groups, hasLength(1));
+    expect(groups.single.code, 'zzz-not-a-real-code');
+    expect(groups.single.label, 'zzz-not-a-real-code');
   });
 
   test('two quantity families on one item join with " + ", never converted',
@@ -118,7 +135,7 @@ void main() {
       sr,
     );
 
-    expect(text, contains('- brašno: 300 g + 480 ml'));
+    expect(text, contains('brašno: 300 g + 480 ml'));
   });
 
   test('an item with no quantities renders as a bare name, no colon', () {
@@ -130,8 +147,8 @@ void main() {
       sr,
     );
 
-    expect(text.split('\n').last, '- so');
-    expect(text, isNot(contains('- so:')));
+    expect(text.split('\n').last, 'so');
+    expect(text, isNot(contains('so:')));
   });
 
   test('pantry staples are absent from the exported text entirely', () {
@@ -149,7 +166,8 @@ void main() {
     expect(text, isNot(contains('so')));
   });
 
-  test('blank line between category blocks, none trailing', () {
+  test('one item per line, no blank line between category blocks, none '
+      'trailing -- ready to paste straight into a notes app', () {
     final String text = formatShoppingListAsText(
       _list(<ShoppingItem>[
         _item('mleko', id: 'i-mleko', category: 'dairy'),
@@ -160,6 +178,8 @@ void main() {
     );
 
     expect(text, isNot(endsWith('\n')));
-    expect(text, contains('\n\n'));
+    expect(text, isNot(contains('\n\n')));
+    // "Mlečni proizvodi" (dairy) sorts before "Povrće" (produce).
+    expect(text.split('\n'), <String>['mleko', 'luk']);
   });
 }

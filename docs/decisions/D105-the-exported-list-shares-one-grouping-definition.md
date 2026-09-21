@@ -53,3 +53,14 @@ SnackBar assertion; the exported text's own content is verified directly,
 and more thoroughly, by `shopping_list_text_test.dart` instead of via
 `Clipboard.getData` (which hangs the same way when called from a test
 body).
+
+**Amended 2026-09-21.** Both the on-screen category heading and the
+clipboard export's heading + `- ` line prefix are gone: pasting the
+exported text into a notes app (Google Keep and similar) turned each dash
+into literal text and each heading into a stray line, and the on-screen
+heading was reported as visual noise while scanning the list in a shop.
+`groupByCategory` and `categoryLabel` both stay exactly as they were --
+`categoryLabel` now exists solely as `groupByCategory`'s sort key, never
+rendered -- so the screen and the export still cannot drift on *order*
+(uncategorised last), which was always the thing this decision was
+protecting; only the visible label disappeared, on both sides at once.

@@ -30,8 +30,9 @@ import 'shopping_list_text.dart';
 /// entire app (D12). A cook reading this in a shop is reading, not editing.
 ///
 /// **Two locales render at once here (Phase 3 part 6), unlike every other
-/// screen.** `_ListBody` -- category headings, `_GeneratedAt`'s dates, item
-/// quantities -- is a document that was generated in one language, and reads
+/// screen.** `_ListBody` -- `_GeneratedAt`'s dates, the "Probably have"
+/// count, item quantities -- is a document that was generated in one
+/// language, and reads
 /// `list.locale` (`shopping_lists.locale`, migration 16: "the list is already
 /// a document in one language; remembering which one is what stops a list
 /// generated in Serbian rendering half-translated after a locale toggle").
@@ -280,11 +281,14 @@ class _ListBody extends ConsumerWidget {
               textAlign: TextAlign.center,
             ),
           ),
-        for (final CategoryGroup group in groupByCategory(toBuy, bodyL10n)) ...<Widget>[
-          _CategoryHeading(label: group.label),
+        // No visible heading per category any more -- the grouping itself
+        // (and the uncategorised-last ordering) still comes from
+        // `groupByCategory`, shared with the clipboard export (D105,
+        // amended), so the two cannot drift apart even though neither one
+        // renders the label.
+        for (final CategoryGroup group in groupByCategory(toBuy, bodyL10n))
           for (final ShoppingItem item in group.items)
             _ItemTile(item: item, units: units, locale: list.locale),
-        ],
         if (staples.isNotEmpty)
           // Collapsed, never hidden. Nothing is missing from the snapshot
           // itself -- the pantry flag changes where a line appears, not
@@ -356,22 +360,6 @@ class _GeneratedAt extends ConsumerWidget {
       ),
     );
   }
-}
-
-class _CategoryHeading extends StatelessWidget {
-  const _CategoryHeading({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-    child: Text(
-      label,
-      style: Theme.of(context).textTheme.labelLarge
-          ?.copyWith(color: Theme.of(context).colorScheme.primary),
-    ),
-  );
 }
 
 class _ItemTile extends ConsumerWidget {

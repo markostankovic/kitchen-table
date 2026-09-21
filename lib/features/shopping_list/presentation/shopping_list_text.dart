@@ -1,6 +1,8 @@
 /// Category grouping and the clipboard export, shared between the screen and
-/// [formatShoppingListAsText] so the on-screen order and the exported text
-/// cannot drift apart (D105).
+/// [formatShoppingListAsText] so the on-screen ORDER and the exported text's
+/// order cannot drift apart (D105, amended). Neither side renders the
+/// category label any more -- [categoryLabel] survives only as
+/// [groupByCategory]'s sort key, not as user-visible text.
 ///
 /// A plain library, not `domain/` -- it imports the generated
 /// `AppLocalizations`, which imports Flutter, and rule 7 keeps `domain/`
@@ -20,14 +22,17 @@ import '../domain/shopping_list.dart';
 /// both a display string and a map key at once.
 const String uncategorisedCategory = '_uncategorised';
 
-/// A category code's heading, in [l10n]'s own locale -- [l10n] is always
-/// looked up from `list.locale` here (never the reader's), on the two-locale
-/// rule. An unrecognised code (not one of the ten
+/// A category code's localized label, in [l10n]'s own locale -- [l10n] is
+/// always looked up from `list.locale` here (never the reader's), on the
+/// two-locale rule. Neither the screen nor the clipboard export renders this
+/// label any more; it exists purely as [groupByCategory]'s sort key, so that
+/// items still group and order the same way a heading would have implied,
+/// just without the heading itself. An unrecognised code (not one of the ten
 /// `supabase/seeds/ingredients.csv` knows, and not [uncategorisedCategory])
 /// falls through to itself rather than vanishing or being folded into
-/// "Other" -- a category the catalog adds later must still show something.
-/// No `default` arm for the known ten, so a new one compiles only once it has
-/// a label here.
+/// "Other" -- a category the catalog adds later must still sort somewhere
+/// stable. No `default` arm for the known ten, so a new one compiles only
+/// once it has a label here.
 String categoryLabel(String code, AppLocalizations l10n) => switch (code) {
       'produce' => l10n.categoryProduce,
       'fruit' => l10n.categoryFruit,
@@ -90,6 +95,13 @@ List<CategoryGroup> groupByCategory(
 
 /// The current to-buy list as plain text, ready for the clipboard.
 ///
+/// One item per line, no heading, no dash prefix, no blank line between
+/// category blocks -- a cook pasting this into a notes app (Google Keep and
+/// similar) wants a plain list, not a dash that shows up as literal text in
+/// the paste. Items still come out grouped by category (uncategorised last),
+/// via the same [groupByCategory] the screen uses; only the visible heading
+/// is gone, not the ordering (D105, amended).
+///
 /// [l10n] must be looked up from `list.locale` (`lookupAppLocalizations`),
 /// never the reader's ambient locale -- this is the document, same rule as
 /// `_ListBody` (D94, D86). Staples (`list.probablyHave`) are never included:
@@ -105,18 +117,16 @@ String formatShoppingListAsText(
   final StringBuffer buffer = StringBuffer();
   final List<CategoryGroup> groups = groupByCategory(list.toBuy, l10n);
 
-  for (int i = 0; i < groups.length; i++) {
-    if (i > 0) buffer.writeln();
-    buffer.writeln(groups[i].label);
-    for (final ShoppingItem item in groups[i].items) {
+  for (final CategoryGroup group in groups) {
+    for (final ShoppingItem item in group.items) {
       final String quantities = item.quantities
           .map((ItemQuantity q) =>
               formatItemQuantity(q, units, locale: list.locale))
           .join(' + ');
       buffer.writeln(
         quantities.isEmpty
-            ? '- ${item.displayName}'
-            : '- ${item.displayName}: $quantities',
+            ? item.displayName
+            : '${item.displayName}: $quantities',
       );
     }
   }

@@ -291,11 +291,8 @@ void main() {
   });
 
   testWidgets(
-      'items are grouped by category, with the uncategorised bucket last',
-      (tester) async {
-    // Explicit English: headings render in list.locale, not the reader's
-    // (the two-locale rule) -- see the Serbian-headings test below for the
-    // other half of that rule.
+      'items are still ordered by category, uncategorised last, even though '
+      'no heading renders any more', (tester) async {
     await _pump(
       tester,
       initial: _list(<ShoppingItem>[
@@ -304,39 +301,39 @@ void main() {
       ], locale: 'en'),
     );
 
-    final double pantryY = tester.getTopLeft(find.text('Pantry')).dy;
-    final double otherY = tester.getTopLeft(find.text('Other')).dy;
-    expect(pantryY, lessThan(otherY));
+    // No heading widgets exist at all now.
+    expect(find.text('Pantry'), findsNothing);
+    expect(find.text('Other'), findsNothing);
+
+    final double pantryItemY = tester.getTopLeft(find.text('brašno')).dy;
+    final double uncategorisedItemY = tester.getTopLeft(find.text('nešto')).dy;
+    expect(pantryItemY, lessThan(uncategorisedItemY));
   });
 
   testWidgets(
-      'an unrecognised category code falls through to itself rather than '
-      'vanishing or folding into the uncategorised bucket', (tester) async {
-    await _pump(
-      tester,
-      initial: _list(<ShoppingItem>[
-        _item('nešto neobično', id: 'i-x', category: 'zzz-not-a-real-code'),
-      ], locale: 'en'),
-    );
-
-    expect(find.text('zzz-not-a-real-code'), findsOneWidget);
-  });
-
-  testWidgets(
-      'a locale: "sr" list renders Serbian headings beside an English '
-      'AppBar (the two-locale rule)', (tester) async {
+      'a locale: "sr" list still renders the AppBar in the reader\'s English '
+      '(the two-locale rule), even with no category heading left to show it',
+      (tester) async {
     // No `locale:` passed to _pump -- the reader stays on the harness
-    // default (English), while _list()'s own default locale is 'sr'.
+    // default (English), while _list()'s own default locale is 'sr'. With
+    // category headings gone, `_GeneratedAt`'s own date line and the
+    // "Probably have" count are what's left to carry list.locale.
     await _pump(
       tester,
       initial: _list(<ShoppingItem>[
         _item('brašno', id: 'i-b', category: 'pantry'),
+        _item('so',
+            id: 'i-so',
+            staple: true,
+            quantities: <ItemQuantity>[_q(5, UnitFamily.mass, 'g')]),
       ]),
     );
 
     expect(find.widgetWithText(AppBar, 'List'), findsOneWidget);
-    expect(find.text('Ostava'), findsOneWidget); // categoryPantry, sr
-    expect(find.text('Pantry'), findsNothing);
+    // categoryPantry no longer renders, but probablyHaveHeading still does,
+    // in the list's own Serbian.
+    expect(find.text('Verovatno imate (1)'), findsOneWidget);
+    expect(find.text('Probably have (1)'), findsNothing);
   });
 
   testWidgets('long-pressing an item records a pantry override', (tester) async {
