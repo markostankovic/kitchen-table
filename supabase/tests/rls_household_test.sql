@@ -142,6 +142,42 @@ begin
   end if;
 
   ---------------------------------------------------------------------------
+  -- D112: rename is open to any member, not just the owner -- B (adult) and
+  -- A (owner) can both rename the household they belong to.
+  ---------------------------------------------------------------------------
+  -- B's JWT is still active from the block above.
+  update households set name = 'Renamed by B' where id = hid;
+  get diagnostics n = row_count;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'B (adult) could not rename the household, row_count=%', n;
+  end if;
+
+  select count(*) into n
+    from households where id = hid and name = 'Renamed by B';
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'B (adult) renamed the household but the name did not stick';
+  end if;
+
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_a, 'role', 'authenticated')::text, true);
+
+  update households set name = 'Renamed by A' where id = hid;
+  get diagnostics n = row_count;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'A (owner) could not rename the household, row_count=%', n;
+  end if;
+
+  select count(*) into n
+    from households where id = hid and name = 'Renamed by A';
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'A (owner) renamed the household but the name did not stick';
+  end if;
+
+  ---------------------------------------------------------------------------
   -- Non-member C sees nothing
   ---------------------------------------------------------------------------
   perform set_config('request.jwt.claims',

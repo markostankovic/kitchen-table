@@ -884,6 +884,24 @@ abstract class AppLocalizations {
   /// **'Još nema domaćinstva.'**
   String get noHouseholdYet;
 
+  /// Household screen, the edit icon button on the household name row.
+  ///
+  /// In sr, this message translates to:
+  /// **'Preimenuj domaćinstvo'**
+  String get renameHouseholdTooltip;
+
+  /// Household screen, the rename dialog's title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Preimenuj domaćinstvo'**
+  String get renameHouseholdDialogTitle;
+
+  /// Household screen, the SnackBar shown after a successful rename.
+  ///
+  /// In sr, this message translates to:
+  /// **'Domaćinstvo preimenovano.'**
+  String get householdRenamedSnackbar;
+
   /// Household screen, the members list's section header.
   ///
   /// In sr, this message translates to:

@@ -46,6 +46,74 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
         .showSnackBar(SnackBar(content: Text(l10n.codeCopiedSnackbar)));
   }
 
+  /// Opens the rename dialog, then writes the new name if it differs.
+  ///
+  /// A failure goes to a `SnackBar`, not [_failure] -- that field belongs to
+  /// the invite button and renders under it, not under this row.
+  Future<void> _rename(Household h, AppLocalizations l10n) async {
+    final TextEditingController controller =
+        TextEditingController(text: h.name);
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
+    final String? name = await showDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: Text(l10n.renameHouseholdDialogTitle),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              labelText: l10n.householdNameFieldLabel,
+              border: const OutlineInputBorder(),
+            ),
+            validator: (String? value) => (value ?? '').trim().isEmpty
+                ? l10n.householdNameEmptyError
+                : null,
+            onFieldSubmitted: (_) {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(dialogContext).pop(controller.text);
+              }
+            },
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.cancelButton),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(dialogContext).pop(controller.text);
+              }
+            },
+            child: Text(l10n.saveButton),
+          ),
+        ],
+      ),
+    );
+
+    if (name == null) return;
+    final String trimmed = name.trim();
+    if (trimmed.isEmpty || trimmed == h.name) return;
+
+    try {
+      await ref.read(householdRepositoryProvider).rename(h.id, trimmed);
+      ref.invalidate(currentHouseholdProvider);
+      await ref.read(currentHouseholdProvider.future);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.householdRenamedSnackbar)));
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -71,6 +139,11 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
                     leading: const Icon(Icons.home_outlined),
                     title: Text(h.name),
                     subtitle: Text(l10n.householdNameFieldLabel),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.edit_outlined),
+                      tooltip: l10n.renameHouseholdTooltip,
+                      onPressed: () => _rename(h, l10n),
+                    ),
                   ),
                   const Divider(),
                   _sectionHeader(context, l10n.membersSectionTitle),

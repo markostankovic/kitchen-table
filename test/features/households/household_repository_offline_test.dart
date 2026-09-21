@@ -36,6 +36,8 @@ class _FakeRemote implements RemoteHouseholdDataSource {
   List<Map<String, dynamic>> rows = <Map<String, dynamic>>[];
   AppFailure? nextFailure;
   int fetchMineRowsCalls = 0;
+  String? renamedId;
+  String? renamedTo;
 
   @override
   Future<List<Map<String, dynamic>>> fetchMineRows() async {
@@ -61,6 +63,14 @@ class _FakeRemote implements RemoteHouseholdDataSource {
 
   @override
   Future<void> redeemInvite(String code) async {}
+
+  @override
+  Future<void> rename(String id, String name) async {
+    final AppFailure? failure = nextFailure;
+    if (failure != null) throw failure;
+    renamedId = id;
+    renamedTo = name;
+  }
 }
 
 void main() {
@@ -232,5 +242,24 @@ void main() {
         );
       },
     );
+  });
+
+  group('rename', () {
+    test('delegates to the remote with a trimmed name', () async {
+      await repo.rename('h1', '  New Name  ');
+
+      expect(remote.renamedId, 'h1');
+      expect(remote.renamedTo, 'New Name');
+    });
+
+    test('a NetworkFailure from the remote propagates, not a cache fallback',
+        () async {
+      remote.nextFailure = const NetworkFailure();
+
+      await expectLater(
+        repo.rename('h1', 'New Name'),
+        throwsA(isA<NetworkFailure>()),
+      );
+    });
   });
 }

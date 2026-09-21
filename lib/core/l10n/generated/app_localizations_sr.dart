@@ -469,6 +469,15 @@ class AppLocalizationsSr extends AppLocalizations {
   String get noHouseholdYet => 'Još nema domaćinstva.';
 
   @override
+  String get renameHouseholdTooltip => 'Preimenuj domaćinstvo';
+
+  @override
+  String get renameHouseholdDialogTitle => 'Preimenuj domaćinstvo';
+
+  @override
+  String get householdRenamedSnackbar => 'Domaćinstvo preimenovano.';
+
+  @override
   String get membersSectionTitle => 'Članovi';
 
   @override

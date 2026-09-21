@@ -147,6 +147,9 @@
 
   "householdScreenTitle": "Household",
   "noHouseholdYet": "No household yet.",
+  "renameHouseholdTooltip": "Rename household",
+  "renameHouseholdDialogTitle": "Rename household",
+  "householdRenamedSnackbar": "Household renamed.",
   "membersSectionTitle": "Members",
   "inviteSomeoneSectionTitle": "Invite someone",
   "loadingEllipsis": "Loading...",

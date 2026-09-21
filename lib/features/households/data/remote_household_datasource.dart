@@ -135,6 +135,15 @@ class RemoteHouseholdDataSource {
         );
       });
 
+  /// Renames a household. `households_update` permits this for any member,
+  /// not just the owner (D112), and is column-blind -- it would also accept
+  /// `deleted_at` or `created_by` -- but only `name` is ever sent here.
+  Future<void> rename(String id, String name) => runGuarded(() async {
+        await _client
+            .from('households')
+            .update(<String, dynamic>{'name': name}).eq('id', id);
+      });
+
   HouseholdMember _toMember(Map<String, dynamic> row) {
     final Object? profile = row['profiles'];
     return HouseholdMember(

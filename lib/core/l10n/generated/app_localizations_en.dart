@@ -463,6 +463,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noHouseholdYet => 'No household yet.';
 
   @override
+  String get renameHouseholdTooltip => 'Rename household';
+
+  @override
+  String get renameHouseholdDialogTitle => 'Rename household';
+
+  @override
+  String get householdRenamedSnackbar => 'Household renamed.';
+
+  @override
   String get membersSectionTitle => 'Members';
 
   @override

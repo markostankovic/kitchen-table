@@ -611,6 +611,18 @@
   "@noHouseholdYet": {
     "description": "Household screen, shown if somehow reached with no household resolved yet."
   },
+  "renameHouseholdTooltip": "Preimenuj domaćinstvo",
+  "@renameHouseholdTooltip": {
+    "description": "Household screen, the edit icon button on the household name row."
+  },
+  "renameHouseholdDialogTitle": "Preimenuj domaćinstvo",
+  "@renameHouseholdDialogTitle": {
+    "description": "Household screen, the rename dialog's title."
+  },
+  "householdRenamedSnackbar": "Domaćinstvo preimenovano.",
+  "@householdRenamedSnackbar": {
+    "description": "Household screen, the SnackBar shown after a successful rename."
+  },
   "membersSectionTitle": "Članovi",
   "@membersSectionTitle": {
     "description": "Household screen, the members list's section header."

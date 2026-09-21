@@ -433,7 +433,7 @@ final class TagLabelsProvider
   }
 }
 
-String _$tagLabelsHash() => r'1018c3d998d77797727a5c124816eb333bbb91dd';
+String _$tagLabelsHash() => r'e51b29b020b8eff14d6548e14e19a2fd5a49f139';
 
 /// [locale]'s tag-key -> name map for the current household (Phase 6, part
 /// 1a) -- `RecipeTag.relabelled`'s second argument.

@@ -117,4 +117,16 @@ class HouseholdRepository {
     await _remote.redeemInvite(code);
     await _local.clearAll();
   }
+
+  /// Renames a household.
+  ///
+  /// Deliberately does NOT `_local.clearAll()`, unlike [create] and
+  /// [redeemInvite] (D88): those clear to stop a network blip on the
+  /// confirming re-fetch from resurrecting a household the caller just left,
+  /// which does not apply to a rename -- there is no household change to
+  /// guard against. The cache is refreshed by the confirming re-fetch's own
+  /// write-through; if that re-fetch fails offline, the cache keeps serving
+  /// the old name until the next successful read.
+  Future<void> rename(String id, String name) =>
+      _remote.rename(id, name.trim());
 }
