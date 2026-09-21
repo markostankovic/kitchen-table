@@ -1,48 +1,52 @@
 # State — 2026-09-21
 
 **Branch:** `main`
-**Last shipped:** Phase 6 part 1b (`a247d1c`) — `translate-tags`, the writer
-of the pair. A dedicated Edge Function mints the sr/en spelling pair for
-every tag in the caller's household that doesn't have one yet, fired
-best-effort and unawaited from `RecipeEditor.save()`. The household is
-resolved server-side from the caller's own membership (no household id in
-the body, `create-invite`'s own shape); the function diffs the household's
-tag vocabulary — grouped the same way `RecipeTag.vocabularyOf` does in
-Dart — against every existing `recipe_tag_names` row (unfiltered by
-`deleted_at`, since the unique index is total), and costs no model call at
-all when everything is already paired (D109). Both locales are always
-requested together per tag; an alive row is never overwritten, only a
-missing slot inserted or a soft-deleted one revived, as a plain insert or
-update-by-id — never a PostgREST upsert, since `recipe_tag_names_unique` is
-an expression index no `onConflict` clause can match. `tagLabels` now
-watches `recipesRevisionProvider` so a freshly-minted pair reaches chips
-already on screen. No migration — 21 already carried the RLS this needed.
-Verified with the full automated suite (`dart analyze`, `make
-lint-functions`, `make test-functions` — 161 passed, `flutter test` — 546
-passed, `make test-sql`) — `make check` itself was not run, for the same
-pre-existing `seed-check` reason noted below. Migration 21 was pushed to
-hosted, the function deployed, and a release build installed on the
-physical Galaxy S25 (by serial, since the emulator was also attached) — but
-the manual walk itself (save a recipe with a new Serbian tag, confirm the
-chip relabels on a language switch, confirm a second save costs no second
-model call) was handed to the user to run by hand and had not been
-confirmed back as of this entry.
+**Last shipped:** Phase 6 part 2 (`d73e34f`) — tags from the search box.
+Typing in the recipe list's search field now finds recipes by tag as well as
+by title, case- and diacritic-insensitively, matching any known spelling of
+the tag — the spelling on the recipe, plus every locale's row in
+`recipe_tag_names`. `RecipeFilter.apply` is the predicate, extracted from
+`RecipeRepository._filtered` into a new pure-Dart file so it's unit-testable
+without a database; `watchList` resolves the spelling map once per call (only
+when `query` is non-empty) from the local tag-name cache and reuses it for
+both emissions, degrading silently to as-typed matching on a cold cache. Also
+folds in D102's open consequence: `_FilterRow` now renders whenever the
+household has any recipe at all, not only when the tag vocabulary is
+non-empty, so the Favorites chip is reachable from a household with zero
+tags. No migration, no Edge Function, no ARB change. Verified with `dart
+analyze` (clean) and `flutter test` (558 passed, 12 new) — `make check`
+stopped at the same pre-existing `seed-check` failure noted below, with
+nothing else in this slice touching SQL or Edge Functions. A release build
+was installed and launched on the physical Galaxy device, timed to land
+alongside 1b's already-minted `posno`/`lenten` pair — but the manual walk
+itself (typing `posno`/`lent` in each app language, a title-and-tag query
+together, a chip tap staying whole-token, Favorites on a tagless household)
+was handed to the user to run by hand and had not been confirmed back as of
+this entry.
 **In flight:** none
-**Next:** Four device-walk loops are open at once (below) — close one of
-them, or `/plan-slice phase6-part2` (tags from the search box, unblocked by
-D107 regardless of these loops).
-**Latest decision:** D109
+**Next:** Five device-walk loops are open at once (below) — close one of
+them, or `/plan-slice phase6-part3a` (renaming the household, next up on the
+roadmap; unblocked, no dependency on the open loops).
+**Latest decision:** D111
+
+**Phase 6 part 2's own device-walk loop is open.** The release build
+installed and launched cleanly on the Galaxy device, but nobody has
+confirmed against a real device that typing a tag's spelling — in either
+app language — actually narrows the list, that a title match and a tag
+match appear together for the same query, that a chip tap still narrows by
+whole token only, and that a household with recipes but no tags shows the
+Favorites chip.
 
 **Phase 6 part 1b's own device-walk loop is open.** The Edge Function
-deployed cleanly and the release build installed on the Galaxy S25, but
+deployed cleanly and the release build installed on the Galaxy device, but
 nobody has confirmed against the real device that saving a recipe with a
 brand-new Serbian tag actually mints its English pair, that the chip
 relabels when the app's language is switched, and that saving again makes
 no second model call (checkable via `ai_usage` rows or the function's log).
 
 **Phase 6 part 1a's own device-walk loop is also still open.** Migration 21
-is now on hosted (pushed as part of 1b's own device walk above), so that
-blocker is cleared, but nobody has yet confirmed against a real device that
+is on hosted (pushed as part of 1b's own device walk), so that blocker is
+cleared, but nobody has yet confirmed against a real device that
 hand-inserting a `Posno`/`Lenten` pair and switching the app's language
 actually shows the translated chip on both the list and detail screens,
 that a second untranslated tag still reads as typed, and that tapping the
@@ -51,16 +55,16 @@ should serve this just as well as a hand-inserted one, once its own loop
 above is closed.
 
 **Phase 5 part 6's device-walk loop is also still open** (translating from
-the editor, `d7dcb81`) — not to be confused with the two Phase 6 loops
+the editor, `d7dcb81`) — not to be confused with the three Phase 6 loops
 above. The release build installed and launched cleanly on the physical
-Galaxy S25 against hosted, but nobody has confirmed back that tapping
+Galaxy device against hosted, but nobody has confirmed back that tapping
 Translate from the editor actually saves, calls the Edge Function, and
 shows Review instead of Translate afterward on a real device.
 
 **Phase 5 part 5's device-walk loop is also still open.** The shopping
 list's clipboard-copy action installed cleanly on the same device, but
 copying an actual generated list, seeing the SnackBar, and pasting the
-text elsewhere have not been confirmed back either. Four device-walk
+text elsewhere have not been confirmed back either. Five device-walk
 loops are now open at once — a future session should close all of them,
 not just the newest one.
 
@@ -85,13 +89,6 @@ Google sign-in has to happen again afterward. `adb install` is also
 ambiguous whenever the Android emulator is attached alongside the physical
 device (Phase 5 part 5's finding) — install by serial, `adb -s <serial>
 install`.
-
-**Known gap from Phase 5 part 2, not fixed, and now decided (not yet
-built).** The filter row — Favorites chip included — only renders once the
-tag vocabulary is non-empty or a filter is already selected (the slice's
-own spec). A household with zero tags therefore has no way to reach the
-Favorites filter at all right now. Recorded in D102's Consequences; Phase 6
-part 2 is where this gets decided and built.
 
 **A slice with a migration needs `make db-push`, not just `make
 db-reset`, before testing against hosted.** Phase 5 part 1's own

@@ -154,3 +154,67 @@ makes no second model call -- was handed to the user to run by hand and had
 not been confirmed back as of this entry.
 
 ---
+
+### Part 2 — Tags from the search box
+
+**Status: complete** (`d73e34f`). Decisions taken during it: D110–D111.
+
+Typing in the recipe list's search field now finds recipes by tag as well as
+by title, case- and diacritic-insensitively, matching any known spelling of
+the tag -- the spelling as typed on the recipe, plus every locale's row in
+`recipe_tag_names`. Folded in D102's open consequence at the same time: the
+Favorites chip is now reachable from a household with no tags at all. One
+predicate changed, one visibility rule changed; no SQL, no migration, no new
+package -- matching the slice's own scope exactly.
+
+- **`RecipeFilter.apply`** (`lib/features/recipes/domain/recipe_filter.dart`,
+  new) is `RecipeRepository._filtered`'s logic extracted to a pure-Dart file,
+  `RecipeTag`'s own shape (static helpers over `List<Recipe>`, no Flutter or
+  Supabase import). `query` now matches when the normalized title contains
+  the term OR any tag does, under its own spelling or any spelling in
+  `spellingsByKey` (D110); `tag` and `favoritesOnly` are unchanged --
+  whole-token, AND-composed.
+- **`RecipeRepository.watchList`** resolves the `tagKey -> {normalized
+  spellings}` map once per call, only when `query` is non-empty, from
+  `_local.readTagNames` -- local cache only, reusing `fetchTagLabels`'s
+  existing `_tagLabelsByLocale` grouping helper via a new `_spellingsByKey`
+  wrapper -- and reuses the same map for both the cached and post-sync
+  emissions (D67's rule, unchanged: whatever the predicate becomes applies
+  identically to both). A cold tag-name cache degrades silently to as-typed
+  matching, since `readTagNames` already swallows its own errors.
+- **`_FilterRow`** (`recipe_list_screen.dart`) now watches
+  `recipeListProvider()` (the unfiltered list) instead of the tag vocabulary
+  to decide whether to render, closing D102's own named gap (D111). The
+  "filter already selected" clause keeps the row from disappearing under an
+  in-flight reload.
+- `recipeTagsProvider` was deliberately left untouched, per the slice's own
+  settled answer: chips still reflect the unfiltered list, so widening back
+  out from a narrowed query is always possible.
+
+**How it was verified.** `dart analyze` -- clean. `flutter test` -- 558
+tests (546 before this slice, plus 12 new: eight pure-Dart `RecipeFilter`
+cases, two `RecipeRepository.watchList` offline cases against a real
+in-memory `AppDatabase` -- a translated-spelling match and a cold-cache
+degrade -- and two widget cases on the list screen -- typing a tag narrows
+the list, and a tagless household still shows Favorites). One pre-existing
+widget test (`a favorited, rated recipe shows a star and the rating`) needed
+its finder scoped to the recipe's own `ListTile`, since the now-always-
+visible Favorites chip carries a second star icon as its avatar. `make
+check` stopped at the same pre-existing, unrelated `seed-check` failure
+tracked since `c8be2bc` (`docs/STATE.md`); `dart analyze` and `flutter test`
+ran green ahead of it, and nothing in this slice touches SQL or Edge
+Functions, so `test-sql`/`test-functions` had nothing new to exercise.
+
+A release build against hosted was installed and launched on the physical
+Galaxy device (by serial, since the Android emulator was also attached) in
+the same sitting, specifically so 1b's already-minted `posno`/`lenten` pair
+would be on hand to demonstrate translated-spelling search. The manual walk
+itself -- typing `posno` and `lent` and confirming both find the same
+recipe in each app language, confirming a title match and a tag match both
+appear together, confirming a chip tap still narrows by whole token, and
+confirming the Favorites chip on a tagless household -- was handed to the
+user to run by hand and had not been confirmed back as of this entry, so it
+joins the other three open device-walk loops rather than closing any of
+them.
+
+---

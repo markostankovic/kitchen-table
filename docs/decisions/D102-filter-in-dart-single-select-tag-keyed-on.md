@@ -1,6 +1,13 @@
 # D102 — Filter in Dart, single-select tag keyed on the normalized form
 **Status:** active
-**Touches:** lib/features/recipes/data/recipe_repository.dart, lib/features/recipes/domain/recipe_tag.dart, lib/features/recipes/application/recipe_providers.dart, lib/features/recipes/presentation/recipe_list_screen.dart
+**Touches:** lib/features/recipes/data/recipe_repository.dart, lib/features/recipes/domain/recipe_tag.dart, lib/features/recipes/domain/recipe_filter.dart, lib/features/recipes/application/recipe_providers.dart, lib/features/recipes/presentation/recipe_list_screen.dart
+
+**Amended (Phase 6, part 2):** `_filtered` is now a thin call into
+`RecipeFilter.apply` (`lib/features/recipes/domain/recipe_filter.dart`) — the
+same predicate, extracted to a pure-Dart file so it's unit-testable without a
+database. A refinement, not a reversal: filtering still runs in Dart, after
+decode, at the same call site, still two primitives plus the query string on
+the provider family.
 
 **Decided.** The recipe list's tag and favorites filters run in Dart, after
 decode, in `RecipeRepository._filtered` — the same place and shape the
@@ -33,11 +40,8 @@ documented escape hatch if multi-select is ever built.
 
 **Consequences.** Promoting `tags` to a Drift column remains the answer once
 a household's list is large enough to feel Dart-side filtering, or once
-multi-select is wanted (a freezed filter object, at that point). One sharp
-edge from the single filter-row treatment: the Favorites chip renders in
-the same row as the tag chips, and the whole row hides when the tag
-vocabulary is empty *and* nothing is selected — so a household with zero
-tags currently has no way to reach the Favorites filter at all. Not a bug
-relative to the slice's own spec ("hide the row when the vocabulary is
-empty and nothing is selected"), but a real gap a future slice should
-revisit if it turns out households commonly have no tags.
+multi-select is wanted (a freezed filter object, at that point). The gap
+this section used to describe — a household with zero tags having no way to
+reach the Favorites filter, because the row hid whenever the vocabulary was
+empty — is closed by D111: the row's visibility is now bound to the recipe
+list, not the tag vocabulary.

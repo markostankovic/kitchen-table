@@ -435,35 +435,8 @@ that same precedent, because its four pieces carry very different risk.
 
 ### Part 2 — Tags from the search box
 
-**Not built.**
-
-Typing in the search field should find recipes by tag, not only by title.
-
-One predicate to change: `RecipeRepository._filtered`
-(`lib/features/recipes/data/recipe_repository.dart:369-391`), which already
-governs both emissions of `watchList` — there is no SQL to touch, so this is a
-small part. The real work is a decision: `query` is currently substring-on-
-title, `tag` is whole-token equality. Does typing `pos` match the tag `Posno`
-(substring, consistent with the title) or must the whole token match
-(consistent with the chips)? And once part 1 gives a tag a sr/en pair, which
-spelling does a typed query match — the reader's, the author's, or every known
-one?
-
-`_StubRecipeList` in `test/features/recipes/recipe_screens_test.dart:31-60`
-reimplements the filter inline without `TextNormalizer` and has to move in
-lockstep, or the widget tests keep asserting the old semantics silently.
-`recipeTagsProvider` is bound to the unfiltered list today and may need
-revisiting so the chip row reflects a tag-matching text query.
-
-Folds in a known gap rather than leaving it to drift further: the filter row
-(Favorites chip included) is hidden entirely when the tag vocabulary is empty
-and Favorites is off (`recipe_list_screen.dart:274`, D102's Consequences,
-`docs/STATE.md:68-73`), so a household with zero tags currently cannot reach
-the Favorites filter at all. This part is where that gets decided.
-
-**Done-when:** typing a tag's name narrows the list to recipes carrying it,
-case- and diacritic-insensitively; title matches still work; the Favorites
-chip is reachable from a household with no tags.
+**Status: complete** (`d73e34f`). Decisions taken during it: D110–D111. See
+`docs/journal/phase-6.md`.
 
 ---
 
