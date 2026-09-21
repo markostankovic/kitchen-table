@@ -79,6 +79,10 @@ class _FakeRemote implements RemoteRecipeDataSource {
       const <Map<String, dynamic>>[];
 
   @override
+  Future<List<Map<String, dynamic>>> fetchTagNames(String householdId) =>
+      throw UnimplementedError();
+
+  @override
   Future<List<Map<String, dynamic>>> fetchLinesForRecipesRaw(
     List<String> recipeIds,
   ) => throw UnimplementedError();

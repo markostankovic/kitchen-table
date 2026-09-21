@@ -167,6 +167,29 @@ class RecipeRepository {
     }
   }
 
+  /// Every `recipe_tag_names` pair visible to [householdId], grouped
+  /// `locale -> tagKey -> name` (Phase 6, part 1a).
+  ///
+  /// Network-first with a cache fallback on [NetworkFailure] -- [fetchDetail]'s
+  /// own shape, not [watchList]'s two-emission stream: this is a single
+  /// lookup, not a sync (D74). The network path also warms
+  /// [LocalRecipeDataSource.replaceTagNames] before returning, so a later
+  /// offline read has something to fall back to.
+  Future<Map<String, Map<String, String>>> fetchTagLabels(
+    String householdId,
+  ) async {
+    try {
+      final List<Map<String, dynamic>> rows =
+          await _remote.fetchTagNames(householdId);
+      await _local.replaceTagNames(householdId: householdId, rows: rows);
+      return _tagLabelsByLocale(rows);
+    } on NetworkFailure {
+      final List<Map<String, dynamic>> rows =
+          await _local.readTagNames(householdId);
+      return _tagLabelsByLocale(rows);
+    }
+  }
+
   /// Translates [recipeId]'s title, description and steps into
   /// [targetLocale] (Phase 3, part 2), and saves the result.
   ///
@@ -461,6 +484,19 @@ class RecipeRepository {
                 line.copyWith(displayName: names[line.ingredientId ?? '']),
           )
           .toList(growable: false);
+
+  Map<String, Map<String, String>> _tagLabelsByLocale(
+    List<Map<String, dynamic>> rows,
+  ) {
+    final Map<String, Map<String, String>> byLocale =
+        <String, Map<String, String>>{};
+    for (final Map<String, dynamic> row in rows) {
+      final String locale = row['locale'] as String;
+      (byLocale[locale] ??= <String, String>{})[row['tag_key'] as String] =
+          row['name'] as String;
+    }
+    return byLocale;
+  }
 
   /// Delta-syncs the global ingredient name cache. Best-effort and never
   /// allowed to fail the read it rides in on (D69's philosophy, applied to

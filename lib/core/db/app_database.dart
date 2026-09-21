@@ -217,6 +217,31 @@ class CurrentHouseholdCache extends Table {
   Set<Column> get primaryKey => <Column<Object>>{userId};
 }
 
+/// A household's `recipe_tag_names` rows -- its own pairs plus every global
+/// one, Phase 6 part 1a (D107). [householdId] is nullable and carries the
+/// wire row's own `household_id` verbatim (null = global), the same
+/// extraction [IngredientNameCache] does for its own fields.
+///
+/// No [SyncWatermarks] entry and no delta fetch, a deliberate departure from
+/// [IngredientNameCache]'s sync: that cache carries the whole global catalog
+/// and needs one, while one household's tag vocabulary is a handful of rows.
+/// [LocalRecipeDataSource.replaceTagNames] follows [UnitCatalogCache]'s
+/// reasoning instead -- a successful fetch replaces the set outright -- just
+/// scoped per household rather than to one global row. A soft-deleted row is
+/// simply absent from the next fetch, so there is nothing to evict either.
+class RecipeTagNameCache extends Table {
+  TextColumn get id => text()();
+  TextColumn get householdId => text().nullable()();
+  TextColumn get tagKey => text()();
+  TextColumn get name => text()();
+  TextColumn get locale => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get data => text()();
+
+  @override
+  Set<Column> get primaryKey => <Column<Object>>{id};
+}
+
 @DriftDatabase(
   tables: <Type>[
     ShoppingListCache,
@@ -226,6 +251,7 @@ class CurrentHouseholdCache extends Table {
     MealPlanWeekCache,
     SyncWatermarks,
     CurrentHouseholdCache,
+    RecipeTagNameCache,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -272,8 +298,12 @@ class AppDatabase extends _$AppDatabase {
   /// `is_favorite` and `rating` (D72). A row cached before this part has no
   /// `is_favorite` key and its `updated_at` has not moved, so the delta fetch
   /// would never re-send it.
+  ///
+  /// Bumped to 7 in Phase 6 part 1a for [RecipeTagNameCache] -- a tag's
+  /// name in each locale, replaced wholesale per household rather than
+  /// delta-synced.
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -305,6 +335,7 @@ class AppDatabase extends _$AppDatabase {
             await delete(recipeCache).go();
             await delete(mealPlanWeekCache).go();
             await delete(currentHouseholdCache).go();
+            await delete(recipeTagNameCache).go();
             await (delete(syncWatermarks)
                   ..where((SyncWatermarks t) => t.scope.equals(globalSyncScope).not()))
                 .go();

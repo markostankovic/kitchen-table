@@ -51,4 +51,22 @@ abstract class RecipeTag with _$RecipeTag {
 
     return vocabulary;
   }
+
+  /// Each tag relabelled with its spelling in the reader's locale, falling
+  /// back to the label as typed when the household has no pair for it
+  /// (Phase 6, part 1a). [key] is untouched -- only [label] changes -- so a
+  /// translated chip still filters exactly like the as-typed one did.
+  ///
+  /// Order is unchanged (still sorted by [key], [vocabularyOf]'s own
+  /// invariant), so the chip row never reorders when a reader switches
+  /// language.
+  static List<RecipeTag> relabelled(
+    List<RecipeTag> vocabulary,
+    Map<String, String> labelsByKey,
+  ) => vocabulary
+      .map(
+        (RecipeTag tag) =>
+            tag.copyWith(label: labelsByKey[tag.key] ?? tag.label),
+      )
+      .toList(growable: false);
 }

@@ -2443,6 +2443,463 @@ class CurrentHouseholdCacheCompanion
   }
 }
 
+class $RecipeTagNameCacheTable extends RecipeTagNameCache
+    with TableInfo<$RecipeTagNameCacheTable, RecipeTagNameCacheData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RecipeTagNameCacheTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _householdIdMeta = const VerificationMeta(
+    'householdId',
+  );
+  @override
+  late final GeneratedColumn<String> householdId = GeneratedColumn<String>(
+    'household_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _tagKeyMeta = const VerificationMeta('tagKey');
+  @override
+  late final GeneratedColumn<String> tagKey = GeneratedColumn<String>(
+    'tag_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localeMeta = const VerificationMeta('locale');
+  @override
+  late final GeneratedColumn<String> locale = GeneratedColumn<String>(
+    'locale',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dataMeta = const VerificationMeta('data');
+  @override
+  late final GeneratedColumn<String> data = GeneratedColumn<String>(
+    'data',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    householdId,
+    tagKey,
+    name,
+    locale,
+    updatedAt,
+    data,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'recipe_tag_name_cache';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RecipeTagNameCacheData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('household_id')) {
+      context.handle(
+        _householdIdMeta,
+        householdId.isAcceptableOrUnknown(
+          data['household_id']!,
+          _householdIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('tag_key')) {
+      context.handle(
+        _tagKeyMeta,
+        tagKey.isAcceptableOrUnknown(data['tag_key']!, _tagKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tagKeyMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('locale')) {
+      context.handle(
+        _localeMeta,
+        locale.isAcceptableOrUnknown(data['locale']!, _localeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localeMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('data')) {
+      context.handle(
+        _dataMeta,
+        this.data.isAcceptableOrUnknown(data['data']!, _dataMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dataMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RecipeTagNameCacheData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RecipeTagNameCacheData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      householdId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}household_id'],
+      ),
+      tagKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tag_key'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      locale: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}locale'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      data: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}data'],
+      )!,
+    );
+  }
+
+  @override
+  $RecipeTagNameCacheTable createAlias(String alias) {
+    return $RecipeTagNameCacheTable(attachedDatabase, alias);
+  }
+}
+
+class RecipeTagNameCacheData extends DataClass
+    implements Insertable<RecipeTagNameCacheData> {
+  final String id;
+  final String? householdId;
+  final String tagKey;
+  final String name;
+  final String locale;
+  final DateTime updatedAt;
+  final String data;
+  const RecipeTagNameCacheData({
+    required this.id,
+    this.householdId,
+    required this.tagKey,
+    required this.name,
+    required this.locale,
+    required this.updatedAt,
+    required this.data,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || householdId != null) {
+      map['household_id'] = Variable<String>(householdId);
+    }
+    map['tag_key'] = Variable<String>(tagKey);
+    map['name'] = Variable<String>(name);
+    map['locale'] = Variable<String>(locale);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['data'] = Variable<String>(data);
+    return map;
+  }
+
+  RecipeTagNameCacheCompanion toCompanion(bool nullToAbsent) {
+    return RecipeTagNameCacheCompanion(
+      id: Value(id),
+      householdId: householdId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(householdId),
+      tagKey: Value(tagKey),
+      name: Value(name),
+      locale: Value(locale),
+      updatedAt: Value(updatedAt),
+      data: Value(data),
+    );
+  }
+
+  factory RecipeTagNameCacheData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RecipeTagNameCacheData(
+      id: serializer.fromJson<String>(json['id']),
+      householdId: serializer.fromJson<String?>(json['householdId']),
+      tagKey: serializer.fromJson<String>(json['tagKey']),
+      name: serializer.fromJson<String>(json['name']),
+      locale: serializer.fromJson<String>(json['locale']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      data: serializer.fromJson<String>(json['data']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'householdId': serializer.toJson<String?>(householdId),
+      'tagKey': serializer.toJson<String>(tagKey),
+      'name': serializer.toJson<String>(name),
+      'locale': serializer.toJson<String>(locale),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'data': serializer.toJson<String>(data),
+    };
+  }
+
+  RecipeTagNameCacheData copyWith({
+    String? id,
+    Value<String?> householdId = const Value.absent(),
+    String? tagKey,
+    String? name,
+    String? locale,
+    DateTime? updatedAt,
+    String? data,
+  }) => RecipeTagNameCacheData(
+    id: id ?? this.id,
+    householdId: householdId.present ? householdId.value : this.householdId,
+    tagKey: tagKey ?? this.tagKey,
+    name: name ?? this.name,
+    locale: locale ?? this.locale,
+    updatedAt: updatedAt ?? this.updatedAt,
+    data: data ?? this.data,
+  );
+  RecipeTagNameCacheData copyWithCompanion(RecipeTagNameCacheCompanion data) {
+    return RecipeTagNameCacheData(
+      id: data.id.present ? data.id.value : this.id,
+      householdId: data.householdId.present
+          ? data.householdId.value
+          : this.householdId,
+      tagKey: data.tagKey.present ? data.tagKey.value : this.tagKey,
+      name: data.name.present ? data.name.value : this.name,
+      locale: data.locale.present ? data.locale.value : this.locale,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      data: data.data.present ? data.data.value : this.data,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecipeTagNameCacheData(')
+          ..write('id: $id, ')
+          ..write('householdId: $householdId, ')
+          ..write('tagKey: $tagKey, ')
+          ..write('name: $name, ')
+          ..write('locale: $locale, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('data: $data')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, householdId, tagKey, name, locale, updatedAt, data);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RecipeTagNameCacheData &&
+          other.id == this.id &&
+          other.householdId == this.householdId &&
+          other.tagKey == this.tagKey &&
+          other.name == this.name &&
+          other.locale == this.locale &&
+          other.updatedAt == this.updatedAt &&
+          other.data == this.data);
+}
+
+class RecipeTagNameCacheCompanion
+    extends UpdateCompanion<RecipeTagNameCacheData> {
+  final Value<String> id;
+  final Value<String?> householdId;
+  final Value<String> tagKey;
+  final Value<String> name;
+  final Value<String> locale;
+  final Value<DateTime> updatedAt;
+  final Value<String> data;
+  final Value<int> rowid;
+  const RecipeTagNameCacheCompanion({
+    this.id = const Value.absent(),
+    this.householdId = const Value.absent(),
+    this.tagKey = const Value.absent(),
+    this.name = const Value.absent(),
+    this.locale = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.data = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RecipeTagNameCacheCompanion.insert({
+    required String id,
+    this.householdId = const Value.absent(),
+    required String tagKey,
+    required String name,
+    required String locale,
+    required DateTime updatedAt,
+    required String data,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       tagKey = Value(tagKey),
+       name = Value(name),
+       locale = Value(locale),
+       updatedAt = Value(updatedAt),
+       data = Value(data);
+  static Insertable<RecipeTagNameCacheData> custom({
+    Expression<String>? id,
+    Expression<String>? householdId,
+    Expression<String>? tagKey,
+    Expression<String>? name,
+    Expression<String>? locale,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? data,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (householdId != null) 'household_id': householdId,
+      if (tagKey != null) 'tag_key': tagKey,
+      if (name != null) 'name': name,
+      if (locale != null) 'locale': locale,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (data != null) 'data': data,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RecipeTagNameCacheCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? householdId,
+    Value<String>? tagKey,
+    Value<String>? name,
+    Value<String>? locale,
+    Value<DateTime>? updatedAt,
+    Value<String>? data,
+    Value<int>? rowid,
+  }) {
+    return RecipeTagNameCacheCompanion(
+      id: id ?? this.id,
+      householdId: householdId ?? this.householdId,
+      tagKey: tagKey ?? this.tagKey,
+      name: name ?? this.name,
+      locale: locale ?? this.locale,
+      updatedAt: updatedAt ?? this.updatedAt,
+      data: data ?? this.data,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (householdId.present) {
+      map['household_id'] = Variable<String>(householdId.value);
+    }
+    if (tagKey.present) {
+      map['tag_key'] = Variable<String>(tagKey.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (locale.present) {
+      map['locale'] = Variable<String>(locale.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (data.present) {
+      map['data'] = Variable<String>(data.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecipeTagNameCacheCompanion(')
+          ..write('id: $id, ')
+          ..write('householdId: $householdId, ')
+          ..write('tagKey: $tagKey, ')
+          ..write('name: $name, ')
+          ..write('locale: $locale, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('data: $data, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2459,6 +2916,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SyncWatermarksTable syncWatermarks = $SyncWatermarksTable(this);
   late final $CurrentHouseholdCacheTable currentHouseholdCache =
       $CurrentHouseholdCacheTable(this);
+  late final $RecipeTagNameCacheTable recipeTagNameCache =
+      $RecipeTagNameCacheTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2471,6 +2930,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     mealPlanWeekCache,
     syncWatermarks,
     currentHouseholdCache,
+    recipeTagNameCache,
   ];
 }
 
@@ -3979,6 +4439,270 @@ typedef $$CurrentHouseholdCacheTableProcessedTableManager =
       CurrentHouseholdCacheData,
       PrefetchHooks Function()
     >;
+typedef $$RecipeTagNameCacheTableCreateCompanionBuilder =
+    RecipeTagNameCacheCompanion Function({
+      required String id,
+      Value<String?> householdId,
+      required String tagKey,
+      required String name,
+      required String locale,
+      required DateTime updatedAt,
+      required String data,
+      Value<int> rowid,
+    });
+typedef $$RecipeTagNameCacheTableUpdateCompanionBuilder =
+    RecipeTagNameCacheCompanion Function({
+      Value<String> id,
+      Value<String?> householdId,
+      Value<String> tagKey,
+      Value<String> name,
+      Value<String> locale,
+      Value<DateTime> updatedAt,
+      Value<String> data,
+      Value<int> rowid,
+    });
+
+class $$RecipeTagNameCacheTableFilterComposer
+    extends Composer<_$AppDatabase, $RecipeTagNameCacheTable> {
+  $$RecipeTagNameCacheTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get householdId => $composableBuilder(
+    column: $table.householdId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tagKey => $composableBuilder(
+    column: $table.tagKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get locale => $composableBuilder(
+    column: $table.locale,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$RecipeTagNameCacheTableOrderingComposer
+    extends Composer<_$AppDatabase, $RecipeTagNameCacheTable> {
+  $$RecipeTagNameCacheTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get householdId => $composableBuilder(
+    column: $table.householdId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tagKey => $composableBuilder(
+    column: $table.tagKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get locale => $composableBuilder(
+    column: $table.locale,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$RecipeTagNameCacheTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RecipeTagNameCacheTable> {
+  $$RecipeTagNameCacheTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get householdId => $composableBuilder(
+    column: $table.householdId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get tagKey =>
+      $composableBuilder(column: $table.tagKey, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get locale =>
+      $composableBuilder(column: $table.locale, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get data =>
+      $composableBuilder(column: $table.data, builder: (column) => column);
+}
+
+class $$RecipeTagNameCacheTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RecipeTagNameCacheTable,
+          RecipeTagNameCacheData,
+          $$RecipeTagNameCacheTableFilterComposer,
+          $$RecipeTagNameCacheTableOrderingComposer,
+          $$RecipeTagNameCacheTableAnnotationComposer,
+          $$RecipeTagNameCacheTableCreateCompanionBuilder,
+          $$RecipeTagNameCacheTableUpdateCompanionBuilder,
+          (
+            RecipeTagNameCacheData,
+            BaseReferences<
+              _$AppDatabase,
+              $RecipeTagNameCacheTable,
+              RecipeTagNameCacheData
+            >,
+          ),
+          RecipeTagNameCacheData,
+          PrefetchHooks Function()
+        > {
+  $$RecipeTagNameCacheTableTableManager(
+    _$AppDatabase db,
+    $RecipeTagNameCacheTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RecipeTagNameCacheTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RecipeTagNameCacheTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RecipeTagNameCacheTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> householdId = const Value.absent(),
+                Value<String> tagKey = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> locale = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> data = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RecipeTagNameCacheCompanion(
+                id: id,
+                householdId: householdId,
+                tagKey: tagKey,
+                name: name,
+                locale: locale,
+                updatedAt: updatedAt,
+                data: data,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> householdId = const Value.absent(),
+                required String tagKey,
+                required String name,
+                required String locale,
+                required DateTime updatedAt,
+                required String data,
+                Value<int> rowid = const Value.absent(),
+              }) => RecipeTagNameCacheCompanion.insert(
+                id: id,
+                householdId: householdId,
+                tagKey: tagKey,
+                name: name,
+                locale: locale,
+                updatedAt: updatedAt,
+                data: data,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$RecipeTagNameCacheTable, RecipeTagNameCacheData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $RecipeTagNameCacheTable,
+                    RecipeTagNameCacheData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$RecipeTagNameCacheTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RecipeTagNameCacheTable,
+      RecipeTagNameCacheData,
+      $$RecipeTagNameCacheTableFilterComposer,
+      $$RecipeTagNameCacheTableOrderingComposer,
+      $$RecipeTagNameCacheTableAnnotationComposer,
+      $$RecipeTagNameCacheTableCreateCompanionBuilder,
+      $$RecipeTagNameCacheTableUpdateCompanionBuilder,
+      (
+        RecipeTagNameCacheData,
+        BaseReferences<
+          _$AppDatabase,
+          $RecipeTagNameCacheTable,
+          RecipeTagNameCacheData
+        >,
+      ),
+      RecipeTagNameCacheData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3997,6 +4721,8 @@ class $AppDatabaseManager {
       $$SyncWatermarksTableTableManager(_db, _db.syncWatermarks);
   $$CurrentHouseholdCacheTableTableManager get currentHouseholdCache =>
       $$CurrentHouseholdCacheTableTableManager(_db, _db.currentHouseholdCache);
+  $$RecipeTagNameCacheTableTableManager get recipeTagNameCache =>
+      $$RecipeTagNameCacheTableTableManager(_db, _db.recipeTagNameCache);
 }
 
 // **************************************************************************

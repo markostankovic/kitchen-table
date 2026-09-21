@@ -353,6 +353,122 @@ final class RecipeTagsProvider
 
 String _$recipeTagsHash() => r'a5c71050006be9deb3bcf8293ce5eabe4ea66e60';
 
+/// [locale]'s tag-key -> name map for the current household (Phase 6, part
+/// 1a) -- `RecipeTag.relabelled`'s second argument.
+///
+/// `build()` yields the empty map rather than reaching the repository at
+/// all when there is no household, [RecipeList.build]'s own guard shape,
+/// for the same reason: a household-less caller must never touch
+/// `Supabase.instance.client`.
+
+@ProviderFor(tagLabels)
+final tagLabelsProvider = TagLabelsFamily._();
+
+/// [locale]'s tag-key -> name map for the current household (Phase 6, part
+/// 1a) -- `RecipeTag.relabelled`'s second argument.
+///
+/// `build()` yields the empty map rather than reaching the repository at
+/// all when there is no household, [RecipeList.build]'s own guard shape,
+/// for the same reason: a household-less caller must never touch
+/// `Supabase.instance.client`.
+
+final class TagLabelsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Map<String, String>>,
+          Map<String, String>,
+          FutureOr<Map<String, String>>
+        >
+    with
+        $FutureModifier<Map<String, String>>,
+        $FutureProvider<Map<String, String>> {
+  /// [locale]'s tag-key -> name map for the current household (Phase 6, part
+  /// 1a) -- `RecipeTag.relabelled`'s second argument.
+  ///
+  /// `build()` yields the empty map rather than reaching the repository at
+  /// all when there is no household, [RecipeList.build]'s own guard shape,
+  /// for the same reason: a household-less caller must never touch
+  /// `Supabase.instance.client`.
+  TagLabelsProvider._({
+    required TagLabelsFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'tagLabelsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$tagLabelsHash();
+
+  @override
+  String toString() {
+    return r'tagLabelsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, String>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, String>> create(Ref ref) {
+    final argument = this.argument as String;
+    return tagLabels(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TagLabelsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$tagLabelsHash() => r'1018c3d998d77797727a5c124816eb333bbb91dd';
+
+/// [locale]'s tag-key -> name map for the current household (Phase 6, part
+/// 1a) -- `RecipeTag.relabelled`'s second argument.
+///
+/// `build()` yields the empty map rather than reaching the repository at
+/// all when there is no household, [RecipeList.build]'s own guard shape,
+/// for the same reason: a household-less caller must never touch
+/// `Supabase.instance.client`.
+
+final class TagLabelsFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<Map<String, String>>, String> {
+  TagLabelsFamily._()
+    : super(
+        retry: null,
+        name: r'tagLabelsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// [locale]'s tag-key -> name map for the current household (Phase 6, part
+  /// 1a) -- `RecipeTag.relabelled`'s second argument.
+  ///
+  /// `build()` yields the empty map rather than reaching the repository at
+  /// all when there is no household, [RecipeList.build]'s own guard shape,
+  /// for the same reason: a household-less caller must never touch
+  /// `Supabase.instance.client`.
+
+  TagLabelsProvider call(String locale) =>
+      TagLabelsProvider._(argument: locale, from: this);
+
+  @override
+  String toString() => r'tagLabelsProvider';
+}
+
 /// One recipe with its lines and steps, names resolved from the catalog.
 ///
 /// Stays a plain `Future` (D74): network-first with a cache fallback on

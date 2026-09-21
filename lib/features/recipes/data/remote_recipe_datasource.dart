@@ -134,6 +134,24 @@ ingredients(is_pantry_staple, category)''')
         };
       });
 
+  /// Every `recipe_tag_names` pair visible to [householdId] -- its own
+  /// household's rows plus every global row -- in every locale, not just
+  /// the reader's: the table is tiny, and caching both means switching
+  /// language offline still works (Phase 6, part 1a).
+  ///
+  /// The `.or` filter is explicit rather than leaning on RLS alone, on
+  /// [fetchChangedSince]'s own precedent of scoping the query as well as
+  /// letting the `recipe_tag_names_select` policy (migration 21) be the
+  /// thing that actually decides.
+  Future<List<Map<String, dynamic>>> fetchTagNames(String householdId) =>
+      runGuarded(() async {
+        return _client
+            .from('recipe_tag_names')
+            .select('id, tag_key, name, locale, household_id, updated_at')
+            .or('household_id.is.null,household_id.eq.$householdId')
+            .isFilter('deleted_at', null);
+      });
+
   /// Fills in a signed URL for every recipe with an `image_path`, in one
   /// round trip.
   ///

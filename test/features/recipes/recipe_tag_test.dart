@@ -75,4 +75,54 @@ void main() {
       );
     });
   });
+
+  group('relabelled', () {
+    test('a tag with a pair is relabelled, key unchanged', () {
+      final List<RecipeTag> relabelled = RecipeTag.relabelled(
+        <RecipeTag>[const RecipeTag(key: 'posno', label: 'Posno')],
+        <String, String>{'posno': 'Lenten'},
+      );
+
+      expect(relabelled.single.key, 'posno');
+      expect(relabelled.single.label, 'Lenten');
+    });
+
+    test('a tag with no pair falls back to the as-typed label', () {
+      final List<RecipeTag> relabelled = RecipeTag.relabelled(
+        <RecipeTag>[const RecipeTag(key: 'brzo', label: 'Brzo')],
+        <String, String>{'posno': 'Lenten'},
+      );
+
+      expect(relabelled.single.label, 'Brzo');
+    });
+
+    test('an empty label map leaves every tag as typed', () {
+      final List<RecipeTag> vocabulary = <RecipeTag>[
+        const RecipeTag(key: 'brzo', label: 'Brzo'),
+        const RecipeTag(key: 'posno', label: 'Posno'),
+      ];
+
+      expect(
+        RecipeTag.relabelled(vocabulary, const <String, String>{}),
+        vocabulary,
+      );
+    });
+
+    test('order is preserved', () {
+      final List<RecipeTag> vocabulary = <RecipeTag>[
+        const RecipeTag(key: 'brzo', label: 'Brzo'),
+        const RecipeTag(key: 'posno', label: 'Posno'),
+      ];
+
+      final List<RecipeTag> relabelled = RecipeTag.relabelled(
+        vocabulary,
+        <String, String>{'posno': 'Lenten', 'brzo': 'Quick'},
+      );
+
+      expect(
+        relabelled.map((RecipeTag t) => t.key),
+        <String>['brzo', 'posno'],
+      );
+    });
+  });
 }

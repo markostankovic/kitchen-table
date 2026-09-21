@@ -12,6 +12,7 @@ import '../../../core/meal_plan/meal_plan_writer.dart';
 import '../../../core/meal_plan/widgets/meal_slot_picker_sheet.dart';
 import '../../../core/refresh/data_revision.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/text/text_normalizer.dart';
 import '../../ingredients/domain/unit_catalog.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
 import '../../meal_plan/domain/meal_slot.dart';
@@ -364,6 +365,13 @@ class _Body extends ConsumerWidget {
     final UnitCatalog units =
         ref.watch(unitCatalogProvider).value ?? UnitCatalog.empty();
 
+    // Per-tag lookup, not `RecipeTag.relabelled`: these chips render
+    // `recipe.tags` (original spellings) directly, not the household
+    // vocabulary (Phase 6, part 1a).
+    final Map<String, String> tagLabels =
+        ref.watch(tagLabelsProvider(detail.readingLocale)).value ??
+            const <String, String>{};
+
     final List<String> meta = <String>[
       if (recipe.servings != null) l10n.recipeServingsCount(recipe.servings!),
       if (recipe.prepMinutes != null)
@@ -442,7 +450,11 @@ class _Body extends ConsumerWidget {
           Wrap(
             spacing: 8,
             children: recipe.tags
-                .map((String t) => Chip(label: Text(t)))
+                .map(
+                  (String t) => Chip(
+                    label: Text(tagLabels[TextNormalizer.normalize(t)] ?? t),
+                  ),
+                )
                 .toList(growable: false),
           ),
         ],

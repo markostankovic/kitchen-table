@@ -137,11 +137,19 @@ final RecipeDetail _detail = RecipeDetail(
 Future<void> _pumpList(
   WidgetTester tester, {
   required List<Recipe> recipes,
+  String locale = 'sr',
+  Map<String, String> tagLabels = const <String, String>{},
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         recipeListProvider.overrideWith2((_) => _StubRecipeList(recipes)),
+        // Pinned rather than left at its own fallback (`_pumpDetail`'s own
+        // reasoning): `_FilterRow` now watches this to resolve tag labels
+        // (Phase 6, part 1a), and the default reaches the real profile
+        // provider chain, which nothing in this file stubs.
+        appLocaleProvider.overrideWith((Ref ref) => Locale(locale)),
+        tagLabelsProvider(locale).overrideWith((Ref ref) async => tagLabels),
       ],
       // The AppBar title reads AppLocalizations now (D77, Phase 3 part 1),
       // so this screen needs the delegates wired in -- the real app root
@@ -218,6 +226,7 @@ Future<void> _pumpDetail(
   WidgetTester tester,
   RecipeDetail detail, {
   MealPlanWriter? writer,
+  Map<String, String> tagLabels = const <String, String>{},
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -231,6 +240,9 @@ Future<void> _pumpDetail(
         recipeDetailProvider('r1', locale: detail.readingLocale)
             .overrideWith((Ref ref) async => detail),
         unitCatalogProvider.overrideWith((Ref ref) async => _units),
+        // Phase 6, part 1a: the tags chip row resolves through this now.
+        tagLabelsProvider(detail.readingLocale)
+            .overrideWith((Ref ref) async => tagLabels),
         if (writer != null) mealPlanWriterProvider.overrideWith(() => writer),
       ],
       // The screen now reads AppLocalizations too (Phase 3 part 2), on
@@ -340,6 +352,53 @@ void main() {
       );
 
       await tester.tap(find.text('Posno'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Šargarepa torta'), findsOneWidget);
+      expect(find.text('Pita sa sirom'), findsNothing);
+    });
+
+    // Phase 6, part 1a: a tag typed in one language renders in the reader's
+    // own language.
+    testWidgets('a tag with a translated pair renders in the reader\'s '
+        'language', (WidgetTester tester) async {
+      await _pumpList(
+        tester,
+        recipes: <Recipe>[_torta.copyWith(tags: <String>['Posno'])],
+        locale: 'en',
+        tagLabels: <String, String>{'posno': 'Lenten'},
+      );
+
+      expect(find.text('Lenten'), findsOneWidget);
+      expect(find.text('Posno'), findsNothing);
+    });
+
+    testWidgets('a tag with no pair renders exactly as typed, in either '
+        'language', (WidgetTester tester) async {
+      await _pumpList(
+        tester,
+        recipes: <Recipe>[_torta.copyWith(tags: <String>['Brzo'])],
+        locale: 'en',
+        tagLabels: <String, String>{'posno': 'Lenten'},
+      );
+
+      expect(find.text('Brzo'), findsOneWidget);
+    });
+
+    testWidgets(
+        'tapping a translated chip still narrows the list -- its key is '
+        'unchanged', (WidgetTester tester) async {
+      await _pumpList(
+        tester,
+        recipes: <Recipe>[
+          _torta.copyWith(tags: <String>['Posno']),
+          _pita.copyWith(tags: <String>['Brzo']),
+        ],
+        locale: 'en',
+        tagLabels: <String, String>{'posno': 'Lenten'},
+      );
+
+      await tester.tap(find.text('Lenten'));
       await tester.pumpAndSettle();
 
       expect(find.text('Šargarepa torta'), findsOneWidget);
@@ -497,6 +556,36 @@ void main() {
         find.descendant(of: stars, matching: find.byIcon(Icons.star_border)),
         findsNWidgets(5),
       );
+    });
+
+    // Phase 6, part 1a.
+    testWidgets('a tag with a translated pair renders in the reader\'s '
+        'language', (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          readingLocale: 'en',
+          recipe: _torta.copyWith(tags: <String>['Posno']),
+        ),
+        tagLabels: <String, String>{'posno': 'Lenten'},
+      );
+
+      expect(find.text('Lenten'), findsOneWidget);
+      expect(find.text('Posno'), findsNothing);
+    });
+
+    testWidgets('a tag with no pair renders exactly as typed',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          readingLocale: 'en',
+          recipe: _torta.copyWith(tags: <String>['Brzo']),
+        ),
+        tagLabels: <String, String>{'posno': 'Lenten'},
+      );
+
+      expect(find.text('Brzo'), findsOneWidget);
     });
   });
 

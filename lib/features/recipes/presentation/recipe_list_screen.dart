@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/failure_l10n.dart';
+import '../../../core/l10n/app_locale.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../application/recipe_providers.dart';
@@ -260,14 +261,23 @@ class _FilterRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final List<RecipeTag> vocabulary = ref.watch(recipeTagsProvider);
 
+    // Relabelled into the reader's own language before the "fell out of the
+    // vocabulary" branch below, so a synthesised chip for a still-selected
+    // but now-missing tag is translated too (Phase 6, part 1a). Degrading to
+    // the as-typed label while the future is pending is intended, not a gap.
+    final String locale = ref.watch(appLocaleProvider).languageCode;
+    final Map<String, String> labels =
+        ref.watch(tagLabelsProvider(locale)).value ?? const <String, String>{};
+    final List<RecipeTag> labelled = RecipeTag.relabelled(vocabulary, labels);
+
     // The selected tag may have fallen out of the vocabulary (its last
     // recipe was deleted) -- still show a chip for it, labelled with the
     // key, so the filter is never a dead end.
     final List<RecipeTag> chips = selectedTag.isEmpty ||
-            vocabulary.any((RecipeTag t) => t.key == selectedTag)
-        ? vocabulary
+            labelled.any((RecipeTag t) => t.key == selectedTag)
+        ? labelled
         : <RecipeTag>[
-            ...vocabulary,
+            ...labelled,
             RecipeTag(key: selectedTag, label: selectedTag),
           ]..sort((RecipeTag a, RecipeTag b) => a.key.compareTo(b.key));
 

@@ -139,6 +139,20 @@ void main() {
       expect(find.text('Zagrej rernu.'), findsOneWidget);
     });
 
+    testWidgets(
+        'the tags field shows the typed spelling, never a translated one '
+        '(Phase 6, part 1a: round-tripping through translation would '
+        'silently rewrite what the cook typed)', (WidgetTester tester) async {
+      await _pump(
+        tester,
+        recipeId: 'r1',
+        draft: RecipeDraft.fromDetail(_detail)
+            .copyWith(tags: <String>['Posno', 'Brzo']),
+      );
+
+      expect(find.text('Posno, Brzo'), findsOneWidget);
+    });
+
     testWidgets('removing a line removes that line and no other',
         (WidgetTester tester) async {
       await _pump(

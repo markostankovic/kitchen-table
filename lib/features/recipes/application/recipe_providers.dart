@@ -84,6 +84,26 @@ List<RecipeTag> recipeTags(Ref ref) => RecipeTag.vocabularyOf(
       ref.watch(recipeListProvider()).value ?? const <Recipe>[],
     );
 
+/// [locale]'s tag-key -> name map for the current household (Phase 6, part
+/// 1a) -- `RecipeTag.relabelled`'s second argument.
+///
+/// `build()` yields the empty map rather than reaching the repository at
+/// all when there is no household, [RecipeList.build]'s own guard shape,
+/// for the same reason: a household-less caller must never touch
+/// `Supabase.instance.client`.
+@riverpod
+Future<Map<String, String>> tagLabels(Ref ref, String locale) async {
+  final String? householdId = await ref.watch(
+    currentHouseholdIdProvider.future,
+  );
+  if (householdId == null) return const <String, String>{};
+
+  final Map<String, Map<String, String>> byLocale = await ref
+      .watch(recipeRepositoryProvider)
+      .fetchTagLabels(householdId);
+  return byLocale[locale] ?? const <String, String>{};
+}
+
 /// One recipe with its lines and steps, names resolved from the catalog.
 ///
 /// Stays a plain `Future` (D74): network-first with a cache fallback on

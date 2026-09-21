@@ -206,4 +206,62 @@ class LocalRecipeDataSource {
     }
     return resolved;
   }, const <String, String>{});
+
+  // -- Tag names (Phase 6, part 1a) ----------------------------------------
+
+  /// Replaces the whole cached `recipe_tag_names` set for [householdId] --
+  /// its own rows and every global row together -- deleting whatever this
+  /// household already has, then inserting what came back, in one
+  /// transaction.
+  ///
+  /// [RecipeTagNameCache] holds no watermark and is never delta-synced
+  /// (its own doc comment): a fetch always returns the household's complete
+  /// visible set, so a wholesale replace is correct and there is nothing to
+  /// evict separately for a row the server has since retired.
+  Future<void> replaceTagNames({
+    required String householdId,
+    required List<Map<String, dynamic>> rows,
+  }) => cacheWrite('recipe_tag_names replace', () => _db.transaction(() async {
+    await (_db.delete(_db.recipeTagNameCache)..where(
+      (RecipeTagNameCache t) =>
+          t.householdId.equals(householdId) | t.householdId.isNull(),
+    )).go();
+    await _db.batch((Batch batch) {
+      batch.insertAll(
+        _db.recipeTagNameCache,
+        <RecipeTagNameCacheCompanion>[
+          for (final Map<String, dynamic> row in rows)
+            RecipeTagNameCacheCompanion.insert(
+              id: row['id'] as String,
+              householdId: Value<String?>(row['household_id'] as String?),
+              tagKey: row['tag_key'] as String,
+              name: row['name'] as String,
+              locale: row['locale'] as String,
+              updatedAt: DateTime.parse(row['updated_at'] as String).toUtc(),
+              data: jsonEncode(row),
+            ),
+        ],
+      );
+    });
+  }));
+
+  /// [householdId]'s cached tag-name pairs, wire-shaped -- the same decoder
+  /// a network read uses (D65), just from `data` instead of a PostgREST
+  /// response.
+  Future<List<Map<String, dynamic>>> readTagNames(String householdId) =>
+      cacheOrElse('recipe_tag_names read', () async {
+        final List<RecipeTagNameCacheData> rows = await (_db.select(
+          _db.recipeTagNameCache,
+        )..where(
+              (RecipeTagNameCache t) =>
+                  t.householdId.equals(householdId) | t.householdId.isNull(),
+            ))
+            .get();
+        return rows
+            .map(
+              (RecipeTagNameCacheData row) =>
+                  jsonDecode(row.data) as Map<String, dynamic>,
+            )
+            .toList();
+      }, const <Map<String, dynamic>>[]);
 }
