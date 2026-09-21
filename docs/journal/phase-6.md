@@ -80,3 +80,77 @@ device install on the Galaxy S25, were both handed to the user to run by
 hand and had not been confirmed back as of this entry.
 
 ---
+
+### Part 1b — `translate-tags`, the writer of the pair
+
+**Status: complete** (`a247d1c`). Decisions taken during it: D109.
+
+The writer 1a's read path was built for. Saving a recipe with a tag nobody
+has translated yet now results in that tag carrying both spellings shortly
+afterward, with no user action beyond the save; a tag already paired costs
+no model call on a later save; a translation failure never blocks or rolls
+back the save that triggered it. No migration -- migration 21 already
+granted `recipe_tag_names` the insert/update RLS this needed, on purpose.
+
+- **`translate-tags/index.ts`** resolves the household from the caller's
+  own membership, `create-invite`'s own shape -- no household id in the
+  body, so a client can never name a household it might not belong to. It
+  reads the household's tag vocabulary through the **caller's** client
+  (RLS decides, `translate-recipe`'s own reasoning), groups by
+  `normalizeText()` the same way `RecipeTag.vocabularyOf` does in Dart, and
+  diffs it against *every* existing `recipe_tag_names` row for the
+  household -- deliberately unfiltered by `deleted_at`, since the unique
+  index is total and a soft-deleted row still occupies its slot. Nothing to
+  do returns before `checkQuota` and before any model call
+  (`match-ingredients`'/`translate-recipe`'s own stated property).
+- **`_shared/translate_tags.ts`** is `translate.ts`'s counterpart for
+  vocabulary: `TRANSLATE_TAGS_SYSTEM_PROMPT`, a pure `alignTags` that
+  refuses a reply whose key set isn't exactly the requested one
+  (`alignSteps`'s own exact stance -- a plain `Error`, converted to a
+  billed `AiFailure` by the caller), and `translateTags` wrapping
+  `callStructured` with one call for the whole batch, capped at
+  `MAX_TAGS_PER_CALL` (50) so the prompt stays bounded.
+- **D109** (this slice): both locales are always requested together per
+  tag, and an alive row -- `curated`, `user`, or an earlier `llm` pair --
+  is never overwritten; only a missing slot is inserted and only a
+  soft-deleted one is revived, as a plain insert or an update-by-id, never
+  a PostgREST upsert -- `recipe_tag_names_unique` is an expression index
+  (`coalesce(household_id, '000...')`) that no `onConflict` clause can
+  match. `RecipeEditor.save()` is the only trigger (`ImportConfirm.
+  saveImported` is deliberately left alone -- `features/import/` may not
+  reach `RecipeRepository`, and the function diffs the household's whole
+  vocabulary anyway, so the next editor save delivers the same pairs at no
+  extra cost), and it fires `RecipeRepository.translateTagsBestEffort()`
+  unawaited rather than awaited, on `_syncNamesBestEffort`'s
+  never-throws/always-logged precedent -- `revision` and `repository` are
+  captured into locals before the call so the callback never touches `ref`
+  after the editor disposes, bumping `recipesRevisionProvider` only when a
+  row was actually written.
+- **`tagLabels`** now watches `recipesRevisionProvider` as its first line,
+  `RecipeList.build`'s own precedent two providers up -- a pair minted
+  after the save that triggered it has no other way to reach the chips
+  already on screen.
+
+**How it was verified.** `dart analyze` -- clean. `make lint-functions` --
+clean (typecheck, lint, format). `make test-functions` -- 161 passed,
+including the new `translate_tags_test.ts` (`alignTags`: exact match sorted
+by key, a missing/extra/duplicated key each throw, the empty batch, and a
+guard on the prompt's own key-echo and Latin-script sentences). `flutter
+test` -- 546 tests, including two new `translateTagsBestEffort` cases (a
+successful call returns `true`, a throwing remote returns `false` rather
+than propagating). `make test-sql` -- all green (no migration in this
+slice, so no schema drift to check). `make check` was not run directly --
+it still stops at the pre-existing, unrelated `seed-check` failure tracked
+since `c8be2bc` (`docs/STATE.md`); the four checks above were run
+individually instead, matching the slice's own acceptance criteria.
+
+Migration 21 was pushed to hosted (`make db-push`), `translate-tags` was
+deployed (`supabase functions deploy translate-tags`), and a release build
+against hosted was installed on the physical Galaxy S25 (targeted by serial
+since the Android emulator was also attached). The manual walk itself --
+saving a recipe with a brand-new Serbian tag, confirming the chip relabels
+when switching the app's language to English, and confirming a second save
+makes no second model call -- was handed to the user to run by hand and had
+not been confirmed back as of this entry.
+
+---

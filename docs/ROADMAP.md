@@ -428,31 +428,8 @@ that same precedent, because its four pieces carry very different risk.
 
 ### Part 1b — `translate-tags`, the writer of the pair
 
-**Not built.**
-
-Part 1a shipped the table, its RLS, the cache and the read path, but nothing
-that mints a translation pair — the household-hand-inserted rows used to
-verify 1a's read path are the only ones that exist so far. This part is the
-writer: a dedicated `translate-tags` Edge Function on `translate-recipe`'s
-shape, taking a household's untranslated tag keys, skipping any already
-paired so nothing to do never costs a token, writing rows with
-`source = 'llm'` into `recipe_tag_names` (migration 21 already grants it the
-insert/update RLS it needs — no second migration). Fired best-effort after a
-recipe save introduces a new tag, on `RecipeRepository._syncNamesBestEffort`'s
-own precedent for a background call that must not fail the save it rides in
-on.
-
-Rejected already, in the planning session that produced 1a: folding tags into
-`translate-recipe` (a household-wide vocabulary should not depend on whether
-some *recipe* was ever translated, and D85 means a reviewed recipe's tags
-would get no second chance at translation); a hand-entry screen (a chore
-nobody does, plus a whole screen and route for it).
-
-**Done-when:** saving a recipe with a new tag results in that tag having a
-translated pair shortly afterward, with no user action beyond the save
-itself; a tag already paired costs no model call on a later save; a
-translation failure never blocks or rolls back the recipe save that
-triggered it.
+**Status: complete** (`a247d1c`). Decisions taken during it: D109. See
+`docs/journal/phase-6.md`.
 
 ---
 

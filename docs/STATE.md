@@ -1,55 +1,68 @@
 # State — 2026-09-21
 
 **Branch:** `main`
-**Last shipped:** Phase 6 part 1a (`b22a327`) — tags carry a sr/en pair.
-`recipe_tag_names` (migration 21) keys on the normalized *original*
-spelling — exactly `RecipeTag.key` — so a tag typed in one language now
-renders in the reader's own language on both the recipe list's filter
-chips and the detail screen's chips, a tag with no pair renders exactly as
-typed, and `RecipeRepository._filtered` needed no change at all: the key a
-chip carries never changes, only its label. `RecipeTagNameCache` (Drift
-schema 6→7) departs from `IngredientNameCache`'s watermark-and-delta sync
-on purpose — one household's tag vocabulary is a handful of rows, so a
-fetch replaces the cached set wholesale, `UnitCatalogCache`'s own
-reasoning. The editor's comma-joined tags field is untouched, deliberately.
-Nothing in this slice writes a translation pair — that is part 1b, not
-built yet, and the roadmap's old single "Part 1" is now split into 1a/1b
-on Phase 2 part 6a/6b's precedent. Verified with the full automated suite
-(`dart analyze`, `make db-reset` + `make test-sql` including the new
-`rls_recipe_tag_names_test.sql`, `flutter test` — 544 tests) — `make
-check` stopped at the pre-existing, unrelated `seed-check` failure before
-reaching `test-sql`/`l10n-check` in that chain, both already confirmed
-green independently. Hand-inserting a pair and walking the language switch
-locally, and pushing migration 21 to hosted for a device install, were
-both handed to the user and had not been confirmed back as of this entry.
+**Last shipped:** Phase 6 part 1b (`a247d1c`) — `translate-tags`, the writer
+of the pair. A dedicated Edge Function mints the sr/en spelling pair for
+every tag in the caller's household that doesn't have one yet, fired
+best-effort and unawaited from `RecipeEditor.save()`. The household is
+resolved server-side from the caller's own membership (no household id in
+the body, `create-invite`'s own shape); the function diffs the household's
+tag vocabulary — grouped the same way `RecipeTag.vocabularyOf` does in
+Dart — against every existing `recipe_tag_names` row (unfiltered by
+`deleted_at`, since the unique index is total), and costs no model call at
+all when everything is already paired (D109). Both locales are always
+requested together per tag; an alive row is never overwritten, only a
+missing slot inserted or a soft-deleted one revived, as a plain insert or
+update-by-id — never a PostgREST upsert, since `recipe_tag_names_unique` is
+an expression index no `onConflict` clause can match. `tagLabels` now
+watches `recipesRevisionProvider` so a freshly-minted pair reaches chips
+already on screen. No migration — 21 already carried the RLS this needed.
+Verified with the full automated suite (`dart analyze`, `make
+lint-functions`, `make test-functions` — 161 passed, `flutter test` — 546
+passed, `make test-sql`) — `make check` itself was not run, for the same
+pre-existing `seed-check` reason noted below. Migration 21 was pushed to
+hosted, the function deployed, and a release build installed on the
+physical Galaxy S25 (by serial, since the emulator was also attached) — but
+the manual walk itself (save a recipe with a new Serbian tag, confirm the
+chip relabels on a language switch, confirm a second save costs no second
+model call) was handed to the user to run by hand and had not been
+confirmed back as of this entry.
 **In flight:** none
-**Next:** Three device-walk loops are open at once (below) — close one of
-them, or `/plan-slice phase6-part1b` (`translate-tags`, the writer of the
-pair the roadmap already scoped).
-**Latest decision:** D108
+**Next:** Four device-walk loops are open at once (below) — close one of
+them, or `/plan-slice phase6-part2` (tags from the search box, unblocked by
+D107 regardless of these loops).
+**Latest decision:** D109
 
-**Phase 6 part 1a's own device-walk loop is open.** The migration applies
-cleanly locally and `flutter test` covers the relabelling logic, but nobody
-has confirmed against a real device that hand-inserting a `Posno`/`Lenten`
-pair and switching the app's language actually shows the translated chip on
-both the list and detail screens, that a second untranslated tag still
-reads as typed, and that tapping the translated chip still narrows the
-list. This needs `make db-push` before the walk (migration 21 has not been
-pushed to hosted yet) — see the hosted-migration note below.
+**Phase 6 part 1b's own device-walk loop is open.** The Edge Function
+deployed cleanly and the release build installed on the Galaxy S25, but
+nobody has confirmed against the real device that saving a recipe with a
+brand-new Serbian tag actually mints its English pair, that the chip
+relabels when the app's language is switched, and that saving again makes
+no second model call (checkable via `ai_usage` rows or the function's log).
+
+**Phase 6 part 1a's own device-walk loop is also still open.** Migration 21
+is now on hosted (pushed as part of 1b's own device walk above), so that
+blocker is cleared, but nobody has yet confirmed against a real device that
+hand-inserting a `Posno`/`Lenten` pair and switching the app's language
+actually shows the translated chip on both the list and detail screens,
+that a second untranslated tag still reads as typed, and that tapping the
+translated chip still narrows the list. Part 1b's own model-minted pairs
+should serve this just as well as a hand-inserted one, once its own loop
+above is closed.
 
 **Phase 5 part 6's device-walk loop is also still open** (translating from
-the editor, `d7dcb81`) — not to be confused with the new Phase 6 above. The
-release build installed and launched cleanly on the physical Galaxy S25
-against hosted, but nobody has confirmed back that tapping Translate from
-the editor actually saves, calls the Edge Function, and shows Review
-instead of Translate afterward on a real device.
+the editor, `d7dcb81`) — not to be confused with the two Phase 6 loops
+above. The release build installed and launched cleanly on the physical
+Galaxy S25 against hosted, but nobody has confirmed back that tapping
+Translate from the editor actually saves, calls the Edge Function, and
+shows Review instead of Translate afterward on a real device.
 
 **Phase 5 part 5's device-walk loop is also still open.** The shopping
 list's clipboard-copy action installed cleanly on the same device, but
 copying an actual generated list, seeing the SnackBar, and pasting the
-text elsewhere have not been confirmed back either. Three device-walk
-loops are now open at once — a future session should close all three, not
-just the newest one.
+text elsewhere have not been confirmed back either. Four device-walk
+loops are now open at once — a future session should close all of them,
+not just the newest one.
 
 **This Flutter SDK's `flutter_test` does not stub the clipboard channel.**
 Discovered in Phase 5 part 5: an unmocked call to `Clipboard.setData` (or
@@ -87,9 +100,11 @@ the code shipped querying the new columns, but hosted was still on an
 older migration, so the hosted recipe list 400'd with a generic "Nešto je
 pošlo naopako." — no Dart stack trace reaches logcat in a release build, so
 this took a direct `information_schema.columns` query against hosted to
-diagnose. Fixed with `supabase db push`. Phase 6 part 1a also carries a
-migration (21) and has **not** been pushed to hosted yet — do this before
-that part's own device walk, not just reset local.
+diagnose. Fixed with `supabase db push`. Phase 6 part 1a's own migration
+(21) sat unpushed for a full slice before part 1b's device walk finally
+pushed it — worth pushing a migration to hosted in the SAME slice that
+writes it, next time, rather than letting it wait for whichever later slice
+happens to need a device walk first.
 
 **Local sign-in requires a device that can hold a Google account**
 (Phase 4 part 3's finding). The Android emulator cannot add one at all —
