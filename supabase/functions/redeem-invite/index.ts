@@ -45,7 +45,7 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
   const probe = async () => {
     const { data, error } = await service
       .from("household_invites")
-      .select("id, household_id, expires_at, used_at, used_by")
+      .select("id, household_id, expires_at, used_at, used_by, revoked_at")
       .eq("code", code)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -66,11 +66,16 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
 
   // Peek before claiming, so that "you are already in this household" does not
   // burn a code that somebody else still needs -- the "Mum taps it twice" case.
+  //
+  // revoked_at is null alongside used_at is null: the partial unique index now
+  // covers both, so a revoked row and a live re-mint of the same code can both
+  // exist. Without this clause both would match and maybeSingle() would throw.
   const { data: live, error: liveError } = await service
     .from("household_invites")
     .select("id, household_id, expires_at")
     .eq("code", code)
     .is("used_at", null)
+    .is("revoked_at", null)
     .maybeSingle();
   if (liveError) throw liveError;
 
@@ -107,6 +112,7 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
     .update({ used_by: userId, used_at: nowIso })
     .eq("code", code)
     .is("used_at", null)
+    .is("revoked_at", null)
     .gt("expires_at", nowIso)
     .select("id, household_id")
     // Safe: the partial unique index guarantees at most one live row per code.
@@ -139,7 +145,15 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Unused, so it was the expiry guard that rejected it.
+    if (found.revoked_at !== null) {
+      throw new HttpError(
+        410,
+        "invite_revoked",
+        "That code was revoked. Ask for a new one.",
+      );
+    }
+
+    // Unused and unrevoked, so it was the expiry guard that rejected it.
     throw new HttpError(
       410,
       "invite_expired",

@@ -183,6 +183,9 @@ class AppLocalizationsSr extends AppLocalizations {
   String get failureInviteExpired => 'Taj kod je istekao.';
 
   @override
+  String get failureInviteRevoked => 'Taj kod je opozvan.';
+
+  @override
   String get failureCodeNotAccepted => 'Taj kod nije prihvaćen.';
 
   @override
@@ -537,6 +540,41 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get unknownDisplayName => 'Nepoznato';
+
+  @override
+  String get removeMemberTooltip => 'Ukloni člana';
+
+  @override
+  String get removeMemberDialogTitle => 'Ukloniti člana?';
+
+  @override
+  String get removeMemberConfirmBody =>
+      'Izgubiće pristup receptima i planovima obroka ovog domaćinstva.';
+
+  @override
+  String get removeButton => 'Ukloni';
+
+  @override
+  String get memberRemovedSnackbar => 'Član uklonjen.';
+
+  @override
+  String get leaveHouseholdTooltip => 'Napusti domaćinstvo';
+
+  @override
+  String get leaveHouseholdDialogTitle => 'Napustiti domaćinstvo?';
+
+  @override
+  String get leaveHouseholdConfirmBody =>
+      'Izgubićete pristup receptima i planovima obroka ovog domaćinstva.';
+
+  @override
+  String get leaveButton => 'Napusti';
+
+  @override
+  String get revokeInviteTooltip => 'Opozovi kod';
+
+  @override
+  String get inviteRevokedSnackbar => 'Kod opozvan.';
 
   @override
   String get joinHouseholdTitle => 'Unesite svoj pozivni kod';

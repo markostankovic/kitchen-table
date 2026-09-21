@@ -213,6 +213,107 @@ begin
   end if;
 
   ---------------------------------------------------------------------------
+  -- phase6-part3b: remove_household_member / leave_household
+  ---------------------------------------------------------------------------
+  -- Membership at this point: A (owner), B (adult). C is not a member.
+
+  -- An adult cannot remove anyone -- not even the owner.
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_b, 'role', 'authenticated')::text, true);
+  got_error := false;
+  begin
+    perform remove_household_member(user_a);
+  exception when others then
+    got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning
+      'adult B was able to remove a member; remove_household_member must '
+      'be owner-only';
+  end if;
+
+  -- The owner cannot remove themselves.
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_a, 'role', 'authenticated')::text, true);
+  got_error := false;
+  begin
+    perform remove_household_member(user_a);
+  exception when others then
+    got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'owner A was able to remove themselves';
+  end if;
+
+  -- The owner can remove an adult.
+  perform remove_household_member(user_b);
+  select count(*) into n
+    from household_members where household_id = hid and user_id = user_b;
+  if n <> 0 then
+    failures := failures + 1;
+    raise warning 'owner A could not remove adult B';
+  end if;
+
+  -- The owner cannot leave. Guarded on role alone (settled during planning):
+  -- since only the owner removes, and the owner can neither be removed nor
+  -- leave, the owner row always survives, which collapses "the last member
+  -- may not leave" into this single check.
+  got_error := false;
+  begin
+    perform leave_household();
+  exception when others then
+    got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'owner A was able to leave their own household';
+  end if;
+
+  -- Re-add B (service role) so leaving can be exercised.
+  perform set_config('role', 'postgres', true);
+  insert into household_members (household_id, user_id, role)
+  values (hid, user_b, 'adult');
+
+  -- An adult can leave.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_b, 'role', 'authenticated')::text, true);
+  perform leave_household();
+  select count(*) into n
+    from household_members where household_id = hid and user_id = user_b;
+  if n <> 0 then
+    failures := failures + 1;
+    raise warning 'adult B could not leave the household';
+  end if;
+
+  -- A non-member can call neither.
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_c, 'role', 'authenticated')::text, true);
+  got_error := false;
+  begin
+    perform remove_household_member(user_a);
+  exception when others then
+    got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'non-member C was able to call remove_household_member';
+  end if;
+
+  got_error := false;
+  begin
+    perform leave_household();
+  exception when others then
+    got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'non-member C was able to call leave_household';
+  end if;
+
+  ---------------------------------------------------------------------------
   -- D23: a soft-deleted household stays VISIBLE to members
   ---------------------------------------------------------------------------
   -- The Phase 2 delta fetch evicts cache entries by seeing deleted_at set. If

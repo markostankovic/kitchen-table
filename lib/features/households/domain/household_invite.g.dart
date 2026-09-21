@@ -18,6 +18,10 @@ _HouseholdInvite _$HouseholdInviteFromJson(Map<String, dynamic> json) =>
       usedAt: json['usedAt'] == null
           ? null
           : DateTime.parse(json['usedAt'] as String),
+      revokedBy: json['revokedBy'] as String?,
+      revokedAt: json['revokedAt'] == null
+          ? null
+          : DateTime.parse(json['revokedAt'] as String),
     );
 
 Map<String, dynamic> _$HouseholdInviteToJson(_HouseholdInvite instance) =>
@@ -30,4 +34,6 @@ Map<String, dynamic> _$HouseholdInviteToJson(_HouseholdInvite instance) =>
       'expiresAt': instance.expiresAt.toIso8601String(),
       'usedBy': instance.usedBy,
       'usedAt': instance.usedAt?.toIso8601String(),
+      'revokedBy': instance.revokedBy,
+      'revokedAt': instance.revokedAt?.toIso8601String(),
     };

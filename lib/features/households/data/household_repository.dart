@@ -129,4 +129,24 @@ class HouseholdRepository {
   /// the old name until the next successful read.
   Future<void> rename(String id, String name) =>
       _remote.rename(id, name.trim());
+
+  /// Removes [userId] from the caller's household. Owner-only, enforced by
+  /// the RPC.
+  Future<void> removeMember(String userId) => _remote.removeMember(userId);
+
+  /// Caller leaves their own household.
+  ///
+  /// Clears the cached current-household row on success, on [create] and
+  /// [redeemInvite]'s own reasoning (D88) -- this is precisely the case that
+  /// reasoning describes: without the clear, a network blip on the confirming
+  /// re-fetch could let [fetchCurrent]'s cache fallback resurrect the
+  /// household the caller just left.
+  Future<void> leaveHousehold() async {
+    await _remote.leaveHousehold();
+    await _local.clearAll();
+  }
+
+  /// Revokes a live invite code.
+  Future<void> revokeInvite(String inviteId) =>
+      _remote.revokeInvite(inviteId);
 }

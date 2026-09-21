@@ -38,6 +38,7 @@ class _FakeRemote implements RemoteHouseholdDataSource {
   int fetchMineRowsCalls = 0;
   String? renamedId;
   String? renamedTo;
+  int leaveHouseholdCalls = 0;
 
   @override
   Future<List<Map<String, dynamic>>> fetchMineRows() async {
@@ -71,6 +72,19 @@ class _FakeRemote implements RemoteHouseholdDataSource {
     renamedId = id;
     renamedTo = name;
   }
+
+  @override
+  Future<void> removeMember(String userId) => throw UnimplementedError();
+
+  @override
+  Future<void> leaveHousehold() async {
+    leaveHouseholdCalls++;
+    final AppFailure? failure = nextFailure;
+    if (failure != null) throw failure;
+  }
+
+  @override
+  Future<void> revokeInvite(String inviteId) => throw UnimplementedError();
 }
 
 void main() {
@@ -234,6 +248,25 @@ void main() {
         await repo.fetchCurrent(userId: 'u1');
 
         await repo.redeemInvite('123456');
+
+        remote.nextFailure = const NetworkFailure();
+        await expectLater(
+          repo.fetchCurrent(userId: 'u1'),
+          throwsA(isA<NetworkFailure>()),
+        );
+      },
+    );
+
+    test(
+      'a successful leaveHousehold clears the cache; a subsequent '
+      'NetworkFailure rethrows rather than resurrecting the household just '
+      'left (phase6-part3b, D88)',
+      () async {
+        remote.rows = <Map<String, dynamic>>[_row(id: 'old')];
+        await repo.fetchCurrent(userId: 'u1');
+
+        await repo.leaveHousehold();
+        expect(remote.leaveHouseholdCalls, 1);
 
         remote.nextFailure = const NetworkFailure();
         await expectLater(

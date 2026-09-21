@@ -20,10 +20,13 @@ declare
   hid       uuid;
   hid2      uuid;
   invite    uuid;
+  invite3   uuid;
   n         int;
   failures  int := 0;
   got_error boolean;
   claimed   boolean;
+  revoked_at_value timestamptz;
+  revoked_by_value uuid;
 begin
   ---------------------------------------------------------------------------
   -- Setup (as postgres)
@@ -265,6 +268,92 @@ begin
   if n <> 2 then
     failures := failures + 1;
     raise warning 'A should see 2 profiles (own + co-member B), saw %', n;
+  end if;
+
+  ---------------------------------------------------------------------------
+  -- phase6-part3b: revoke_invite
+  ---------------------------------------------------------------------------
+  -- A fresh live code for hid -- the existing rows are used/expired by now.
+  perform set_config('role', 'postgres', true);
+  insert into household_invites (household_id, code, created_by, expires_at)
+  values (hid, '555555', user_a, now() + interval '7 days')
+  returning id into invite3;
+
+  -- A non-member of ANY household cannot revoke.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_c, 'role', 'authenticated')::text, true);
+  got_error := false;
+  begin
+    perform revoke_invite(invite3);
+  exception when others then
+    got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'non-member C was able to call revoke_invite';
+  end if;
+
+  -- A member of a DIFFERENT household cannot revoke hid's code -- "any
+  -- member" means any member of the invite's OWN household, not any member
+  -- of any household.
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_d, 'role', 'authenticated')::text, true);
+  got_error := false;
+  begin
+    perform revoke_invite(invite3);
+  exception when others then
+    got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'D (member of a different household) was able to revoke '
+                  'hid''s invite';
+  end if;
+
+  -- A member of hid's OWN household can revoke, and need not be the owner --
+  -- revocation inherits create-invite's "owner and adult are both trusted
+  -- adults" stance.
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_b, 'role', 'authenticated')::text, true);
+  perform revoke_invite(invite3);
+
+  perform set_config('role', 'postgres', true);
+  select revoked_at, revoked_by into revoked_at_value, revoked_by_value
+    from household_invites where id = invite3;
+  if revoked_at_value is null or revoked_by_value <> user_b then
+    failures := failures + 1;
+    raise warning
+      'revoke_invite did not stamp revoked_at/revoked_by correctly';
+  end if;
+
+  -- A revoked code no longer matches redeem-invite's claim UPDATE, exactly
+  -- as the Edge Function now issues it (revoked_at is null added to the
+  -- predicate).
+  update household_invites set used_by = user_c, used_at = now()
+    where code = '555555' and used_at is null and revoked_at is null
+      and expires_at > now();
+  get diagnostics n = row_count;
+  if n <> 0 then
+    failures := failures + 1;
+    raise warning
+      'a revoked code still matched the redeem-invite claim UPDATE';
+  end if;
+
+  -- D25's named trap, now intended behaviour: a revoked code's six digits
+  -- are released, so the SAME code can be minted again for a DIFFERENT
+  -- household while the old, revoked row still carries it.
+  got_error := false;
+  begin
+    insert into household_invites (household_id, code, created_by, expires_at)
+    values (hid2, '555555', user_d, now() + interval '7 days');
+  exception when unique_violation then
+    got_error := true;
+  end;
+  if got_error then
+    failures := failures + 1;
+    raise warning
+      'a revoked code could not be re-minted for a different household';
   end if;
 
   ---------------------------------------------------------------------------

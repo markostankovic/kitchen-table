@@ -55,6 +55,7 @@ String _sentence(FailureCode code, AppLocalizations l10n) => switch (code) {
       FailureCode.inviteNotFound => l10n.failureInviteNotFound,
       FailureCode.inviteAlreadyUsed => l10n.failureInviteAlreadyUsed,
       FailureCode.inviteExpired => l10n.failureInviteExpired,
+      FailureCode.inviteRevoked => l10n.failureInviteRevoked,
       FailureCode.codeNotAccepted => l10n.failureCodeNotAccepted,
       FailureCode.alreadyExists => l10n.failureAlreadyExists,
       FailureCode.aiAllowanceUsedUp => l10n.failureAiAllowanceUsedUp,

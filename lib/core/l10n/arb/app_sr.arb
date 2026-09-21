@@ -238,6 +238,10 @@
   "@failureInviteExpired": {
     "description": "Failure vocabulary (D92), FailureCode.inviteExpired -- the invite_expired Edge Function slug, split from the generic codeNotAccepted."
   },
+  "failureInviteRevoked": "Taj kod je opozvan.",
+  "@failureInviteRevoked": {
+    "description": "Failure vocabulary (D92), FailureCode.inviteRevoked -- the invite_revoked Edge Function slug (phase6-part3b). Genuinely reachable, unlike the other refusals this slice adds: a code can be revoked while someone is reading it."
+  },
   "failureCodeNotAccepted": "Taj kod nije prihvaćen.",
   "@failureCodeNotAccepted": {
     "description": "Failure vocabulary (D92), FailureCode.codeNotAccepted -- invalid_code/invalid_body/method_not_allowed."
@@ -688,6 +692,50 @@
   "unknownDisplayName": "Nepoznato",
   "@unknownDisplayName": {
     "description": "Household screen, a member row's title when the co-member profile policy withheld the display name."
+  },
+  "removeMemberTooltip": "Ukloni člana",
+  "@removeMemberTooltip": {
+    "description": "Household screen, the icon button on another member's row that the owner uses to remove them."
+  },
+  "removeMemberDialogTitle": "Ukloniti člana?",
+  "@removeMemberDialogTitle": {
+    "description": "Household screen, the remove-member confirm dialog's title."
+  },
+  "removeMemberConfirmBody": "Izgubiće pristup receptima i planovima obroka ovog domaćinstva.",
+  "@removeMemberConfirmBody": {
+    "description": "Household screen, the remove-member confirm dialog's body."
+  },
+  "removeButton": "Ukloni",
+  "@removeButton": {
+    "description": "Household screen, the remove-member confirm dialog's destructive action button."
+  },
+  "memberRemovedSnackbar": "Član uklonjen.",
+  "@memberRemovedSnackbar": {
+    "description": "Household screen, the SnackBar shown after successfully removing a member."
+  },
+  "leaveHouseholdTooltip": "Napusti domaćinstvo",
+  "@leaveHouseholdTooltip": {
+    "description": "Household screen, the icon button on the caller's own row that an adult uses to leave."
+  },
+  "leaveHouseholdDialogTitle": "Napustiti domaćinstvo?",
+  "@leaveHouseholdDialogTitle": {
+    "description": "Household screen, the leave-household confirm dialog's title."
+  },
+  "leaveHouseholdConfirmBody": "Izgubićete pristup receptima i planovima obroka ovog domaćinstva.",
+  "@leaveHouseholdConfirmBody": {
+    "description": "Household screen, the leave-household confirm dialog's body."
+  },
+  "leaveButton": "Napusti",
+  "@leaveButton": {
+    "description": "Household screen, the leave-household confirm dialog's destructive action button."
+  },
+  "revokeInviteTooltip": "Opozovi kod",
+  "@revokeInviteTooltip": {
+    "description": "Household screen, the icon button on an invite row that revokes the code. No confirm dialog -- cheap and undone by minting another code."
+  },
+  "inviteRevokedSnackbar": "Kod opozvan.",
+  "@inviteRevokedSnackbar": {
+    "description": "Household screen, the SnackBar shown after successfully revoking an invite code."
   },
 
   "joinHouseholdTitle": "Unesite svoj pozivni kod",

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
+import '../../../core/supabase/supabase_client.dart';
 import '../application/household_providers.dart';
 import '../domain/household.dart';
 import '../domain/household_invite.dart';
@@ -114,6 +115,99 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
     }
   }
 
+  /// Confirms, then removes [member] from the household. Owner-only -- the
+  /// affordance that calls this does not exist on any other row, so the RPC's
+  /// own guard is a backstop for a stale list, not something this dialog
+  /// expects to hit.
+  Future<void> _removeMember(HouseholdMember member, AppLocalizations l10n) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: Text(l10n.removeMemberDialogTitle),
+        content: Text(l10n.removeMemberConfirmBody),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.cancelButton),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.removeButton),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(householdRepositoryProvider).removeMember(member.userId);
+      ref.invalidate(householdMembersProvider);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.memberRemovedSnackbar)));
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
+    }
+  }
+
+  /// Confirms, then has the caller leave the household. Only reachable by an
+  /// adult -- the owner never sees this affordance.
+  Future<void> _leave(AppLocalizations l10n) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: Text(l10n.leaveHouseholdDialogTitle),
+        content: Text(l10n.leaveHouseholdConfirmBody),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.cancelButton),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.leaveButton),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(householdRepositoryProvider).leaveHousehold();
+      ref.invalidate(currentHouseholdProvider);
+      // Resolves to null; app_router.dart's ref.listen bumps the refresh
+      // notifier and the redirect sends us to CreateHouseholdRoute. No new
+      // routing here. This screen is being torn down underneath the await,
+      // hence the mounted guard before touching context.
+      await ref.read(currentHouseholdProvider.future);
+      if (!mounted) return;
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
+    }
+  }
+
+  /// Revokes [invite]. No confirm dialog -- cheap, and undone by minting
+  /// another code (settled during planning).
+  Future<void> _revoke(HouseholdInvite invite, AppLocalizations l10n) async {
+    try {
+      await ref.read(householdRepositoryProvider).revokeInvite(invite.id);
+      ref.invalidate(liveInvitesProvider);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.inviteRevokedSnackbar)));
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -182,6 +276,21 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
       );
 
   List<Widget> _members(AppLocalizations l10n) {
+    final String? myUserId = ref.watch(currentUserIdProvider).value;
+    // Whether the signed-in caller is themselves the owner -- looked up from
+    // the same list being rendered, rather than a second provider, since the
+    // caller's own row is always in it.
+    final List<HouseholdMember> loadedMembers =
+        ref.watch(householdMembersProvider).value ?? const <HouseholdMember>[];
+    HouseholdRole? myRole;
+    for (final HouseholdMember m in loadedMembers) {
+      if (m.userId == myUserId) {
+        myRole = m.role;
+        break;
+      }
+    }
+    final bool iAmOwner = myRole == HouseholdRole.owner;
+
     return ref.watch(householdMembersProvider).when(
           loading: () => <Widget>[
             ListTile(title: Text(l10n.loadingEllipsis)),
@@ -196,9 +305,41 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
                     // the profile. Show the gap rather than hide the person.
                     title: Text(m.displayName ?? l10n.unknownDisplayName),
                     subtitle: Text(_roleLabel(m.role, l10n)),
+                    trailing: _memberTrailing(m, myUserId, iAmOwner, l10n),
                   ))
               .toList(),
         );
+  }
+
+  /// - My own row, and I am an adult -> leave.
+  /// - My own row, and I am the owner -> nothing. The affordance is absent,
+  ///   not disabled-with-a-tooltip -- the refusal copy does not exist
+  ///   (the-refusal-copy-decision, phase6-part3b).
+  /// - Another member's row, and I am the owner -> remove.
+  /// - Otherwise -> nothing.
+  Widget? _memberTrailing(
+    HouseholdMember m,
+    String? myUserId,
+    bool iAmOwner,
+    AppLocalizations l10n,
+  ) {
+    final bool isMe = m.userId == myUserId;
+    if (isMe) {
+      if (iAmOwner) return null;
+      return IconButton(
+        icon: const Icon(Icons.logout),
+        tooltip: l10n.leaveHouseholdTooltip,
+        onPressed: () => _leave(l10n),
+      );
+    }
+    if (iAmOwner) {
+      return IconButton(
+        icon: const Icon(Icons.person_remove_outlined),
+        tooltip: l10n.removeMemberTooltip,
+        onPressed: () => _removeMember(m, l10n),
+      );
+    }
+    return null;
   }
 
   /// No `default` arm, deliberately -- same rule as `failure_l10n.dart`'s own
@@ -229,10 +370,20 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
                               fontSize: 22, letterSpacing: 6),
                         ),
                         subtitle: Text(_expiry(i.expiresAt, l10n)),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.copy),
-                          tooltip: l10n.copyCodeTooltip,
-                          onPressed: () => _copy(i.code, l10n),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            IconButton(
+                              icon: const Icon(Icons.copy),
+                              tooltip: l10n.copyCodeTooltip,
+                              onPressed: () => _copy(i.code, l10n),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.link_off),
+                              tooltip: l10n.revokeInviteTooltip,
+                              onPressed: () => _revoke(i, l10n),
+                            ),
+                          ],
                         ),
                       ))
                   .toList(),

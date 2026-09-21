@@ -182,6 +182,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get failureInviteExpired => 'That code has expired.';
 
   @override
+  String get failureInviteRevoked => 'That code was revoked.';
+
+  @override
   String get failureCodeNotAccepted => 'That code was not accepted.';
 
   @override
@@ -529,6 +532,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unknownDisplayName => 'Unknown';
+
+  @override
+  String get removeMemberTooltip => 'Remove member';
+
+  @override
+  String get removeMemberDialogTitle => 'Remove member?';
+
+  @override
+  String get removeMemberConfirmBody =>
+      'They will lose access to this household\'s recipes and meal plans.';
+
+  @override
+  String get removeButton => 'Remove';
+
+  @override
+  String get memberRemovedSnackbar => 'Member removed.';
+
+  @override
+  String get leaveHouseholdTooltip => 'Leave household';
+
+  @override
+  String get leaveHouseholdDialogTitle => 'Leave household?';
+
+  @override
+  String get leaveHouseholdConfirmBody =>
+      'You will lose access to this household\'s recipes and meal plans.';
+
+  @override
+  String get leaveButton => 'Leave';
+
+  @override
+  String get revokeInviteTooltip => 'Revoke code';
+
+  @override
+  String get inviteRevokedSnackbar => 'Code revoked.';
 
   @override
   String get joinHouseholdTitle => 'Enter your invite code';

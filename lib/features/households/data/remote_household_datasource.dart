@@ -87,16 +87,17 @@ class RemoteHouseholdDataSource {
 
   /// Invite codes for [householdId] that can still be redeemed.
   ///
-  /// The `used_at` / `expires_at` filters live here rather than in the RLS
-  /// policy, which checks membership only (D23).
+  /// The `used_at` / `expires_at` / `revoked_at` filters live here rather
+  /// than in the RLS policy, which checks membership only (D23).
   Future<List<HouseholdInvite>> fetchLiveInvites(String householdId) =>
       runGuarded(() async {
         final List<Map<String, dynamic>> rows = await _client
             .from('household_invites')
             .select('id, household_id, code, created_by, created_at, '
-                'expires_at, used_by, used_at')
+                'expires_at, used_by, used_at, revoked_by, revoked_at')
             .eq('household_id', householdId)
             .isFilter('used_at', null)
+            .isFilter('revoked_at', null)
             .gt('expires_at', DateTime.now().toUtc().toIso8601String())
             .order('created_at', ascending: false);
 
@@ -144,6 +145,32 @@ class RemoteHouseholdDataSource {
             .update(<String, dynamic>{'name': name}).eq('id', id);
       });
 
+  /// Removes [userId] from the caller's household. Owner-only, enforced
+  /// inside the RPC -- neither table has a write policy, so this is the only
+  /// path (phase6-part3b).
+  Future<void> removeMember(String userId) => runGuarded(() async {
+        await _client.rpc<dynamic>(
+          'remove_household_member',
+          params: <String, dynamic>{'target_user': userId},
+        );
+      });
+
+  /// Caller leaves their own household. The owner may not call this -- see
+  /// `leave_household()`'s own guard.
+  Future<void> leaveHousehold() => runGuarded(() async {
+        await _client.rpc<dynamic>('leave_household');
+      });
+
+  /// Revokes a live invite code. Any member of the code's own household may
+  /// call this (create-invite's "owner and adult are both trusted adults"
+  /// stance, mirrored for revocation).
+  Future<void> revokeInvite(String inviteId) => runGuarded(() async {
+        await _client.rpc<dynamic>(
+          'revoke_invite',
+          params: <String, dynamic>{'invite_id': inviteId},
+        );
+      });
+
   HouseholdMember _toMember(Map<String, dynamic> row) {
     final Object? profile = row['profiles'];
     return HouseholdMember(
@@ -168,6 +195,10 @@ class RemoteHouseholdDataSource {
         usedAt: row['used_at'] == null
             ? null
             : DateTime.parse(row['used_at'] as String),
+        revokedBy: row['revoked_by'] as String?,
+        revokedAt: row['revoked_at'] == null
+            ? null
+            : DateTime.parse(row['revoked_at'] as String),
       );
 
   /// An Edge Function reply, which is camelCase because it is a hand-built

@@ -22,6 +22,8 @@ abstract class HouseholdInvite with _$HouseholdInvite {
     required DateTime expiresAt,
     String? usedBy,
     DateTime? usedAt,
+    String? revokedBy,
+    DateTime? revokedAt,
   }) = _HouseholdInvite;
 
   factory HouseholdInvite.fromJson(Map<String, dynamic> json) =>

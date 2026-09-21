@@ -416,6 +416,12 @@ abstract class AppLocalizations {
   /// **'Taj kod je istekao.'**
   String get failureInviteExpired;
 
+  /// Failure vocabulary (D92), FailureCode.inviteRevoked -- the invite_revoked Edge Function slug (phase6-part3b). Genuinely reachable, unlike the other refusals this slice adds: a code can be revoked while someone is reading it.
+  ///
+  /// In sr, this message translates to:
+  /// **'Taj kod je opozvan.'**
+  String get failureInviteRevoked;
+
   /// Failure vocabulary (D92), FailureCode.codeNotAccepted -- invalid_code/invalid_body/method_not_allowed.
   ///
   /// In sr, this message translates to:
@@ -985,6 +991,72 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Nepoznato'**
   String get unknownDisplayName;
+
+  /// Household screen, the icon button on another member's row that the owner uses to remove them.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ukloni člana'**
+  String get removeMemberTooltip;
+
+  /// Household screen, the remove-member confirm dialog's title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ukloniti člana?'**
+  String get removeMemberDialogTitle;
+
+  /// Household screen, the remove-member confirm dialog's body.
+  ///
+  /// In sr, this message translates to:
+  /// **'Izgubiće pristup receptima i planovima obroka ovog domaćinstva.'**
+  String get removeMemberConfirmBody;
+
+  /// Household screen, the remove-member confirm dialog's destructive action button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ukloni'**
+  String get removeButton;
+
+  /// Household screen, the SnackBar shown after successfully removing a member.
+  ///
+  /// In sr, this message translates to:
+  /// **'Član uklonjen.'**
+  String get memberRemovedSnackbar;
+
+  /// Household screen, the icon button on the caller's own row that an adult uses to leave.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napusti domaćinstvo'**
+  String get leaveHouseholdTooltip;
+
+  /// Household screen, the leave-household confirm dialog's title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napustiti domaćinstvo?'**
+  String get leaveHouseholdDialogTitle;
+
+  /// Household screen, the leave-household confirm dialog's body.
+  ///
+  /// In sr, this message translates to:
+  /// **'Izgubićete pristup receptima i planovima obroka ovog domaćinstva.'**
+  String get leaveHouseholdConfirmBody;
+
+  /// Household screen, the leave-household confirm dialog's destructive action button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napusti'**
+  String get leaveButton;
+
+  /// Household screen, the icon button on an invite row that revokes the code. No confirm dialog -- cheap and undone by minting another code.
+  ///
+  /// In sr, this message translates to:
+  /// **'Opozovi kod'**
+  String get revokeInviteTooltip;
+
+  /// Household screen, the SnackBar shown after successfully revoking an invite code.
+  ///
+  /// In sr, this message translates to:
+  /// **'Kod opozvan.'**
+  String get inviteRevokedSnackbar;
 
   /// Join-household screen (onboarding), the headline.
   ///

@@ -125,6 +125,14 @@ AppFailure _fromFunction(FunctionException e) {
           message: message ?? 'That code has expired.',
           code: FailureCode.inviteExpired,
           cause: e);
+    // Genuinely reachable (phase6-part3b): a code can be revoked while
+    // someone is reading it, so unlike the other new refusals this slice
+    // adds, the UI cannot gate this one out.
+    case 'invite_revoked':
+      return ValidationFailure(
+          message: message ?? 'That code was revoked.',
+          code: FailureCode.inviteRevoked,
+          cause: e);
     case 'invalid_code':
     case 'invalid_body':
     case 'method_not_allowed':

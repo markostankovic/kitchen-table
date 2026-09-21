@@ -96,6 +96,11 @@ enum FailureCode {
   /// expired code and a malformed one call for different next steps.
   inviteExpired,
 
+  /// `invite_revoked` (phase6-part3b). A genuine reachable-path slug -- unlike
+  /// the other refusals this slice adds, this one is not gated out of the UI:
+  /// someone can type a code that gets revoked while they are reading it.
+  inviteRevoked,
+
   /// `invalid_code`, `invalid_body`, `method_not_allowed`.
   codeNotAccepted,
 
