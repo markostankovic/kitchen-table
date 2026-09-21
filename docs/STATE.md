@@ -24,9 +24,10 @@ confirm the snackbar, confirm Review replaces Translate afterward) was
 handed to the user to run by hand and had not been confirmed back as of
 this entry.
 **In flight:** none
-**Next:** Phase 5 Part 6 was the roadmap's last planned slice — no Phase 6
-exists yet. Next session should either close one of the two open
-device-walk loops below or plan a new slice with `/plan-slice`.
+**Next:** Phase 6 is now on the roadmap (tags in two languages, search by tag,
+editing the household) but no part of it has been planned yet. Next session
+should either close one of the two open device-walk loops below or plan
+Phase 6's first slice with `/plan-slice`.
 **Latest decision:** D106
 
 **Part 6's own device-walk loop is open**, the same shape Part 5 left open

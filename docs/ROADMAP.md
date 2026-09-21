@@ -400,6 +400,167 @@ Two questions to settle before building, both capable of breaking something:
 
 ---
 
+## Phase 6 — Tags in two languages, findable by tag, and a household you can edit
+
+Phase 3 made every *screen* read in the reader's own language; Phase 5 made the
+recipe list findable by tag. Tags themselves fell through both — they are
+household data, not app chrome, so Phase 3's ARB work never reached them, and
+Phase 5 filtered by them without ever translating them. The third item is the
+household record itself, which has been create-only since Phase 1a: you can
+name it once, at creation, and never touch it again.
+
+Parts 1 and 2 are ordered — part 2 needs a settled answer to "what is a tag's
+identity in two languages" before search can decide which spelling a typed
+query matches. Part 3 is independent of both and split into three ordered
+sub-parts of its own, on Phase 2 part 6a/6b's precedent, because its four
+pieces carry very different risk.
+
+---
+
+### Part 1 — Tags in two languages
+
+**Not built.**
+
+Tags stay free text — a closed, ARB-backed tag vocabulary was considered and
+rejected, so this isn't revisited later. A tag gets a sr/en pair, stored
+household-scoped, and the chip renders in the reader's locale; a tag with no
+pair falls back to the spelling as typed.
+
+`recipes.tags` is `text[]` with no id per tag
+(`supabase/migrations/20260907201501_recipes.sql:58`), so the new table has to
+key on the normalized string — the same D5 / rule-6 normalization contract
+`TextNormalizer` / `normalize_text()` already share, which likely means a new
+fixture pair. The shape to copy is `ingredient_names`
+(`supabase/migrations/20260907092944_ingredient_catalog.sql:331-344`):
+normalized key + `locale` + `household_id` (null = global) +
+`source in ('curated','llm','user')` with a total unique index — this is
+vocabulary translation, not prose translation, so `recipe_translations` is the
+wrong precedent even though it's the nearer-looking one.
+
+`RecipeTag` (`lib/features/recipes/domain/recipe_tag.dart`) grows a locale.
+Its `label` rule today (alphabetically-first original spelling, line 46) is
+exactly what a translated label replaces — decide whether `vocabularyOf` takes
+a locale and a lookup, or a resolution step sits beside it. Tags render in
+three places and only two should translate: the filter chips
+(`recipe_list_screen.dart:241-302`) and the detail screen's chips
+(`recipe_detail_screen.dart:440-446`, which today shows original spellings, not
+vocabulary labels). The editor's comma-joined field
+(`recipe_edit_screen.dart:306-314`) must **not** translate — you edit what you
+typed, and round-tripping it through translation would silently rewrite a
+cook's own words.
+
+Open question this part has to answer, not defer: who writes the pair —
+hand-entered, or a model call on `translate-recipe`'s pattern?
+`ingredient_names.source` already models all three answers (`curated`, `llm`,
+`user`), which is a hint, not a decision.
+
+Caching needs its own table or a locale-keyed lookup — tags live only inside
+the `RecipeCache.data` blob today, and `IngredientNameCache`
+(`lib/core/db/app_database.dart:98-106`) already has a `locale` column as
+precedent. `schemaVersion` (currently 6) almost certainly bumps to 7, by this
+file's own rule that every change to the cached shape bumps it, even inside a
+JSON blob.
+
+**Done-when:** a tag typed in Serbian renders in English for an English reader
+and vice versa, on both the list chips and the detail screen; an untranslated
+tag renders as typed; the editor still shows exactly what was typed; filtering
+still matches across both spellings.
+
+---
+
+### Part 2 — Tags from the search box
+
+**Not built.**
+
+Typing in the search field should find recipes by tag, not only by title.
+
+One predicate to change: `RecipeRepository._filtered`
+(`lib/features/recipes/data/recipe_repository.dart:369-391`), which already
+governs both emissions of `watchList` — there is no SQL to touch, so this is a
+small part. The real work is a decision: `query` is currently substring-on-
+title, `tag` is whole-token equality. Does typing `pos` match the tag `Posno`
+(substring, consistent with the title) or must the whole token match
+(consistent with the chips)? And once part 1 gives a tag a sr/en pair, which
+spelling does a typed query match — the reader's, the author's, or every known
+one?
+
+`_StubRecipeList` in `test/features/recipes/recipe_screens_test.dart:31-60`
+reimplements the filter inline without `TextNormalizer` and has to move in
+lockstep, or the widget tests keep asserting the old semantics silently.
+`recipeTagsProvider` is bound to the unfiltered list today and may need
+revisiting so the chip row reflects a tag-matching text query.
+
+Folds in a known gap rather than leaving it to drift further: the filter row
+(Favorites chip included) is hidden entirely when the tag vocabulary is empty
+and Favorites is off (`recipe_list_screen.dart:274`, D102's Consequences,
+`docs/STATE.md:68-73`), so a household with zero tags currently cannot reach
+the Favorites filter at all. This part is where that gets decided.
+
+**Done-when:** typing a tag's name narrows the list to recipes carrying it,
+case- and diacritic-insensitively; title matches still work; the Favorites
+chip is reachable from a household with no tags.
+
+---
+
+### Part 3 — Editing the household
+
+**Not built.** Three ordered sub-parts. Today the household name is a
+read-only `ListTile` (`household_screen.dart:70-74`) and the screen's only two
+actions are create-invite and copy-code — `HouseholdRepository` has no
+mutation of a household beyond `create`.
+
+**3a — Rename, and who is allowed to.** `households_update`'s RLS checks
+membership only, not role (`supabase/migrations/20260906204711_identity_households.sql:194-198`)
+— any `adult` can already rename or soft-delete the household today; the UI
+has simply never offered it. Decide whether that stays the rule or rename
+becomes owner-only, which costs a migration (an owner-checking policy or a
+SECURITY DEFINER RPC), not a client check — worth its own `Dxx`.
+`supabase/tests/rls_household_test.sql:171-177` only asserts a *non-member*
+can't rename; whatever is decided needs the member-level assertion that's
+missing. `currentHouseholdProvider` is `keepAlive` and never re-resolves
+within a process (an existing `docs/decisions/OPEN.md` entry) — invalidate it,
+or a rename won't show until restart. No `toWire()` exists on the household
+DTO yet, and `RemoteHouseholdDataSource.fetchMineRows`'s column list is
+explicit; both need touching for a partial update.
+
+**3b — Members and invites.** Removing a member needs a DELETE policy or an
+RPC — `household_members` is select-only RLS today. This is `docs/decisions/OPEN.md`'s
+*auditable membership revocation*, explicitly deferred by D24 "until members
+can be removed." Leaving is the same write with `auth.uid()` as its subject,
+plus a question the schema can't answer on its own: what happens when the last
+member leaves, or the `owner` leaves with nobody to promote. A departing
+member likely needs no new routing — the existing redirect
+(`app_router.dart:50-60`) already sends a member with no household to
+`CreateHouseholdRoute`. Invite revocation is `OPEN.md`'s other named
+follow-up (D25): a `revoked_at` column and a rebuilt partial index
+(`household_invites_code_unused_idx`, which can't include `expires_at >
+now()` since index predicates must be IMMUTABLE), in one migration.
+`create-invite` deliberately has no role check today ("owner and adult are
+both trusted adults") — decide whether revocation inherits that stance.
+
+**3c — Delete, and what a deleted household means.** Rule 4 gives the
+mechanic (`deleted_at`, no hard delete), but soft delete on `households`
+cascades to nothing — ten tables cascade on a hard `DELETE` the client can't
+perform, and `deleted_at` isn't one of them. Setting it today would leave
+every recipe, meal plan and shopping list intact while `fetchMineRows` filters
+the household out: the user lands back in onboarding with their data alive
+and unreachable, and the storage objects under it unreachable even to clean
+up once the membership row is gone. This part has to answer that, not just
+wire up a button — either cascade the tombstone to the household's own rows,
+or drop "delete" in favour of "everybody leaves," letting the last member out
+tombstone it. Needs a confirm step and the first destructive-action copy in
+either ARB file. Authorization again: owner-only is the likely answer even if
+rename stays open to any adult.
+
+**Done-when (Part 3 overall):** a member can rename their household and see
+the new name without restarting; an invite code can be revoked and a revoked
+code is refused; a member can be removed and can remove themselves; a
+household can be deleted with its consequences documented and a confirm step
+in front of it; the RLS suite asserts the authorization rule at member level,
+not only for non-members.
+
+---
+
 ## Standing rules across phases
 
 - Anything AI-produced is `status = 'draft'` until a human marks it tested.
