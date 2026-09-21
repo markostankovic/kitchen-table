@@ -935,6 +935,14 @@
   "@regenerateTooltip": {
     "description": "Shopping list screen (part 6), the AppBar's regenerate icon tooltip -- shown only once a list exists."
   },
+  "copyListTooltip": "Kopiraj listu",
+  "@copyListTooltip": {
+    "description": "Shopping list screen (part 5), the AppBar's copy-to-clipboard icon tooltip -- shown only once a list exists, beside regenerateTooltip."
+  },
+  "listCopiedSnackbar": "Lista kopirana.",
+  "@listCopiedSnackbar": {
+    "description": "Shopping list screen (part 5), the SnackBar shown after copying the list to the clipboard."
+  },
   "pickDatesTooltip": "Izaberi datume",
   "@pickDatesTooltip": {
     "description": "Shopping list screen (part 6), the range bar's date-range-picker icon tooltip."

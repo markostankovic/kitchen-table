@@ -225,6 +225,8 @@
   "leftoverEntryLabel": "Leftovers: {title}",
 
   "regenerateTooltip": "Regenerate",
+  "copyListTooltip": "Copy list",
+  "listCopiedSnackbar": "List copied.",
   "pickDatesTooltip": "Pick dates",
   "thisWeekButton": "This week",
   "nextWeekButton": "Next",

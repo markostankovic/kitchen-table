@@ -1310,6 +1310,18 @@ abstract class AppLocalizations {
   /// **'Osveži'**
   String get regenerateTooltip;
 
+  /// Shopping list screen (part 5), the AppBar's copy-to-clipboard icon tooltip -- shown only once a list exists, beside regenerateTooltip.
+  ///
+  /// In sr, this message translates to:
+  /// **'Kopiraj listu'**
+  String get copyListTooltip;
+
+  /// Shopping list screen (part 5), the SnackBar shown after copying the list to the clipboard.
+  ///
+  /// In sr, this message translates to:
+  /// **'Lista kopirana.'**
+  String get listCopiedSnackbar;
+
   /// Shopping list screen (part 6), the range bar's date-range-picker icon tooltip.
   ///
   /// In sr, this message translates to:

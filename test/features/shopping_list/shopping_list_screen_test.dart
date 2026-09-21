@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
@@ -153,6 +154,26 @@ Future<_Calls> _pump(
 }
 
 void main() {
+  // No default in-memory clipboard in this SDK's flutter_test (contrary to
+  // the slice's own assumption) -- an unmocked `flutter/platform` channel
+  // call never replies, so `Clipboard.setData` inside `_copy` hangs forever
+  // instead of throwing. A minimal mock is enough to let `_copy` complete;
+  // the exported text itself is covered directly, and thoroughly, by
+  // shopping_list_text_test.dart, so this only needs to unblock the
+  // SnackBar assertion below.
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      SystemChannels.platform,
+      (MethodCall call) async => null,
+    );
+  });
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null);
+  });
+
   testWidgets('titles the tab List whatever the providers do', (tester) async {
     // app_shell_test.dart taps this tab and asserts the title, so it is built
     // outside the AsyncValue.when on purpose.
@@ -356,6 +377,37 @@ void main() {
   testWidgets('regenerating is offered once a list exists', (tester) async {
     await _pump(tester, initial: _list(<ShoppingItem>[_item('brašno')]));
     expect(find.byTooltip('Regenerate'), findsOneWidget);
+  });
+
+  testWidgets('copying is not offered before a list exists', (tester) async {
+    await _pump(tester);
+    expect(find.byTooltip('Copy list'), findsNothing);
+  });
+
+  testWidgets(
+      'copying shows the reader-locale SnackBar (D94 chrome side); the '
+      'exported text itself is covered directly by '
+      'shopping_list_text_test.dart', (tester) async {
+    // Reading `Clipboard.getData` back from the TEST BODY (as opposed to
+    // from inside a widget callback) hangs indefinitely in this Flutter SDK
+    // -- confirmed with a minimal reproduction outside this suite, not a bug
+    // in `_copy`. The slice anticipated this ("if it proves awkward, test
+    // formatShoppingListAsText directly and assert only that the SnackBar
+    // appears on tap"); the D94 split itself is exercised end-to-end by
+    // shopping_list_text_test.dart's own list-locale-vs-reader-locale case.
+    await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[
+        _item('mleko', id: 'i-mleko', category: 'dairy',
+            quantities: <ItemQuantity>[_q(500, UnitFamily.volume, 'ml')]),
+      ]),
+    );
+
+    await tester.tap(find.byTooltip('Copy list'));
+    await tester.pumpAndSettle();
+
+    // Chrome -- reader's locale (English), even though the list is Serbian.
+    expect(find.text('List copied.'), findsOneWidget);
   });
 
   testWidgets(

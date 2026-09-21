@@ -710,6 +710,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get regenerateTooltip => 'Regenerate';
 
   @override
+  String get copyListTooltip => 'Copy list';
+
+  @override
+  String get listCopiedSnackbar => 'List copied.';
+
+  @override
   String get pickDatesTooltip => 'Pick dates';
 
   @override

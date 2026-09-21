@@ -718,6 +718,12 @@ class AppLocalizationsSr extends AppLocalizations {
   String get regenerateTooltip => 'Osveži';
 
   @override
+  String get copyListTooltip => 'Kopiraj listu';
+
+  @override
+  String get listCopiedSnackbar => 'Lista kopirana.';
+
+  @override
   String get pickDatesTooltip => 'Izaberi datume';
 
   @override

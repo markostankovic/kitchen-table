@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
@@ -12,6 +13,7 @@ import '../application/shopping_list_providers.dart';
 import '../domain/format_item_quantity.dart';
 import '../domain/shopping_item.dart';
 import '../domain/shopping_list.dart';
+import 'shopping_list_text.dart';
 
 /// The generated shopping list.
 ///
@@ -54,12 +56,18 @@ class ShoppingListScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.navList),
         actions: <Widget>[
-          if (list.value != null)
+          if (list.value != null) ...<Widget>[
+            IconButton(
+              tooltip: l10n.copyListTooltip,
+              icon: const Icon(Icons.copy_outlined),
+              onPressed: () => _copy(context, ref, list.value!),
+            ),
             IconButton(
               tooltip: l10n.regenerateTooltip,
               icon: const Icon(Icons.refresh_outlined),
               onPressed: () => _generate(context, ref),
             ),
+          ],
         ],
       ),
       body: Column(
@@ -102,6 +110,32 @@ Future<void> _generate(BuildContext context, WidgetRef ref) async {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
   }
+}
+
+/// Copies the current list as plain text (D105) to the clipboard.
+///
+/// The text is built from [list]'s own `list.locale` (the two-locale rule,
+/// D94/D86) -- it is the document, same as `_ListBody`, not the chrome
+/// around it. The tooltip and this confirmation SnackBar are chrome, so
+/// they read the reader's own locale via `AppLocalizations.of(context)`,
+/// re-read after the `await` on `household_screen.dart`'s own precedent.
+Future<void> _copy(
+  BuildContext context,
+  WidgetRef ref,
+  ShoppingList list,
+) async {
+  final UnitCatalog units =
+      ref.read(unitCatalogProvider).value ?? UnitCatalog.empty();
+  final AppLocalizations bodyL10n = lookupAppLocalizations(
+    Locale(list.locale),
+  );
+  final String text = formatShoppingListAsText(list, units, bodyL10n);
+
+  await Clipboard.setData(ClipboardData(text: text));
+  if (!context.mounted) return;
+  final AppLocalizations l10n = AppLocalizations.of(context);
+  ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(l10n.listCopiedSnackbar)));
 }
 
 /// Which dates the next list will cover, and the two shortcuts that cover
@@ -203,36 +237,6 @@ class _EmptyState extends ConsumerWidget {
   }
 }
 
-/// The `ingredients.category` code for an item the catalog never assigned
-/// one -- a sentinel distinct from any real code (never entered as a category
-/// in `supabase/seeds/ingredients.csv`), so the uncategorised bucket is no
-/// longer keyed by the literal display string `'Other'`, which used to be
-/// both a display string and a map key at once.
-const String _uncategorisedCategory = '_uncategorised';
-
-/// A category code's heading, in [l10n]'s own locale -- [l10n] is always
-/// looked up from `list.locale` here (never the reader's), on the two-locale
-/// rule. An unrecognised code (not one of the ten
-/// `supabase/seeds/ingredients.csv` knows, and not [_uncategorisedCategory])
-/// falls through to itself rather than vanishing or being folded into
-/// "Other" -- a category the catalog adds later must still show something.
-/// No `default` arm for the known ten, so a new one compiles only once it has
-/// a label here.
-String _categoryLabel(String code, AppLocalizations l10n) => switch (code) {
-      'produce' => l10n.categoryProduce,
-      'fruit' => l10n.categoryFruit,
-      'dairy' => l10n.categoryDairy,
-      'meat' => l10n.categoryMeat,
-      'fish' => l10n.categoryFish,
-      'pantry' => l10n.categoryPantry,
-      'spice' => l10n.categorySpice,
-      'bakery' => l10n.categoryBakery,
-      'beverage' => l10n.categoryBeverage,
-      'nuts' => l10n.categoryNuts,
-      _uncategorisedCategory => l10n.categoryOther,
-      _ => code,
-    };
-
 class _ListBody extends ConsumerWidget {
   const _ListBody({required this.list});
 
@@ -276,7 +280,7 @@ class _ListBody extends ConsumerWidget {
               textAlign: TextAlign.center,
             ),
           ),
-        for (final _CategoryGroup group in _byCategory(toBuy, bodyL10n)) ...<Widget>[
+        for (final CategoryGroup group in groupByCategory(toBuy, bodyL10n)) ...<Widget>[
           _CategoryHeading(label: group.label),
           for (final ShoppingItem item in group.items)
             _ItemTile(item: item, units: units, locale: list.locale),
@@ -297,51 +301,6 @@ class _ListBody extends ConsumerWidget {
       ],
     );
   }
-
-  /// Groups by `ingredients.category`, with uncategorised items last under a
-  /// neutral heading rather than being dropped or shuffled in. Sorted by the
-  /// LOCALIZED label, not the raw code, so the order reads correctly in
-  /// whichever language `list.locale` is.
-  List<_CategoryGroup> _byCategory(
-    List<ShoppingItem> items,
-    AppLocalizations bodyL10n,
-  ) {
-    final Map<String, List<ShoppingItem>> groups =
-        <String, List<ShoppingItem>>{};
-    for (final ShoppingItem item in items) {
-      groups
-          .putIfAbsent(
-              item.category ?? _uncategorisedCategory, () => <ShoppingItem>[])
-          .add(item);
-    }
-
-    final List<_CategoryGroup> result = <_CategoryGroup>[
-      for (final MapEntry<String, List<ShoppingItem>> entry in groups.entries)
-        _CategoryGroup(
-          code: entry.key,
-          label: _categoryLabel(entry.key, bodyL10n),
-          items: entry.value,
-        ),
-    ];
-    result.sort((_CategoryGroup a, _CategoryGroup b) {
-      if (a.code == _uncategorisedCategory) return 1;
-      if (b.code == _uncategorisedCategory) return -1;
-      return a.label.compareTo(b.label);
-    });
-    return result;
-  }
-}
-
-class _CategoryGroup {
-  const _CategoryGroup({
-    required this.code,
-    required this.label,
-    required this.items,
-  });
-
-  final String code;
-  final String label;
-  final List<ShoppingItem> items;
 }
 
 class _GeneratedAt extends ConsumerWidget {
