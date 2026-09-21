@@ -101,6 +101,15 @@ class _FakeRemote implements RemoteRecipeDataSource {
   Future<void> translate(String recipeId, String targetLocale) =>
       throw UnimplementedError();
 
+  int? translateTagsWritten;
+  bool translateTagsThrows = false;
+
+  @override
+  Future<int> translateTags() async {
+    if (translateTagsThrows) throw const NetworkFailure();
+    return translateTagsWritten ?? 0;
+  }
+
   @override
   Future<void> reviewTranslation({
     required String recipeId,
@@ -417,6 +426,20 @@ void main() {
         repository.fetchDetail('unknown'),
         throwsA(isA<NetworkFailure>()),
       );
+    });
+  });
+
+  group('translateTagsBestEffort', () {
+    test('a successful call returns true', () async {
+      remote.translateTagsWritten = 2;
+
+      expect(await repository.translateTagsBestEffort(), isTrue);
+    });
+
+    test('a throwing remote returns false rather than propagating', () async {
+      remote.translateTagsThrows = true;
+
+      expect(await repository.translateTagsBestEffort(), isFalse);
     });
   });
 }

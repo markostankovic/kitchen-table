@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -6,6 +7,7 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/household/current_household.dart';
 import '../../../core/l10n/app_locale.dart';
 import '../../../core/refresh/data_revision.dart';
+import '../../../core/text/text_normalizer.dart';
 import '../data/recipe_repository.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_detail.dart';
@@ -225,6 +227,28 @@ class RecipeEditor extends _$RecipeEditor {
           stackTrace: stackTrace,
         );
       }
+    }
+
+    // Fired best-effort and unawaited -- a translation is a model call with
+    // nothing sensible to draft offline (D12), and it must never delay or
+    // block an otherwise-successful save (D48, `translateTagsBestEffort`'s
+    // own never-throws contract). `revision` and `repository` are captured
+    // into locals BEFORE firing, not read again inside the callback: this
+    // is what makes it safe to run after the editor itself is disposed --
+    // `RecipesRevision` is `keepAlive` (`core/refresh/data_revision.dart`)
+    // and outlives the screen by design, and nothing in the callback
+    // touches `ref`.
+    if (saved.tags.any(
+      (String tag) => TextNormalizer.normalize(tag).isNotEmpty,
+    )) {
+      final RecipesRevision revision = ref.read(
+        recipesRevisionProvider.notifier,
+      );
+      unawaited(
+        repository.translateTagsBestEffort().then((bool wrote) {
+          if (wrote) revision.bump();
+        }),
+      );
     }
 
     ref.read(recipesRevisionProvider.notifier).bump();

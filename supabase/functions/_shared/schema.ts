@@ -222,3 +222,38 @@ export const ModelTranslation = z.object({
 }).meta({ title: "ModelTranslation" });
 
 export type ModelTranslationT = z.infer<typeof ModelTranslation>;
+
+// ---------------------------------------------------------------------------
+// ModelTagTranslation -- translate-tags' structured-output contract
+// ---------------------------------------------------------------------------
+
+/**
+ * What `translate-tags` asks a model for, per tag (Phase 6, part 1b).
+ *
+ * Not exported to Dart by `make types` (`tool/gen_types.ts` emits only
+ * `ParsedRecipe`), same reasoning as `ModelTranslation`: the client never
+ * decodes this shape directly, it reads the saved `recipe_tag_names` rows
+ * back through PostgREST instead.
+ */
+export const ModelTagTranslation = z.object({
+  key: z.string().min(1).describe(
+    "The tag_key exactly as given in the request. Echo it back unchanged " +
+      "-- it is how this entry is matched back to the tag that was asked " +
+      "for, not a value you are free to alter.",
+  ),
+  sr: z.string().min(1).describe(
+    "The tag's Serbian spelling, as a short label -- capitalized the way a " +
+      "chip reads, not a sentence. Latin script only, never Cyrillic.",
+  ),
+  en: z.string().min(1).describe(
+    "The tag's English spelling, as a short label -- capitalized the way a " +
+      "chip reads, not a sentence.",
+  ),
+});
+
+export const ModelTagTranslations = z.object({
+  tags: z.array(ModelTagTranslation),
+}).meta({ title: "ModelTagTranslations" });
+
+export type ModelTagTranslationT = z.infer<typeof ModelTagTranslation>;
+export type ModelTagTranslationsT = z.infer<typeof ModelTagTranslations>;

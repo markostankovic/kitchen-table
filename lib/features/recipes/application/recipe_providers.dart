@@ -93,6 +93,12 @@ List<RecipeTag> recipeTags(Ref ref) => RecipeTag.vocabularyOf(
 /// `Supabase.instance.client`.
 @riverpod
 Future<Map<String, String>> tagLabels(Ref ref, String locale) async {
+  // A pair minted by `translate-tags` after the save that triggered it has
+  // no other way to reach the chips already on screen -- [RecipeList.build]
+  // watches the same provider, two providers up, for the same reason
+  // (Phase 6, part 1b).
+  ref.watch(recipesRevisionProvider);
+
   final String? householdId = await ref.watch(
     currentHouseholdIdProvider.future,
   );

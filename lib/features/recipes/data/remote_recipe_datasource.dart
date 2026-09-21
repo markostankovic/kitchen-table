@@ -197,6 +197,29 @@ ingredients(is_pantry_staple, category)''')
         }
       });
 
+  /// Mints the sr/en spelling pair for every untranslated tag in the
+  /// caller's household through the `translate-tags` Edge Function (Phase 6,
+  /// part 1b). No arguments -- the function resolves the household from the
+  /// caller's own membership, [translate]'s own shape for not letting a
+  /// client name a household it might not belong to.
+  ///
+  /// Returns the reply's `written` count -- how many `recipe_tag_names` rows
+  /// were actually inserted or revived, 0 when the vocabulary was already
+  /// fully paired.
+  Future<int> translateTags() => runGuarded(() async {
+        final FunctionResponse res = await _client.functions.invoke(
+          'translate-tags',
+        );
+
+        if (res.data is! Map<String, dynamic>) {
+          throw const UnknownFailure(
+              message: 'The server sent an unexpected reply.',
+              code: FailureCode.unexpectedServerReply);
+        }
+
+        return (res.data as Map<String, dynamic>)['written'] as int;
+      });
+
   /// Records a human review of [recipeId]'s translation into [locale]
   /// through `review_recipe_translation` (Phase 3, part 3) -- the sibling of
   /// `save_recipe_translation` that stamps provenance instead of overwriting
