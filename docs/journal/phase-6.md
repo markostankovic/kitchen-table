@@ -218,3 +218,72 @@ joins the other three open device-walk loops rather than closing any of
 them.
 
 ---
+
+### Part 3a — Rename the household, and who is allowed to
+
+**Status: complete** (`94448b2`). Decisions taken during it: D112.
+
+The household record has been create-only since Phase 1a -- named once at
+creation, never touched again. The household screen's name row now carries
+a trailing edit icon that opens a dialog with a single text field, wired to
+a new narrow `name`-only write; saving invalidates `currentHouseholdProvider`
+and re-awaits it so the new name shows without an app restart. No migration:
+`households_update`'s RLS already permitted any member to rename, not just
+the owner, so this slice only built the client affordance and the RLS
+assertion that stance had never actually had (D112).
+
+- **`RemoteHouseholdDataSource.rename`** is a bare
+  `.from('households').update({'name': name}).eq('id', id)`, mirroring
+  `setFavorite`/`setRating`'s precedent
+  (`remote_recipe_datasource.dart:416-430`) rather than the twelve-arg DTO
+  shape `docs/ROADMAP.md` part 3a had guessed at -- no `toWire()` was
+  needed, and `fetchMineRows`'s column list already included `name`, so the
+  confirming re-fetch needed no change either.
+- **`HouseholdRepository.rename`** trims the name and delegates, but
+  deliberately does *not* `_local.clearAll()` the way `create` and
+  `redeemInvite` do (D88) -- there is no household change to guard against
+  on a rename, so clearing would only leave a cold cache to rethrow offline
+  for no benefit. An offline confirming re-fetch after a successful rename
+  serves the old cached name until the next successful read.
+- **`HouseholdScreen._rename`** copies `create_household_screen.dart`'s
+  `_submit` shape nearly verbatim (trim, validate, invalidate-then-re-await)
+  and `recipe_detail_screen.dart`'s dialog shell, swapping the confirmation
+  `Text` for a `TextFormField`. A failure surfaces as a `SnackBar`, not the
+  screen's existing `_failure` field, which belongs to the invite button and
+  renders under it. The dialog's local `TextEditingController` is
+  deliberately never disposed, `recipe_picker_sheet.dart`'s own
+  `_promptForNote` precedent -- disposing it right after `Navigator.pop()`
+  races the dialog's exit animation and throws in widget tests.
+- **D112** (this slice): rename stays open to any member, on `create-invite`'s
+  own "owner and adult are both trusted adults" stance; owner-only is left
+  for 3c, where a destructive action makes the distinction matter. The
+  client writes only `name`, even though `households_update` is column-blind
+  and would also accept `deleted_at` or `created_by`.
+
+**How it was verified.** `dart analyze` -- clean. `flutter test` -- 564
+tests, including two new repository cases (`rename` delegates with a
+trimmed name; a `NetworkFailure` propagates rather than falling back to
+cache) and a new widget test file (`household_screen_test.dart`: the edit
+icon opens the dialog, Save writes the trimmed name and the row shows it, an
+empty field is refused and writes nothing, Cancel writes nothing). `make
+gen` regenerated `lib/core/l10n/generated/` for the three new ARB keys.
+`make test-sql` -- green against a fresh `supabase db reset` (no migration
+in this slice), including the new member-level rename assertions in
+`rls_household_test.sql` for both an `adult` and the `owner`. `make check`
+ran lint, lint-functions, test and test-functions clean before stopping at
+the same pre-existing, unrelated `seed-check` failure tracked since
+`c8be2bc` (`docs/STATE.md`).
+
+A release build against hosted was installed on the physical Galaxy device
+(by serial, alongside the Android emulator) and the manual walk was run and
+confirmed in the same sitting -- unlike the four device-walk loops still
+open from earlier Phase 6/5 parts, this one does not join them. Tapping the
+edit icon opened the dialog pre-filled with the current name; clearing the
+field and tapping Save kept the dialog open with "Enter a name." and wrote
+nothing; typing a name and tapping Cancel left the row unchanged; typing
+"Renamed Household" and tapping Save updated the row immediately (no
+restart) and showed the "Household renamed." SnackBar; force-stopping and
+relaunching the app confirmed the new name had actually persisted on
+hosted, not just echoed locally.
+
+---

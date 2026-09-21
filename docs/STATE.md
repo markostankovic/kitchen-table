@@ -1,33 +1,32 @@
 # State — 2026-09-21
 
 **Branch:** `main`
-**Last shipped:** Phase 6 part 2 (`d73e34f`) — tags from the search box.
-Typing in the recipe list's search field now finds recipes by tag as well as
-by title, case- and diacritic-insensitively, matching any known spelling of
-the tag — the spelling on the recipe, plus every locale's row in
-`recipe_tag_names`. `RecipeFilter.apply` is the predicate, extracted from
-`RecipeRepository._filtered` into a new pure-Dart file so it's unit-testable
-without a database; `watchList` resolves the spelling map once per call (only
-when `query` is non-empty) from the local tag-name cache and reuses it for
-both emissions, degrading silently to as-typed matching on a cold cache. Also
-folds in D102's open consequence: `_FilterRow` now renders whenever the
-household has any recipe at all, not only when the tag vocabulary is
-non-empty, so the Favorites chip is reachable from a household with zero
-tags. No migration, no Edge Function, no ARB change. Verified with `dart
-analyze` (clean) and `flutter test` (558 passed, 12 new) — `make check`
-stopped at the same pre-existing `seed-check` failure noted below, with
-nothing else in this slice touching SQL or Edge Functions. A release build
-was installed and launched on the physical Galaxy device, timed to land
-alongside 1b's already-minted `posno`/`lenten` pair — but the manual walk
-itself (typing `posno`/`lent` in each app language, a title-and-tag query
-together, a chip tap staying whole-token, Favorites on a tagless household)
-was handed to the user to run by hand and had not been confirmed back as of
-this entry.
+**Last shipped:** Phase 6 part 3a (`94448b2`) — rename the household, and who
+is allowed to. The household screen's name row now carries a trailing edit
+icon that opens a dialog with a single text field, wired to a new narrow
+`name`-only write (`RemoteHouseholdDataSource.rename`, mirroring
+`setFavorite`/`setRating`'s precedent). Saving invalidates
+`currentHouseholdProvider` and re-awaits it so the new name shows without an
+app restart. No migration: `households_update`'s RLS already let any member
+rename, not just the owner, so this slice built the client affordance and
+the member-level RLS assertion the suite had never actually had (D112).
+Verified with `dart analyze` (clean), `flutter test` (564 tests, including
+two new repository cases and a new widget test file), `make gen` (the three
+new ARB keys regenerated), and `make test-sql` (green against a fresh
+`supabase db reset`, including the new member-level rename assertions for
+both an `adult` and the `owner`). `make check` ran lint, lint-functions,
+test and test-functions clean before stopping at the same pre-existing
+`seed-check` failure noted below. A release build against hosted was
+installed on the physical Galaxy device and the manual walk — opening the
+dialog, an empty field being refused, Cancel writing nothing, a successful
+rename showing immediately with its SnackBar, and the new name surviving a
+force-stop and relaunch — was run and confirmed in the same sitting. This
+device-walk loop is closed; it does not join the five still open below.
 **In flight:** none
-**Next:** Five device-walk loops are open at once (below) — close one of
-them, or `/plan-slice phase6-part3a` (renaming the household, next up on the
-roadmap; unblocked, no dependency on the open loops).
-**Latest decision:** D111
+**Next:** `/plan-slice phase6-part3b` (members and invites — removing a
+member, leaving, and invite revocation; the next ordered sub-part of Phase 6
+part 3), or close one of the five device-walk loops still open below.
+**Latest decision:** D112
 
 **Phase 6 part 2's own device-walk loop is open.** The release build
 installed and launched cleanly on the Galaxy device, but nobody has
@@ -79,6 +78,15 @@ same way. Any future test touching the clipboard needs a mock
 `shopping_list_screen_test.dart`) — verify the clipboard's actual contents
 by testing the pure-Dart formatter directly instead of round-tripping
 through `Clipboard.getData`.
+
+**A dialog-local `TextEditingController` should never be manually
+disposed.** Confirmed again in Phase 6 part 3a: calling `controller.dispose()`
+right after `Navigator.pop()` closes a `showDialog` races the dialog's exit
+animation and throws "Tried to build dirty widget in the wrong build scope"
+under `pumpAndSettle` in widget tests. `recipe_picker_sheet.dart`'s own
+`_promptForNote` dialog already left its local controller undisposed for
+this reason; `household_screen.dart`'s rename dialog now follows the same
+precedent rather than disposing.
 
 **A debug-signed and a release-signed APK can never overwrite each other
 in place.** Confirmed again in Phase 5 part 6: switching from `make

@@ -442,24 +442,14 @@ that same precedent, because its four pieces carry very different risk.
 
 ### Part 3 — Editing the household
 
-**Not built.** Three ordered sub-parts. Today the household name is a
-read-only `ListTile` (`household_screen.dart:70-74`) and the screen's only two
-actions are create-invite and copy-code — `HouseholdRepository` has no
-mutation of a household beyond `create`.
+**3a complete, 3b/3c not built.** Three ordered sub-parts. Before 3a the
+household name was a read-only `ListTile` and the screen's only two actions
+were create-invite and copy-code — `HouseholdRepository` had no mutation of
+a household beyond `create`.
 
-**3a — Rename, and who is allowed to.** `households_update`'s RLS checks
-membership only, not role (`supabase/migrations/20260906204711_identity_households.sql:194-198`)
-— any `adult` can already rename or soft-delete the household today; the UI
-has simply never offered it. Decide whether that stays the rule or rename
-becomes owner-only, which costs a migration (an owner-checking policy or a
-SECURITY DEFINER RPC), not a client check — worth its own `Dxx`.
-`supabase/tests/rls_household_test.sql:171-177` only asserts a *non-member*
-can't rename; whatever is decided needs the member-level assertion that's
-missing. `currentHouseholdProvider` is `keepAlive` and never re-resolves
-within a process (an existing `docs/decisions/OPEN.md` entry) — invalidate it,
-or a rename won't show until restart. No `toWire()` exists on the household
-DTO yet, and `RemoteHouseholdDataSource.fetchMineRows`'s column list is
-explicit; both need touching for a partial update.
+**3a — Rename, and who is allowed to.**
+**Status: complete** (`94448b2`). Decisions taken during it: D112. See
+`docs/journal/phase-6.md`.
 
 **3b — Members and invites.** Removing a member needs a DELETE policy or an
 RPC — `household_members` is select-only RLS today. This is `docs/decisions/OPEN.md`'s
