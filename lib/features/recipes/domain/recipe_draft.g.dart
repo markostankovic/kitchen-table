@@ -33,6 +33,11 @@ _RecipeDraft _$RecipeDraftFromJson(Map<String, dynamic> json) => _RecipeDraft(
           ?.map((e) => RecipeDraftStep.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <RecipeDraftStep>[],
+  translatedLocales:
+      (json['translatedLocales'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
 );
 
 Map<String, dynamic> _$RecipeDraftToJson(_RecipeDraft instance) =>
@@ -49,6 +54,7 @@ Map<String, dynamic> _$RecipeDraftToJson(_RecipeDraft instance) =>
       'imagePath': instance.imagePath,
       'lines': instance.lines,
       'steps': instance.steps,
+      'translatedLocales': instance.translatedLocales,
     };
 
 const _$RecipeStatusEnumMap = {

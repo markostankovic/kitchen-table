@@ -33,6 +33,7 @@
   "translateAction": "Translate to {language}",
   "languageEnglish": "English",
   "languageSerbian": "Serbian",
+  "recipeTranslatedSnackbar": "Translated to {language}.",
 
   "reviewTranslationMenuItem": "Review translation",
   "reviewTranslationTitle": "Review translation",

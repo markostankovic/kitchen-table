@@ -113,6 +113,13 @@ void main() {
 
       expect(find.byIcon(Icons.drag_handle), findsNWidgets(3));
     });
+
+    testWidgets('shows the Translate action -- there is nothing to conflict '
+        'with yet', (WidgetTester tester) async {
+      await _pump(tester, draft: RecipeDraft.empty());
+
+      expect(find.byIcon(Icons.translate), findsOneWidget);
+    });
   });
 
   group('an existing recipe', () {
@@ -147,6 +154,47 @@ void main() {
       expect(find.text('200 g šargarepe'), findsNothing);
       expect(find.text('so po ukusu'), findsOneWidget);
       expect(find.text('Zagrej rernu.'), findsOneWidget);
+    });
+
+    testWidgets('an sr draft with no translations shows Translate to '
+        'English', (WidgetTester tester) async {
+      await _pump(
+        tester,
+        recipeId: 'r1',
+        draft: RecipeDraft.fromDetail(_detail),
+      );
+
+      expect(find.byIcon(Icons.translate), findsOneWidget);
+      expect(find.byTooltip('Translate to English'), findsOneWidget);
+    });
+
+    testWidgets('an sr draft already translated into English does not show '
+        'the action -- the D85 guard', (WidgetTester tester) async {
+      await _pump(
+        tester,
+        recipeId: 'r1',
+        draft: RecipeDraft.fromDetail(_detail).copyWith(
+          translatedLocales: <String>['en'],
+        ),
+      );
+
+      expect(find.byIcon(Icons.translate), findsNothing);
+    });
+
+    testWidgets('the Translate action does not fire on an invalid form',
+        (WidgetTester tester) async {
+      await _pump(
+        tester,
+        recipeId: 'r1',
+        draft: RecipeDraft.fromDetail(_detail).copyWith(title: ''),
+      );
+
+      // The validator stops it before the repository is ever reached; had it
+      // not, this test would have thrown on an uninitialised client.
+      await tester.tap(find.byIcon(Icons.translate));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Enter a title.'), findsOneWidget);
     });
   });
 

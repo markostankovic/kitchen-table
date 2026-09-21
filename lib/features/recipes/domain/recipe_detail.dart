@@ -47,9 +47,14 @@ abstract class RecipeDetail with _$RecipeDetail {
 
   /// True when [readingLocale] differs from the recipe's own
   /// [Recipe.originalLocale] and no translation has been made yet -- the
-  /// enabled condition for the detail screen's *Translate* action.
-  bool get canTranslate =>
-      readingLocale != recipe.originalLocale && translation == null;
+  /// enabled condition for the detail screen's *Translate* action. Delegates
+  /// to [canTranslateInto], the one definition D85's "the UI is the only
+  /// guard" depends on -- [RecipeDraft.canTranslate] is its other caller.
+  bool get canTranslate => canTranslateInto(
+        originalLocale: recipe.originalLocale,
+        target: readingLocale,
+        existingLocales: translations.map((RecipeTranslation t) => t.locale),
+      );
 
   /// True when a translation exists for [readingLocale] -- the enabled
   /// condition for the detail screen's *Review translation* action (Phase 3,

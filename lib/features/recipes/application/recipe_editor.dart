@@ -235,6 +235,42 @@ class RecipeEditor extends _$RecipeEditor {
     return recipeId;
   }
 
+  /// Saves the draft, then translates it into
+  /// [RecipeDraft.translationTargetLocale] and returns that locale.
+  ///
+  /// One tap does both: `save()` first, because a brand-new recipe has no id
+  /// to translate until it is saved, and D12 rules out drafting an unsaved
+  /// translation anyway. No dirty-tracking is added to skip the save when the
+  /// draft is already clean -- `save()` is what mints a new recipe's id, so
+  /// there is no cheaper path that still works for that case. A translate
+  /// that fails after `save()` has already succeeded still leaves the recipe
+  /// written (D37's same partial-progress stance) -- the cook's work is safe
+  /// and the button can simply be pressed again.
+  ///
+  /// [image] is forwarded to [save] exactly as `_submit()` passes it, so
+  /// translating from the editor does not silently drop a photo just picked
+  /// (D48).
+  Future<String> saveAndTranslate({RecipeImageUpload? image}) async {
+    final RecipeDraft? current = state.value;
+    if (current == null) {
+      throw StateError('saveAndTranslate() before the draft finished loading');
+    }
+
+    final String target = current.translationTargetLocale;
+    final String recipeId = await save(image: image);
+
+    final RecipeRepository repository = ref.read(recipeRepositoryProvider);
+    await repository.translate(recipeId, target);
+
+    final RecipeDraft? saved = state.value;
+    if (saved != null) {
+      state = AsyncData<RecipeDraft>(saved.withTranslatedLocale(target));
+    }
+    ref.read(recipesRevisionProvider.notifier).bump();
+    ref.invalidate(recipeDetailProvider);
+    return target;
+  }
+
   /// Applies a pure change to a loaded draft. A change arriving while the
   /// draft is still loading is dropped rather than queued -- the screen shows
   /// a spinner until it lands, so there is nothing on screen to have produced

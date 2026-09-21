@@ -34,3 +34,16 @@ abstract class RecipeTranslation with _$RecipeTranslation {
   factory RecipeTranslation.fromJson(Map<String, dynamic> json) =>
       _$RecipeTranslationFromJson(json);
 }
+
+/// 'sr' and 'en' are the only two (CLAUDE.md), so the other one is a flip.
+String otherLocale(String locale) => locale == 'sr' ? 'en' : 'sr';
+
+/// The one definition of "may this recipe be translated into [target]".
+/// D85: once ANY translation exists for a locale -- reviewed or not -- it is
+/// never offered again, and this is the only thing enforcing that.
+bool canTranslateInto({
+  required String originalLocale,
+  required String target,
+  required Iterable<String> existingLocales,
+}) =>
+    target != originalLocale && !existingLocales.contains(target);

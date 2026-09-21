@@ -6,6 +6,7 @@ import 'recipe.dart';
 import 'recipe_detail.dart';
 import 'recipe_ingredient.dart';
 import 'recipe_step.dart';
+import 'recipe_translation.dart';
 
 part 'recipe_draft.freezed.dart';
 part 'recipe_draft.g.dart';
@@ -53,6 +54,12 @@ abstract class RecipeDraft with _$RecipeDraft {
     String? imagePath,
     @Default(<RecipeDraftLine>[]) List<RecipeDraftLine> lines,
     @Default(<RecipeDraftStep>[]) List<RecipeDraftStep> steps,
+
+    /// Locales that already have a `recipe_translations` row, so the editor's
+    /// Translate action can enforce D85 without a second fetch. Not editable
+    /// content -- like [source], it is context the editor carries but does
+    /// not own. Empty for a recipe that has never been saved.
+    @Default(<String>[]) List<String> translatedLocales,
   }) = _RecipeDraft;
 
   factory RecipeDraft.fromJson(Map<String, dynamic> json) =>
@@ -79,6 +86,9 @@ abstract class RecipeDraft with _$RecipeDraft {
       status: recipe.status,
       tags: recipe.tags,
       imagePath: recipe.imagePath,
+      translatedLocales: detail.translations
+          .map((RecipeTranslation t) => t.locale)
+          .toList(growable: false),
       lines: <RecipeDraftLine>[
         for (final (int index, RecipeIngredient line)
             in detail.ingredients.indexed)
@@ -102,6 +112,32 @@ abstract class RecipeDraft with _$RecipeDraft {
   /// requires a non-blank one, and a recipe with a title and no lines is a
   /// legitimate half-entered recipe.
   bool get hasTitle => title.trim().isNotEmpty;
+
+  /// The locale the editor's Translate action targets: the other language
+  /// relative to [originalLocale], the draft's own writing language --
+  /// *not* the reader's ambient locale. `originalLocale` is a
+  /// `SegmentedButton` the cook can flip mid-edit, and the target follows it,
+  /// unlike [RecipeDetail]'s `readingLocale` (D86's narrow read-side
+  /// exception for display names).
+  String get translationTargetLocale => otherLocale(originalLocale);
+
+  /// The enabled condition for the editor's Translate action -- mirrors
+  /// [RecipeDetail.canTranslate] one level out, both calling
+  /// [canTranslateInto] so the two screens cannot disagree about D85.
+  bool get canTranslate => canTranslateInto(
+        originalLocale: originalLocale,
+        target: translationTargetLocale,
+        existingLocales: translatedLocales,
+      );
+
+  /// A copy with [locale] recorded as translated, so the Translate action
+  /// disappears the moment a translation lands without a second fetch.
+  /// Idempotent: adding an already-present locale changes nothing.
+  RecipeDraft withTranslatedLocale(String locale) =>
+      translatedLocales.contains(locale)
+          ? this
+          : copyWith(
+              translatedLocales: <String>[...translatedLocales, locale]);
 
   /// The lines as they will be written.
   ///

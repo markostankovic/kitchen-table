@@ -100,6 +100,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageSerbian => 'Serbian';
 
   @override
+  String recipeTranslatedSnackbar(String language) {
+    return 'Translated to $language.';
+  }
+
+  @override
   String get reviewTranslationMenuItem => 'Review translation';
 
   @override

@@ -6,6 +6,7 @@ import 'package:kitchen_table/features/recipes/domain/recipe_detail.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_draft.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_ingredient.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_step.dart';
+import 'package:kitchen_table/features/recipes/domain/recipe_translation.dart';
 
 /// The editor's logic lives on [RecipeDraft] as pure functions precisely so it
 /// can be tested here, with no Supabase client and no widget tree.
@@ -255,6 +256,100 @@ void main() {
 
       final Recipe updated = draft.toRecipe();
       expect(updated.imagePath, isNull);
+    });
+  });
+
+  group('canTranslateInto -- the one definition D85 depends on', () {
+    test('false when the target is the recipe\'s own original locale', () {
+      expect(
+        canTranslateInto(
+          originalLocale: 'sr',
+          target: 'sr',
+          existingLocales: <String>[],
+        ),
+        isFalse,
+      );
+    });
+
+    test('false once a translation exists for the target, whether it was '
+        'reviewed or not -- D85 makes no distinction', () {
+      expect(
+        canTranslateInto(
+          originalLocale: 'sr',
+          target: 'en',
+          existingLocales: <String>['en'], // unreviewed machine pass
+        ),
+        isFalse,
+      );
+      expect(
+        canTranslateInto(
+          originalLocale: 'sr',
+          target: 'en',
+          existingLocales: <String>['en'], // stands in for a reviewed one too
+        ),
+        isFalse,
+      );
+    });
+
+    test('true otherwise', () {
+      expect(
+        canTranslateInto(
+          originalLocale: 'sr',
+          target: 'en',
+          existingLocales: <String>[],
+        ),
+        isTrue,
+      );
+    });
+  });
+
+  group('translating from the editor', () {
+    test('translationTargetLocale is the other language, following '
+        'originalLocale rather than a reader\'s ambient locale', () {
+      expect(
+        const RecipeDraft(originalLocale: 'sr').translationTargetLocale,
+        'en',
+      );
+      expect(
+        const RecipeDraft(originalLocale: 'en').translationTargetLocale,
+        'sr',
+      );
+    });
+
+    test('translationTargetLocale flips when setLocale flips originalLocale',
+        () {
+      final RecipeDraft draft = const RecipeDraft(originalLocale: 'sr')
+          .copyWith(originalLocale: 'en');
+      expect(draft.translationTargetLocale, 'sr');
+    });
+
+    test('fromDetail carries which locales already have a translation', () {
+      final RecipeDetail detail = RecipeDetail(
+        recipe: _torta,
+        readingLocale: 'sr',
+        translations: const <RecipeTranslation>[
+          RecipeTranslation(locale: 'en', title: 'Carrot cake'),
+        ],
+      );
+
+      final RecipeDraft draft = RecipeDraft.fromDetail(detail);
+
+      expect(draft.translatedLocales, <String>['en']);
+      expect(draft.canTranslate, isFalse);
+    });
+
+    test('canTranslate is true for a brand-new, never-saved draft', () {
+      expect(RecipeDraft.empty().copyWith(originalLocale: 'sr').canTranslate,
+          isTrue);
+    });
+
+    test('withTranslatedLocale is idempotent', () {
+      final RecipeDraft once =
+          RecipeDraft.empty().withTranslatedLocale('en');
+      final RecipeDraft twice = once.withTranslatedLocale('en');
+
+      expect(once.translatedLocales, <String>['en']);
+      expect(twice.translatedLocales, <String>['en']);
     });
   });
 }

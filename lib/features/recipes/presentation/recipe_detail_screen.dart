@@ -6,6 +6,7 @@ import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/app_locale.dart';
 import '../../../core/l10n/date_labels.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
+import '../../../core/l10n/language_labels.dart';
 import '../../../core/l10n/meal_slot_labels.dart';
 import '../../../core/meal_plan/meal_plan_writer.dart';
 import '../../../core/meal_plan/widgets/meal_slot_picker_sheet.dart';
@@ -117,10 +118,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               if (detail.value?.canTranslate ?? false)
                 PopupMenuItem<_DetailAction>(
                   value: _DetailAction.translate,
-                  child: Text(l10n.translateAction(_targetLanguageName(
-                    l10n,
-                    detail.value!.recipe.originalLocale,
-                  ))),
+                  child: Text(l10n.translateAction(
+                    languageName(l10n, detail.value!.readingLocale),
+                  )),
                 ),
               if (detail.value?.canReview ?? false)
                 PopupMenuItem<_DetailAction>(
@@ -159,12 +159,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       ),
     );
   }
-
-  /// The other locale's own name, in the reading language -- distinct from
-  /// the Settings toggle's untranslated *Srpski*/*English* (D77): this is
-  /// prose ("Translate to Serbian"), not the language's own label.
-  String _targetLanguageName(AppLocalizations l10n, String originalLocale) =>
-      originalLocale == 'sr' ? l10n.languageEnglish : l10n.languageSerbian;
 
   Future<void> _translate(RecipeDetail detail, AppLocalizations l10n) async {
     setState(() => _translating = true);

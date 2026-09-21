@@ -272,6 +272,12 @@ abstract class AppLocalizations {
   /// **'srpski'**
   String get languageSerbian;
 
+  /// Recipe edit screen, the snackbar shown after the Translate action succeeds -- {language} is one of languageEnglish/languageSerbian.
+  ///
+  /// In sr, this message translates to:
+  /// **'Prevedeno na {language}.'**
+  String recipeTranslatedSnackbar(String language);
+
   /// Recipe detail screen, the overflow menu's item that opens the translation review screen (Phase 3, part 3). Shown exactly when translateAction is not -- RecipeDetail.canReview and .canTranslate are mutually exclusive.
   ///
   /// In sr, this message translates to:

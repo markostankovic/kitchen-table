@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
+import '../../../core/l10n/language_labels.dart';
 import '../../../core/router/routes.dart';
 import '../application/recipe_editor.dart';
 import '../domain/recipe.dart';
@@ -45,6 +46,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
   bool _saving = false;
+  bool _translating = false;
 
   /// Either an already-localized string -- image_picker's own platform
   /// exception, outside the [FailureCode] mechanism entirely -- or an
@@ -133,6 +135,34 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
     }
   }
 
+  /// Saves the draft and translates it in one tap -- see
+  /// `RecipeEditor.saveAndTranslate`'s own doc comment for why the save
+  /// happens first rather than the action being disabled while dirty (D106).
+  /// Errors land on the same `_error` surface `_submit()` uses; there is no
+  /// second error UI for a failure that happened one step later.
+  Future<void> _translate(AppLocalizations l10n) async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() {
+      _translating = true;
+      _error = null;
+    });
+
+    try {
+      final String target =
+          await _editor.saveAndTranslate(image: _pickedImage);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.recipeTranslatedSnackbar(languageName(l10n, target))),
+      ));
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e);
+    } finally {
+      if (mounted) setState(() => _translating = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -142,6 +172,17 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isNew ? l10n.newRecipeTitle : l10n.editRecipeTitle),
+        actions: <Widget>[
+          if (draft.value?.canTranslate ?? false)
+            IconButton(
+              icon: const Icon(Icons.translate),
+              tooltip: l10n.translateAction(
+                languageName(l10n, draft.value!.translationTargetLocale),
+              ),
+              onPressed:
+                  _saving || _translating ? null : () => _translate(l10n),
+            ),
+        ],
       ),
       body: draft.when(
         loading: () => const Center(child: CircularProgressIndicator()),

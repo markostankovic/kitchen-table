@@ -125,6 +125,15 @@
   "@languageSerbian": {
     "description": "A target language's own name, used inside translateAction -- not the Settings toggle's untranslated 'Srpski' (D77)."
   },
+  "recipeTranslatedSnackbar": "Prevedeno na {language}.",
+  "@recipeTranslatedSnackbar": {
+    "description": "Recipe edit screen, the snackbar shown after the Translate action succeeds -- {language} is one of languageEnglish/languageSerbian.",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
 
   "reviewTranslationMenuItem": "Pregledaj prevod",
   "@reviewTranslationMenuItem": {
