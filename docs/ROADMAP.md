@@ -442,7 +442,7 @@ that same precedent, because its four pieces carry very different risk.
 
 ### Part 3 — Editing the household
 
-**3a complete, 3b/3c not built.** Three ordered sub-parts. Before 3a the
+**3a and 3b complete, 3c not built.** Three ordered sub-parts. Before 3a the
 household name was a read-only `ListTile` and the screen's only two actions
 were create-invite and copy-code — `HouseholdRepository` had no mutation of
 a household beyond `create`.
@@ -451,20 +451,9 @@ a household beyond `create`.
 **Status: complete** (`94448b2`). Decisions taken during it: D112. See
 `docs/journal/phase-6.md`.
 
-**3b — Members and invites.** Removing a member needs a DELETE policy or an
-RPC — `household_members` is select-only RLS today. This is `docs/decisions/OPEN.md`'s
-*auditable membership revocation*, explicitly deferred by D24 "until members
-can be removed." Leaving is the same write with `auth.uid()` as its subject,
-plus a question the schema can't answer on its own: what happens when the last
-member leaves, or the `owner` leaves with nobody to promote. A departing
-member likely needs no new routing — the existing redirect
-(`app_router.dart:50-60`) already sends a member with no household to
-`CreateHouseholdRoute`. Invite revocation is `OPEN.md`'s other named
-follow-up (D25): a `revoked_at` column and a rebuilt partial index
-(`household_invites_code_unused_idx`, which can't include `expires_at >
-now()` since index predicates must be IMMUTABLE), in one migration.
-`create-invite` deliberately has no role check today ("owner and adult are
-both trusted adults") — decide whether revocation inherits that stance.
+**3b — Members and invites.**
+**Status: complete** (`1fcf196`). Decisions taken during it: D113, D114,
+D115. See `docs/journal/phase-6.md`.
 
 **3c — Delete, and what a deleted household means.** Rule 4 gives the
 mechanic (`deleted_at`, no hard delete), but soft delete on `households`
@@ -476,9 +465,11 @@ and unreachable, and the storage objects under it unreachable even to clean
 up once the membership row is gone. This part has to answer that, not just
 wire up a button — either cascade the tombstone to the household's own rows,
 or drop "delete" in favour of "everybody leaves," letting the last member out
-tombstone it. Needs a confirm step and the first destructive-action copy in
-either ARB file. Authorization again: owner-only is the likely answer even if
-rename stays open to any adult.
+tombstone it. Needs a confirm step — 3b already shipped the first
+destructive-action copy (Remove/Leave's confirm `AlertDialog`s) and the
+"gate the affordance, don't localize the RPC refusal" stance (D115); 3c
+inherits both rather than deciding them fresh. Authorization again:
+owner-only is the likely answer even if rename stays open to any adult.
 
 **Done-when (Part 3 overall):** a member can rename their household and see
 the new name without restarting; an invite code can be revoked and a revoked

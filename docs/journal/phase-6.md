@@ -287,3 +287,108 @@ relaunching the app confirmed the new name had actually persisted on
 hosted, not just echoed locally.
 
 ---
+
+### Part 3b — Members and invites
+
+**Status: complete** (`1fcf196`). Decisions taken during it: D113, D114,
+D115.
+
+`household_members` and `household_invites` were SELECT-only RLS with no
+write policy of any kind (D26) — every row on the household screen past the
+copy button was read-only. This slice adds the three writes a household
+actually needs: an owner removing another member, any member leaving a
+household they don't own, and any member revoking a live invite code. All
+three go through new `SECURITY DEFINER` RPCs mirroring `create_household()`;
+neither table gained a write policy.
+
+- **Migration 22** (`20260921150000_member_removal_and_invite_revocation.sql`)
+  adds `remove_household_member(target_user)`, `leave_household()`, and
+  `revoke_invite(invite_id)`, all resolving "the caller's household" with
+  the same `order by created_at limit 1` tiebreak
+  `resolveHousehold()` in `_shared/auth.ts` uses, cross-referenced in both
+  places. None carries a `grant execute` — like `create_household()`, each
+  relies on the default PUBLIC grant and guards on `auth.uid() is null`
+  instead. `household_invites` gains `revoked_at`/`revoked_by`
+  (D114), mirroring `used_at`/`used_by`'s paired-stamp shape exactly, and
+  the partial unique index is rebuilt to exclude both dead-row kinds.
+- **D113** (this slice): removal is owner-only; leaving is guarded on role
+  alone, since the owner can neither be removed nor leave, so the owner row
+  always survives and "last member" collapses into "the owner." Closes the
+  roadmap's "DELETE policy or an RPC" fork in favour of the RPC. Auditable
+  membership revocation (D24's deferred question) stays deferred — removal
+  is still a hard delete with no trace; `docs/decisions/OPEN.md` now names
+  the likely answer (a log table) for whoever picks it up.
+- **D114** (this slice): invite revocation closes D25's named follow-up.
+  Revoking releases the code for reuse, on `used_at`'s own precedent, which
+  reopens D25's trap deliberately — a revoked row keeps its code, so the
+  same six digits can be re-minted for a *different* household while the
+  old row still carries it. `redeem-invite`'s peek and claim both needed a
+  `revoked_at is null` clause the index rebuild forces; without it a
+  revoked row and a live re-mint of the same code both match the peek and
+  `.maybeSingle()` throws. `invite_revoked` is a genuinely reachable
+  failure (a code can be revoked while someone is reading it), so it's the
+  one new refusal in this slice that got a real `FailureCode` and both ARB
+  sentences.
+- **D115** (this slice): every other RPC refusal (not-owner, can't-remove-
+  self, owner-can't-leave, not-a-member, wrong-household) raises plain
+  unlocalized prose on purpose. The household screen gates every affordance
+  that could trigger one — an owner never sees Leave on their own row, a
+  non-owner never sees Remove on anyone else's — so the RPC guards are a
+  backstop for a stale list or a second device, not a reachable path. Named
+  as its own decision so 3c doesn't have to re-derive the same stance for
+  delete.
+- **`HouseholdScreen`** gives each member row a role-gated trailing widget
+  (own row + adult → leave; own row + owner → nothing, the affordance is
+  absent rather than disabled; another member's row + owner → remove;
+  otherwise nothing) and each invite row a `Row` of Copy + Revoke. Remove
+  and Leave both get a confirm `AlertDialog` first — the roadmap had
+  assigned "the first destructive-action copy" to 3c, but it landed here
+  instead, and 3c inherits the pattern. Revoke gets no confirm: cheap, and
+  undone by minting another code. `_leave` invalidates
+  `currentHouseholdProvider` and re-awaits it; the existing router redirect
+  (unchanged) sends the now-memberless caller to `CreateHouseholdRoute` with
+  no new routing.
+- **`HouseholdRepository.leaveHousehold`** calls `_local.clearAll()` after
+  the remote call, on `create`/`redeemInvite`'s own D88 precedent — this is
+  precisely the case that precedent describes, guarding against a network
+  blip on the confirming re-fetch resurrecting the household just left.
+  `removeMember`/`revokeInvite` are thin pass-throughs with nothing to
+  clear.
+
+**How it was verified.** `dart analyze` — clean. `flutter test` — all
+suites green, including two new repository cases
+(`household_repository_offline_test.dart`: a successful `leaveHousehold`
+clears the cache the way `create`/`redeemInvite` do) and new widget
+coverage in `household_screen_test.dart` (owner sees Remove and no Leave;
+an adult sees Leave and no Remove; confirming Remove/Leave calls the
+repository and shows its SnackBar; cancelling either calls nothing; Revoke
+fires immediately with no dialog). `test/core/supabase/supabase_failure_test.dart`
+passes with `invite_revoked` mapped. `make gen` regenerated
+`lib/core/l10n/generated/` for the new ARB keys and the `HouseholdInvite`
+freezed model. `make test-sql` — green against a fresh `supabase db reset`,
+with new assertions in `rls_household_test.sql` (an adult cannot remove
+anyone; the owner can remove an adult; the owner cannot remove themselves;
+the owner cannot leave; an adult can leave; a non-member can call neither)
+and `rls_invites_test.sql` (a non-member cannot revoke; a member of a
+*different* household cannot revoke this one's code; a member of the
+invite's own household can; a revoked code no longer matches
+`redeem-invite`'s claim `UPDATE`; the same code can be re-minted for a
+different household once revoked — D25's trap, now intended behaviour,
+asserted directly). `make check` ran lint, lint-functions, test and
+test-functions clean before stopping at the same pre-existing, unrelated
+`seed-check` failure tracked since `c8be2bc` (`docs/STATE.md`).
+
+Migration 22 was pushed to hosted and `redeem-invite` redeployed in this
+same slice, on `docs/STATE.md`'s own standing note about migration 21
+sitting unpushed for a full slice. A release build against hosted was
+installed and launched on the physical Galaxy device (by serial) and
+verified live in the same sitting: the owner's own row showed no trailing
+button, the invite row showed both Copy and the new Revoke button, and
+tapping Revoke removed the code from the list immediately (no confirm
+dialog, as designed) with the "Code revoked." SnackBar, round-tripping
+through the real RPC and the rebuilt index on hosted Postgres. Remove and
+Leave were not exercised live — the household being tested against had only
+one member (the owner), so neither affordance had a second row to act on;
+that needs a second account joined through an invite code first.
+
+---

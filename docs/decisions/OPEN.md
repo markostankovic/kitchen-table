@@ -75,10 +75,15 @@ part of the numbered decision sequence.
   from the app, `grant execute on merge_ingredients to authenticated` (D30
   revokes it from all three client roles). Both are deliberate omissions, not
   oversights.
-- **Auditable membership revocation** — see D24. Only matters once members can
-  be removed.
-- **Invite revocation** — see D25. Needs a `revoked_at` column and a rebuilt
-  partial index, in one migration. Not in Phase 1a.
+- **Auditable membership revocation** — see D24. Members can now be removed
+  (D113, Phase 6 part 3b), and it stays deferred: `remove_household_member()`
+  is still a hard delete with no trace. Likely answer is a
+  `household_member_removals` log table written by that same RPC, not a
+  schema change to `household_members` itself. Revisit if anyone actually
+  asks "who removed whom."
+- **Invite revocation** — closed by D114 (Phase 6 part 3b): `revoked_at`/
+  `revoked_by`, the rebuilt partial index, and the `redeem-invite` guards it
+  forced.
 - **Invite redemption rate limiting** — see D26. Deferred deliberately, with
   the upgrade path named there.
 - **Thumbnails on the week grid's own tiles, and copying or clearing a whole

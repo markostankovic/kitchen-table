@@ -1,32 +1,54 @@
 # State — 2026-09-21
 
 **Branch:** `main`
-**Last shipped:** Phase 6 part 3a (`94448b2`) — rename the household, and who
-is allowed to. The household screen's name row now carries a trailing edit
-icon that opens a dialog with a single text field, wired to a new narrow
-`name`-only write (`RemoteHouseholdDataSource.rename`, mirroring
-`setFavorite`/`setRating`'s precedent). Saving invalidates
-`currentHouseholdProvider` and re-awaits it so the new name shows without an
-app restart. No migration: `households_update`'s RLS already let any member
-rename, not just the owner, so this slice built the client affordance and
-the member-level RLS assertion the suite had never actually had (D112).
-Verified with `dart analyze` (clean), `flutter test` (564 tests, including
-two new repository cases and a new widget test file), `make gen` (the three
-new ARB keys regenerated), and `make test-sql` (green against a fresh
-`supabase db reset`, including the new member-level rename assertions for
-both an `adult` and the `owner`). `make check` ran lint, lint-functions,
-test and test-functions clean before stopping at the same pre-existing
-`seed-check` failure noted below. A release build against hosted was
-installed on the physical Galaxy device and the manual walk — opening the
-dialog, an empty field being refused, Cancel writing nothing, a successful
-rename showing immediately with its SnackBar, and the new name surviving a
-force-stop and relaunch — was run and confirmed in the same sitting. This
-device-walk loop is closed; it does not join the five still open below.
+**Last shipped:** Phase 6 part 3b (`1fcf196`) — members and invites. An
+owner can now remove any other member; any member can leave a household
+they do not own; any member can revoke a live invite code. All three go
+through new `SECURITY DEFINER` RPCs (`remove_household_member`,
+`leave_household`, `revoke_invite`) mirroring `create_household()` — neither
+`household_members` nor `household_invites` gained a write policy.
+`household_invites` gained `revoked_at`/`revoked_by` with the partial
+unique index rebuilt around them, releasing a revoked code for reuse the
+same way a used one already was; `redeem-invite`'s peek and claim both
+gained a `revoked_at` guard, and the genuinely reachable `invite_revoked`
+slug got the full `FailureCode`/ARB treatment while every other RPC
+refusal stays unlocalized on purpose, gated out of reach by the UI (D115).
+The household screen's member and invite rows gained role-gated trailing
+affordances with confirm dialogs for Remove/Leave and none for Revoke.
+Verified with `dart analyze` (clean), `flutter test` (all suites green,
+including new repository and widget-test coverage), `make gen`, and
+`make test-sql` (green against a fresh `supabase db reset`, including new
+assertions for every authorization edge in both `rls_household_test.sql`
+and `rls_invites_test.sql`, and the D25 re-mint-after-revoke trap asserted
+directly). `make check` ran lint, lint-functions, test and test-functions
+clean before stopping at the same pre-existing `seed-check` failure noted
+below. Migration 22 was pushed to hosted and `redeem-invite` redeployed in
+this same slice. A release build against hosted was installed and launched
+on the physical Galaxy device and Revoke was confirmed live — the code
+vanished from the list immediately with no confirm dialog, and the "Code
+revoked." SnackBar appeared, round-tripping through the real RPC and
+rebuilt index on hosted Postgres. Remove and Leave were **not** exercised
+live: the household under test had only one member (the owner), so neither
+affordance had a second row to act on. This device-walk loop is only
+partially closed — it joins the others below rather than staying fully
+open, since Revoke is confirmed but Remove/Leave need a second account
+joined through an invite code first.
 **In flight:** none
-**Next:** `/plan-slice phase6-part3b` (members and invites — removing a
-member, leaving, and invite revocation; the next ordered sub-part of Phase 6
-part 3), or close one of the five device-walk loops still open below.
-**Latest decision:** D112
+**Next:** `/plan-slice phase6-part3c` (delete, and what a deleted household
+means — the last ordered sub-part of Phase 6 part 3; already knows to
+inherit 3b's confirm-dialog and gate-the-affordance patterns, D115), or
+close one of the device-walk loops still open below.
+**Latest decision:** D115
+
+**Phase 6 part 3b's own Remove/Leave paths are unconfirmed on a real
+device.** Revoke was confirmed live (above), but Remove and Leave need a
+second account in the same household to have a row to act on — join a
+second Google account through a minted invite code first, then confirm:
+the owner sees Remove on the other member's row and no Leave on their own;
+the adult sees Leave on their own row and no Remove on the owner's;
+confirming Remove/Leave actually writes through and the row disappears;
+confirming Leave lands the now-memberless account on
+`CreateHouseholdRoute` with no restart.
 
 **Phase 6 part 2's own device-walk loop is open.** The release build
 installed and launched cleanly on the Galaxy device, but nobody has
@@ -63,9 +85,9 @@ shows Review instead of Translate afterward on a real device.
 **Phase 5 part 5's device-walk loop is also still open.** The shopping
 list's clipboard-copy action installed cleanly on the same device, but
 copying an actual generated list, seeing the SnackBar, and pasting the
-text elsewhere have not been confirmed back either. Five device-walk
-loops are now open at once — a future session should close all of them,
-not just the newest one.
+text elsewhere have not been confirmed back either. Six device-walk
+loops (counting 3b's partial one above) are now open at once — a future
+session should close all of them, not just the newest one.
 
 **This Flutter SDK's `flutter_test` does not stub the clipboard channel.**
 Discovered in Phase 5 part 5: an unmocked call to `Clipboard.setData` (or
@@ -86,7 +108,8 @@ animation and throws "Tried to build dirty widget in the wrong build scope"
 under `pumpAndSettle` in widget tests. `recipe_picker_sheet.dart`'s own
 `_promptForNote` dialog already left its local controller undisposed for
 this reason; `household_screen.dart`'s rename dialog now follows the same
-precedent rather than disposing.
+precedent rather than disposing. Phase 6 part 3b's Remove/Leave confirm
+dialogs carry no controller at all, so the question never came up again.
 
 **A debug-signed and a release-signed APK can never overwrite each other
 in place.** Confirmed again in Phase 5 part 6: switching from `make
@@ -107,9 +130,20 @@ pošlo naopako." — no Dart stack trace reaches logcat in a release build, so
 this took a direct `information_schema.columns` query against hosted to
 diagnose. Fixed with `supabase db push`. Phase 6 part 1a's own migration
 (21) sat unpushed for a full slice before part 1b's device walk finally
-pushed it — worth pushing a migration to hosted in the SAME slice that
-writes it, next time, rather than letting it wait for whichever later slice
-happens to need a device walk first.
+pushed it. Phase 6 part 3b's migration (22) was pushed in the same slice
+that wrote it, closing the loop that note asked for.
+
+**Driving a real device blind by pixel coordinates is unreliable —
+`uiautomator dump` gives exact bounds instead.** Found in Phase 6 part 3b's
+own device walk: a screenshot tool's displayed-vs-actual resolution scaling
+note, applied by hand across two separate `adb shell input tap` calls, put
+one tap on the wrong element (opened a "+" FAB menu instead of a bottom-nav
+tab) and a second on a menu item left open underneath a mis-tap, which
+launched the phone's native Camera app. `adb shell uiautomator dump
+/sdcard/ui.xml` followed by `adb pull` and grepping `bounds="..."` off
+`content-desc` attributes gives exact tap targets for any adb-driven
+verification going forward — Flutter's semantics tree exposes labeled,
+bounded elements this way even though there's no native View hierarchy.
 
 **Local sign-in requires a device that can hold a Google account**
 (Phase 4 part 3's finding). The Android emulator cannot add one at all —
