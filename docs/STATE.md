@@ -1,36 +1,47 @@
-# State — 2026-09-20
+# State — 2026-09-21
 
 **Branch:** `main`
-**Last shipped:** Phase 5 part 4 (`0e24704`) — the meal plan's Today and
-This week views. `MealPlanScreen` gains a `SegmentedButton` (Today / This
-week) under the AppBar, Today being the default. Today pins
-`visibleWeekProvider` to the current week and shows one `_DaySection` for
-`DateTime.now()`, hiding the week bar's chevrons and the AppBar's
-jump-to-today action — neither means anything pinned to one day. This week
-is the pre-existing screen, untouched. `isSameDate` in `plan_week.dart` is
-now the one definition of same-calendar-day, replacing the inline
-comparisons in both `MealPlanWeek.entriesFor` and `_DaySection._isToday`.
-No schema change, no migration, no new package. Verified with the full
-automated suite (`dart analyze`, `flutter test`, `make lint`,
-`test-functions`, `test-sql`) and, unlike Parts 2 and 3, walked end to end
-on the physical Galaxy S25 against hosted: Today opening on the real date,
-adding a recipe to Today, switching to This week, paging forward and
-switching back to Today to confirm the pin invariant (D104) — all
-confirmed on-device, not just in widget tests. Also closed both loops
-Parts 2 and 3 had left open (see below).
+**Last shipped:** Phase 5 part 5 (`42dbe70`) — export the shopping list to
+the clipboard. `ShoppingListScreen`'s AppBar gains a copy action beside
+regenerate: `Clipboard.setData` with a plain-text to-buy list, confirmed
+with a SnackBar, on `household_screen.dart`'s existing invite-code-copy
+pattern. The screen's private grouping helpers moved into a new
+`shopping_list_text.dart` so the export and the on-screen order share one
+definition (`groupByCategory`) instead of two that could drift; the
+exported text is built from the list's own `list.locale`
+(`lookupAppLocalizations`), the same document/chrome split D94 already
+drew, not the reader's ambient locale. No schema change, no migration, no
+new package. Verified with the full automated suite (`dart analyze`,
+`check_layers`, `deno check`/`lint`/`fmt`, `flutter test` including the new
+`shopping_list_text_test.dart`) and installed as a release build against
+hosted on the physical Galaxy S25 (`RFCY61SRQ3B`) — the install succeeded,
+but the on-device walk itself (generate a list, tap copy, confirm the
+SnackBar, paste elsewhere) was handed to the user to run by hand and had
+not been confirmed back as of this entry.
 **In flight:** none
-**Next:** Phase 5 Part 5 — export the shopping list to the clipboard. See
+**Next:** Phase 5 Part 6 — translating from the editor. See
 `docs/ROADMAP.md`.
-**Latest decision:** D104
+**Latest decision:** D105
 
-**Parts 2 and 3's device-walk gaps are now closed.** Walked on the same
-physical device during Part 4's session: the tag filter (tapping "doručak"
-correctly narrowed the recipe list to one match) and the add-to-plan flow
-(recipe detail → overflow → "Add to meal plan…" → a day next week → paging
-the Plan tab forward confirmed the entry landed). Neither was Part 4's own
-code; both simply worked. The lines below recording those gaps as open are
-now historical, kept for one cycle in case a future session wants the
-detail, and can be dropped next time this file is rewritten.
+**Part 5's own device-walk loop is open**, the same shape Part 3 left open
+before Part 4 closed it: the app installed cleanly on the physical Galaxy
+S25 against hosted, but nobody has confirmed back that copying an actual
+generated list, seeing the SnackBar, and pasting the text elsewhere all
+work on-device. A future session should close this before trusting the
+copy feature beyond what `shopping_list_text_test.dart` and
+`shopping_list_screen_test.dart` already cover.
+
+**This Flutter SDK's `flutter_test` does not stub the clipboard channel.**
+Discovered in Part 5: an unmocked call to `Clipboard.setData` (or
+`Clipboard.getData`) inside a widget test hangs indefinitely instead of
+throwing or returning null — confirmed with several minimal reproductions
+before touching the real test. Reading `Clipboard.getData` back from the
+test body (as opposed to from inside a widget's own callback) hangs the
+same way. Any future test touching the clipboard needs a mock
+`SystemChannels.platform` handler registered in `setUp`/`tearDown` (see
+`shopping_list_screen_test.dart`) — verify the clipboard's actual contents
+by testing the pure-Dart formatter directly instead of round-tripping
+through `Clipboard.getData`.
 
 **Known gap from Part 2, not fixed:** the filter row — Favorites chip
 included — only renders once the tag vocabulary is non-empty or a filter is
@@ -48,7 +59,7 @@ pošlo naopako." — no Dart stack trace reaches logcat in a release build, so
 this took a direct `information_schema.columns` query against hosted to
 diagnose. Fixed with `supabase db push`. Any future slice touching a
 migration should push it to hosted before a device walk, not just reset
-local. (Parts 2, 3 and 4 carried no migration, so this did not recur.)
+local. (Parts 2 through 5 carried no migration, so this did not recur.)
 
 **Local sign-in requires a device that can hold a Google account**
 (Phase 4 part 3's finding). The Android emulator cannot add one at all —

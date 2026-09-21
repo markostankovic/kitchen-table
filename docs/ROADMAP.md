@@ -346,7 +346,8 @@ same-calendar-day, replacing the inline comparisons in both
 
 ### Part 5 — Export the shopping list to the clipboard
 
-**Status: not started.**
+**Status: complete** (`42dbe70`). Decisions taken during it: D105. See
+`docs/journal/phase-5.md`.
 
 An app bar action beside the existing refresh button: format the list as plain
 text, `Clipboard.setData`, SnackBar. The pattern already exists at

@@ -317,3 +317,77 @@ next week → paging the Plan tab forward confirmed the entry). Neither loop
 was this slice's own code; both simply worked.
 
 ---
+
+### Part 5 — Export the shopping list to the clipboard
+
+**Status: complete.** Decisions taken during it: D105.
+
+`ShoppingListScreen`'s AppBar gains a second `IconButton`, beside the
+existing regenerate action, that copies the current to-buy list to the
+clipboard as plain text and confirms with a SnackBar --
+`Icons.copy_outlined`, same `if (list.value != null)` guard, same
+`_generate`-shaped top-level `_copy(context, ref, list)` function, on
+`household_screen.dart`'s existing invite-code-copy pattern.
+
+- **One grouping definition, not two.** `_ListBody`'s private
+  `_uncategorisedCategory`, `_categoryLabel`, `_CategoryGroup` and
+  `_byCategory` moved, unrenamed in behaviour, into a new
+  `lib/features/shopping_list/presentation/shopping_list_text.dart`
+  (`uncategorisedCategory`, `categoryLabel`, `CategoryGroup`,
+  `groupByCategory`); the screen now imports them instead of keeping its
+  own copy. `formatShoppingListAsText(list, units, l10n)` is built on the
+  same `groupByCategory`, so the on-screen category order and the
+  clipboard text's order are structurally the same call rather than two
+  definitions that could drift (D105).
+- **The export is the document, not the chrome (D94/D86, same
+  direction).** `formatShoppingListAsText` is built from
+  `lookupAppLocalizations(Locale(list.locale))`, exactly like
+  `_ListBody`'s own `bodyL10n` -- a Serbian list copies as Serbian text
+  regardless of the reader's own app locale. The tooltip and the "List
+  copied." SnackBar stay chrome, reading `AppLocalizations.of(context)`.
+- **Bare list, to-buy only.** `- Name: qty` lines (ASCII hyphen, no colon
+  for an item with no quantities), category headings in the list's own
+  locale, uncategorised last, blank line between categories, no trailing
+  blank line, no date header, no staples section. Two ARB keys,
+  `copyListTooltip` / `listCopiedSnackbar`, following D77's template/no-`@`
+  split.
+- The library sits in `presentation/`, not `domain/`: it needs the
+  generated `AppLocalizations`, which imports Flutter, and rule 7 keeps
+  `domain/` pure Dart. `format_item_quantity.dart` stays in `domain/`
+  exactly because it only ever takes a `locale` string, never ARB.
+
+**A test-infra correction, not an app bug.** The slice's own plan assumed
+`flutter_test` stubs the clipboard's `flutter/platform` channel with an
+in-memory implementation by default. On this SDK (Flutter 3.47.2) it does
+not: an unmocked call to `Clipboard.setData` inside a widget test hangs
+indefinitely instead of throwing or replying, confirmed with several
+minimal reproductions outside this suite before touching the real test.
+`shopping_list_screen_test.dart` now registers a minimal mock handler for
+`SystemChannels.platform` in `setUp`/`tearDown` so `_copy` can complete and
+the SnackBar assertion runs; the exported text's actual content is instead
+verified directly (and more thoroughly -- list-locale rendering, the
+uncategorised-last order, `' + '` joining, bare-name items, staples
+excluded, blank-line formatting) by the new
+`test/features/shopping_list/shopping_list_text_test.dart`, since reading
+`Clipboard.getData` back from a test body hangs the same way. D105 records
+this correction.
+
+**How it was verified.** `make gen` (ARB changed), then `dart analyze`,
+`check_layers`, the full `deno check`/`lint`/`fmt`, and `flutter test`
+(full suite, including the 7 new cases in `shopping_list_text_test.dart`
+and the 2 new cases in `shopping_list_screen_test.dart`) all passed.
+`make check`'s `seed-check` step stayed red for the pre-existing, unrelated
+reason tracked since `c8be2bc` (see `docs/STATE.md`); everything else was
+green.
+
+Installed as a release build against hosted (`env/hosted.json`) on the
+physical Galaxy S25 (`RFCY61SRQ3B`) -- `flutter build apk --release` then
+`adb -s RFCY61SRQ3B install -r`, needed explicitly because an Android
+emulator was also attached and `adb install` is ambiguous with two
+devices. The install succeeded; the on-device walk itself (generate a
+list, tap copy, confirm the SnackBar, paste into another app and read the
+text back) was handed to the user to run by hand and had not been
+confirmed back as of this entry -- a future session should close that loop
+if it wasn't done, the same gap Part 3 left open before Part 4 closed it.
+
+---
