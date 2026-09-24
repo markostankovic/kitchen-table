@@ -15,54 +15,112 @@ Part 1 of that phase is what fills in Colour, Type and Spacing below.
 
 ## Current state
 
-Nothing here has been designed yet. As of Phase 6 the whole of the app's
-visual language is:
+`lib/core/theme/app_theme.dart` builds `ThemeData` for each brightness from
+one seed colour, `0xFF7A5C3E` (a warm mid brown), through
+`ColorScheme.fromSeed` — same identity as Phase 0, but the roles the app
+actually reads are now pinned explicitly rather than left to whatever the
+generator produced, and a handful of component themes
+(`AppBarTheme`, `ChipThemeData`, `FilledButtonThemeData`, `ListTileThemeData`,
+`InputDecorationTheme`) are set once here instead of drifting per screen.
+`lib/core/theme/app_spacing.dart` names the spacing scale. See Colour, Type
+and Spacing below.
 
-```dart
-// lib/core/theme/app_theme.dart
-ColorScheme.fromSeed(seedColor: const Color(0xFF7A5C3E))
-```
-
-— one seed colour, a warm mid brown, fed to Material 3's tonal palette
-generator for `light()` and again with `Brightness.dark` for `dark()`. Nothing
-else is set. Every type size, every elevation, every shape and every spacing
-value in the app is a Material 3 default that no one chose.
-
-`lib/core/widgets/` — the folder `docs/ARCHITECTURE.md` describes as "generic,
-feature-agnostic" — holds exactly one file, `placeholder_screen.dart`. There is
-no shared card, no shared empty state, no shared section header. Screens that
-look alike look alike by coincidence.
-
-This section is replaced by real content when Phase 7 Part 1 ships.
+`lib/core/widgets/` holds `placeholder_screen.dart` plus three widgets added
+in Phase 7 Part 1: `AppErrorView`, `AppSectionHeading`, `AppEmptyState`. See
+Components.
 
 ---
 
 ## Colour
 
-**Not yet decided.** Today: derived entirely from the `0xFF7A5C3E` seed above,
-through `ColorScheme.fromSeed`.
+Everything comes from one seed, `0xFF7A5C3E` (a warm mid brown), through
+`ColorScheme.fromSeed` — one call for `AppTheme.light()`, the same seed again
+with `Brightness.dark` for `AppTheme.dark()`. A screen never reaches for a raw
+`Color`; it reaches for a role on `Theme.of(context).colorScheme`.
 
-Phase 7 Part 1 fills this in: which roles are used, what each one means in this
-app, and where a raw `Color` is allowed instead of a role (ideally nowhere).
+The roles the app actually uses, and what each means here:
+
+- **`primary` / `onPrimary`** — the one emphasised action: `FilledButton`
+  (save, confirm, generate), and the "this is today" highlight on the meal
+  plan's day column.
+- **`error` / `errorContainer` / `onErrorContainer`** — form validation
+  messages and the offline banner. `error` alone for inline text (a field's
+  error line), the container pair together for the banner's own background
+  and its text/icon on top of it — never `error` as a background colour, it
+  is not built for that contrast.
+- **`tertiary` / `onTertiary`** — the "look here" accent, distinct from both
+  `primary` and `error`: the left-edge marker on an import line flagged for a
+  second look (`import_review_screen.dart`). `fromSeed`'s own generated dark
+  `tertiary` sat too close in tone to its generated dark `secondary` to read
+  at the 3px border width that marker is drawn at, so dark mode overrides it
+  to `0xFFE7C17E` / `0xFF422C00` — light mode keeps the generated value.
+- **`outline`** — muted icon colour: `placeholder_screen.dart`'s icon,
+  `AppEmptyState`'s icon, the source-attribution icon on a recipe's detail
+  screen. Never body text — outline is tuned for the low-emphasis role, not
+  for reading.
+- **`onSurfaceVariant`** — secondary/muted text sitting next to primary text
+  of the same size: the translation reviewer's "original" line above the
+  editable translation.
+- **`surfaceContainerHighest`** — fill for a `Chip` and for a filled
+  `TextFormField` (`InputDecorationTheme.fillColor`), so both read as
+  slightly raised off the scaffold background without a border.
+- **`secondaryContainer`** — a selected `ChoiceChip`/`FilterChip`'s
+  background, so "selected" reads as a colour change rather than only an
+  outline.
+
+Nowhere in the app is a raw `Color` literal used for something Material 3
+already has a role for. `AppTheme`'s own two seed/override literals are the
+exception — they are where a role's value is *defined*, not a call site
+reaching around a role.
 
 ---
 
 ## Type
 
-**Not yet decided.** Today: Material 3's default `TextTheme`, on the default
-platform font. No `google_fonts` — adding one is a rule 8 conversation.
+The platform default font — Roboto on Android, San Francisco on iOS. No
+`google_fonts`, no bundled `.ttf`; that was asked and declined for Phase 7
+Part 1 (CLAUDE.md rule 8). A font swap later is a one-line change to
+`AppTheme._textTheme` — this section defines the roles, not the typeface.
 
-Phase 7 Part 1 fills this in: the steps, and what each step is *for*, so a
-screen picks a role rather than a size.
+A screen picks a role for what the text *is*, never a raw `fontSize`:
+
+| Role | Size / weight | For |
+|---|---|---|
+| `titleLarge` | 22 / w600 | Screen and dialog titles |
+| `titleMedium` | 17 / w600 | Section headings (`AppSectionHeading`), AppBar titles |
+| `titleSmall` | 14 / w600 | Field labels, list tile titles |
+| `bodyLarge` | 16 / w400 | Primary reading text: recipe steps, ingredient lines |
+| `bodyMedium` | 14 / w400 | Default body copy, empty-state text |
+| `bodySmall` | 12 / w400 | Captions, secondary/muted text |
+| `labelLarge` | 14 / w600 | Buttons, chip labels |
+| `labelMedium` | 12 / w500 | Small chip labels, tooltips |
+
+Roles this table does not list (`displayLarge`, `headlineMedium`, ...) are
+still Material 3's own defaults — nothing in the app currently needs them, so
+they were not worth pinning.
 
 ---
 
 ## Spacing and layout
 
-**Not yet decided.** Today: every padding and gap is written inline at the call
-site, chosen per screen.
+`lib/core/theme/app_spacing.dart` names the scale that was already the
+de-facto one across the app before it had a name:
 
-Phase 7 Part 1 fills this in: the scale, and the rule that gaps come from it.
+| Name | Value |
+|---|---|
+| `AppSpacing.xs` | 4 |
+| `AppSpacing.sm` | 8 |
+| `AppSpacing.md` | 12 |
+| `AppSpacing.lg` | 16 |
+| `AppSpacing.xl` | 24 |
+| `AppSpacing.xxl` | 32 |
+
+New code picks a step from this scale instead of writing a literal
+`EdgeInsets`/`SizedBox` number. This is not retroactive: existing screens keep
+their inline literals except where this slice already touched the file (the
+three new shared widgets, and their call sites); the rest migrate as later
+Phase 7 parts redesign those screens anyway. A `SizedBox(height: 8)` elsewhere
+in the app today is not a bug — it just is not yet `AppSpacing.sm`.
 
 ---
 
@@ -71,6 +129,21 @@ Phase 7 Part 1 fills this in: the scale, and the rule that gaps come from it.
 A widget lives in `lib/core/widgets/` when it is **generic and
 feature-agnostic** — `docs/ARCHITECTURE.md`'s own words for that folder. A
 widget that knows what a recipe or a meal plan is does not go there.
+
+Three widgets live there as of Phase 7 Part 1, each replacing a shape that had
+already drifted into two or three disagreeing private copies:
+
+- **`AppErrorView`** — a centered, already-localized error message. Takes a
+  `String message`, never the raw error object: `core/widgets/` does not know
+  about `FailureCode`, so the caller localizes first with
+  `localizedErrorMessage(e, l10n)` (D92) and hands this widget the sentence.
+- **`AppSectionHeading`** — a section heading within a screen. Takes a
+  `String text`.
+- **`AppEmptyState`** — icon, title, optional body, optional action, centered
+  and scrollable so it still works as an `AsyncValue.when`'s `data` case
+  inside a `RefreshIndicator`. Which icon and strings, and whether there is an
+  action, are the caller's call — the widget itself does not know what a
+  recipe or a shopping list is.
 
 The middle ground already has a precedent: `core/recipes/widgets/`,
 `core/meal_plan/widgets/` and `core/ingredients/widgets/` hold widgets that are

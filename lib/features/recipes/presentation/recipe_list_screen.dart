@@ -7,6 +7,8 @@ import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/app_locale.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/widgets/app_empty_state.dart';
+import '../../../core/widgets/app_error_view.dart';
 import '../application/recipe_providers.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_tag.dart';
@@ -144,35 +146,38 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
           Expanded(
             child: recipes.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (Object e, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(localizedErrorMessage(e, l10n),
-                      textAlign: TextAlign.center),
-                ),
-              ),
-              data: (List<Recipe> items) => items.isEmpty
-                  ? _EmptyState(
-                      narrowed: _query.isNotEmpty ||
-                          _tag.isNotEmpty ||
-                          _favoritesOnly,
-                      l10n: l10n,
-                    )
-                  : RefreshIndicator(
-                      onRefresh: () async => ref.invalidate(
-                        recipeListProvider(
-                          query: _query,
-                          tag: _tag,
-                          favoritesOnly: _favoritesOnly,
+              error: (Object e, _) =>
+                  AppErrorView(message: localizedErrorMessage(e, l10n)),
+              data: (List<Recipe> items) {
+                final bool narrowed = _query.isNotEmpty ||
+                    _tag.isNotEmpty ||
+                    _favoritesOnly;
+                return items.isEmpty
+                    ? AppEmptyState(
+                        icon: narrowed
+                            ? Icons.search_off
+                            : Icons.menu_book_outlined,
+                        title: narrowed
+                            ? l10n.noRecipesMatch
+                            : l10n.noRecipesYet,
+                      )
+                    : RefreshIndicator(
+                        onRefresh: () async => ref.invalidate(
+                          recipeListProvider(
+                            query: _query,
+                            tag: _tag,
+                            favoritesOnly: _favoritesOnly,
+                          ),
                         ),
-                      ),
-                      child: ListView.separated(
-                        itemCount: items.length,
-                        separatorBuilder: (_, _) => const Divider(height: 1),
-                        itemBuilder: (BuildContext context, int i) =>
-                            _RecipeTile(recipe: items[i], l10n: l10n),
-                      ),
-                    ),
+                        child: ListView.separated(
+                          itemCount: items.length,
+                          separatorBuilder: (_, _) =>
+                              const Divider(height: 1),
+                          itemBuilder: (BuildContext context, int i) =>
+                              _RecipeTile(recipe: items[i], l10n: l10n),
+                        ),
+                      );
+              },
             ),
           ),
         ],
@@ -323,21 +328,3 @@ class _FilterRow extends ConsumerWidget {
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.narrowed, required this.l10n});
-
-  final bool narrowed;
-  final AppLocalizations l10n;
-
-  @override
-  Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Text(
-            narrowed ? l10n.noRecipesMatch : l10n.noRecipesYet,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        ),
-      );
-}

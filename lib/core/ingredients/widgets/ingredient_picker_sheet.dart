@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../error/failure_l10n.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/app_error_view.dart';
 import '../../../features/ingredients/domain/ingredient_match.dart';
 import '../ingredient_catalog_providers.dart';
 
@@ -84,11 +85,9 @@ class _IngredientPickerSheet extends ConsumerWidget {
                   padding: EdgeInsets.all(24),
                   child: Center(child: CircularProgressIndicator()),
                 ),
-                error: (Object e, _) => Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(localizedErrorMessage(
-                      e, AppLocalizations.of(context))),
-                ),
+                error: (Object e, _) => AppErrorView(
+                    message:
+                        localizedErrorMessage(e, AppLocalizations.of(context))),
                 data: (List<IngredientMatch> found) => found.isEmpty
                     ? Padding(
                         padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),

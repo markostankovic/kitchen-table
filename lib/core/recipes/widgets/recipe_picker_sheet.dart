@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../error/failure_l10n.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/app_error_view.dart';
 import '../../../features/recipes/domain/recipe.dart';
 import '../recipe_picker_providers.dart';
 
@@ -110,10 +111,8 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
                   padding: EdgeInsets.all(24),
                   child: Center(child: CircularProgressIndicator()),
                 ),
-                error: (Object e, _) => Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(localizedErrorMessage(e, l10n)),
-                ),
+                error: (Object e, _) =>
+                    AppErrorView(message: localizedErrorMessage(e, l10n)),
                 data: (List<Recipe> found) => found.isEmpty
                     ? Padding(
                         padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),

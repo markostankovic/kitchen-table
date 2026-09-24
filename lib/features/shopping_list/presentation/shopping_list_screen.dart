@@ -8,6 +8,8 @@ import '../../../core/ingredients/ingredient_catalog_providers.dart';
 import '../../../core/l10n/date_labels.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/net/network_status.dart';
+import '../../../core/widgets/app_empty_state.dart';
+import '../../../core/widgets/app_error_view.dart';
 import '../../ingredients/domain/unit_catalog.dart';
 import '../application/shopping_list_providers.dart';
 import '../domain/format_item_quantity.dart';
@@ -37,8 +39,8 @@ import 'shopping_list_text.dart';
 /// a document in one language; remembering which one is what stops a list
 /// generated in Serbian rendering half-translated after a locale toggle").
 /// The chrome around it -- this `AppBar`, `_RangeBar` (which describes the
-/// list about to be generated, not the one on screen), `_EmptyState`, every
-/// snackbar and every error -- reads the reader's own locale,
+/// list about to be generated, not the one on screen), `AppEmptyState`,
+/// every snackbar and every error -- reads the reader's own locale,
 /// `AppLocalizations.of(context)` straight from the ambient one, same as
 /// every other screen. `_ItemTile` already drew this line for unit names
 /// (`formatItemQuantity(q, units, locale: locale)`) before this part; this is
@@ -78,17 +80,22 @@ class ShoppingListScreen extends ConsumerWidget {
           Expanded(
             child: list.when(
               loading: () => const SizedBox.shrink(),
-              error: (Object e, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(localizedErrorMessage(e, l10n)),
-                ),
-              ),
+              error: (Object e, _) =>
+                  AppErrorView(message: localizedErrorMessage(e, l10n)),
               data: (ShoppingList? current) => RefreshIndicator(
                 onRefresh: () async =>
                     ref.invalidate(currentShoppingListProvider),
                 child: current == null
-                    ? const _EmptyState()
+                    ? AppEmptyState(
+                        icon: Icons.checklist_outlined,
+                        title: l10n.noListYetTitle,
+                        body: l10n.noListYetBody,
+                        action: FilledButton.icon(
+                          onPressed: () => _generate(context, ref),
+                          icon: const Icon(Icons.playlist_add_check_outlined),
+                          label: Text(l10n.generateListButton),
+                        ),
+                      )
                     : _ListBody(list: current),
               ),
             ),
@@ -199,42 +206,6 @@ class _RangeBar extends ConsumerWidget {
     ref
         .read(shoppingRangeProvider.notifier)
         .setRange(from: picked.start, to: picked.end);
-  }
-}
-
-/// Chrome -- the reader's locale, same as [_RangeBar].
-class _EmptyState extends ConsumerWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    return ListView(
-      children: <Widget>[
-        const SizedBox(height: 64),
-        const Center(child: Icon(Icons.checklist_outlined, size: 56)),
-        const SizedBox(height: 16),
-        Center(child: Text(l10n.noListYetTitle)),
-        const SizedBox(height: 8),
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              l10n.noListYetBody,
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        Center(
-          child: FilledButton.icon(
-            onPressed: () => _generate(context, ref),
-            icon: const Icon(Icons.playlist_add_check_outlined),
-            label: Text(l10n.generateListButton),
-          ),
-        ),
-      ],
-    );
   }
 }
 

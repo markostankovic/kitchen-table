@@ -6,6 +6,9 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/supabase/supabase_client.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/app_section_heading.dart';
 import '../application/household_providers.dart';
 import '../domain/household.dart';
 import '../domain/household_invite.dart';
@@ -261,13 +264,8 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
       appBar: AppBar(title: Text(l10n.householdScreenTitle)),
       body: household.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(localizedErrorMessage(e, l10n),
-                textAlign: TextAlign.center),
-          ),
-        ),
+        error: (Object e, _) =>
+            AppErrorView(message: localizedErrorMessage(e, l10n)),
         data: (Household? h) => h == null
             ? Center(child: Text(l10n.noHouseholdYet))
             : ListView(
@@ -283,10 +281,19 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
                     ),
                   ),
                   const Divider(),
-                  _sectionHeader(context, l10n.membersSectionTitle),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: AppSectionHeading(text: l10n.membersSectionTitle),
+                  ),
                   ..._members(l10n),
                   const Divider(),
-                  _sectionHeader(context, l10n.inviteSomeoneSectionTitle),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child:
+                        AppSectionHeading(text: l10n.inviteSomeoneSectionTitle),
+                  ),
                   ..._invites(l10n),
                   Padding(
                     padding: const EdgeInsets.all(16),
@@ -328,11 +335,6 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
       ),
     );
   }
-
-  Widget _sectionHeader(BuildContext context, String title) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-        child: Text(title, style: Theme.of(context).textTheme.titleSmall),
-      );
 
   /// Whether the signed-in caller is themselves the owner -- looked up from
   /// the same members list `_members()` renders, rather than a second

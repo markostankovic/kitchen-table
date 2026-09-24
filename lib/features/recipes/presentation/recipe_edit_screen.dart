@@ -10,6 +10,8 @@ import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/l10n/language_labels.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/app_section_heading.dart';
 import '../application/recipe_editor.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_draft.dart';
@@ -186,13 +188,8 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
       ),
       body: draft.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(localizedErrorMessage(e, l10n),
-                textAlign: TextAlign.center),
-          ),
-        ),
+        error: (Object e, _) =>
+            AppErrorView(message: localizedErrorMessage(e, l10n)),
         data: (RecipeDraft d) => _buildForm(d, l10n),
       ),
       bottomNavigationBar: draft.hasValue ? _buildSaveBar(l10n) : null,
@@ -313,8 +310,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
             onChanged: (String value) => _editor.setTags(_parseTags(value)),
           ),
           const SizedBox(height: 24),
-          _SectionHeading(text: l10n.ingredientsHeading),
-          const SizedBox(height: 8),
+          AppSectionHeading(text: l10n.ingredientsHeading),
           ReorderableListView(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -342,8 +338,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _SectionHeading(text: l10n.stepsHeading),
-          const SizedBox(height: 8),
+          AppSectionHeading(text: l10n.stepsHeading),
           ReorderableListView(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -615,16 +610,6 @@ class _NumberField extends StatelessWidget {
       },
     );
   }
-}
-
-class _SectionHeading extends StatelessWidget {
-  const _SectionHeading({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) =>
-      Text(text, style: Theme.of(context).textTheme.titleMedium);
 }
 
 class _FieldLabel extends StatelessWidget {

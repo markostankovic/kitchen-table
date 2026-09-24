@@ -13,6 +13,8 @@ import '../../../core/meal_plan/widgets/meal_slot_picker_sheet.dart';
 import '../../../core/refresh/data_revision.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/text/text_normalizer.dart';
+import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/app_section_heading.dart';
 import '../../ingredients/domain/unit_catalog.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
 import '../../meal_plan/domain/meal_slot.dart';
@@ -142,14 +144,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       ),
       body: detail.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-                '${l10n.couldNotLoadRecipe}\n\n${localizedErrorMessage(e, l10n)}',
-                textAlign: TextAlign.center),
-          ),
-        ),
+        error: (Object e, _) => AppErrorView(
+            message:
+                '${l10n.couldNotLoadRecipe}\n\n${localizedErrorMessage(e, l10n)}'),
         data: (RecipeDetail d) => _Body(
           detail: d,
           l10n: l10n,
@@ -459,7 +456,7 @@ class _Body extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: 24),
-        _SectionHeading(text: l10n.ingredientsHeading),
+        AppSectionHeading(text: l10n.ingredientsHeading),
         if (detail.ingredients.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -475,7 +472,7 @@ class _Body extends ConsumerWidget {
             ),
           ),
         const SizedBox(height: 24),
-        _SectionHeading(text: l10n.stepsHeading),
+        AppSectionHeading(text: l10n.stepsHeading),
         if (detail.displaySteps.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -631,14 +628,3 @@ class _RatingStars extends StatelessWidget {
       );
 }
 
-class _SectionHeading extends StatelessWidget {
-  const _SectionHeading({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-      );
-}

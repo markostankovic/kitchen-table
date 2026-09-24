@@ -5,6 +5,7 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/app_locale.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
+import '../../../core/widgets/app_error_view.dart';
 import '../application/translation_reviewer.dart';
 import '../domain/recipe_step.dart';
 import '../domain/translation_review_draft.dart';
@@ -88,15 +89,8 @@ class _TranslationReviewScreenState
       appBar: AppBar(title: Text(l10n.reviewTranslationTitle)),
       body: draft.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              localizedErrorMessage(e, l10n),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
+        error: (Object e, _) =>
+            AppErrorView(message: localizedErrorMessage(e, l10n)),
         data: (TranslationReviewDraft d) => _buildForm(d, l10n),
       ),
       bottomNavigationBar: draft.hasValue ? _buildSaveBar(context) : null,

@@ -9,6 +9,7 @@ import '../../../core/l10n/meal_slot_labels.dart';
 import '../../../core/net/network_status.dart';
 import '../../../core/recipes/widgets/recipe_picker_sheet.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/widgets/app_error_view.dart';
 import '../application/meal_plan_providers.dart';
 import '../domain/meal_plan_entry.dart';
 import '../domain/meal_plan_week.dart';
@@ -93,12 +94,8 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
           Expanded(
             child: week.when(
               loading: () => const SizedBox.shrink(),
-              error: (Object e, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(localizedErrorMessage(e, l10n)),
-                ),
-              ),
+              error: (Object e, _) =>
+                  AppErrorView(message: localizedErrorMessage(e, l10n)),
               data: (MealPlanWeek plan) => RefreshIndicator(
                 onRefresh: () async => ref.invalidate(mealPlanEditorProvider),
                 child: ListView(

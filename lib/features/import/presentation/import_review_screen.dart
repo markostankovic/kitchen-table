@@ -6,6 +6,8 @@ import '../../../core/error/failure_l10n.dart';
 import '../../../core/ingredients/widgets/ingredient_line_field.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/app_section_heading.dart';
 import '../../recipes/domain/recipe_draft.dart';
 import '../application/import_confirm.dart';
 import '../domain/parsed_recipe_draft.dart';
@@ -225,15 +227,8 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
 
     return review.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (Object e, _) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            localizedErrorMessage(e, l10n),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
+      error: (Object e, _) =>
+          AppErrorView(message: localizedErrorMessage(e, l10n)),
       data: (ImportReview value) => Column(
         children: <Widget>[
           Expanded(
@@ -271,9 +266,7 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
           onChanged: _confirm.setTitle,
         ),
         const SizedBox(height: 24),
-        Text(l10n.ingredientsHeading,
-            style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
+        AppSectionHeading(text: l10n.ingredientsHeading),
         // The same scaffolding as the recipe editor, and it has to stay the
         // same: IngredientLineField emits a ReorderableDragStartListener, so
         // it asserts outside a ReorderableListView, and it supplies its own
@@ -316,8 +309,7 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
           ),
         ),
         const SizedBox(height: 16),
-        Text(l10n.methodHeading, style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
+        AppSectionHeading(text: l10n.methodHeading),
         for (final RecipeDraftStep step in draft.steps)
           Padding(
             key: ValueKey<int>(step.localId),
