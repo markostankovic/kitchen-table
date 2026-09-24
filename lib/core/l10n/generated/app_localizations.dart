@@ -1058,6 +1058,24 @@ abstract class AppLocalizations {
   /// **'Kod opozvan.'**
   String get inviteRevokedSnackbar;
 
+  /// Household screen, the owner-only destructive row at the bottom of the list that deletes the household.
+  ///
+  /// In sr, this message translates to:
+  /// **'Obriši domaćinstvo'**
+  String get deleteHouseholdButton;
+
+  /// Household screen, the delete-household confirm dialog's title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Obrisati domaćinstvo?'**
+  String get deleteHouseholdDialogTitle;
+
+  /// Household screen, the delete-household confirm dialog's body.
+  ///
+  /// In sr, this message translates to:
+  /// **'Svi članovi domaćinstva {name} izgubiće pristup njegovim receptima, planovima obroka i listama za kupovinu. Ovo se ne može poništiti iz aplikacije.'**
+  String deleteHouseholdConfirmBody(String name);
+
   /// Join-household screen (onboarding), the headline.
   ///
   /// In sr, this message translates to:

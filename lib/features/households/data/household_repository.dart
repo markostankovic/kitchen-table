@@ -149,4 +149,16 @@ class HouseholdRepository {
   /// Revokes a live invite code.
   Future<void> revokeInvite(String inviteId) =>
       _remote.revokeInvite(inviteId);
+
+  /// Deletes the caller's own household. Owner-only, enforced by the RPC.
+  ///
+  /// Clears the cached current-household row on success, on [create],
+  /// [redeemInvite] and [leaveHousehold]'s own reasoning (D88): without the
+  /// clear, a network blip on the confirming re-fetch could let
+  /// [fetchCurrent]'s cache fallback resurrect the household the caller just
+  /// deleted.
+  Future<void> deleteHousehold() async {
+    await _remote.deleteHousehold();
+    await _local.clearAll();
+  }
 }

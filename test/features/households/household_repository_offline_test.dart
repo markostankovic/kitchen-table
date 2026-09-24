@@ -39,6 +39,7 @@ class _FakeRemote implements RemoteHouseholdDataSource {
   String? renamedId;
   String? renamedTo;
   int leaveHouseholdCalls = 0;
+  int deleteHouseholdCalls = 0;
 
   @override
   Future<List<Map<String, dynamic>>> fetchMineRows() async {
@@ -85,6 +86,13 @@ class _FakeRemote implements RemoteHouseholdDataSource {
 
   @override
   Future<void> revokeInvite(String inviteId) => throw UnimplementedError();
+
+  @override
+  Future<void> deleteHousehold() async {
+    deleteHouseholdCalls++;
+    final AppFailure? failure = nextFailure;
+    if (failure != null) throw failure;
+  }
 }
 
 void main() {
@@ -267,6 +275,25 @@ void main() {
 
         await repo.leaveHousehold();
         expect(remote.leaveHouseholdCalls, 1);
+
+        remote.nextFailure = const NetworkFailure();
+        await expectLater(
+          repo.fetchCurrent(userId: 'u1'),
+          throwsA(isA<NetworkFailure>()),
+        );
+      },
+    );
+
+    test(
+      'a successful deleteHousehold clears the cache; a subsequent '
+      'NetworkFailure rethrows rather than resurrecting the household just '
+      'deleted (phase6-part3c, D88)',
+      () async {
+        remote.rows = <Map<String, dynamic>>[_row(id: 'old')];
+        await repo.fetchCurrent(userId: 'u1');
+
+        await repo.deleteHousehold();
+        expect(remote.deleteHouseholdCalls, 1);
 
         remote.nextFailure = const NetworkFailure();
         await expectLater(

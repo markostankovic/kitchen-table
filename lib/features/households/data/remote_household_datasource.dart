@@ -161,6 +161,15 @@ class RemoteHouseholdDataSource {
         await _client.rpc<dynamic>('leave_household');
       });
 
+  /// Deletes the caller's own household. Owner-only, enforced inside the RPC
+  /// -- not a `.update({'deleted_at': ...})` through `households_update`,
+  /// even though that column-blind policy would accept one from any member.
+  /// The RPC exists so the owner check and the membership sweep are one
+  /// atomic, enforceable act (D112, D116).
+  Future<void> deleteHousehold() => runGuarded(() async {
+        await _client.rpc<dynamic>('delete_household');
+      });
+
   /// Revokes a live invite code. Any member of the code's own household may
   /// call this (create-invite's "owner and adult are both trusted adults"
   /// stance, mirrored for revocation).

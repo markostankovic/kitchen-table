@@ -569,6 +569,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inviteRevokedSnackbar => 'Code revoked.';
 
   @override
+  String get deleteHouseholdButton => 'Delete household';
+
+  @override
+  String get deleteHouseholdDialogTitle => 'Delete household?';
+
+  @override
+  String deleteHouseholdConfirmBody(String name) {
+    return 'Everyone in $name will lose access to its recipes, meal plans and shopping lists. This cannot be undone from the app.';
+  }
+
+  @override
   String get joinHouseholdTitle => 'Enter your invite code';
 
   @override

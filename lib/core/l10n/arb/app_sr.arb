@@ -737,6 +737,23 @@
   "@inviteRevokedSnackbar": {
     "description": "Household screen, the SnackBar shown after successfully revoking an invite code."
   },
+  "deleteHouseholdButton": "Obriši domaćinstvo",
+  "@deleteHouseholdButton": {
+    "description": "Household screen, the owner-only destructive row at the bottom of the list that deletes the household."
+  },
+  "deleteHouseholdDialogTitle": "Obrisati domaćinstvo?",
+  "@deleteHouseholdDialogTitle": {
+    "description": "Household screen, the delete-household confirm dialog's title."
+  },
+  "deleteHouseholdConfirmBody": "Svi članovi domaćinstva {name} izgubiće pristup njegovim receptima, planovima obroka i listama za kupovinu. Ovo se ne može poništiti iz aplikacije.",
+  "@deleteHouseholdConfirmBody": {
+    "description": "Household screen, the delete-household confirm dialog's body.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
 
   "joinHouseholdTitle": "Unesite svoj pozivni kod",
   "@joinHouseholdTitle": {

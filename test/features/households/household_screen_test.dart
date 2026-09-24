@@ -31,6 +31,7 @@ class _FakeRepo implements HouseholdRepository {
   List<HouseholdInvite> invites = const <HouseholdInvite>[];
   String? removedMemberId;
   int leaveHouseholdCalls = 0;
+  int deleteHouseholdCalls = 0;
   String? revokedInviteId;
   AppFailure? nextFailure;
 
@@ -87,6 +88,13 @@ class _FakeRepo implements HouseholdRepository {
     final AppFailure? failure = nextFailure;
     if (failure != null) throw failure;
     revokedInviteId = inviteId;
+  }
+
+  @override
+  Future<void> deleteHousehold() async {
+    final AppFailure? failure = nextFailure;
+    if (failure != null) throw failure;
+    deleteHouseholdCalls++;
   }
 }
 
@@ -352,6 +360,83 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repo.leaveHouseholdCalls, 0);
+    });
+  });
+
+  group('delete household', () {
+    testWidgets(
+      'the owner sees the row and confirming calls deleteHousehold once',
+      (WidgetTester tester) async {
+        final _FakeRepo repo = _FakeRepo()
+          ..members = const <HouseholdMember>[
+            HouseholdMember(
+                householdId: _householdId,
+                userId: 'u1',
+                role: HouseholdRole.owner,
+                displayName: 'Owner'),
+            HouseholdMember(
+                householdId: _householdId,
+                userId: 'u2',
+                role: HouseholdRole.adult,
+                displayName: 'Adult'),
+          ];
+        await _pump(tester, repo: repo, readName: () => 'H', userId: 'u1');
+
+        expect(find.text(sr.deleteHouseholdButton), findsOneWidget);
+
+        await tester.tap(find.text(sr.deleteHouseholdButton));
+        await tester.pumpAndSettle();
+        expect(find.text(sr.deleteHouseholdDialogTitle), findsOneWidget);
+
+        await tester.tap(find.widgetWithText(FilledButton, sr.deleteButton));
+        await tester.pumpAndSettle();
+
+        expect(repo.deleteHouseholdCalls, 1);
+      },
+    );
+
+    testWidgets('cancelling calls nothing', (WidgetTester tester) async {
+      final _FakeRepo repo = _FakeRepo()
+        ..members = const <HouseholdMember>[
+          HouseholdMember(
+              householdId: _householdId,
+              userId: 'u1',
+              role: HouseholdRole.owner,
+              displayName: 'Owner'),
+          HouseholdMember(
+              householdId: _householdId,
+              userId: 'u2',
+              role: HouseholdRole.adult,
+              displayName: 'Adult'),
+        ];
+      await _pump(tester, repo: repo, readName: () => 'H', userId: 'u1');
+
+      await tester.tap(find.text(sr.deleteHouseholdButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, sr.cancelButton));
+      await tester.pumpAndSettle();
+
+      expect(repo.deleteHouseholdCalls, 0);
+    });
+
+    testWidgets('an adult does not see the delete row at all',
+        (WidgetTester tester) async {
+      final _FakeRepo repo = _FakeRepo()
+        ..members = const <HouseholdMember>[
+          HouseholdMember(
+              householdId: _householdId,
+              userId: 'u1',
+              role: HouseholdRole.owner,
+              displayName: 'Owner'),
+          HouseholdMember(
+              householdId: _householdId,
+              userId: 'u2',
+              role: HouseholdRole.adult,
+              displayName: 'Adult'),
+        ];
+      await _pump(tester, repo: repo, readName: () => 'H', userId: 'u2');
+
+      expect(find.text(sr.deleteHouseholdButton), findsNothing);
     });
   });
 

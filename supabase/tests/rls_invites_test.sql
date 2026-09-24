@@ -357,6 +357,36 @@ begin
   end if;
 
   ---------------------------------------------------------------------------
+  -- phase6-part3c: delete_household sweeps live invites too
+  ---------------------------------------------------------------------------
+  -- A fresh live code for hid, then A deletes hid. This is the only coverage
+  -- redeem-invite's handler gets for the deleted-household guard -- there is
+  -- no Deno test for it; _shared/ is where the *_test.ts files live.
+  perform set_config('role', 'postgres', true);
+  insert into household_invites (household_id, code, created_by, expires_at)
+  values (hid, '666666', user_a, now() + interval '7 days');
+
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_a, 'role', 'authenticated')::text, true);
+  perform delete_household();
+
+  -- The swept code no longer matches the claim UPDATE's predicate, mirroring
+  -- the query redeem-invite issues -- the same trick used above for plain
+  -- revocation.
+  perform set_config('role', 'postgres', true);
+  update household_invites set used_by = user_c, used_at = now()
+    where code = '666666' and used_at is null and revoked_at is null
+      and expires_at > now();
+  get diagnostics n = row_count;
+  if n <> 0 then
+    failures := failures + 1;
+    raise warning
+      'a code swept by delete_household() still matched the redeem-invite '
+      'claim UPDATE';
+  end if;
+
+  ---------------------------------------------------------------------------
   -- Teardown
   ---------------------------------------------------------------------------
   perform set_config('role', 'postgres', true);

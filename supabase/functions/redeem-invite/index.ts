@@ -70,9 +70,18 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
   // revoked_at is null alongside used_at is null: the partial unique index now
   // covers both, so a revoked row and a live re-mint of the same code can both
   // exist. Without this clause both would match and maybeSingle() would throw.
+  //
+  // households(deleted_at) is a left embed, not !inner -- an inner embed would
+  // drop the row on a deleted household and report "that code is not valid",
+  // which is the wrong story. delete_household()'s own revocation sweep
+  // handles the ordinary case, and no new code can be minted for a deleted
+  // household (create-invite resolves the household from a membership that no
+  // longer exists), so this guard exists for exactly one narrow race: a code
+  // peeked or claimed in the instant before the delete commits, whose
+  // membership insert would otherwise land in a deleted household.
   const { data: live, error: liveError } = await service
     .from("household_invites")
-    .select("id, household_id, expires_at")
+    .select("id, household_id, expires_at, households(deleted_at)")
     .eq("code", code)
     .is("used_at", null)
     .is("revoked_at", null)
@@ -81,6 +90,17 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
 
   if (live) {
     const householdId = live.household_id as string;
+
+    const embeddedHousehold = live.households as unknown as
+      | { deleted_at: string | null }
+      | null;
+    if (embeddedHousehold?.deleted_at != null) {
+      throw new HttpError(
+        410,
+        "invite_revoked",
+        "That code was revoked. Ask for a new one.",
+      );
+    }
 
     if (memberOf.has(householdId)) {
       return jsonResponse({

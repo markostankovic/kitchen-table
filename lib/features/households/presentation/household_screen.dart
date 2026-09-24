@@ -192,6 +192,48 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
     }
   }
 
+  /// Confirms, then deletes the household entirely. Owner-only -- the row
+  /// that calls this is rendered only for the owner, so the RPC's own guard
+  /// is a backstop for a stale screen, not something this dialog expects to
+  /// hit (D115: absent, not disabled with a tooltip).
+  Future<void> _deleteHousehold(Household h, AppLocalizations l10n) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: Text(l10n.deleteHouseholdDialogTitle),
+        content: Text(l10n.deleteHouseholdConfirmBody(h.name)),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.cancelButton),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.deleteButton),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(householdRepositoryProvider).deleteHousehold();
+      ref.invalidate(currentHouseholdProvider);
+      // Resolves to null; app_router.dart's ref.listen bumps the refresh
+      // notifier and the redirect sends us to CreateHouseholdRoute. No new
+      // routing here. This screen is being torn down underneath the await,
+      // hence the mounted guard before touching context, and no SnackBar on
+      // success -- same as _leave.
+      await ref.read(currentHouseholdProvider.future);
+      if (!mounted) return;
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
+    }
+  }
+
   /// Revokes [invite]. No confirm dialog -- cheap, and undone by minting
   /// another code (settled during planning).
   Future<void> _revoke(HouseholdInvite invite, AppLocalizations l10n) async {
@@ -213,6 +255,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<Household?> household =
         ref.watch(currentHouseholdProvider);
+    final bool iAmOwner = _iAmOwner();
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.householdScreenTitle)),
@@ -264,6 +307,22 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
                             color: Theme.of(context).colorScheme.error),
                       ),
                     ),
+                  // Owner-only, destructive, at the bottom -- rename lives on
+                  // the household-name row above and delete does not belong
+                  // next to it. Absent for an adult, not disabled (D115).
+                  if (iAmOwner) ...<Widget>[
+                    const Divider(),
+                    ListTile(
+                      leading: Icon(Icons.delete_forever_outlined,
+                          color: Theme.of(context).colorScheme.error),
+                      title: Text(
+                        l10n.deleteHouseholdButton,
+                        style:
+                            TextStyle(color: Theme.of(context).colorScheme.error),
+                      ),
+                      onTap: () => _deleteHousehold(h, l10n),
+                    ),
+                  ],
                 ],
               ),
       ),
@@ -275,21 +334,24 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
         child: Text(title, style: Theme.of(context).textTheme.titleSmall),
       );
 
-  List<Widget> _members(AppLocalizations l10n) {
+  /// Whether the signed-in caller is themselves the owner -- looked up from
+  /// the same members list `_members()` renders, rather than a second
+  /// provider, since the caller's own row is always in it. Shared by
+  /// [build] (the delete row) and [_members] (the leave/remove trailing
+  /// icons) so both read one definition instead of duplicating the loop.
+  bool _iAmOwner() {
     final String? myUserId = ref.watch(currentUserIdProvider).value;
-    // Whether the signed-in caller is themselves the owner -- looked up from
-    // the same list being rendered, rather than a second provider, since the
-    // caller's own row is always in it.
     final List<HouseholdMember> loadedMembers =
         ref.watch(householdMembersProvider).value ?? const <HouseholdMember>[];
-    HouseholdRole? myRole;
     for (final HouseholdMember m in loadedMembers) {
-      if (m.userId == myUserId) {
-        myRole = m.role;
-        break;
-      }
+      if (m.userId == myUserId) return m.role == HouseholdRole.owner;
     }
-    final bool iAmOwner = myRole == HouseholdRole.owner;
+    return false;
+  }
+
+  List<Widget> _members(AppLocalizations l10n) {
+    final String? myUserId = ref.watch(currentUserIdProvider).value;
+    final bool iAmOwner = _iAmOwner();
 
     return ref.watch(householdMembersProvider).when(
           loading: () => <Widget>[

@@ -176,6 +176,9 @@
   "leaveButton": "Leave",
   "revokeInviteTooltip": "Revoke code",
   "inviteRevokedSnackbar": "Code revoked.",
+  "deleteHouseholdButton": "Delete household",
+  "deleteHouseholdDialogTitle": "Delete household?",
+  "deleteHouseholdConfirmBody": "Everyone in {name} will lose access to its recipes, meal plans and shopping lists. This cannot be undone from the app.",
 
   "joinHouseholdTitle": "Enter your invite code",
   "joinHouseholdSubtitle": "Ask someone in the household to generate a code for you.",

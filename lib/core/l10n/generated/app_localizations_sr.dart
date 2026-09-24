@@ -577,6 +577,17 @@ class AppLocalizationsSr extends AppLocalizations {
   String get inviteRevokedSnackbar => 'Kod opozvan.';
 
   @override
+  String get deleteHouseholdButton => 'Obriši domaćinstvo';
+
+  @override
+  String get deleteHouseholdDialogTitle => 'Obrisati domaćinstvo?';
+
+  @override
+  String deleteHouseholdConfirmBody(String name) {
+    return 'Svi članovi domaćinstva $name izgubiće pristup njegovim receptima, planovima obroka i listama za kupovinu. Ovo se ne može poništiti iz aplikacije.';
+  }
+
+  @override
   String get joinHouseholdTitle => 'Unesite svoj pozivni kod';
 
   @override
