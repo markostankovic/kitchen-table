@@ -469,6 +469,92 @@ not only for non-members.
 
 ---
 
+## Phase 7 — Redesign
+
+Phases 0–6 built what the app *does*. This phase is about what it looks and
+feels like. Nothing in `lib/core/theme/app_theme.dart` has changed since Phase
+0 — it is still one seed colour (`0xFF7A5C3E`) handed to
+`ColorScheme.fromSeed`, under a comment reading "Real theming is not on the
+roadmap until there are screens to theme." There are now screens to theme.
+`lib/core/widgets/` holds a single file, `placeholder_screen.dart`, so there is
+no shared component vocabulary either: every screen is Material 3 defaults.
+
+Promoted from `docs/IDEAS.md` — the `design (redesign)` line, deleted there
+when this section was written.
+
+This phase's parts are written into this file as each one is planned, not up
+front. What is fixed up front is Part 1, and the constraints below.
+
+**Constraints that hold across every part of this phase.**
+
+- Latin script only for Serbian display. Unchanged from CLAUDE.md; a redesign
+  is not an occasion to revisit it.
+- **Both languages have to fit the same layout.** Serbian strings run longer
+  than their English pairs, and a component that only fits `en` is a bug.
+  `test/core/l10n/arb_parity_test.dart` checks that keys exist on both sides,
+  not that they fit — nothing automated will catch this, so every part is
+  walked on the device in both languages.
+- Light **and** dark both exist today (`AppTheme.light()` / `AppTheme.dark()`)
+  and both stay. Neither is an afterthought; every part verifies both.
+- CLAUDE.md rule 8 holds every time: a new package — `google_fonts`, an icon
+  set, an animation library — is asked about first, not adopted mid-slice.
+- **Presentation-only.** Rule 1 and the layering wall are untouched. If a
+  redesign part appears to need a data-layer change to look right, that is a
+  different slice and should be named as one.
+- Verified the way CLAUDE.md's "Running the app" says: `make install-hosted`
+  on the physical device. Not the emulator, not `flutter run`, not the local
+  stack.
+
+**Ordering.** Part 1 is ordered first — there is no design language for a
+per-screen part to cite until it lands. Everything after it is expected to be
+per-surface (recipe list and detail, meal plan, shopping list, household and
+settings, auth and onboarding) and independent of the others; reorder those
+freely once they exist.
+
+**Before Part 1, deal with the open device walks.** `docs/STATE.md` lists seven
+device-walk loops still open, several waiting since Phase 5. They verify
+*behaviour*, but they would be walked on the very screens this phase is about
+to move, and a loop left to go stale behind a redesign is a loop that never
+closes. Either close them first, or fold them into Part 1's own device walk —
+that walk already puts you on the device in both languages and both themes.
+
+The design language itself is not recorded here. `docs/DESIGN.md` holds it, the
+way `docs/ARCHITECTURE.md` holds the layering rules: this file records what
+changed, that one records what is true now. A part that changes the language
+changes `docs/DESIGN.md` in the same slice.
+
+---
+
+### Part 1 — The design foundation
+
+**Status: not started.**
+
+Replace the Phase 0 stub with a theme that was actually decided — colour roles
+rather than a bare seed, a type scale, a spacing scale — and write the result
+into `docs/DESIGN.md`, whose Colour, Type and Spacing sections exist today only
+as a description of the stub. Extract the first genuinely shared components
+into `lib/core/widgets/`, which has held nothing but `placeholder_screen.dart`
+since Phase 0. `core/recipes/widgets/`, `core/meal_plan/widgets/` and
+`core/ingredients/widgets/` are the precedent for what a shared widget folder
+looks like; the difference is that those are feature-shaped and this one is
+generic.
+
+This part is **not** a screen-by-screen restyle. The only screen changes it
+carries are the ones that fall out of the theme itself. Per-surface work is
+later parts, and splitting them off is what keeps this one reviewable.
+
+**Done-when:** `app_theme.dart` sets colour, type and spacing deliberately
+instead of taking `fromSeed` defaults; `docs/DESIGN.md`'s Colour, Type and
+Spacing sections are filled in and match the code; at least one shared
+component lives in `lib/core/widgets/` and is used by at least two screens;
+`make check` is clean apart from the known `seed-check` failure; and a release
+build has been walked on the physical device in `sr` and `en`, light and dark.
+
+Expect this part to produce a decision — the next id is D117 — recorded by
+`/close-slice` when it ships, not before.
+
+---
+
 ## Standing rules across phases
 
 - Anything AI-produced is `status = 'draft'` until a human marks it tested.

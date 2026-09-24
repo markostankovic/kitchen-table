@@ -12,9 +12,9 @@ file and telling the user to `/clear` — it does not implement anything.
 
 Read `CLAUDE.md` and `docs/STATE.md` only. Do not read `docs/ROADMAP.md`,
 `docs/DECISIONS.md` (it's a stub — see below), `docs/ARCHITECTURE.md`,
-`docs/DATA_MODEL.md`, `docs/INGREDIENTS.md`, or `docs/IDEAS.md` yet. Follow
-`CLAUDE.md`'s "Finding context" routing table from here — load only what the
-slice's actual subject requires.
+`docs/DATA_MODEL.md`, `docs/INGREDIENTS.md`, `docs/DESIGN.md`, or
+`docs/IDEAS.md` yet. Follow `CLAUDE.md`'s "Finding context" routing table from
+here — load only what the slice's actual subject requires.
 
 If `$ARGUMENTS` is empty or its scope is unclear from `docs/STATE.md`'s
 "Next" line, ask the user what the slice covers before going further.

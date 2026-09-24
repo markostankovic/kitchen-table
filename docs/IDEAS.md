@@ -12,7 +12,6 @@ decision id). An idea only becomes real work when a human copies it into
 ---
 
 - collections (grouping recipes; tags themselves already exist)
-- design (redesign)
 - Scale recipe
 - Stale shopping-list warning
 - add Readme

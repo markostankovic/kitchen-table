@@ -34,10 +34,15 @@ was already in a real household with real recipes, so the actual on-device
 delete walk was left undone rather than risk deleting real data — it joins
 the open device-walk loops below.
 **In flight:** none
-**Next:** Phase 6 is now fully shipped (parts 1a, 1b, 2, 3a, 3b, 3c). There
-is no Phase 7 on `docs/ROADMAP.md` yet — a planning session is needed to
-define what comes next — or close one of the device-walk loops still open
-below, several of which have been waiting since Phase 5.
+**Next:** Phase 6 is now fully shipped (parts 1a, 1b, 2, 3a, 3b, 3c).
+**Phase 7 — Redesign** is now open on `docs/ROADMAP.md`, with Part 1 (the
+design foundation: a real theme, a written design language in the new
+`docs/DESIGN.md`, and the first shared widgets in `lib/core/widgets/`) as its
+first and ordered slice — plan it with `/plan-slice phase7-part1`. Later parts
+are per-surface and get written into the roadmap as each is planned. Before
+starting Part 1, close the device-walk loops listed below — seven of them,
+several waiting since Phase 5 — or fold them into Part 1's own device walk,
+since a redesign moves the very screens they would be walked on.
 **Latest decision:** D116
 
 **Phase 6 part 3c's own device-walk loop is open.** The release build
