@@ -1,54 +1,65 @@
-# State — 2026-09-21
+# State — 2026-09-24
 
 **Branch:** `main`
-**Last shipped:** Phase 6 part 3b (`1fcf196`) — members and invites. An
-owner can now remove any other member; any member can leave a household
-they do not own; any member can revoke a live invite code. All three go
-through new `SECURITY DEFINER` RPCs (`remove_household_member`,
-`leave_household`, `revoke_invite`) mirroring `create_household()` — neither
-`household_members` nor `household_invites` gained a write policy.
-`household_invites` gained `revoked_at`/`revoked_by` with the partial
-unique index rebuilt around them, releasing a revoked code for reuse the
-same way a used one already was; `redeem-invite`'s peek and claim both
-gained a `revoked_at` guard, and the genuinely reachable `invite_revoked`
-slug got the full `FailureCode`/ARB treatment while every other RPC
-refusal stays unlocalized on purpose, gated out of reach by the UI (D115).
-The household screen's member and invite rows gained role-gated trailing
-affordances with confirm dialogs for Remove/Leave and none for Revoke.
-Verified with `dart analyze` (clean), `flutter test` (all suites green,
-including new repository and widget-test coverage), `make gen`, and
-`make test-sql` (green against a fresh `supabase db reset`, including new
-assertions for every authorization edge in both `rls_household_test.sql`
-and `rls_invites_test.sql`, and the D25 re-mint-after-revoke trap asserted
-directly). `make check` ran lint, lint-functions, test and test-functions
-clean before stopping at the same pre-existing `seed-check` failure noted
-below. Migration 22 was pushed to hosted and `redeem-invite` redeployed in
-this same slice. A release build against hosted was installed and launched
-on the physical Galaxy device and Revoke was confirmed live — the code
-vanished from the list immediately with no confirm dialog, and the "Code
-revoked." SnackBar appeared, round-tripping through the real RPC and
-rebuilt index on hosted Postgres. Remove and Leave were **not** exercised
-live: the household under test had only one member (the owner), so neither
-affordance had a second row to act on. This device-walk loop is only
-partially closed — it joins the others below rather than staying fully
-open, since Revoke is confirmed but Remove/Leave need a second account
-joined through an invite code first.
+**Last shipped:** Phase 6 part 3c (`39ee0ca`) — delete a household, and what
+a deleted household means. The last ordered sub-part of Phase 6 part 3, and
+with it, Phase 6 overall. `delete_household()` is a new `SECURITY DEFINER`
+RPC, owner-only, that does three things atomically: stamps
+`households.deleted_at`, revokes every live invite through migration 22's
+own `revoked_at`/`revoked_by` columns, and hard-deletes every
+`household_members` row for the household — the owner's own included, so no
+ex-member is stranded against `redeem-invite`'s single-household rule.
+Household-scoped children (recipes, meal plans, shopping lists, import jobs,
+translations, tags) are deliberately left unstamped — with no members left,
+`is_household_member()` already makes them unreachable. Owner-only is
+enforced inside the RPC rather than by narrowing `households_update`,
+answering the question D112 deferred here (D116). `redeem-invite`'s
+live-invite peek now left-embeds `households(deleted_at)` to catch the one
+race the migration's own sweep can't: a code claimed in the instant before a
+delete commits — reusing the existing `invite_revoked` slug, no new
+`FailureCode`. The household screen gained an owner-only destructive row at
+the bottom of the list, gated the same way 3b gated Remove/Leave (D115):
+absent for an adult, not disabled. Verified with `dart analyze` (clean),
+`flutter test` (576/576, including new widget and repository coverage),
+`deno check`/`lint`/`fmt`/`test` (clean, 161/161), `check_layers.dart` (OK),
+and `make test-sql` (green against a fresh `supabase db reset`, including a
+new `phase6-part3c` section in `rls_household_test.sql` — non-member and
+adult both refused, owner succeeds and the sweep is asserted in full, the
+ex-owner can `create_household()` again — and a swept-code assertion in
+`rls_invites_test.sql`). `make check` ran every stage clean except the same
+pre-existing `seed-check` failure noted below. Migration 23 was pushed to
+hosted and `redeem-invite` redeployed in this same slice. A release build
+was installed on the physical Galaxy device, but the signed-in account there
+was already in a real household with real recipes, so the actual on-device
+delete walk was left undone rather than risk deleting real data — it joins
+the open device-walk loops below.
 **In flight:** none
-**Next:** `/plan-slice phase6-part3c` (delete, and what a deleted household
-means — the last ordered sub-part of Phase 6 part 3; already knows to
-inherit 3b's confirm-dialog and gate-the-affordance patterns, D115), or
-close one of the device-walk loops still open below.
-**Latest decision:** D115
+**Next:** Phase 6 is now fully shipped (parts 1a, 1b, 2, 3a, 3b, 3c). There
+is no Phase 7 on `docs/ROADMAP.md` yet — a planning session is needed to
+define what comes next — or close one of the device-walk loops still open
+below, several of which have been waiting since Phase 5.
+**Latest decision:** D116
+
+**Phase 6 part 3c's own device-walk loop is open.** The release build
+installed and launched cleanly on the Galaxy device, but the signed-in
+account was already in a real household with real data, so nobody has
+confirmed against a real device that a throwaway household's owner sees the
+Delete row, that confirming shows the household's name in the dialog body,
+that confirming lands the now-memberless owner on `CreateHouseholdRoute`
+with no restart, and that creating a new household afterward works. An
+adult's *absence* of the row also needs a second account, same as 3b's own
+loop below.
 
 **Phase 6 part 3b's own Remove/Leave paths are unconfirmed on a real
-device.** Revoke was confirmed live (above), but Remove and Leave need a
-second account in the same household to have a row to act on — join a
-second Google account through a minted invite code first, then confirm:
-the owner sees Remove on the other member's row and no Leave on their own;
-the adult sees Leave on their own row and no Remove on the owner's;
-confirming Remove/Leave actually writes through and the row disappears;
-confirming Leave lands the now-memberless account on
-`CreateHouseholdRoute` with no restart.
+device.** Revoke was confirmed live, but Remove and Leave need a second
+account in the same household to have a row to act on — join a second
+Google account through a minted invite code first, then confirm: the owner
+sees Remove on the other member's row and no Leave on their own; the adult
+sees Leave on their own row and no Remove on the owner's; confirming
+Remove/Leave actually writes through and the row disappears; confirming
+Leave lands the now-memberless account on `CreateHouseholdRoute` with no
+restart. The same second account closes 3c's adult-absence check above in
+one sitting.
 
 **Phase 6 part 2's own device-walk loop is open.** The release build
 installed and launched cleanly on the Galaxy device, but nobody has
@@ -76,18 +87,18 @@ should serve this just as well as a hand-inserted one, once its own loop
 above is closed.
 
 **Phase 5 part 6's device-walk loop is also still open** (translating from
-the editor, `d7dcb81`) — not to be confused with the three Phase 6 loops
-above. The release build installed and launched cleanly on the physical
-Galaxy device against hosted, but nobody has confirmed back that tapping
-Translate from the editor actually saves, calls the Edge Function, and
-shows Review instead of Translate afterward on a real device.
+the editor, `d7dcb81`) — not to be confused with the Phase 6 loops above.
+The release build installed and launched cleanly on the physical Galaxy
+device against hosted, but nobody has confirmed back that tapping Translate
+from the editor actually saves, calls the Edge Function, and shows Review
+instead of Translate afterward on a real device.
 
 **Phase 5 part 5's device-walk loop is also still open.** The shopping
 list's clipboard-copy action installed cleanly on the same device, but
 copying an actual generated list, seeing the SnackBar, and pasting the
-text elsewhere have not been confirmed back either. Six device-walk
-loops (counting 3b's partial one above) are now open at once — a future
-session should close all of them, not just the newest one.
+text elsewhere have not been confirmed back either. Seven device-walk
+loops (counting 3b's partial one and 3c's new one above) are now open at
+once — a future session should close all of them, not just the newest one.
 
 **This Flutter SDK's `flutter_test` does not stub the clipboard channel.**
 Discovered in Phase 5 part 5: an unmocked call to `Clipboard.setData` (or
@@ -109,7 +120,8 @@ under `pumpAndSettle` in widget tests. `recipe_picker_sheet.dart`'s own
 `_promptForNote` dialog already left its local controller undisposed for
 this reason; `household_screen.dart`'s rename dialog now follows the same
 precedent rather than disposing. Phase 6 part 3b's Remove/Leave confirm
-dialogs carry no controller at all, so the question never came up again.
+dialogs, and 3c's delete confirm dialog, carry no controller at all, so the
+question never came up again.
 
 **A debug-signed and a release-signed APK can never overwrite each other
 in place.** Confirmed again in Phase 5 part 6: switching from `make
@@ -130,8 +142,9 @@ pošlo naopako." — no Dart stack trace reaches logcat in a release build, so
 this took a direct `information_schema.columns` query against hosted to
 diagnose. Fixed with `supabase db push`. Phase 6 part 1a's own migration
 (21) sat unpushed for a full slice before part 1b's device walk finally
-pushed it. Phase 6 part 3b's migration (22) was pushed in the same slice
-that wrote it, closing the loop that note asked for.
+pushed it. Phase 6 parts 3b and 3c both pushed their own migration (22, 23)
+in the same slice that wrote it, closing the loop that note asked for —
+twice in a row now.
 
 **Driving a real device blind by pixel coordinates is unreliable —
 `uiautomator dump` gives exact bounds instead.** Found in Phase 6 part 3b's

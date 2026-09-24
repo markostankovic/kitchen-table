@@ -442,10 +442,11 @@ that same precedent, because its four pieces carry very different risk.
 
 ### Part 3 — Editing the household
 
-**3a and 3b complete, 3c not built.** Three ordered sub-parts. Before 3a the
-household name was a read-only `ListTile` and the screen's only two actions
-were create-invite and copy-code — `HouseholdRepository` had no mutation of
-a household beyond `create`.
+**Status: complete** (`39ee0ca`). Decisions taken across it: D112–D116. See
+`docs/journal/phase-6.md`. Three ordered sub-parts. Before 3a the household
+name was a read-only `ListTile` and the screen's only two actions were
+create-invite and copy-code — `HouseholdRepository` had no mutation of a
+household beyond `create`.
 
 **3a — Rename, and who is allowed to.**
 **Status: complete** (`94448b2`). Decisions taken during it: D112. See
@@ -455,21 +456,9 @@ a household beyond `create`.
 **Status: complete** (`1fcf196`). Decisions taken during it: D113, D114,
 D115. See `docs/journal/phase-6.md`.
 
-**3c — Delete, and what a deleted household means.** Rule 4 gives the
-mechanic (`deleted_at`, no hard delete), but soft delete on `households`
-cascades to nothing — ten tables cascade on a hard `DELETE` the client can't
-perform, and `deleted_at` isn't one of them. Setting it today would leave
-every recipe, meal plan and shopping list intact while `fetchMineRows` filters
-the household out: the user lands back in onboarding with their data alive
-and unreachable, and the storage objects under it unreachable even to clean
-up once the membership row is gone. This part has to answer that, not just
-wire up a button — either cascade the tombstone to the household's own rows,
-or drop "delete" in favour of "everybody leaves," letting the last member out
-tombstone it. Needs a confirm step — 3b already shipped the first
-destructive-action copy (Remove/Leave's confirm `AlertDialog`s) and the
-"gate the affordance, don't localize the RPC refusal" stance (D115); 3c
-inherits both rather than deciding them fresh. Authorization again:
-owner-only is the likely answer even if rename stays open to any adult.
+**3c — Delete, and what a deleted household means.**
+**Status: complete** (`39ee0ca`). Decisions taken during it: D116. See
+`docs/journal/phase-6.md`.
 
 **Done-when (Part 3 overall):** a member can rename their household and see
 the new name without restarting; an invite code can be revoked and a revoked

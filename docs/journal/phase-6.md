@@ -392,3 +392,92 @@ one member (the owner), so neither affordance had a second row to act on;
 that needs a second account joined through an invite code first.
 
 ---
+
+### Part 3c — Delete, and what a deleted household means
+
+**Status: complete** (`39ee0ca`). Decisions taken during it: D116.
+
+The last ordered sub-part of Phase 6 part 3, and the owner's real exit
+(`leave_household()`'s own comment named this slice for it). A soft delete
+of `households` alone would have stranded every member: their
+`household_members` row would survive, so `resolveHousehold()` and 3b's own
+RPCs would keep resolving a household the client could no longer see, and
+`redeem-invite`'s single-household rule would lock every ex-member out of
+ever joining another one. So `delete_household()` does three things in one
+`SECURITY DEFINER` RPC, not just a stamp.
+
+- **Migration 23** (`20260924100000_delete_household.sql`) adds
+  `delete_household()`: resolves the caller's household and role with the
+  same `order by created_at limit 1` tiebreak the other RPCs use, refuses
+  anyone but the owner, then in order — stamps `households.deleted_at`,
+  revokes every live invite for the household (reusing migration 22's
+  `revoked_at`/`revoked_by`, no schema change), and hard-deletes every
+  `household_members` row for it, the owner's own included. No `grant
+  execute`, on `create_household()`'s own precedent. Household-scoped child
+  rows (recipes, meal plans, shopping lists, import jobs, translations,
+  tags) are deliberately left unstamped — with no members left,
+  `is_household_member()` already makes every one of them unreachable, so
+  cascade-stamping a dozen tables would buy nothing.
+- **D116** (this slice): owner-only is enforced inside the RPC, not by
+  narrowing `households_update` — the question D112 explicitly left open.
+  `households_update`'s RLS stays column-blind (any member could already
+  send `deleted_at` through it), because the RPC is the one enforceable
+  place for both the owner check and the membership sweep to happen
+  atomically. Memberships are hard-deleted for *every* member, not just
+  relinquished by the owner, because a surviving membership row would
+  strand its holder against `redeem-invite`'s single-household rule.
+- **`redeem-invite`'s live-invite peek** now left-embeds
+  `households(deleted_at)` (`households(deleted_at)`, not `!inner` — an
+  inner embed would drop the row and misreport "that code is not valid").
+  A non-null `deleted_at` throws the existing `invite_revoked` `HttpError` —
+  no new `FailureCode`, no new ARB pair, reusing D114's slug. This covers
+  exactly one narrow race the migration's own sweep can't: a code claimed in
+  the instant before a delete commits. Needed a `households as unknown as
+  {...}` cast in TypeScript — the untyped `SupabaseClient` infers every
+  embed as an array regardless of cardinality, since it has no schema to
+  read the foreign key's to-one/to-many shape from.
+- **`HouseholdScreen`** gains an owner-only destructive row at the bottom of
+  the list — `Divider()` then a `ListTile` with `Icons.delete_forever_outlined`,
+  both tinted the error color — gated the same way 3b gated Remove/Leave
+  (D115): absent for an adult, not disabled with a tooltip, since the
+  refusal copy stays unlocalized on purpose. The owner-check that gates it
+  is lifted into a shared `_iAmOwner()` helper so the row and the member
+  list's own leave/remove icons read one definition instead of duplicating
+  the membership loop. Confirming calls `deleteHousehold()`, invalidates and
+  re-awaits `currentHouseholdProvider`, and shows no success `SnackBar` —
+  the screen is torn down under the await while the router redirects to
+  `CreateHouseholdRoute`, `_leave`'s own shape exactly.
+- **`HouseholdRepository.deleteHousehold`** calls `_local.clearAll()` after
+  the remote call, on `create`/`redeemInvite`/`leaveHousehold`'s own D88
+  precedent, guarding the same network-blip-on-re-fetch case.
+
+**How it was verified.** `dart analyze` — clean. `flutter test` — 576/576
+green, including new widget coverage (owner sees the row and confirming
+calls `deleteHousehold` once; cancelling calls nothing; an adult never sees
+the row) and a new repository case mirroring `leaveHousehold`'s own D88 test.
+`deno check`/`deno lint`/`deno fmt --check` — clean; `deno test _shared/` —
+161/161. `dart run tool/check_layers.dart` — OK. `make test-sql` — green
+against a fresh `supabase db reset`, with a new `phase6-part3c` section in
+`rls_household_test.sql` on its own household (a non-member is refused; an
+adult is refused — the load-bearing assertion, since it's the whole reason
+this is an RPC and not the column-blind `households_update` policy; the
+owner succeeds, and afterward `deleted_at` is stamped, zero memberships
+remain including the owner's own, and every invite is revoked; the ex-owner,
+now memberless, can `create_household()` again — proof delete is an exit,
+not a trap) and a new assertion in `rls_invites_test.sql` (a code swept by
+`delete_household()` no longer matches `redeem-invite`'s claim `UPDATE`).
+`make check` ran lint, lint-functions, test, test-functions, `check_layers`
+clean before stopping at the same pre-existing, unrelated `seed-check`
+failure tracked since `c8be2bc` (`docs/STATE.md`).
+
+Migration 23 was pushed to hosted and `redeem-invite` redeployed in this
+same slice, on `docs/STATE.md`'s own standing note. A release build against
+hosted was installed on the physical Galaxy device (by serial), but the
+signed-in account there was already in a real household with real recipes —
+not a throwaway one — so the actual on-device delete walk (throwaway
+household → Delete row → confirm dialog → redirect to `CreateHouseholdRoute`
+with no restart; separately, an adult's absence of the row) was left
+undone rather than risk deleting real data. It joins 3b's own still-open
+Remove/Leave device-walk loop rather than closing it.
+
+---

@@ -77,10 +77,13 @@ part of the numbered decision sequence.
   oversights.
 - **Auditable membership revocation** — see D24. Members can now be removed
   (D113, Phase 6 part 3b), and it stays deferred: `remove_household_member()`
-  is still a hard delete with no trace. Likely answer is a
-  `household_member_removals` log table written by that same RPC, not a
+  is still a hard delete with no trace. `delete_household()` (D116, Phase 6
+  part 3c) widens the same gap — it hard-deletes every membership for a
+  household in one sweep, owner included, with no trace of who deleted it
+  beyond `households.created_by`. Likely answer is a
+  `household_member_removals` log table written by both RPCs, not a
   schema change to `household_members` itself. Revisit if anyone actually
-  asks "who removed whom."
+  asks "who removed whom" or "who deleted this household."
 - **Invite revocation** — closed by D114 (Phase 6 part 3b): `revoked_at`/
   `revoked_by`, the rebuilt partial index, and the `redeem-invite` guards it
   forced.
