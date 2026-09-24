@@ -527,31 +527,8 @@ changes `docs/DESIGN.md` in the same slice.
 
 ### Part 1 — The design foundation
 
-**Status: not started.**
-
-Replace the Phase 0 stub with a theme that was actually decided — colour roles
-rather than a bare seed, a type scale, a spacing scale — and write the result
-into `docs/DESIGN.md`, whose Colour, Type and Spacing sections exist today only
-as a description of the stub. Extract the first genuinely shared components
-into `lib/core/widgets/`, which has held nothing but `placeholder_screen.dart`
-since Phase 0. `core/recipes/widgets/`, `core/meal_plan/widgets/` and
-`core/ingredients/widgets/` are the precedent for what a shared widget folder
-looks like; the difference is that those are feature-shaped and this one is
-generic.
-
-This part is **not** a screen-by-screen restyle. The only screen changes it
-carries are the ones that fall out of the theme itself. Per-surface work is
-later parts, and splitting them off is what keeps this one reviewable.
-
-**Done-when:** `app_theme.dart` sets colour, type and spacing deliberately
-instead of taking `fromSeed` defaults; `docs/DESIGN.md`'s Colour, Type and
-Spacing sections are filled in and match the code; at least one shared
-component lives in `lib/core/widgets/` and is used by at least two screens;
-`make check` is clean apart from the known `seed-check` failure; and a release
-build has been walked on the physical device in `sr` and `en`, light and dark.
-
-Expect this part to produce a decision — the next id is D117 — recorded by
-`/close-slice` when it ships, not before.
+**Status: complete** (`e61e9a8`). Decisions taken during it: D117. See
+`docs/journal/phase-7.md`.
 
 ---
 

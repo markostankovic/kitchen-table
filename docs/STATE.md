@@ -1,109 +1,77 @@
 # State — 2026-09-24
 
 **Branch:** `main`
-**Last shipped:** Phase 6 part 3c (`39ee0ca`) — delete a household, and what
-a deleted household means. The last ordered sub-part of Phase 6 part 3, and
-with it, Phase 6 overall. `delete_household()` is a new `SECURITY DEFINER`
-RPC, owner-only, that does three things atomically: stamps
-`households.deleted_at`, revokes every live invite through migration 22's
-own `revoked_at`/`revoked_by` columns, and hard-deletes every
-`household_members` row for the household — the owner's own included, so no
-ex-member is stranded against `redeem-invite`'s single-household rule.
-Household-scoped children (recipes, meal plans, shopping lists, import jobs,
-translations, tags) are deliberately left unstamped — with no members left,
-`is_household_member()` already makes them unreachable. Owner-only is
-enforced inside the RPC rather than by narrowing `households_update`,
-answering the question D112 deferred here (D116). `redeem-invite`'s
-live-invite peek now left-embeds `households(deleted_at)` to catch the one
-race the migration's own sweep can't: a code claimed in the instant before a
-delete commits — reusing the existing `invite_revoked` slug, no new
-`FailureCode`. The household screen gained an owner-only destructive row at
-the bottom of the list, gated the same way 3b gated Remove/Leave (D115):
-absent for an adult, not disabled. Verified with `dart analyze` (clean),
-`flutter test` (576/576, including new widget and repository coverage),
-`deno check`/`lint`/`fmt`/`test` (clean, 161/161), `check_layers.dart` (OK),
-and `make test-sql` (green against a fresh `supabase db reset`, including a
-new `phase6-part3c` section in `rls_household_test.sql` — non-member and
-adult both refused, owner succeeds and the sweep is asserted in full, the
-ex-owner can `create_household()` again — and a swept-code assertion in
-`rls_invites_test.sql`). `make check` ran every stage clean except the same
-pre-existing `seed-check` failure noted below. Migration 23 was pushed to
-hosted and `redeem-invite` redeployed in this same slice. A release build
-was installed on the physical Galaxy device, but the signed-in account there
-was already in a real household with real recipes, so the actual on-device
-delete walk was left undone rather than risk deleting real data — it joins
-the open device-walk loops below.
+**Last shipped:** Phase 7 part 1 (`e61e9a8`) — the design foundation.
+`app_theme.dart` replaces the Phase 0 `fromSeed` stub with deliberate
+`ThemeData` for both brightnesses: the same seed (`0xFF7A5C3E`) but explicit
+colour roles, an explicit `TextTheme`, and five component themes
+(`AppBarTheme`, `ChipThemeData`, `FilledButtonThemeData`,
+`ListTileThemeData`, `InputDecorationTheme`). Dark mode pins `tertiary`/
+`onTertiary` explicitly (D117) because the generated value read too close to
+`secondary` at the width `import_review_screen.dart` draws its "needs
+attention" marker at; light mode keeps the generated value. `app_spacing.dart`
+names the spacing scale already de-facto in the codebase (4/8/12/16/24/32).
+`lib/core/widgets/` gained its first three real widgets — `AppErrorView`,
+`AppSectionHeading`, `AppEmptyState` — each replacing two or three
+disagreeing private duplicates, all deleted. `docs/DESIGN.md`'s Colour, Type
+and Spacing sections are filled in and match the code. Verified with `dart
+analyze` (clean), `flutter test` (584/584, including 8 new tests), `dart run
+tool/check_layers.dart` (OK), and `l10n-check` (green, no new ARB keys).
+`pubspec.yaml` unchanged, no migration, no Edge Function — presentation-only,
+so `make test-sql` and the Deno suite were not run. **The device walk did not
+happen** — no physical Galaxy device was attached in the session that built
+this slice, only an emulator, and CLAUDE.md's "running the app" specifically
+means the physical device. Neither this slice's own `sr`/`en` × light/dark
+walk nor any of the seven older loops it had planned to fold in actually ran;
+all eight stay open below.
 **In flight:** none
-**Next:** Phase 6 is now fully shipped (parts 1a, 1b, 2, 3a, 3b, 3c).
-**Phase 7 — Redesign** is now open on `docs/ROADMAP.md`, with Part 1 (the
-design foundation: a real theme, a written design language in the new
-`docs/DESIGN.md`, and the first shared widgets in `lib/core/widgets/`) as its
-first and ordered slice — plan it with `/plan-slice phase7-part1`. Later parts
-are per-surface and get written into the roadmap as each is planned. Before
-starting Part 1, close the device-walk loops listed below — seven of them,
-several waiting since Phase 5 — or fold them into Part 1's own device walk,
-since a redesign moves the very screens they would be walked on.
-**Latest decision:** D116
+**Next:** Phase 7's remaining parts are per-surface (recipe list and detail,
+meal plan, shopping list, household and settings, auth and onboarding) and
+independent of each other — plan whichever is highest-value next with
+`/plan-slice`. Before picking one, consider closing some of the eight open
+device-walk loops below first, since `docs/DESIGN.md` § Both languages and §
+Light and dark both assume a working device in hand, and none of the parts
+after Part 1 have one confirmed yet.
+**Latest decision:** D117
 
-**Phase 6 part 3c's own device-walk loop is open.** The release build
-installed and launched cleanly on the Galaxy device, but the signed-in
-account was already in a real household with real data, so nobody has
-confirmed against a real device that a throwaway household's owner sees the
-Delete row, that confirming shows the household's name in the dialog body,
-that confirming lands the now-memberless owner on `CreateHouseholdRoute`
-with no restart, and that creating a new household afterward works. An
-adult's *absence* of the row also needs a second account, same as 3b's own
-loop below.
+**Eight device-walk loops are open — none closed by Phase 7 part 1.** In
+order of age:
 
-**Phase 6 part 3b's own Remove/Leave paths are unconfirmed on a real
-device.** Revoke was confirmed live, but Remove and Leave need a second
-account in the same household to have a row to act on — join a second
-Google account through a minted invite code first, then confirm: the owner
-sees Remove on the other member's row and no Leave on their own; the adult
-sees Leave on their own row and no Remove on the owner's; confirming
-Remove/Leave actually writes through and the row disappears; confirming
-Leave lands the now-memberless account on `CreateHouseholdRoute` with no
-restart. The same second account closes 3c's adult-absence check above in
-one sitting.
+- **Phase 5 part 5** — copy a generated shopping list, see the SnackBar,
+  paste the text somewhere else. Not confirmed on a real device.
+- **Phase 5 part 6** — Translate from the editor saves, calls the Edge
+  Function, and shows Review instead of Translate afterward. Not confirmed.
+- **Phase 6 part 1a** — a `Posno`/`Lenten` pair shows the translated chip on
+  both list and detail when the language is switched; a second untranslated
+  tag still reads as typed; tapping a translated chip still narrows the
+  list. Not confirmed.
+- **Phase 6 part 1b** — saving a recipe with a brand-new Serbian tag mints
+  its English pair; the chip relabels on a language switch; saving again
+  makes no second model call (`ai_usage` rows or the function log). Not
+  confirmed.
+- **Phase 6 part 2** — typing a tag's spelling in either language narrows
+  the list; a title match and a tag match appear together for one query; a
+  chip tap still narrows by whole token only; a household with recipes but
+  no tags still shows the Favorites chip. Not confirmed.
+- **Phase 6 part 3b** — with a second account joined: owner sees Remove on
+  the other member's row and no Leave on their own; the adult sees Leave on
+  their own and no Remove on the owner's; both write through and the row
+  disappears; Leave lands the now-memberless account on
+  `CreateHouseholdRoute` with no restart. Needs a second Google account.
+- **Phase 6 part 3c** — on a throwaway household: the owner sees the Delete
+  row and an adult does not; the confirm dialog names the household;
+  confirming lands the ex-owner on `CreateHouseholdRoute` with no restart;
+  creating a new household afterward works. Needs a throwaway household —
+  the signed-in device account has real recipes.
+- **Phase 7 part 1** — `sr`/`en` × light/dark across recipe list, recipe
+  detail, meal plan, shopping list, household, settings: nothing truncates,
+  wraps badly or overflows in Serbian; nothing is unreadable in dark.
 
-**Phase 6 part 2's own device-walk loop is open.** The release build
-installed and launched cleanly on the Galaxy device, but nobody has
-confirmed against a real device that typing a tag's spelling — in either
-app language — actually narrows the list, that a title match and a tag
-match appear together for the same query, that a chip tap still narrows by
-whole token only, and that a household with recipes but no tags shows the
-Favorites chip.
-
-**Phase 6 part 1b's own device-walk loop is open.** The Edge Function
-deployed cleanly and the release build installed on the Galaxy device, but
-nobody has confirmed against the real device that saving a recipe with a
-brand-new Serbian tag actually mints its English pair, that the chip
-relabels when the app's language is switched, and that saving again makes
-no second model call (checkable via `ai_usage` rows or the function's log).
-
-**Phase 6 part 1a's own device-walk loop is also still open.** Migration 21
-is on hosted (pushed as part of 1b's own device walk), so that blocker is
-cleared, but nobody has yet confirmed against a real device that
-hand-inserting a `Posno`/`Lenten` pair and switching the app's language
-actually shows the translated chip on both the list and detail screens,
-that a second untranslated tag still reads as typed, and that tapping the
-translated chip still narrows the list. Part 1b's own model-minted pairs
-should serve this just as well as a hand-inserted one, once its own loop
-above is closed.
-
-**Phase 5 part 6's device-walk loop is also still open** (translating from
-the editor, `d7dcb81`) — not to be confused with the Phase 6 loops above.
-The release build installed and launched cleanly on the physical Galaxy
-device against hosted, but nobody has confirmed back that tapping Translate
-from the editor actually saves, calls the Edge Function, and shows Review
-instead of Translate afterward on a real device.
-
-**Phase 5 part 5's device-walk loop is also still open.** The shopping
-list's clipboard-copy action installed cleanly on the same device, but
-copying an actual generated list, seeing the SnackBar, and pasting the
-text elsewhere have not been confirmed back either. Seven device-walk
-loops (counting 3b's partial one and 3c's new one above) are now open at
-once — a future session should close all of them, not just the newest one.
+All eight need `make install-hosted` on the physical Galaxy device — not the
+emulator, not `flutter run`, not the local stack (CLAUDE.md). A future
+session should close as many as it reasonably can in one sitting rather than
+walking one loop at a time; 3b and 3c's second-account/throwaway-household
+setup can close both together.
 
 **This Flutter SDK's `flutter_test` does not stub the clipboard channel.**
 Discovered in Phase 5 part 5: an unmocked call to `Clipboard.setData` (or
@@ -123,20 +91,16 @@ right after `Navigator.pop()` closes a `showDialog` races the dialog's exit
 animation and throws "Tried to build dirty widget in the wrong build scope"
 under `pumpAndSettle` in widget tests. `recipe_picker_sheet.dart`'s own
 `_promptForNote` dialog already left its local controller undisposed for
-this reason; `household_screen.dart`'s rename dialog now follows the same
-precedent rather than disposing. Phase 6 part 3b's Remove/Leave confirm
-dialogs, and 3c's delete confirm dialog, carry no controller at all, so the
-question never came up again.
+this reason; `household_screen.dart`'s rename dialog follows the same
+precedent rather than disposing.
 
 **A debug-signed and a release-signed APK can never overwrite each other
-in place.** Confirmed again in Phase 5 part 6: switching from `make
-run-hosted` (debug) to a release install, or back, always needs the other
-variant uninstalled first — `adb install -r` alone fails with
-`INSTALL_FAILED_UPDATE_INCOMPATIBLE`. Uninstalling clears app data, so
-Google sign-in has to happen again afterward. `adb install` is also
-ambiguous whenever the Android emulator is attached alongside the physical
-device (Phase 5 part 5's finding) — install by serial, `adb -s <serial>
-install`.
+in place.** Switching from `make run-hosted` (debug) to a release install,
+or back, always needs the other variant uninstalled first — `adb install -r`
+alone fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`. Uninstalling clears
+app data, so Google sign-in has to happen again afterward. `adb install` is
+also ambiguous whenever the Android emulator is attached alongside the
+physical device — install by serial, `adb -s <serial> install`.
 
 **A slice with a migration needs `make db-push`, not just `make
 db-reset`, before testing against hosted.** Phase 5 part 1's own
@@ -145,35 +109,27 @@ the code shipped querying the new columns, but hosted was still on an
 older migration, so the hosted recipe list 400'd with a generic "Nešto je
 pošlo naopako." — no Dart stack trace reaches logcat in a release build, so
 this took a direct `information_schema.columns` query against hosted to
-diagnose. Fixed with `supabase db push`. Phase 6 part 1a's own migration
-(21) sat unpushed for a full slice before part 1b's device walk finally
-pushed it. Phase 6 parts 3b and 3c both pushed their own migration (22, 23)
-in the same slice that wrote it, closing the loop that note asked for —
-twice in a row now.
+diagnose. Phase 6 parts 3b and 3c both pushed their own migration in the
+same slice that wrote it, closing the loop this note used to ask for.
 
 **Driving a real device blind by pixel coordinates is unreliable —
-`uiautomator dump` gives exact bounds instead.** Found in Phase 6 part 3b's
-own device walk: a screenshot tool's displayed-vs-actual resolution scaling
-note, applied by hand across two separate `adb shell input tap` calls, put
-one tap on the wrong element (opened a "+" FAB menu instead of a bottom-nav
-tab) and a second on a menu item left open underneath a mis-tap, which
-launched the phone's native Camera app. `adb shell uiautomator dump
-/sdcard/ui.xml` followed by `adb pull` and grepping `bounds="..."` off
+`uiautomator dump` gives exact bounds instead.** `adb shell uiautomator
+dump /sdcard/ui.xml` followed by `adb pull` and grepping `bounds="..."` off
 `content-desc` attributes gives exact tap targets for any adb-driven
-verification going forward — Flutter's semantics tree exposes labeled,
-bounded elements this way even though there's no native View hierarchy.
+verification — Flutter's semantics tree exposes labeled, bounded elements
+this way even though there's no native View hierarchy.
 
-**Local sign-in requires a device that can hold a Google account**
-(Phase 4 part 3's finding). The Android emulator cannot add one at all —
-Google's device-integrity gating — so it stays useful for UI work and
-useless for exercising sign-in. A physical device's silent credential
-restore can sign in with no visible tap at all, which is worth knowing when
-a screenshot shows the recipe list with no sign-in step in between.
+**Local sign-in requires a device that can hold a Google account.** The
+Android emulator cannot add one at all — Google's device-integrity gating —
+so it stays useful for UI work and useless for exercising sign-in. A
+physical device's silent credential restore can sign in with no visible tap
+at all, which is worth knowing when a screenshot shows the recipe list with
+no sign-in step in between.
 
-**Google-only sign-in means no App Store submission** (Phase 4 part 4).
-Guideline 4.8 requires an equivalent privacy-preserving login option;
-Apple sign-in was dropped from the roadmap outright, not deferred.
-Personal signing and TestFlight are unaffected.
+**Google-only sign-in means no App Store submission.** Guideline 4.8
+requires an equivalent privacy-preserving login option; Apple sign-in was
+dropped from the roadmap outright, not deferred. Personal signing and
+TestFlight are unaffected.
 
 **Not yet watched:** a brand-new Google user landing on
 `CreateHouseholdRoute` through `on_auth_user_created`, flagged since Phase 4
