@@ -518,10 +518,10 @@ to move, and a loop left to go stale behind a redesign is a loop that never
 closes. Either close them first, or fold them into Part 1's own device walk —
 that walk already puts you on the device in both languages and both themes.
 
-The design language itself is not recorded here. `docs/DESIGN.md` holds it, the
+The design language itself is not recorded here. `docs/DESIGN_SYSTEM.md` holds it, the
 way `docs/ARCHITECTURE.md` holds the layering rules: this file records what
 changed, that one records what is true now. A part that changes the language
-changes `docs/DESIGN.md` in the same slice.
+changes `docs/DESIGN_SYSTEM.md` in the same slice.
 
 ---
 

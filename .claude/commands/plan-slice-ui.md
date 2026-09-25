@@ -12,12 +12,12 @@ writing one file and telling the user to `/clear`. It does not implement.
 
 ## 1. Orient cheaply
 
-Read `CLAUDE.md`, `docs/STATE.md`, and `docs/DESIGN.md` — that third one is
+Read `CLAUDE.md`, `docs/STATE.md`, and `docs/DESIGN_SYSTEM.md` — that third one is
 the difference from `/plan-slice`, which deliberately excludes it. Do not
 read `docs/ROADMAP.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`,
 `docs/INGREDIENTS.md`, or `docs/IDEAS.md`.
 
-`docs/DESIGN.md` says to load one section, not the file. For a UI slice that
+`docs/DESIGN_SYSTEM.md` says to load one section, not the file. For a UI slice that
 normally means **Colour**, **Type**, and **Spacing and layout**; add
 **Components** only if the slice might add or promote a widget, and **Both
 languages** / **Light and dark** only if you need their wording verbatim for
@@ -40,14 +40,14 @@ handoff, not a rule to recite back.
   private copy.
 
 - **Where a new widget goes.** If the slice adds one, does it clear
-  `docs/DESIGN.md` § Components' bar for `lib/core/widgets/` — generic,
+  `docs/DESIGN_SYSTEM.md` § Components' bar for `lib/core/widgets/` — generic,
   feature-agnostic, and a *second* feature actually needs it? If it knows
   what a recipe or a meal plan is, it belongs in the `core/<feature>/widgets/`
   middle ground (D43, D53) or in the feature's own `presentation/`.
 
 - **What is still hardcoded.** Raw `Color` literals, raw `fontSize`, and
   literal `EdgeInsets`/`SizedBox` numbers in the files being touched.
-  `docs/DESIGN.md` § Spacing is explicit that migration is not retroactive
+  `docs/DESIGN_SYSTEM.md` § Spacing is explicit that migration is not retroactive
   across the app, but *is* expected for files a slice already opens — so list
   the ones in scope rather than leaving the builder to decide.
 
@@ -58,7 +58,7 @@ say so and propose splitting it by surface.
 ## 3. Write `docs/active/$ARGUMENTS.md`
 
 This file is the entire context the implementation session will have. The
-build session is deliberately context-starved: "see `docs/DESIGN.md` §
+build session is deliberately context-starved: "see `docs/DESIGN_SYSTEM.md` §
 Colour" in a handoff is a bug. **Inline the actual values.**
 
 ```markdown
@@ -92,8 +92,8 @@ be green.
 Device walk: `/design-walk <surface>` — sr/en x light/dark. Nothing
 truncates, wraps badly or overflows in Serbian; nothing is unreadable in dark.
 
-## DESIGN.md sections to update
-<which sections this slice makes stale — DESIGN.md requires a slice that
+## DESIGN_SYSTEM.md sections to update
+<which sections this slice makes stale — DESIGN_SYSTEM.md requires a slice that
 changes the design language to update it in the same slice, the way a schema
 change updates DATA_MODEL.md. Write "none — applies existing rules only" if
 that is genuinely the case.>

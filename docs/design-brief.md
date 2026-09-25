@@ -5,10 +5,10 @@ constraints and its screens, written to be handed to a design tool
 (claude.ai/design) that has never seen the codebase. It is *input*, not
 doctrine.
 
-`docs/DESIGN.md` remains the source of truth for what is true in the code
+`docs/DESIGN_SYSTEM.md` remains the source of truth for what is true in the code
 right now. This file restates parts of it for an outside reader, and adds
-the content inventory and bilingual data that DESIGN.md has no reason to
-carry. When the two disagree, DESIGN.md is right.
+the content inventory and bilingual data that DESIGN_SYSTEM.md has no reason to
+carry. When the two disagree, DESIGN_SYSTEM.md is right.
 
 Written 2026-09-25, against `main` at `3578266`.
 

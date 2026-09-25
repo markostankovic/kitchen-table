@@ -12,7 +12,7 @@ file and telling the user to `/clear` — it does not implement anything.
 
 Read `CLAUDE.md` and `docs/STATE.md` only. Do not read `docs/ROADMAP.md`,
 `docs/DECISIONS.md` (it's a stub — see below), `docs/ARCHITECTURE.md`,
-`docs/DATA_MODEL.md`, `docs/INGREDIENTS.md`, `docs/DESIGN.md`, or
+`docs/DATA_MODEL.md`, `docs/INGREDIENTS.md`, `docs/DESIGN_SYSTEM.md`, or
 `docs/IDEAS.md` yet. Follow `CLAUDE.md`'s "Finding context" routing table from
 here — load only what the slice's actual subject requires.
 

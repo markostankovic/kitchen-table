@@ -18,7 +18,7 @@ answers the question in front of you.
 | A layering or dependency rule | `docs/ARCHITECTURE.md` § relevant section |
 | A column, table, RLS policy | `docs/DATA_MODEL.md` § relevant table |
 | Matching, parsing, normalization | `docs/INGREDIENTS.md` |
-| Colour, type, spacing, a shared widget | `docs/DESIGN.md` § relevant section |
+| Colour, type, spacing, a shared widget | `docs/DESIGN_SYSTEM.md` § relevant section |
 | "Why is it built this way?" | grep `docs/decisions/INDEX.md`, then open only that `Dxx` |
 | What happened in a past phase | grep `docs/journal/` — never read whole |
 | A future idea worth remembering | `/idea "<text>"`, or `docs/IDEAS.md` |
@@ -31,7 +31,7 @@ you are exploring rather than working. Say what you are looking for and why.
 
 `docs/IDEAS.md` is raw, unvetted product ideas — deliberately excluded from
 `/plan-slice`'s orientation step, the same way `ARCHITECTURE.md`,
-`DATA_MODEL.md`, `INGREDIENTS.md`, and `DESIGN.md` already are. Load it only
+`DATA_MODEL.md`, `INGREDIENTS.md`, and `DESIGN_SYSTEM.md` already are. Load it only
 when someone is explicitly asking what ideas exist, not while planning or
 building a slice.
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_sizes.dart';
 import '../theme/app_spacing.dart';
 
 /// A centered "nothing here" state: icon, title, optional body, optional
@@ -15,7 +16,11 @@ import '../theme/app_spacing.dart';
 ///
 /// Which icon, which strings and whether there is an action are all the
 /// caller's call: this widget does not know what a recipe or a shopping list
-/// is.
+/// is. On [action], the design (`docs/DESIGN_SYSTEM.md` § Components) asks
+/// for **at most one, and tonal** (`FilledButton.tonal`): an empty state is
+/// an invitation, and a full-emphasis button on a screen with nothing on it
+/// shouts. Enforcing that is the callers' business, in the slices that own
+/// those screens, not this widget's.
 class AppEmptyState extends StatelessWidget {
   const AppEmptyState({
     required this.icon,
@@ -38,7 +43,13 @@ class AppEmptyState extends StatelessWidget {
     return ListView(
       children: <Widget>[
         const SizedBox(height: AppSpacing.xxl),
-        Center(child: Icon(icon, size: 56, color: theme.colorScheme.outline)),
+        Center(
+          child: Icon(
+            icon,
+            size: AppSizes.emptyStateIcon,
+            color: theme.colorScheme.outline,
+          ),
+        ),
         const SizedBox(height: AppSpacing.lg),
         Center(
           child: Text(

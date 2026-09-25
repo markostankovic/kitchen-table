@@ -41,14 +41,18 @@ class AppShell extends ConsumerWidget {
           selectedIcon: const Icon(Icons.calendar_month),
           label: loc.navPlan,
         ),
+        // List and Settings take the design's glyphs (D118): a bulleted list
+        // rather than a checklist, sliders rather than a cog. The list glyph
+        // has no filled variant worth using, so both states are the same
+        // icon -- the `primary` pill behind it is what marks it selected.
         NavigationDestination(
-          icon: const Icon(Icons.checklist_outlined),
-          selectedIcon: const Icon(Icons.checklist),
+          icon: const Icon(Icons.format_list_bulleted),
+          selectedIcon: const Icon(Icons.format_list_bulleted),
           label: loc.navList,
         ),
         NavigationDestination(
-          icon: const Icon(Icons.settings_outlined),
-          selectedIcon: const Icon(Icons.settings),
+          icon: const Icon(Icons.tune_outlined),
+          selectedIcon: const Icon(Icons.tune),
           label: loc.navSettings,
         ),
       ];

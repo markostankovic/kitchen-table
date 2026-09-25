@@ -6,7 +6,7 @@ argument-hint: <surface-or-slice-name>
 Walk the surface named `$ARGUMENTS` on the physical device — e.g.
 `recipe-list`, `phase7-part1`, or a slice name.
 
-This is verification, not a slice. `docs/DESIGN.md` § Both languages and §
+This is verification, not a slice. `docs/DESIGN_SYSTEM.md` § Both languages and §
 Light and dark both state rules that **nothing automated catches**: Serbian
 runs longer than English, and a colour tuned in one brightness and eyeballed
 in the other is how a redesign ends up with an unreadable dark mode. This
