@@ -1,61 +1,63 @@
-# State — 2026-09-25
+# State — 2026-09-26
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 5 (`f6c5dcc`), the shopping list surface.
-`shopping_list_screen.dart` takes the Garden "List — offline, document in
-SR" layout. It has:
+**Last shipped:** Phase 7 part 6 (`882d77a`), the import review surface.
+`import_review_screen.dart` takes the Garden "Review import" layout. It has:
 
-- a full-width three-segment range bar (`Ova nedelja` · `Sledeća` ·
-  `Datumi`), whose selection is **derived** from `shoppingRangeProvider`,
-  with no selected check; re-tapping `Datumi` reopens the picker
-- a `Sledeća lista: …` line, shown only when there is no list or the range
-  differs from the list's own
-- the generated-at and saved-copy lines, both `onSurfaceVariant`
-- an always-on `SR`/`EN` doc-language tag
-- one document `Card` of `IngredientLineRow`s: first quantity in the column,
-  further families and raw lines in the trailer, category blocks `md` apart
-  with **no headings** (D105-amended) and a hairline on every row but the
-  card's last
-- a collapsed staples `Card`
+- a summary card: the matched count in `titleMedium`, a `primary` progress
+  bar, and a 3px `reviewMarker` bar before the attention line, shown only
+  when something is flagged
+- the title field on the theme, with its label above it
+- read-only `IngredientLineRow`s (name from the local parse, falling back to
+  the raw text; `→ <catalog name>` trailer) that open one at a time into the
+  unchanged `IngredientLineField` on tap, with `Done` to close; Add
+  ingredient opens the new line by id; long-press drags
+- Method as a collapsed `ExpansionTile` card that expands in place
+- a bottom action bar on `surface` with a top hairline: outlined Discard,
+  behind a confirm dialog, beside filled Save
+- Failed and AlreadySaved on `AppEmptyState`, the failed icon in `outline`
 
-`formatItemQuantityParts` is new, `IngredientLineRow` gains `showDivider`,
-and four ARB key pairs were added. D122 records the vocabulary.
+`IngredientLineRow`'s flagged state gains a `surfaceContainerLow` tint, and
+its marker moves to a foreground decoration, so the quantity column no longer
+shifts 3px. Flagged still means matched without auto-accept, not unmatched.
+Five ARB key pairs were added. D123 records the vocabulary, and
+`docs/DESIGN_SYSTEM.md` gains `### Import review`.
 
-Verified with `dart analyze` (clean), `flutter test` (**645/645**, including
-a 360×780 Serbian no-overflow test and D94 pinned by an English-list-under-a-
-Serbian-reader test), `check_layers` (OK), `l10n-check` (idempotent),
-`make test-sql` and Deno (green). `make check` is green except the
-pre-existing `seed-check`.
+Verified with `dart analyze` (clean), `flutter test` (**654/654**, including
+tap-to-edit, discard-with-confirm, a flagged/unflagged quantity-alignment
+test and a 360×780 Serbian no-overflow test), `check_layers` (OK),
+`l10n-check` (idempotent), `make test-sql` and Deno (green). `make check` is
+green except the pre-existing `seed-check`.
 
-**Walked on the physical Galaxy** across `sr`/`en` × light/dark. The walk
-found two defects, both fixed and re-walked the same evening: the selected
-segment wrapped, and category gaps read as uneven spacing. The walk closed
-part 1's loop (the "untranslated strings" were a list generated in English,
-working as D94 designs), part 2's loop, and part 5's own.
+**Walked on the physical Galaxy** across `sr`/`en` × light/dark, spending two
+AI parses on hosted. The walk found one defect: a line added with Add
+ingredient collapsed on its first keystroke. It was fixed and re-walked in
+the same sitting. The walk also closed part 2's marker-in-dark leftover and
+part 3's dashed-ring leftover. `AlreadySaved` was not reachable on the
+device: Save navigates with `go`, so Back lands on the list. `Failed` was not
+provoked. A draft `Kajgana` recipe from the walk is on hosted.
 **In flight:** none
-**Next:** first, `/design-walk meal-plan` on the physical Galaxy to close part
-4's own loop. It also confirms the meal plan's copy of the saved-copy line,
-which is still unwalked. Then the next per-surface slice of
-`docs/design/MIGRATION_PLAN.md` § 4, to plan with `/plan-slice-ui`. Slices
-5–7 are left (import review, forms, auth/household). **Slice 5,
-`phase7-import-review`, is next in order.** It reuses `IngredientLineRow`
-(its fourth consumer; `showDivider` means "last row of a card", D122). It
-can also check the 3px `reviewMarker` in dark and the unmatched dashed ring,
-which no walk has looked at yet: part 2 flagged the marker, part 3 the
-ring. Slice 6 folds in Phase 5 part 6's walk, and slice 7 folds in Phase 6
-3b/3c's.
-**Latest decision:** D122
+**Next:** first, `/design-walk meal-plan` on the physical Galaxy, to close
+part 4's own loop. It also confirms the meal plan's copy of the saved-copy
+line, which is still unwalked. Then the next per-surface slice of
+`docs/design/MIGRATION_PLAN.md` § 4, planned with `/plan-slice-ui`. Slices 6
+and 7 are left (forms, auth/household). Slice 6 folds in Phase 5 part 6's
+walk, and slice 7 folds in Phase 6 3b/3c's. Noticed on part 6's walk, and
+likely slice 6's: `IngredientLineField`'s match chip reads `Nema poklapanja`
+under an English reader.
+**Latest decision:** D123
 
 **Six device-walk loops are open.** Phase 7 part 3's walk ran on the physical
-Galaxy (2026-09-25) and closed four — Phase 6 1a and 2, and part 2's own FAB
+Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
-re-walked in the same sitting, so part 3's loop closes too. Part 5's walk
+re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
 (`/design-walk shopping-list`, 2026-09-25) closed part 1's shopping-list
 translation item and part 2's two remaining defects, so both of those loops
-close; it found two defects of its own, both fixed and re-walked the same
-evening, so part 5's own loop closes too. (The count had drifted: before
-this walk eight were open, not seven.) In order of
-age:
+closed. It found two defects of its own, both fixed and re-walked the same
+evening, so part 5's own loop closed too. Part 6's walk
+(`/design-walk import-review`, 2026-09-26) opened no loop. It found one
+defect, fixed and re-walked in the same sitting, and answered part 2's
+marker-in-dark and part 3's dashed-ring leftovers below. Oldest first:
 
 - **Phase 5 part 5** — copy a generated shopping list, see the SnackBar,
   paste the text somewhere else. **Half confirmed by Phase 7 part 5's walk
@@ -175,6 +177,9 @@ age:
   `import_jobs` row — and that was deliberately skipped rather than spend it.
   The value measures 8.44:1 against the dark surface, well clear of the
   generated value D117 rejected, but nobody has looked at it at 3px.
+  **Confirmed by Phase 7 part 6's walk (2026-09-26):** on the physical Galaxy
+  the 3px marker reads clearly in dark, on the flagged rows' `#1C1C16` tint and
+  as the bar in the summary card.
 
 - ~~**Phase 7 part 3**~~ — **closed 2026-09-25.** Walked on the physical
   Galaxy across `sr`/`en` × light/dark on the recipe list, the recipe detail
@@ -223,7 +228,9 @@ age:
 
   Not exercised: an unmatched ingredient line's dashed ring. No recipe in this
   household has an unmatched line, so there was nothing to look at — it needs
-  seeded data rather than another walk.
+  seeded data rather than another walk. **Confirmed by Phase 7 part 6's walk
+  (2026-09-26):** a hand-added line on the import review showed the 16dp dashed
+  ring, legible and reading as dashed in both brightnesses.
 
 - ~~**Phase 7 part 5**~~ — **closed 2026-09-25.** The shopping list
   surface, walked on the physical Galaxy across `sr`/`en` × light/dark
@@ -293,8 +300,8 @@ All six open ones need `make install-hosted` on the physical Galaxy device — n
 emulator, not `flutter run`, not the local stack (CLAUDE.md). A future
 session should close as many as it reasonably can in one sitting rather than
 walking one loop at a time; 3b and 3c's second-account/throwaway-household
-setup can close both together. Phase 7 parts 2, 3 and 5 all walked on
-the device (2026-09-25) — release build, both languages, both brightnesses —
+setup can close both together. Phase 7 parts 2, 3, 5 and 6 all walked on
+the device (2026-09-25/26) — release build, both languages, both brightnesses —
 so the older loops are blocked on nothing but someone sitting down with the
 phone. Phase 5 part 5's clipboard loop and Phase 6 1b's tag-minting loop are
 the two that need an action taken rather than a screen read.

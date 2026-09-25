@@ -617,6 +617,34 @@ and 2's walk loops close with it.
 
 ---
 
+### Part 6 — The import review surface
+
+**Status: complete** (`882d77a`). Decisions taken during it: D123. See
+`docs/journal/phase-7.md`.
+
+Slice 5 of `docs/design/MIGRATION_PLAN.md` § 4. The import review gets:
+
+- a summary card with a matched progress bar and a `reviewMarker` bar
+  before the attention line
+- read-only `IngredientLineRow`s that open one at a time into the unchanged
+  `IngredientLineField`
+- flagged rows marked by a foreground 3px marker on a tint, so the quantity
+  column no longer shifts
+- Method collapsed into a card that expands in place
+- a bottom action bar on `surface` with Discard (behind a confirm dialog)
+  beside Save
+- Failed and AlreadySaved moved onto `AppEmptyState`
+
+Flagged still means matched without auto-accept, not unmatched, despite the
+mock.
+
+Walked on the physical Galaxy across `sr`/`en` × light/dark. The walk found
+one defect: a line added with Add ingredient collapsed on its first
+keystroke. It was fixed and re-walked in the same sitting. Part 2's
+marker-in-dark and part 3's dashed-ring leftovers close with it.
+
+---
+
 ## Standing rules across phases
 
 - Anything AI-produced is `status = 'draft'` until a human marks it tested.

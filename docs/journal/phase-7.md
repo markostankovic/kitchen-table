@@ -622,3 +622,144 @@ Phase 5 part 5 is half confirmed.
 **Out of scope, noted as ideas:** a Serbian decimal comma (`1,5`); count
 units reading `3 kom jaje`; the mock's genitive names (`kiselog kupusa`),
 which would need catalog data.
+
+### Part 6 — The import review surface
+
+**Status: complete** (`882d77a`). Decisions taken during it: D123.
+
+Slice 5 of `docs/design/MIGRATION_PLAN.md` § 4. `import_review_screen.dart`
+takes the Garden "Review import" layout. It is presentation only: no
+provider, repository method, route or `supabase/` file changed. The one
+server call newly reachable from the review body is the existing
+`importRepositoryProvider.dismiss`, which `_Failed` already made. The other
+files touched are `IngredientLineRow`, the ARBs and two test files.
+`docs/DESIGN_SYSTEM.md` was updated in the record commit, not the code
+commit. The build session skipped the slice file's design-system step, and
+closing the slice caught it.
+
+The old screen was a form: a summary with a sparkle icon and paprika text, an
+outlined title field, every ingredient as an always-open
+`IngredientLineField` inside a `Container` with a 3px `tertiary` border when
+flagged, the steps as outlined fields under a heading, and a lone Save at
+the bottom. The new one:
+
+- **The summary card.** `Poklopljeno N od M sastojaka` in `titleMedium`, a
+  4dp `primary` progress bar on `surfaceContainerHighest`, and, only when
+  something is flagged, a 3px × 16dp `reviewMarker` bar before `N vredno
+  pažnje pre čuvanja` in `bodySmall` `onSurfaceVariant`. Paprika is the bar,
+  not the text.
+- **The title field** is on the theme, with its label above it in
+  `titleSmall`. The local `OutlineInputBorder` that overrode the theme is
+  gone, and so is the one on the steps.
+- **Read-only rows that open on tap.** Each line is an `IngredientLineRow`
+  (its fourth consumer). The quantity goes through `formatQuantity`, the unit
+  is spelled in the **recipe's** locale, and the name is the local parse of
+  the raw text, falling back to the whole raw text (rule 3). The trailer
+  reads `→ <catalog name> · <note> · opciono`. A tap swaps the row in place
+  for the unchanged `IngredientLineField`, with a right-aligned
+  `Done`/`Gotovo`. One `_openLineId` keeps one line open at a time. The list
+  stays a `ReorderableListView` because the field's drag listener asserts
+  outside one, and closed rows drag by long-press.
+- **`IngredientLineRow`'s flagged state.** It gains a `surfaceContainerLow`
+  tint, and the marker moves from `decoration` to `foregroundDecoration`. As
+  a decoration border it added 3px of padding, so a flagged row's quantity
+  sat 3px right of its neighbours. The tint gets `sm` of right padding and
+  none on the left.
+- **Method** is a theme `Card` holding a collapsed `ExpansionTile`
+  (`Postupak`, `N koraka`), which expands in place to the step fields and
+  Add step.
+- **The action bar** is on `surface` with a top hairline. It holds outlined
+  `Odbaci ovaj uvoz` and filled `Sačuvaj recept` as equal halves, each padded
+  `lg` so the Serbian fits at 360dp. Discard opens a confirm dialog whose
+  `Odbaci` is a `TextButton` in `destructive`, then `dismiss` → recipe list,
+  mirroring `_FailedState._dismiss`. Both buttons are disabled while either
+  runs.
+- **Failed and AlreadySaved** move onto `AppEmptyState`. The failed icon is
+  `outline` rather than `error` (a failed import is not validation), and its
+  discard stays unconfirmed. `Otvori recept` is tonal.
+- **Five ARB key pairs:** `importStepsCount` (plural), `discardImportDialogTitle`,
+  `discardImportConfirmBody`, `discardButton`, `doneButton`.
+
+**What "flagged" means did not change.** It is the set of lines the server
+matched without `autoAccept`. The Garden mock flags an unmatched `Vegeta`
+line. The app keeps its own semantics: unmatched gets the dashed ring and
+nothing red.
+
+**Changed by the walk.** The plan said a blank line renders open, so Add
+ingredient needed "no id bookkeeping". On the device, the first keystroke
+made the line non-blank, and it collapsed into a read-only `m` row with the
+keyboard gone. `_addLine()` now opens the new line by id. Its test types
+into the line and fails against the pre-fix code.
+
+**How it was verified.** `dart analyze` was clean. `flutter test` passed
+**654/654**. The import review screen file has 13 tests. The old "renders
+every line" test asserted whole raw strings in text fields and now finds the
+rich-text rows plus `→ šargarepa`, with `za posluživanje` still on screen
+without a quantity or unit. New tests cover:
+
+- only the LLM line flagged, and the unmatched one carrying the ring with no
+  flag
+- tap-to-edit: no field before a tap, exactly one after, none after `Done`,
+  still one after tapping two rows in turn
+- Add ingredient opening a blank line that stays open after a keystroke
+- Method collapsed on open (`1 step` shown, the step text not) and expanded
+  on tap
+- Discard: Cancel makes no `dismiss` call, and confirming calls
+  `dismiss('job-1')` once and lands on the recipe route
+- `_Failed` rendering through `AppEmptyState` with an `outline` icon
+- Serbian at **360×780** with no overflow and both actions present
+
+The tests now pump through a small `GoRouter`, so Discard's navigation
+happens, and they override `importRepositoryProvider` with a fake whose
+`noSuchMethod` throws. `ingredient_line_row_test.dart` adds three tests: the
+tint and foreground marker on a flagged row, neither on an unflagged row
+(the three other consumers), and the quantity's right edge landing at the
+same x for a flagged and an unflagged row. `check_layers` passed.
+`l10n-check` regenerates identically. `make test-sql` and the Deno suite
+passed. `make check` is otherwise green except the pre-existing
+`seed-check`.
+
+**Walked on the device.** `/design-walk import-review` on the physical
+Galaxy, hosted release build, across `sr`/`en` × light/dark. A paste import
+of `Proja sa sirom` (ASCII Serbian: `adb input text` cannot type
+diacritics) was the real parse the plan budgeted:
+
+- `Čitanje recepta…` shows with its hint while the job runs.
+- The server matched 6 of 6, including `Vegeta` and `1 saka pirinca`, and
+  flagged two (`feta`, `pirinač`). Two adjacent flagged rows read as one
+  continuous marker with the hairline between them intact.
+- The quantity column lines up across the flagged rows (`300`/`2`/`200`/`100`/`1`).
+- The 3px marker is clearly legible in dark, on the rows and in the summary.
+- The progress bar shows on its track in dark.
+- The dashed ring reads as dashed at 16dp in both brightnesses. The parse
+  left no line unmatched, so it was seen on a hand-added line.
+- `Odbaci ovaj uvoz` / `Sačuvaj recept` each sit on one line above the nav
+  bar, and the bar reads as separate from it.
+- The dialog fits without scrolling. Cancel stays, and Discard lands on the
+  recipe list with no recipe created.
+- `Postupak` / `3 koraka` expands in place.
+- The draft survives a tab switch to change the language, and the rows stay
+  in the recipe's language under an English reader.
+
+A second import, `Kajgana`, re-checked the Add-ingredient fix (`malo
+ljubavi` typed whole, the line staying open), showed the summary with
+nothing flagged, and was saved, landing on its detail. It is now a draft
+recipe on hosted.
+
+Not exercised:
+
+- **`AlreadySaved`.** The plan expected Back from the saved recipe to reach
+  the review. Save navigates with `go`, which was already the case before
+  this slice, so Back lands on the recipe list. Widget tests cover the
+  state.
+- **`Failed`.** Nothing provoked it, and no quota was spent trying.
+- **A long-press reorder** and picking a match through the chip.
+
+Noticed, not this slice's: the match chip under an open line reads `Nema
+poklapanja` under an English reader. That is `IngredientLineField`, which
+this slice was told not to touch. The flagged tint is 5–6 levels off the
+ground in both brightnesses (the token pairing), so the marker carries the
+signal.
+
+**Closed by it.** Part 2's "3px marker in dark, not verified" and part 3's
+"unmatched ring not exercised" leftovers. No new loop opened.

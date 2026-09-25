@@ -77,7 +77,9 @@ values were designed as a pair.
 | `onTertiaryContainer` | `#461200` | `#FFE2DA` | content on it |
 
 Paprika is a *signal*, never a surface a screen sits on. It has to stay legible
-at 3px — that constraint is why the role exists (D117).
+at 3px — that constraint is why the role exists (D117). Confirmed on device
+(Phase 7 part 6's walk): at 3px on the import review, `#FF9569` on the dark
+`#1C1C16` tint reads clearly.
 
 ### Error
 
@@ -351,8 +353,15 @@ right-aligned in its own narrow column so fractions line up; the unit is
   ring on the trailing edge (a small `CustomPainter`, not a package, and not a
   ring around the whole row). Never `error`, never red — a line the catalog did
   not know is a supported outcome, not a fault
-- **flagged** (import review only) — a 3px `reviewMarker` left edge and a
-  tinted row
+- **flagged** (import review only) — a 3px `reviewMarker` left edge painted
+  as a **foreground** (it takes no layout, so the quantity column stays
+  aligned) on a `surfaceContainerLow` tint, with `sm` of right padding and
+  none on the left
+
+On import review the name is the local parse of the raw text, falling back to
+the whole raw text when there is no usable parse, and a matched line's trailer
+leads with `→ <catalog name>` (in the recipe's language), joined to the note
+or `opciono` with ` · `.
 
 Rows take `showDivider`: the last row of a card omits its hairline, so the
 card's own edge does the separating. Every other row keeps it, including the
@@ -475,6 +484,43 @@ not rewritten; the snackbar says it applies next time).
 an `ExpansionTile`, **collapsed**, with `const Border()` shapes so it draws no
 lines of its own: `Verovatno imate (N)` in `titleSmall`, the staples subtitle
 in `bodySmall` `onSurfaceVariant`, the same `IngredientLineRow`s inside.
+
+### Import review
+
+All of these are private in `import_review_screen.dart`; none is in
+`core/widgets/` (one consumer each). The screen is built for speed (D8):
+reading, not editing, is the workflow.
+
+**The summary card.** A theme `Card` padded `lg`: the matched count in
+`titleMedium`, `md` below a 4dp `LinearProgressIndicator` (`primary` on
+`surfaceContainerHighest`, radius `xs`), and — only when something is flagged
+— `md` below a 3px × 16dp `reviewMarker` bar, `sm`, then `N vredno pažnje pre
+čuvanja` in `bodySmall` `onSurfaceVariant`. Paprika is the bar, never the
+text.
+
+**The title field.** Its label above it in `titleSmall`, `sm` gap, the field
+from the theme with `bodyMedium` typed text; no local border.
+
+**Ingredient lines.** Read-only `IngredientLineRow`s. **Tap opens one** in
+place into the unchanged `IngredientLineField`, with a right-aligned `Done` /
+`Gotovo` `TextButton` under it; opening another closes it (one open at a
+time). A blank line always renders open, and Add ingredient opens the line it
+adds by id. Long-press drags. Flagged means matched without auto-accept — an
+unmatched line is **not** flagged, it gets the dashed ring.
+
+**Method.** A theme `Card` holding a collapsed `ExpansionTile` (`const
+Border()` shapes, `expand_more` in `outline`): `Postupak` in `titleMedium`,
+`N koraka` in `bodySmall` `onSurfaceVariant`. It expands **in place** to the
+step fields and Add step. No route, so no chevron.
+
+**The action bar.** Pinned under the list, on `surface` (not
+`surfaceContainer`, the nav bar's colour — the two would merge) with a 1dp
+`outlineVariant` top hairline, padded `lg`/`md`. Outlined `Odbaci ovaj uvoz`
+and filled `Sačuvaj recept` as equal halves, `md` apart, each with `lg`
+horizontal padding so the Serbian fits on one line at 360dp. Discard sits
+behind a confirm dialog whose destructive action is a `TextButton` in
+`destructive` — text, not a filled button. The Failed state's discard needs
+no confirm: a failed parse has nothing to lose.
 
 ### Menu, snackbar, banner
 
