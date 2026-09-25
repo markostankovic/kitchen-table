@@ -1,40 +1,43 @@
-# State — 2026-09-24
+# State — 2026-09-25
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 1 (`e61e9a8`) — the design foundation.
-`app_theme.dart` replaces the Phase 0 `fromSeed` stub with deliberate
-`ThemeData` for both brightnesses: the same seed (`0xFF7A5C3E`) but explicit
-colour roles, an explicit `TextTheme`, and five component themes
-(`AppBarTheme`, `ChipThemeData`, `FilledButtonThemeData`,
-`ListTileThemeData`, `InputDecorationTheme`). Dark mode pins `tertiary`/
-`onTertiary` explicitly (D117) because the generated value read too close to
-`secondary` at the width `import_review_screen.dart` draws its "needs
-attention" marker at; light mode keeps the generated value. `app_spacing.dart`
-names the spacing scale already de-facto in the codebase (4/8/12/16/24/32).
-`lib/core/widgets/` gained its first three real widgets — `AppErrorView`,
-`AppSectionHeading`, `AppEmptyState` — each replacing two or three
-disagreeing private duplicates, all deleted. `docs/DESIGN.md`'s Colour, Type
-and Spacing sections are filled in and match the code. Verified with `dart
-analyze` (clean), `flutter test` (584/584, including 8 new tests), `dart run
-tool/check_layers.dart` (OK), and `l10n-check` (green, no new ARB keys).
-`pubspec.yaml` unchanged, no migration, no Edge Function — presentation-only,
-so `make test-sql` and the Deno suite were not run. **The device walk did not
-happen** — no physical Galaxy device was attached in the session that built
-this slice, only an emulator, and CLAUDE.md's "running the app" specifically
-means the physical device. Neither this slice's own `sr`/`en` × light/dark
-walk nor any of the seven older loops it had planned to fold in actually ran;
-all eight stay open below.
+**Last shipped:** Phase 7 part 2 (`b74552c`) — the Garden tokens. The seed is
+gone: `app_theme.dart` now returns one of two `const ColorScheme` values with
+every role written out from the Claude Design export, `surfaceTint`
+transparent in both to kill Material's elevation tint app-wide. Literata is
+bundled under `assets/fonts/` (weights 400/600, CLAUDE.md rule 8 — no font
+package) and carries everything a person reads; UI furniture stays on the
+platform sans. `AppRadii`, `AppSizes` and `AppDurations` join `AppSpacing`,
+and `KitchenColors` lands as the app's first `ThemeExtension` — twelve members,
+each an alias of a role, so there is no second palette. Five component themes
+became seventeen. D118 supersedes D117 on both counts (no seed; dark
+`tertiary` is now the palette's `#FF9569`), while keeping D117's constraint
+that `tertiary` is signal-only and has to read at 3px. The three shared
+widgets the repaint changed were retuned — the offline banner is now a calm
+inset card, not an `errorContainer` strip — two nav glyphs swapped, and
+`placeholder_screen.dart` deleted. **No screen file under `lib/features/**`
+was edited**, by design. `docs/DESIGN.md` is now a pointer at
+`docs/DESIGN_SYSTEM.md`, which describes the code rather than the target.
+Verified with `dart analyze` (clean), `flutter test` (587/587), `check_layers`
+(OK), `l10n-check` (green, no new ARB key), and a full device walk on the
+physical Galaxy across `sr`/`en` × light/dark on all six surfaces. `make
+check` is green except the pre-existing `seed-check`. No `supabase/` file
+touched, so `make test-sql` and the Deno suite were not run.
 **In flight:** none
-**Next:** Phase 7's remaining parts are per-surface (recipe list and detail,
-meal plan, shopping list, household and settings, auth and onboarding) and
-independent of each other — plan whichever is highest-value next with
-`/plan-slice`. Before picking one, consider closing some of the eight open
-device-walk loops below first, since `docs/DESIGN.md` § Both languages and §
-Light and dark both assume a working device in hand, and none of the parts
-after Part 1 have one confirmed yet.
-**Latest decision:** D117
+**Next:** Phase 7's remaining parts are per-surface — recipe list and detail,
+meal plan, shopping list, household and settings, auth and onboarding — and
+independent of each other; `docs/design/MIGRATION_PLAN.md` § 4 sequences them
+as slices 2–7. Plan whichever is highest-value with `/plan-slice-ui`. The
+tokens are settled ground now, so these are layout and component slices, not
+colour ones. Four defects part 2's walk surfaced are listed below and each
+belongs to one of those slices — the shopping list's week-header wrap and its
+still-untranslated strings would make the shopping-list slice the
+highest-value next.
+**Latest decision:** D118
 
-**Eight device-walk loops are open — none closed by Phase 7 part 1.** In
+**Nine device-walk loops are open — none closed yet.** Phase 7 part 2's
+walk ran on the physical Galaxy (2026-09-25) and resolved one of part 1's two
+defects; the other stands, and the repaint found four more. In
 order of age:
 
 - **Phase 5 part 5** — copy a generated shopping list, see the SnackBar,
@@ -66,11 +69,13 @@ order of age:
 - **Phase 7 part 1** — walked on the physical Galaxy across `sr`/`en` ×
   light/dark on recipe list, recipe detail, meal plan, shopping list,
   household, settings. Two defects found, loop stays open:
-  - Recipe list card's meta line wraps badly in Serbian: `4 porcije · 10 min
-    priprema · 10 min kuvanja · ★ 5` breaks after "kuvanja", leaving `· ★ 5`
-    orphaned on its own line. The English equivalent (`4 servings · 10 min
-    prep · 10 min cook · ★ 5`) fits on one line at the same width. Confirmed
-    in both light and dark — a width problem, not a colour one.
+  - ~~Recipe list card's meta line wraps badly in Serbian~~ — **resolved by
+    Phase 7 part 2**, incidentally rather than deliberately. Part 2's
+    `ListTileThemeData` sets `subtitleTextStyle` to `bodySmall` (12);
+    before that the subtitle fell through to Material's `bodyMedium` (14).
+    Two points narrower is enough: `4 porcije · 10 min priprema · 10 min
+    kuvanja · ★ 5` now sits on one line in both languages and brightnesses.
+    Re-confirmed on the device 2026-09-25.
   - The shopping list screen (`Lista`/`List` tab) leaves several UI strings
     untranslated when the app language is Serbian: the "Generated Thu, Sep
     24 for Mon, Sep 21 – Sun, Sep 27" line, the "Probably have (N)" section
@@ -80,13 +85,58 @@ order of age:
     strings are hardcoded rather than routed through `AppLocalizations`, or
     whether the `sr` ARB entries are simply missing. (Ingredient names
     themselves — bread, milk, egg, flour — were also English, but that's
-    recipe data, not a UI string, and out of scope here.)
+    recipe data, not a UI string, and out of scope here.) **Still present
+    after Phase 7 part 2** — the repaint changed nothing about it.
 
-All eight need `make install-hosted` on the physical Galaxy device — not the
+- **Phase 7 part 2** — walked on the physical Galaxy 2026-09-25 across
+  `sr`/`en` × light/dark on recipe list, recipe detail, meal plan, shopping
+  list, household and settings. The tokens themselves are sound: Literata
+  renders every Serbian Latin diacritic in both weights (`č ć ž š đ Č Ć Ž Š
+  Đ`, checked against real recipe copy, no tofu), nothing truncates or
+  overflows in Serbian, both brightnesses are legible throughout, and the
+  offline banner reads calm in both. Four things stay open:
+  - The shopping list's week-range header wraps badly. In Serbian `pon 21.
+    sep – ned 27. sep` breaks across **three** lines with `sep` orphaned on
+    the last; English `Mon, Sep 21 – Sun, Sep 27` takes two. It shares a row
+    with the `Ova nedelja`/`Sledeća` buttons and the calendar icon, and
+    `titleMedium` going 17pt sans → 18pt Literata is what pushed it over.
+    Nothing clips — it wraps, it does not overflow. The shopping list slice
+    owns it.
+  - The global offline banner is now calm grey, but the **per-screen**
+    "Showing your saved copy — no connection." line is still drawn in
+    `error` crimson, and the two appear on screen together on the shopping
+    list. MIGRATION_PLAN § 2.1 settled that offline is calm; part 2 only
+    restyled the global banner (`core/net/offline_banner.dart`), so the
+    per-screen lines on the shopping list and meal plan still contradict it.
+  - The FAB has **no `FloatingActionButtonThemeData`** — it was not in part
+    2's component list, so it takes Material's defaults
+    (`primaryContainer`/`onPrimaryContainer`). In light that lands on a
+    bright mint square that reads well; in dark `primaryContainer`
+    (`#1D511E`) sits at 1.94:1 against the surface and the FAB recedes into
+    the ground. The `+` glyph itself is fine (7.60:1), so this is presence,
+    not legibility. `docs/DESIGN_SYSTEM.md` § Shape already says the FAB is
+    `AppRadii.lg`, so the theme has somewhere to go.
+  - The search field's hint and input text render in **Literata**, because
+    Flutter's `InputDecoration` takes `bodyLarge` and part 2 made that role
+    the serif. A search box is UI furniture, not reading text, so by § Type's
+    own rule it should be the platform sans. Cosmetic, legible, but wrong on
+    the rule.
+
+  Not verified: the 3px paprika review marker on `import_review_screen.dart`
+  in dark (D117's constraint, now carried by `tertiary` `#FF9569`). Reaching
+  that screen needs a real import — an AI parse on the hosted quota and an
+  `import_jobs` row — and that was deliberately skipped rather than spend it.
+  The value measures 8.44:1 against the dark surface, well clear of the
+  generated value D117 rejected, but nobody has looked at it at 3px.
+
+All nine need `make install-hosted` on the physical Galaxy device — not the
 emulator, not `flutter run`, not the local stack (CLAUDE.md). A future
 session should close as many as it reasonably can in one sitting rather than
 walking one loop at a time; 3b and 3c's second-account/throwaway-household
-setup can close both together.
+setup can close both together. Phase 7 part 2's own walk (2026-09-25) proved
+the device loop works end to end — release build, both languages, both
+brightnesses, airplane mode for the offline banner — so the older loops are
+blocked on nothing but someone sitting down with the phone.
 
 **This Flutter SDK's `flutter_test` does not stub the clipboard channel.**
 Discovered in Phase 5 part 5: an unmocked call to `Clipboard.setData` (or

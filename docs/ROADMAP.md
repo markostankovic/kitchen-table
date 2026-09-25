@@ -472,12 +472,13 @@ not only for non-members.
 ## Phase 7 — Redesign
 
 Phases 0–6 built what the app *does*. This phase is about what it looks and
-feels like. Nothing in `lib/core/theme/app_theme.dart` has changed since Phase
-0 — it is still one seed colour (`0xFF7A5C3E`) handed to
+feels like. When it opened, nothing in `lib/core/theme/app_theme.dart` had
+changed since Phase 0 — one seed colour (`0xFF7A5C3E`) handed to
 `ColorScheme.fromSeed`, under a comment reading "Real theming is not on the
-roadmap until there are screens to theme." There are now screens to theme.
-`lib/core/widgets/` holds a single file, `placeholder_screen.dart`, so there is
-no shared component vocabulary either: every screen is Material 3 defaults.
+roadmap until there are screens to theme" — and `lib/core/widgets/` held a
+single file, `placeholder_screen.dart`, so there was no shared component
+vocabulary either: every screen was Material 3 defaults. Parts 1 and 2 have
+since replaced all of that; what remains is per-surface work.
 
 Promoted from `docs/IDEAS.md` — the `design (redesign)` line, deleted there
 when this section was written.
@@ -529,6 +530,21 @@ changes `docs/DESIGN_SYSTEM.md` in the same slice.
 
 **Status: complete** (`e61e9a8`). Decisions taken during it: D117. See
 `docs/journal/phase-7.md`.
+
+---
+
+### Part 2 — The Garden tokens
+
+**Status: complete** (`b74552c`). Decisions taken during it: D118 (which
+supersedes D117). See `docs/journal/phase-7.md`.
+
+Slice 1 of `docs/design/MIGRATION_PLAN.md` § 4. The seed is gone: both
+`ColorScheme`s are explicit values from the Garden export, Literata is bundled
+under `assets/fonts/`, `AppRadii`/`AppSizes`/`AppDurations` join `AppSpacing`,
+and `KitchenColors` adds the semantic layer between screens and roles. A
+repaint only — no screen file under `lib/features/**` was edited. Walked on
+the physical device across `sr`/`en` × light/dark; four defects it surfaced are
+open in `docs/STATE.md`.
 
 ---
 
