@@ -64,4 +64,44 @@ void main() {
   test('trailing zeros are trimmed', () {
     expect(_f(_q(1500, 1, UnitFamily.mass, 'g')), '1.5 kg');
   });
+
+  group('formatItemQuantityParts', () {
+    ({String number, String unit}) parts(
+      ItemQuantity q, {
+      String locale = 'sr',
+    }) => formatItemQuantityParts(q, _units, locale: locale);
+
+    test('scales exactly as formatItemQuantity does, split in two', () {
+      expect(parts(_q(1200, 1, UnitFamily.mass, 'g')), (
+        number: '1.2',
+        unit: 'kg',
+      ));
+    });
+
+    test('a count unit never scales', () {
+      expect(parts(_q(3, 1, UnitFamily.count, 'kom')), (
+        number: '3',
+        unit: 'kom',
+      ));
+    });
+
+    test('spells the unit in the given locale', () {
+      expect(parts(_q(3, 1, UnitFamily.count, 'kom')).unit, 'kom');
+      expect(parts(_q(3, 1, UnitFamily.count, 'kom'), locale: 'en').unit, 'pc');
+    });
+
+    test('formatItemQuantity is the two parts joined -- they cannot drift', () {
+      for (final ItemQuantity q in <ItemQuantity>[
+        _q(800, 1, UnitFamily.mass, 'g'),
+        _q(1200, 1, UnitFamily.mass, 'g'),
+        _q(1000, 3, UnitFamily.volume, 'ml'),
+        _q(3, 1, UnitFamily.count, 'kom'),
+      ]) {
+        for (final String locale in <String>['sr', 'en']) {
+          final ({String number, String unit}) p = parts(q, locale: locale);
+          expect(_f(q, locale: locale), '${p.number} ${p.unit}');
+        }
+      }
+    });
+  });
 }

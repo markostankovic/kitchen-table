@@ -37,6 +37,7 @@ class IngredientLineRow extends StatelessWidget {
     this.isMatched = true,
     this.isFlagged = false,
     this.unmatchedTooltip,
+    this.showDivider = true,
     super.key,
   });
 
@@ -64,6 +65,9 @@ class IngredientLineRow extends StatelessWidget {
   /// The localized "not matched to an ingredient" string, shown on the ring.
   final String? unmatchedTooltip;
 
+  /// `false` drops the bottom hairline -- for the last row of a block or card.
+  final bool showDivider;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -73,7 +77,9 @@ class IngredientLineRow extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: theme.colorScheme.outlineVariant),
+          bottom: showDivider
+              ? BorderSide(color: theme.colorScheme.outlineVariant)
+              : BorderSide.none,
           left: isFlagged
               ? BorderSide(color: kitchen.reviewMarker, width: 3)
               : BorderSide.none,

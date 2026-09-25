@@ -285,5 +285,9 @@
   "addToPlanMenuItem": "Add to meal plan...",
   "addToPlanSheetTitle": "Add to meal plan",
   "todayChipLabel": "today",
-  "addedToPlanSnackbar": "Added to {day}, {slot}."
+  "addedToPlanSnackbar": "Added to {day}, {slot}.",
+  "listIsInSerbian": "This list is in Serbian",
+  "listIsInEnglish": "This list is in English",
+  "pickDatesSegment": "Dates",
+  "nextListRangeLine": "Next list: {from} – {to}"
 }

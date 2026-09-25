@@ -124,4 +124,31 @@ void main() {
     expect(border.left.width, 3);
     expect(border.left.color, theme.colorScheme.tertiary);
   });
+
+  testWidgets('showDivider: false drops the bottom hairline; the default '
+      'keeps it', (WidgetTester tester) async {
+    final ThemeData theme = AppTheme.light();
+    Border border() =>
+        (tester.widget<Container>(find.byType(Container).first).decoration!
+                    as BoxDecoration)
+                .border!
+            as Border;
+
+    await _pump(
+      tester,
+      const IngredientLineRow(quantity: '1', unit: null, name: 'jaje'),
+    );
+    expect(border().bottom.color, theme.colorScheme.outlineVariant);
+
+    await _pump(
+      tester,
+      const IngredientLineRow(
+        quantity: '1',
+        unit: null,
+        name: 'jaje',
+        showDivider: false,
+      ),
+    );
+    expect(border().bottom, BorderSide.none);
+  });
 }

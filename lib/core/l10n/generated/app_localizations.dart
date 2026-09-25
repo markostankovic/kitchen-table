@@ -1675,6 +1675,30 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Dodato: {day}, {slot}.'**
   String addedToPlanSnackbar(String day, String slot);
+
+  /// Shopping list screen (Phase 7 part 5), the sentence in the document-language tag when list.locale is sr. Chrome -- the reader's locale -- because it tells the reader something about the document (D94). The tag's two-letter code beside it comes from list.locale.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ova lista je na srpskom'**
+  String get listIsInSerbian;
+
+  /// Shopping list screen (Phase 7 part 5), the sentence in the document-language tag when list.locale is en. Chrome, the reader's locale (D94).
+  ///
+  /// In sr, this message translates to:
+  /// **'Ova lista je na engleskom'**
+  String get listIsInEnglish;
+
+  /// Shopping list screen (Phase 7 part 5), the range bar's third segment, which opens the date range picker. Short on purpose: the segment gets about 109dp at 360dp width, with a check icon when selected. The longer pickDatesTooltip is its tooltip.
+  ///
+  /// In sr, this message translates to:
+  /// **'Datumi'**
+  String get pickDatesSegment;
+
+  /// Shopping list screen (Phase 7 part 5), the line under the range bar naming the dates the NEXT generated list will cover. Shown only when no list exists or the selected range differs from the list on screen. {from}/{to} are shortDateLabel results in the reader's locale (chrome).
+  ///
+  /// In sr, this message translates to:
+  /// **'Sledeća lista: {from} – {to}'**
+  String nextListRangeLine(String from, String to);
 }
 
 class _AppLocalizationsDelegate

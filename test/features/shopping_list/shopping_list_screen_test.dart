@@ -8,6 +8,9 @@ import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/date_labels.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_en.dart';
+import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
+import 'package:kitchen_table/core/net/network_status.dart';
+import 'package:kitchen_table/core/theme/app_theme.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit_catalog.dart';
 import 'package:kitchen_table/features/shopping_list/application/shopping_list_providers.dart';
@@ -124,8 +127,14 @@ Future<_Calls> _pump(
   ShoppingList? initial,
   AppFailure? failure,
   Locale? locale,
+  Reachability? networkStatus,
+  Size surface = const Size(1200, 3000),
+  // `false` leaves `shoppingRangeProvider` on its real clock-derived
+  // default, for the segment-selection tests that need "this week" to be
+  // today's week.
+  bool pinRange = true,
 }) async {
-  tester.view.physicalSize = const Size(1200, 3000);
+  tester.view.physicalSize = surface;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
@@ -135,13 +144,18 @@ Future<_Calls> _pump(
       overrides: [
         currentShoppingListProvider
             .overrideWith(() => _StubList(initial, calls, failure: failure)),
-        shoppingRangeProvider.overrideWith(() => _PinnedRange()),
+        if (pinRange) shoppingRangeProvider.overrideWith(() => _PinnedRange()),
         unitCatalogProvider.overrideWith((Ref ref) async => _units),
+        if (networkStatus != null)
+          networkStatusProvider.overrideWithValue(networkStatus),
       ],
       // The AppBar title reads AppLocalizations now (D77, Phase 3 part 1).
       // No `locale:` set (the default) resolves English chrome regardless of
       // `list.locale` -- exactly the two-locale rule this suite pins.
+      // The theme comes along since Phase 7 part 5: the doc-language tag and
+      // `IngredientLineRow` read `KitchenColors` off it.
       child: MaterialApp(
+        theme: AppTheme.light(),
         locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: appSupportedLocales,
@@ -212,8 +226,11 @@ void main() {
       ]),
     );
 
-    expect(find.text('brašno'), findsOneWidget);
-    expect(find.text('1.2 kg'), findsOneWidget);
+    // The number in IngredientLineRow's quantity column, the unit riding
+    // with the name.
+    expect(find.text('1.2'), findsOneWidget);
+    expect(find.text('kg brašno'), findsOneWidget);
+    expect(find.text('1.2 kg'), findsNothing);
   });
 
   testWidgets(
@@ -231,8 +248,9 @@ void main() {
       ),
     );
 
-    expect(find.text('3 pc'), findsOneWidget);
-    expect(find.text('3 kom'), findsNothing);
+    expect(find.text('3'), findsOneWidget);
+    expect(find.text('pc eggs'), findsOneWidget);
+    expect(find.text('kom eggs'), findsNothing);
   });
 
   testWidgets('two families on one line are shown side by side, never merged',
@@ -241,13 +259,16 @@ void main() {
       tester,
       initial: _list(<ShoppingItem>[
         _item('brašno', quantities: <ItemQuantity>[
-          _q(300, UnitFamily.mass, 'g'),
           _q(480, UnitFamily.volume, 'ml'),
+          _q(300, UnitFamily.mass, 'g'),
         ]),
       ]),
     );
 
-    expect(find.text('300 g + 480 ml'), findsOneWidget);
+    // The first family in the quantity column, the second in the trailer.
+    expect(find.text('480'), findsOneWidget);
+    expect(find.text('ml brašno'), findsOneWidget);
+    expect(find.text('+ 300 g'), findsOneWidget);
   });
 
   testWidgets('an unmatched line renders verbatim (rule 3)', (tester) async {
@@ -259,6 +280,8 @@ void main() {
     );
 
     expect(find.text('so po ukusu'), findsOneWidget);
+    // Unmatched is marked quietly, never as an error.
+    expect(find.byKey(const Key('unmatchedMarker')), findsOneWidget);
   });
 
   testWidgets('pantry staples are collapsed under Probably have, not hidden',
@@ -280,14 +303,14 @@ void main() {
 
     expect(find.text('Probably have (1)'), findsOneWidget);
     // Collapsed: present in the tree as a heading, the item itself not yet
-    // rendered.
-    expect(find.text('so'), findsNothing);
+    // rendered. (The unit rides with the name in IngredientLineRow.)
+    expect(find.text('g so'), findsNothing);
 
     await tester.tap(find.text('Probably have (1)'));
     await tester.pumpAndSettle();
 
     // Expanding shows it -- nothing was ever dropped from the snapshot.
-    expect(find.text('so'), findsOneWidget);
+    expect(find.text('g so'), findsOneWidget);
   });
 
   testWidgets(
@@ -297,17 +320,23 @@ void main() {
       tester,
       initial: _list(<ShoppingItem>[
         _item('nešto', id: 'i-x', category: null),
+        _item('luk', id: 'i-l', category: 'produce'),
         _item('brašno', id: 'i-b', category: 'pantry'),
       ], locale: 'en'),
     );
 
-    // No heading widgets exist at all now.
-    expect(find.text('Pantry'), findsNothing);
-    expect(find.text('Other'), findsNothing);
+    // No heading widgets exist at all now (D105, amended).
+    final AppLocalizationsEn en = AppLocalizationsEn();
+    expect(find.text(en.categoryProduce), findsNothing);
+    expect(find.text(en.categoryPantry), findsNothing);
+    expect(find.text(en.categoryOther), findsNothing);
 
+    // Sorted by English label -- Pantry, Produce -- uncategorised last.
     final double pantryItemY = tester.getTopLeft(find.text('brašno')).dy;
+    final double produceItemY = tester.getTopLeft(find.text('luk')).dy;
     final double uncategorisedItemY = tester.getTopLeft(find.text('nešto')).dy;
-    expect(pantryItemY, lessThan(uncategorisedItemY));
+    expect(pantryItemY, lessThan(produceItemY));
+    expect(produceItemY, lessThan(uncategorisedItemY));
   });
 
   testWidgets(
@@ -414,14 +443,240 @@ void main() {
 
     // AppBar title, chrome, reader's locale.
     expect(find.widgetWithText(AppBar, 'Lista'), findsOneWidget);
-    // The range bar's own date text -- chrome, so the reader's locale too,
-    // and Latin script: Cyrillic would fail this exact-text match.
+    // The range line (shown: there is no list yet) -- chrome, so the
+    // reader's locale too, and Latin script: Cyrillic would fail this
+    // exact-text match.
     expect(
       find.text(
-        '${shortDateLabel(DateTime(2026, 7, 6), 'sr')} – '
-        '${shortDateLabel(DateTime(2026, 7, 12), 'sr')}',
+        AppLocalizationsSr().nextListRangeLine(
+          shortDateLabel(DateTime(2026, 7, 6), 'sr'),
+          shortDateLabel(DateTime(2026, 7, 12), 'sr'),
+        ),
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets(
+    'every to-buy row draws its hairline, the last row of a category block '
+    'included; only the card\'s last row drops it (Phase 7 part 5\'s walk: '
+    'block-end gaps with no hairline read as uneven spacing, not grouping)',
+    (tester) async {
+      await _pump(
+        tester,
+        initial: _list(<ShoppingItem>[
+          _item('brašno', id: 'i-b', category: 'pantry'),
+          _item('šećer', id: 'i-s', category: 'pantry'),
+          _item('luk', id: 'i-l', category: 'produce'),
+        ]),
+      );
+
+      Border borderOf(String name) {
+        final Container row = tester.widget<Container>(
+          find
+              .ancestor(of: find.text(name), matching: find.byType(Container))
+              .first,
+        );
+        return (row.decoration! as BoxDecoration).border! as Border;
+      }
+
+      // Serbian labels sort Ostava before Povrće.
+      expect(borderOf('brašno').bottom, isNot(BorderSide.none));
+      // Last of its block, not of the card: keeps its hairline.
+      expect(borderOf('šećer').bottom, isNot(BorderSide.none));
+      // Last row of the card: the card's edge does the separating.
+      expect(borderOf('luk').bottom, BorderSide.none);
+    },
+  );
+
+  group('the saved-copy line', () {
+    testWidgets('is onSurfaceVariant, not error -- offline is calm', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        initial: _list(<ShoppingItem>[_item('brašno')]),
+        networkStatus: Reachability.offline,
+      );
+      final ColorScheme scheme = AppTheme.light().colorScheme;
+      final Text line = tester.widget<Text>(
+        find.textContaining('Showing your saved copy'),
+      );
+      expect(line.style?.color, scheme.onSurfaceVariant);
+      expect(line.style?.color, isNot(scheme.error));
+    });
+
+    testWidgets('does not render online', (tester) async {
+      await _pump(
+        tester,
+        initial: _list(<ShoppingItem>[_item('brašno')]),
+        networkStatus: Reachability.online,
+      );
+      expect(find.textContaining('Showing your saved copy'), findsNothing);
+    });
+  });
+
+  testWidgets(
+    'an English list under a Serbian reader is tagged EN, in the reader\'s '
+    'Serbian, and its document strings stay English (D94 as designed -- '
+    'part 1\'s "untranslated strings" report)',
+    (tester) async {
+      await _pump(
+        tester,
+        locale: srLatn,
+        initial: _list(<ShoppingItem>[
+          _item('flour', id: 'i-f'),
+          _item(
+            'salt',
+            id: 'i-so',
+            staple: true,
+            quantities: <ItemQuantity>[_q(5, UnitFamily.mass, 'g')],
+          ),
+        ], locale: 'en'),
+      );
+
+      // The code is the document's language, the sentence is chrome.
+      expect(find.text('EN'), findsOneWidget);
+      expect(find.text(AppLocalizationsSr().listIsInEnglish), findsOneWidget);
+      // The document itself stays in the language it was generated in.
+      expect(find.text('Probably have (1)'), findsOneWidget);
+      expect(find.text('Verovatno imate (1)'), findsNothing);
+    },
+  );
+
+  testWidgets('a Serbian list is tagged SR', (tester) async {
+    await _pump(tester, initial: _list(<ShoppingItem>[_item('brašno')]));
+
+    expect(find.text('SR'), findsOneWidget);
+    expect(find.text(AppLocalizationsEn().listIsInSerbian), findsOneWidget);
+  });
+
+  testWidgets(
+    'Serbian at 360x780 lays out without overflow, with a list and staples '
+    '-- part 2\'s three-line range header lived exactly here',
+    (tester) async {
+      await _pump(
+        tester,
+        locale: srLatn,
+        surface: const Size(360, 780),
+        networkStatus: Reachability.offline,
+        initial: _list(<ShoppingItem>[
+          _item(
+            'brašno',
+            id: 'i-b',
+            quantities: <ItemQuantity>[
+              _q(1200, UnitFamily.mass, 'g'),
+              _q(480, UnitFamily.volume, 'ml'),
+            ],
+          ),
+          _item(
+            'paradajz pelat u konzervi, seckani, bez dodatog šećera',
+            id: 'i-p',
+            category: 'produce',
+            quantities: <ItemQuantity>[_q(3, UnitFamily.count, 'kom')],
+          ),
+          _item(
+            'so',
+            id: null,
+            unmatched: <String>[
+              'so i biber po ukusu, po mogućstvu krupna morska so',
+            ],
+          ),
+          _item(
+            'ulje',
+            id: 'i-u',
+            staple: true,
+            quantities: <ItemQuantity>[_q(50, UnitFamily.volume, 'ml')],
+          ),
+        ]),
+      );
+      expect(tester.takeException(), isNull);
+
+      final AppLocalizationsSr sr = AppLocalizationsSr();
+      expect(find.text(sr.thisWeekButton), findsOneWidget);
+      expect(find.text(sr.nextWeekButton), findsOneWidget);
+      expect(find.text(sr.pickDatesSegment), findsOneWidget);
+
+      await tester.tap(find.text(sr.probablyHaveHeading(1)));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  group('the range bar', () {
+    SegmentedButton<Object?> segmented(WidgetTester tester) =>
+        tester.widget<SegmentedButton<Object?>>(
+          find.byWidgetPredicate((Widget w) => w is SegmentedButton),
+        );
+
+    String selectedName(WidgetTester tester) =>
+        (segmented(tester).selected.single! as Enum).name;
+
+    testWidgets('selects this week by default, derived from the range', (
+      tester,
+    ) async {
+      await _pump(tester, pinRange: false);
+      expect(selectedName(tester), 'thisWeek');
+    });
+
+    testWidgets(
+        'the selected segment carries no check -- its fill says it, and the '
+        'check pushed Ova nedelja / This week onto two lines on the device '
+        '(Phase 7 part 5\'s walk; the test font cannot measure that width)',
+        (tester) async {
+      await _pump(tester, pinRange: false, locale: srLatn);
+
+      expect(segmented(tester).showSelectedIcon, isFalse);
+      expect(find.byIcon(Icons.check), findsNothing);
+    });
+
+    testWidgets('tapping Sledeća selects next week', (tester) async {
+      await _pump(tester, pinRange: false, locale: srLatn);
+
+      await tester.tap(find.text(AppLocalizationsSr().nextWeekButton));
+      await tester.pumpAndSettle();
+
+      expect(selectedName(tester), 'nextWeek');
+    });
+
+    testWidgets(
+      'the range line is absent while the range is the list\'s own, and '
+      'appears once a different range is set',
+      (tester) async {
+        await _pump(tester, initial: _list(<ShoppingItem>[_item('brašno')]));
+        expect(find.textContaining('Next list:'), findsNothing);
+        // A range off the clock reads as custom.
+        expect(selectedName(tester), 'custom');
+
+        ProviderScope.containerOf(
+              tester.element(find.byType(ShoppingListScreen)),
+            )
+            .read(shoppingRangeProvider.notifier)
+            .setRange(from: DateTime(2026, 7, 13), to: DateTime(2026, 7, 15));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(
+            AppLocalizationsEn().nextListRangeLine(
+              shortDateLabel(DateTime(2026, 7, 13), 'en'),
+              shortDateLabel(DateTime(2026, 7, 15), 'en'),
+            ),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('re-tapping the already-selected Dates segment reopens the '
+        'picker', (tester) async {
+      // The pinned July range is custom against today's clock.
+      await _pump(tester, initial: _list(<ShoppingItem>[_item('brašno')]));
+      expect(selectedName(tester), 'custom');
+
+      await tester.tap(find.text('Dates'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DateRangePickerDialog), findsOneWidget);
+    });
   });
 }

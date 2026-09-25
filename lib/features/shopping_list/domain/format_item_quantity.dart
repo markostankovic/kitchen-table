@@ -36,8 +36,31 @@ String formatItemQuantity(
   UnitCatalog units, {
   String locale = 'sr',
 }) {
+  final ({String number, String unit}) p = formatItemQuantityParts(
+    quantity,
+    units,
+    locale: locale,
+  );
+  return '${p.number} ${p.unit}';
+}
+
+/// [formatItemQuantity] split in two: `('1.2', 'kg')`.
+///
+/// The shopping list screen puts the number in `IngredientLineRow`'s quantity
+/// column and the unit beside the name (Phase 7 part 5), so it needs the
+/// halves; the clipboard export still wants the joined string. One scaling,
+/// one number format -- [formatItemQuantity] is built on this, so the two
+/// cannot drift.
+({String number, String unit}) formatItemQuantityParts(
+  ItemQuantity quantity,
+  UnitCatalog units, {
+  String locale = 'sr',
+}) {
   final (Rational amount, String code) = _scaled(quantity, units);
-  return '${_number(amount)} ${units.displayName(code, locale: locale)}';
+  return (
+    number: _number(amount),
+    unit: units.displayName(code, locale: locale),
+  );
 }
 
 /// Picks the largest metric unit that leaves a value of at least 1.

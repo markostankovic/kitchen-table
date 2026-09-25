@@ -1238,5 +1238,29 @@
         "type": "String"
       }
     }
+  },
+  "listIsInSerbian": "Ova lista je na srpskom",
+  "@listIsInSerbian": {
+    "description": "Shopping list screen (Phase 7 part 5), the sentence in the document-language tag when list.locale is sr. Chrome -- the reader's locale -- because it tells the reader something about the document (D94). The tag's two-letter code beside it comes from list.locale."
+  },
+  "listIsInEnglish": "Ova lista je na engleskom",
+  "@listIsInEnglish": {
+    "description": "Shopping list screen (Phase 7 part 5), the sentence in the document-language tag when list.locale is en. Chrome, the reader's locale (D94)."
+  },
+  "pickDatesSegment": "Datumi",
+  "@pickDatesSegment": {
+    "description": "Shopping list screen (Phase 7 part 5), the range bar's third segment, which opens the date range picker. Short on purpose: the segment gets about 109dp at 360dp width, with a check icon when selected. The longer pickDatesTooltip is its tooltip."
+  },
+  "nextListRangeLine": "Sledeća lista: {from} – {to}",
+  "@nextListRangeLine": {
+    "description": "Shopping list screen (Phase 7 part 5), the line under the range bar naming the dates the NEXT generated list will cover. Shown only when no list exists or the selected range differs from the list on screen. {from}/{to} are shortDateLabel results in the reader's locale (chrome).",
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
   }
 }

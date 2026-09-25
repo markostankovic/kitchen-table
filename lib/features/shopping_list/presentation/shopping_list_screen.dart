@@ -5,12 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
+import '../../../core/ingredients/widgets/ingredient_line_row.dart';
 import '../../../core/l10n/date_labels.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/net/network_status.dart';
+import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/kitchen_colors.dart';
 import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../ingredients/domain/unit_catalog.dart';
+import '../../meal_plan/domain/plan_week.dart';
 import '../application/shopping_list_providers.dart';
 import '../domain/format_item_quantity.dart';
 import '../domain/shopping_item.dart';
@@ -42,9 +47,11 @@ import 'shopping_list_text.dart';
 /// list about to be generated, not the one on screen), `AppEmptyState`,
 /// every snackbar and every error -- reads the reader's own locale,
 /// `AppLocalizations.of(context)` straight from the ambient one, same as
-/// every other screen. `_ItemTile` already drew this line for unit names
-/// (`formatItemQuantity(q, units, locale: locale)`) before this part; this is
-/// that same argument generalized to the rest of the document.
+/// every other screen. `_ItemRow` already drew this line for unit names
+/// (`formatItemQuantityParts(q, units, locale: locale)`) before this part;
+/// this is that same argument generalized to the rest of the document.
+/// `_DocumentLanguageTag` (Phase 7 part 5) is what makes the split legible:
+/// its code is the document's language, its sentence the reader's.
 class ShoppingListScreen extends ConsumerWidget {
   const ShoppingListScreen({super.key});
 
@@ -146,49 +153,127 @@ Future<void> _copy(
       .showSnackBar(SnackBar(content: Text(l10n.listCopiedSnackbar)));
 }
 
+/// The range bar's three segments. Never stored: [_RangeBar] derives which
+/// one is selected from `shoppingRangeProvider` on every build, so the
+/// selection cannot disagree with the range the next list will cover.
+enum _RangeChoice { thisWeek, nextWeek, custom }
+
 /// Which dates the next list will cover, and the two shortcuts that cover
 /// almost every case. Chrome -- this describes the list about to be
 /// generated, not the one on screen, so it reads the reader's locale even
 /// while `_ListBody` below it is reading `list.locale`.
+///
+/// The range text used to share the button row and wrapped to three lines in
+/// Serbian (Phase 7 part 2). It now lives on its own line under the segments,
+/// and only when it tells the reader something the list on screen does not:
+/// no list yet, or a selected range that differs from the list's own.
 class _RangeBar extends ConsumerWidget {
   const _RangeBar();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
     final ({DateTime from, DateTime to}) range = ref.watch(
       shoppingRangeProvider,
     );
+    final ShoppingList? current = ref.watch(currentShoppingListProvider).value;
+    final _RangeChoice selected = _choiceFor(range);
+
+    final bool showRangeLine =
+        current == null ||
+        !isSameDate(current.dateFrom, range.from) ||
+        !isSameDate(current.dateTo, range.to);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Expanded(
-            child: Text(
-              '${shortDateLabel(range.from, l10n.localeName)} – '
-              '${shortDateLabel(range.to, l10n.localeName)}',
-              style: Theme.of(context).textTheme.titleMedium,
+          SegmentedButton<_RangeChoice>(
+            segments: <ButtonSegment<_RangeChoice>>[
+              ButtonSegment<_RangeChoice>(
+                value: _RangeChoice.thisWeek,
+                label: Text(l10n.thisWeekButton),
+              ),
+              ButtonSegment<_RangeChoice>(
+                value: _RangeChoice.nextWeek,
+                label: Text(l10n.nextWeekButton),
+              ),
+              ButtonSegment<_RangeChoice>(
+                value: _RangeChoice.custom,
+                icon: const Icon(
+                  Icons.date_range_outlined,
+                  size: AppSizes.iconInButton,
+                ),
+                label: Text(l10n.pickDatesSegment),
+                tooltip: l10n.pickDatesTooltip,
+              ),
+            ],
+            selected: <_RangeChoice>{selected},
+            // No check on the selected segment: each gets ~109dp at phone
+            // width, and the check pushed `Ova nedelja` / `This week` onto
+            // two lines in both languages (Phase 7 part 5's device walk).
+            // The `secondaryContainer` fill already says which is selected.
+            showSelectedIcon: false,
+            // A single-select SegmentedButton does not fire for a tap on the
+            // segment that is already selected. Allowing an empty selection
+            // turns that tap into an empty set, which is how a second custom
+            // range gets picked after the first.
+            emptySelectionAllowed: true,
+            onSelectionChanged: (Set<_RangeChoice> next) {
+              if (next.isEmpty) {
+                if (selected == _RangeChoice.custom) {
+                  _pickRange(context, ref, range);
+                }
+                // Otherwise a no-op: the derived selection re-renders as is.
+                return;
+              }
+              final ShoppingRange notifier = ref.read(
+                shoppingRangeProvider.notifier,
+              );
+              switch (next.single) {
+                case _RangeChoice.thisWeek:
+                  notifier.thisWeek();
+                case _RangeChoice.nextWeek:
+                  notifier.nextWeek();
+                case _RangeChoice.custom:
+                  _pickRange(context, ref, range);
+              }
+            },
+          ),
+          if (showRangeLine) ...<Widget>[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.nextListRangeLine(
+                shortDateLabel(range.from, l10n.localeName),
+                shortDateLabel(range.to, l10n.localeName),
+              ),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          TextButton(
-            onPressed: () =>
-                ref.read(shoppingRangeProvider.notifier).thisWeek(),
-            child: Text(l10n.thisWeekButton),
-          ),
-          TextButton(
-            onPressed: () =>
-                ref.read(shoppingRangeProvider.notifier).nextWeek(),
-            child: Text(l10n.nextWeekButton),
-          ),
-          IconButton(
-            tooltip: l10n.pickDatesTooltip,
-            icon: const Icon(Icons.date_range_outlined),
-            onPressed: () => _pickRange(context, ref, range),
-          ),
+          ],
         ],
       ),
     );
+  }
+
+  /// This week and next are recognised by value, so a range picked by hand
+  /// that happens to be exactly next week reads as `nextWeek` -- which is
+  /// what it is.
+  static _RangeChoice _choiceFor(({DateTime from, DateTime to}) range) {
+    final PlanWeek thisWeek = PlanWeek.of(DateTime.now());
+    bool covers(PlanWeek week) =>
+        isSameDate(range.from, week.start) && isSameDate(range.to, week.end);
+    if (covers(thisWeek)) return _RangeChoice.thisWeek;
+    if (covers(thisWeek.next)) return _RangeChoice.nextWeek;
+    return _RangeChoice.custom;
   }
 
   Future<void> _pickRange(
@@ -223,10 +308,9 @@ class _ListBody extends ConsumerWidget {
     final AppLocalizations bodyL10n = lookupAppLocalizations(
       Locale(list.locale),
     );
+    final ThemeData theme = Theme.of(context);
 
-    final AsyncValue<UnitCatalog> catalogAsync = ref.watch(
-      unitCatalogProvider,
-    );
+    final AsyncValue<UnitCatalog> catalogAsync = ref.watch(unitCatalogProvider);
     // A loading catalog with no value yet is not the same as an empty one
     // (rule 3): the former is "still finding out", the latter renders every
     // quantity unscaled and every count unit in its raw code (`3 clove`
@@ -242,38 +326,110 @@ class _ListBody extends ConsumerWidget {
     final List<ShoppingItem> staples = list.probablyHave;
 
     return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
       children: <Widget>[
         _GeneratedAt(list: list, bodyL10n: bodyL10n),
+        const SizedBox(height: AppSpacing.sm),
+        _DocumentLanguageTag(locale: list.locale),
+        const SizedBox(height: AppSpacing.lg),
         if (toBuy.isEmpty && staples.isEmpty)
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.xl),
             child: Text(
               bodyL10n.nothingToBuyMessage,
               textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
             ),
           ),
-        // No visible heading per category any more -- the grouping itself
-        // (and the uncategorised-last ordering) still comes from
-        // `groupByCategory`, shared with the clipboard export (D105,
-        // amended), so the two cannot drift apart even though neither one
-        // renders the label.
-        for (final CategoryGroup group in groupByCategory(toBuy, bodyL10n))
-          for (final ShoppingItem item in group.items)
-            _ItemTile(item: item, units: units, locale: list.locale),
+        if (toBuy.isNotEmpty) _toBuyCard(bodyL10n, units),
+        if (toBuy.isNotEmpty && staples.isNotEmpty)
+          const SizedBox(height: AppSpacing.md),
         if (staples.isNotEmpty)
           // Collapsed, never hidden. Nothing is missing from the snapshot
           // itself -- the pantry flag changes where a line appears, not
           // whether it exists.
-          ExpansionTile(
-            title: Text(bodyL10n.probablyHaveHeading(staples.length)),
-            subtitle: Text(bodyL10n.cupboardStaplesSubtitle),
-            children: <Widget>[
-              for (final ShoppingItem item in staples)
-                _ItemTile(item: item, units: units, locale: list.locale),
-            ],
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: ExpansionTile(
+              shape: const Border(),
+              collapsedShape: const Border(),
+              tilePadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+              ),
+              childrenPadding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.sm,
+              ),
+              title: Text(
+                bodyL10n.probablyHaveHeading(staples.length),
+                style: theme.textTheme.titleSmall,
+              ),
+              subtitle: Text(
+                bodyL10n.cupboardStaplesSubtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              children: <Widget>[
+                for (int i = 0; i < staples.length; i++)
+                  _ItemRow(
+                    item: staples[i],
+                    units: units,
+                    locale: list.locale,
+                    showDivider: i < staples.length - 1,
+                  ),
+              ],
+            ),
           ),
-        const SizedBox(height: 24),
       ],
+    );
+  }
+
+  /// One card for everything to buy. Items stay grouped and ordered by
+  /// category through `groupByCategory`, shared with the clipboard export,
+  /// but no heading renders -- on screen or in the export (D105, amended
+  /// 2026-09-21: headings were noise when scanning a list in a shop). The
+  /// Garden mock draws them; the decision wins. A `md` gap between blocks is
+  /// all that shows the grouping.
+  ///
+  /// Every row keeps its hairline except the card's last, where the card's
+  /// own edge does the separating. Dropping the hairline at the end of each
+  /// block as well was tried first and failed on the device (Phase 7 part 5's
+  /// walk): most real categories hold one item, so the few hairlines left
+  /// looked arbitrary and the gaps read as uneven row spacing, not as groups.
+  /// A hairline on every row keeps the rhythm even, so the gap stands out.
+  Widget _toBuyCard(AppLocalizations bodyL10n, UnitCatalog units) {
+    final List<CategoryGroup> groups = groupByCategory(list.toBuy, bodyL10n);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            for (int g = 0; g < groups.length; g++) ...<Widget>[
+              if (g > 0) const SizedBox(height: AppSpacing.md),
+              for (int i = 0; i < groups[g].items.length; i++)
+                _ItemRow(
+                  item: groups[g].items[i],
+                  units: units,
+                  locale: list.locale,
+                  showDivider: g < groups.length - 1 ||
+                      i < groups[g].items.length - 1,
+                ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -301,40 +457,112 @@ class _GeneratedAt extends ConsumerWidget {
   /// offline right now is a fact about them, not about the document, so it
   /// reads `AppLocalizations.of(context)` like the rest of the chrome, same
   /// key as `MealPlanScreen`'s `_SavedCopyLine`.
+  ///
+  /// `onSurfaceVariant`, not `error`: offline is an ordinary state in this
+  /// app, not a fault (`_SavedCopyLine`'s precedent, Phase 7 part 4).
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bool offline =
         ref.watch(networkStatusProvider) == Reachability.offline;
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final TextStyle? style = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            bodyL10n.generatedForRangeLine(
-              shortDateLabel(list.generatedAt, list.locale),
-              shortDateLabel(list.dateFrom, list.locale),
-              shortDateLabel(list.dateTo, list.locale),
-            ),
-            style: Theme.of(context).textTheme.bodySmall,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          bodyL10n.generatedForRangeLine(
+            shortDateLabel(list.generatedAt, list.locale),
+            shortDateLabel(list.dateFrom, list.locale),
+            shortDateLabel(list.dateTo, list.locale),
           ),
-          if (offline)
-            Text(
-              l10n.savedCopyOfflineMessage,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.error,
+          style: style,
+        ),
+        if (offline) Text(l10n.savedCopyOfflineMessage, style: style),
+      ],
+    );
+  }
+}
+
+/// `SR · Ova lista je na srpskom` -- what makes D94 legible. The code is
+/// `list.locale`, the document's own language; the sentence is chrome, in the
+/// reader's locale, because it tells the reader something about the document.
+///
+/// Always shown while a list is on screen, not only when the two locales
+/// differ: it is calm, and a tag that appears only sometimes reads as a
+/// warning. Before it existed, a list generated in English read under a
+/// Serbian UI as "untranslated strings" (Phase 7 part 1's report) when it
+/// was D94 working as designed.
+class _DocumentLanguageTag extends StatelessWidget {
+  const _DocumentLanguageTag({required this.locale});
+
+  /// `list.locale`.
+  final String locale;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final KitchenColors kitchen = theme.extension<KitchenColors>()!;
+
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          color: kitchen.docLanguage,
+          shape: StadiumBorder(
+            side: BorderSide(color: theme.colorScheme.outlineVariant),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                locale.toUpperCase(),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
-            ),
-        ],
+              const SizedBox(width: AppSpacing.sm),
+              Flexible(
+                child: Text(
+                  locale == 'sr' ? l10n.listIsInSerbian : l10n.listIsInEnglish,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _ItemTile extends ConsumerWidget {
-  const _ItemTile({required this.item, required this.units, required this.locale});
+/// One shopping item as an `IngredientLineRow` (D53: this screen is its third
+/// consumer, fed primitives like the other two).
+///
+/// The first quantity goes in the row's quantity column, its unit beside the
+/// name. Any further quantity -- a second unit family, never merged into the
+/// first (D9) -- goes in the trailer as `+ 300 g`, followed by each unmatched
+/// raw line on its own line. An item with no quantities at all shows only
+/// its name and raw lines, which is rule 3 working rather than failing.
+class _ItemRow extends ConsumerWidget {
+  const _ItemRow({
+    required this.item,
+    required this.units,
+    required this.locale,
+    required this.showDivider,
+  });
 
   final ShoppingItem item;
   final UnitCatalog units;
@@ -344,35 +572,49 @@ class _ItemTile extends ConsumerWidget {
   /// generated list is a snapshot; rendering its count units in whatever
   /// language the reader happens to be in today would half-translate a
   /// document that `shopping_lists.locale` exists precisely to keep
-  /// consistent (migration 16's own comment). Before this fix the parameter
-  /// did not exist and `formatItemQuantity` fell through to its `'sr'`
-  /// default regardless of who generated the list or in what language.
+  /// consistent (migration 16's own comment).
   final String locale;
+
+  /// `false` for the last row of a category block or of a card.
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // `480 ml + 300 g` -- two families on one line, never converted into each
-    // other (D9). An item with no quantities at all shows only its raw lines,
-    // which is rule 3 working rather than failing.
-    final String quantities = item.quantities
-        .map((ItemQuantity q) => formatItemQuantity(q, units, locale: locale))
-        .join(' + ');
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final List<({String number, String unit})> parts =
+        <({String number, String unit})>[
+          for (final ItemQuantity q in item.quantities)
+            formatItemQuantityParts(q, units, locale: locale),
+        ];
+    final ({String number, String unit})? first = parts.isEmpty
+        ? null
+        : parts.first;
 
-    return ListTile(
-      dense: true,
-      title: Text(item.displayName),
-      subtitle: item.unmatchedLines.isEmpty
-          ? null
-          : Text(
-              item.unmatchedLines.join('\n'),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-      trailing: quantities.isEmpty
-          ? null
-          : Text(quantities, style: Theme.of(context).textTheme.titleSmall),
+    final String trailer = <String>[
+      if (parts.length > 1)
+        parts
+            .skip(1)
+            .map(
+              (({String number, String unit}) p) => '+ ${p.number} ${p.unit}',
+            )
+            .join(' '),
+      ...item.unmatchedLines,
+    ].join('\n');
+
+    return InkWell(
       onLongPress: item.ingredientId == null
           ? null
           : () => _togglePantry(context, ref),
+      child: IngredientLineRow(
+        quantity: first?.number,
+        unit: first?.unit,
+        name: item.displayName,
+        trailer: trailer.isEmpty ? null : trailer,
+        isMatched: item.ingredientId != null,
+        // Chrome -- the reader's locale, as on the recipe detail screen.
+        unmatchedTooltip: l10n.ingredientNotMatchedTooltip,
+        showDivider: showDivider,
+      ),
     );
   }
 

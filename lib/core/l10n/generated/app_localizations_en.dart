@@ -921,4 +921,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String addedToPlanSnackbar(String day, String slot) {
     return 'Added to $day, $slot.';
   }
+
+  @override
+  String get listIsInSerbian => 'This list is in Serbian';
+
+  @override
+  String get listIsInEnglish => 'This list is in English';
+
+  @override
+  String get pickDatesSegment => 'Dates';
+
+  @override
+  String nextListRangeLine(String from, String to) {
+    return 'Next list: $from – $to';
+  }
 }

@@ -930,4 +930,18 @@ class AppLocalizationsSr extends AppLocalizations {
   String addedToPlanSnackbar(String day, String slot) {
     return 'Dodato: $day, $slot.';
   }
+
+  @override
+  String get listIsInSerbian => 'Ova lista je na srpskom';
+
+  @override
+  String get listIsInEnglish => 'Ova lista je na engleskom';
+
+  @override
+  String get pickDatesSegment => 'Datumi';
+
+  @override
+  String nextListRangeLine(String from, String to) {
+    return 'Sledeća lista: $from – $to';
+  }
 }

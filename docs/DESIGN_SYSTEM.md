@@ -354,6 +354,11 @@ right-aligned in its own narrow column so fractions line up; the unit is
 - **flagged** (import review only) — a 3px `reviewMarker` left edge and a
   tinted row
 
+Rows take `showDivider`: the last row of a card omits its hairline, so the
+card's own edge does the separating. Every other row keeps it, including the
+last of a block followed by a gap: a hairline missing mid-card reads as
+uneven spacing, not as a break.
+
 ### Steps and stats
 
 A step number sits in a 32dp `todayContainer` disc, the step itself in
@@ -419,6 +424,57 @@ collapses.
 `primaryContainer` while a drag is over it: a filled slot's group of entry
 cards, a `+ <Slot>` button, and a collapsed day — which **keeps the entry's
 own slot**, since it shows none to aim at.
+
+### Shopping list
+
+All of these are private classes in `shopping_list_screen.dart` — each has one
+consumer, so none of them is in `core/widgets/`. Two locales render on this
+one screen (D94): the list is a document in `list.locale`, everything around
+it is chrome in the reader's.
+
+**The range bar.** A full-width `SegmentedButton` under the app bar, padded
+`lg`/`sm`: `Ova nedelja`/`This week` · `Sledeća`/`Next` · `Datumi`/`Dates`
+(the third with a 20dp `date_range_outlined` icon and the longer
+`Izaberi datume` as its tooltip). **No check on the selected segment**
+(`showSelectedIcon: false`): at ~109dp a segment cannot hold a check plus
+`Ova nedelja` or `This week` on one line, and the `secondaryContainer` fill
+already marks it. The selection is **derived** from the
+range, never stored — a range equal to this or next week selects that
+segment, anything else selects `Datumi`. Re-tapping `Datumi` reopens the
+picker (`emptySelectionAllowed`, since a single-select `SegmentedButton`
+otherwise ignores a tap on its selected segment). Under it, `xs` below, a
+`bodySmall` `onSurfaceVariant` `Sledeća lista: …`/`Next list: …` line —
+**only when** there is no list yet or the selected range differs from the
+list's own. The range never shares the segments' row: in Serbian it wrapped
+to three lines there.
+
+**The provenance lines.** The generated-at line in `bodySmall`
+`onSurfaceVariant`, in the document's locale; under it, offline only, the
+saved-copy line in the same style — `onSurfaceVariant`, not `error`, on
+`_SavedCopyLine`'s precedent.
+
+**The doc-language tag.** `sm` below, hugging its content: a `StadiumBorder`
+with `docLanguage` fill and a 1dp `outlineVariant` ring, padded `sm`/`xs`,
+holding the code (`SR`/`EN`, from `list.locale`) in `labelMedium` `onSurface`
+and, `sm` after it, a sentence in `bodySmall` `onSurfaceVariant` in the
+**reader's** locale (`Ova lista je na engleskom`) — chrome about the
+document. **Always shown** while a list is on screen, not only when the two
+locales differ: it is calm, and it is what makes D94 legible.
+
+**The document card.** `lg` below, one theme `Card` padded `lg`/`sm`,
+holding every to-buy item as an `IngredientLineRow`: the first quantity in
+the quantity column with its unit beside the name, any further unit family
+(never merged, D9) and every unmatched raw line in the trailer. Items are
+grouped and ordered by `groupByCategory`, with blocks `md` apart, a hairline
+under **every** row but the card's last, and **no category headings** — D105-amended: headings were noise when scanning a list
+in a shop, and the Garden mock that draws them was declined. Omitted when
+nothing is to buy. Long-press toggles a pantry staple (D13: the snapshot is
+not rewritten; the snackbar says it applies next time).
+
+**The staples card.** `md` below, a second `Card` (`Clip.antiAlias`) holding
+an `ExpansionTile`, **collapsed**, with `const Border()` shapes so it draws no
+lines of its own: `Verovatno imate (N)` in `titleSmall`, the staples subtitle
+in `bodySmall` `onSurfaceVariant`, the same `IngredientLineRow`s inside.
 
 ### Menu, snackbar, banner
 

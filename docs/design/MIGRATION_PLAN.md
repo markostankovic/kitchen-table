@@ -131,9 +131,12 @@ card. No screen gains a provider, a repository call or a route.
 9. **Nav icons drift.** The design's List tab is a plain list glyph and
    Settings is sliders; the app uses `checklist` and `settings`. Cosmetic —
    follow the design.
-10. **Category headings are new on the shopping list.** `groupByCategory`
-    already orders items by category, but the screen renders no headings. The
-    design draws them in `titleMedium` inside the list card. No new data.
+10. **Category headings on the shopping list — declined.** The design draws
+    them in `titleMedium` inside the list card, but D105-amended (2026-09-21)
+    removed them from the screen and the clipboard text as noise when
+    scanning in a shop. Headings stay off; `groupByCategory` still orders the
+    items, and a gap between blocks is all that shows the grouping (Phase 7
+    part 5).
 11. **The document-language tag needs new strings.** `ShoppingList.locale`
     already exists in the domain model and nothing reads it, so the tag itself
     is presentation-only — but `SR` / `This list is in Serbian` are new ARB
