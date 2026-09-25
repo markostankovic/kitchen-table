@@ -8,6 +8,7 @@ import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
 import 'package:kitchen_table/core/net/network_status.dart';
 import 'package:kitchen_table/core/recipes/recipe_picker_providers.dart';
+import 'package:kitchen_table/core/theme/app_theme.dart';
 import 'package:kitchen_table/features/meal_plan/application/meal_plan_providers.dart';
 import 'package:kitchen_table/features/meal_plan/domain/meal_plan_entry.dart';
 import 'package:kitchen_table/features/meal_plan/domain/meal_plan_week.dart';
@@ -160,7 +161,11 @@ Future<_Calls> _pump(
       // No `locale:` set (the default) resolves English, same as
       // `import_review_screen_test.dart` -- passing `locale: srLatn` is what
       // the D91 regression test below needs to render Serbian, Latin script.
+      // The theme comes along since Phase 7 part 3: the recipe picker sheet
+      // lists `RecipeCard`s, which read `KitchenColors` off it, and a
+      // default `ThemeData` carries no extensions.
       child: MaterialApp(
+        theme: AppTheme.light(),
         locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: appSupportedLocales,

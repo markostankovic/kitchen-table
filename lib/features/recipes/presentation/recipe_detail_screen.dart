@@ -13,8 +13,13 @@ import '../../../core/meal_plan/widgets/meal_slot_picker_sheet.dart';
 import '../../../core/refresh/data_revision.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/text/text_normalizer.dart';
+import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/kitchen_colors.dart';
+import '../../../core/widgets/app_badge.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_section_heading.dart';
+import '../../../core/widgets/app_stat_strip.dart';
 import '../../ingredients/domain/unit_catalog.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
 import '../../meal_plan/domain/meal_slot.dart';
@@ -24,6 +29,7 @@ import '../domain/recipe.dart';
 import '../domain/recipe_detail.dart';
 import '../domain/recipe_ingredient.dart';
 import '../domain/recipe_step.dart';
+import '../../../core/ingredients/widgets/ingredient_line_row.dart';
 import '../../../core/ingredients/widgets/quantity_format.dart';
 
 /// One recipe, read-only.
@@ -80,16 +86,33 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     final Recipe? recipe = detail.value?.recipe;
 
     return Scaffold(
+      // No title. The recipe's own name is the one thing on this screen that
+      // earns `headlineSmall`, and it says it once -- in the body, under the
+      // photo, where § Type reserves that role for it. An app bar repeating
+      // it in `titleLarge` would be the same words twice in two sizes.
+      //
+      // The bar stays opaque on `surface` rather than floating circular
+      // buttons over the photo the way the mock does: an arbitrary photo in
+      // two brightnesses has no contrast guarantee behind an icon, and the
+      // favourite toggle has to stay reachable at any scroll position.
       appBar: AppBar(
-        title: Text(detail.value?.displayTitle ?? l10n.recipeDetailFallbackTitle),
         actions: <Widget>[
           IconButton(
             tooltip: recipe != null && _isFavorite(recipe)
                 ? l10n.removeFromFavoritesTooltip
                 : l10n.addToFavoritesTooltip,
-            icon: Icon(recipe != null && _isFavorite(recipe)
-                ? Icons.star
-                : Icons.star_border),
+            // A heart, not a star. The star meant favourite *and* rating on
+            // this screen, one bar apart from five more stars that meant
+            // something else; after Phase 7 part 3 a star is a rating
+            // everywhere in the app and nothing else is.
+            icon: Icon(
+              recipe != null && _isFavorite(recipe)
+                  ? Icons.favorite
+                  : Icons.favorite_border,
+              color: recipe != null && _isFavorite(recipe)
+                  ? Theme.of(context).extension<KitchenColors>()!.favorite
+                  : null,
+            ),
             onPressed:
                 recipe != null ? () => _setFavorite(recipe, l10n) : null,
           ),
@@ -354,6 +377,8 @@ class _Body extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final ThemeData theme = Theme.of(context);
+    final KitchenColors kitchen = theme.extension<KitchenColors>()!;
     final Recipe recipe = detail.recipe;
 
     // The lexicon is already cached for the session, so this rarely suspends.
@@ -369,230 +394,352 @@ class _Body extends ConsumerWidget {
         ref.watch(tagLabelsProvider(detail.readingLocale)).value ??
             const <String, String>{};
 
-    final List<String> meta = <String>[
-      if (recipe.servings != null) l10n.recipeServingsCount(recipe.servings!),
-      if (recipe.prepMinutes != null)
-        l10n.recipePrepMinutes(recipe.prepMinutes!),
-      if (recipe.cookMinutes != null)
-        l10n.recipeCookMinutes(recipe.cookMinutes!),
-    ];
+    final String? description = detail.displayDescription;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
       children: <Widget>[
-        if (recipe.imageUrl != null) ...<Widget>[
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                recipe.imageUrl!,
-                fit: BoxFit.cover,
-                loadingBuilder: (BuildContext context, Widget child,
-                        ImageChunkEvent? progress) =>
-                    progress == null
-                        ? child
-                        : const Center(child: CircularProgressIndicator()),
-                // A signed URL can outlive its TTL, or the object can have
-                // been replaced since this page loaded. Either way the recipe
-                // still renders without its picture (rule 3), not an error
-                // screen over a working recipe.
-                errorBuilder: (_, _, _) =>
-                    const Center(child: Icon(Icons.broken_image_outlined)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-        Wrap(
-          spacing: 8,
-          children: <Widget>[
-            if (recipe.status == RecipeStatus.draft)
-              Chip(label: Text(l10n.draftChipLabel)),
-            // Anything AI-produced is draft until a human marks it tested
-            // (docs/ROADMAP.md) -- this is that rule applied to prose rather
-            // than to the recipe row itself (Phase 3, part 2). It needs no
-            // code change to disappear once reviewed (Phase 3, part 3):
-            // review_recipe_translation sets is_machine_generated = false,
-            // which is exactly what this getter reads. No separate
-            // "Reviewed" chip is added -- this app's chips are caveats
-            // (Draft, Machine translation), not endorsements, and this
-            // chip's own disappearance already is the signal.
-            if (detail.isShowingMachineTranslation)
-              Chip(label: Text(l10n.machineTranslationChipLabel)),
-            if (translating)
-              const Chip(
-                label: SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+        // Full-bleed, outside the gutter -- and rendered whether or not there
+        // is a photo. A recipe out of a notebook has no picture and never
+        // will; an omitted hero made the screen start at a different place
+        // for those recipes, which read as something having failed to load.
+        _PhotoWell(imageUrl: recipe.imageUrl),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              const SizedBox(height: AppSpacing.lg),
+              ..._caveats(context),
+              // The recipe's own name, said once, here. The app bar carries
+              // no title (see the `AppBar` above).
+              Text(
+                detail.displayTitle,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
-          ],
-        ),
-        if (recipe.status == RecipeStatus.draft ||
-            detail.isShowingMachineTranslation ||
-            translating)
-          const SizedBox(height: 8),
-        if (meta.isNotEmpty)
-          Text(meta.join(' · '), style: Theme.of(context).textTheme.bodySmall),
-        _RatingStars(rating: rating, onRate: onSetRating, l10n: l10n),
-        if (detail.displayDescription != null &&
-            detail.displayDescription!.isNotEmpty) ...<Widget>[
-          const SizedBox(height: 12),
-          Text(detail.displayDescription!),
-        ],
-        if (recipe.tags.isNotEmpty) ...<Widget>[
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            children: recipe.tags
-                .map(
-                  (String t) => Chip(
-                    label: Text(tagLabels[TextNormalizer.normalize(t)] ?? t),
+              if (description != null && description.isNotEmpty) ...<Widget>[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  description,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              if (recipe.tags.isNotEmpty) ...<Widget>[
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: recipe.tags
+                      .map(
+                        (String t) => Chip(
+                          label: Text(
+                            tagLabels[TextNormalizer.normalize(t)] ?? t,
+                          ),
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.lg),
+              // Four facts as four columns, replacing the ` · `-joined
+              // sentence this screen used to carry. A column is the same
+              // width in Serbian as in English; a joined sentence is not.
+              AppStatStrip(columns: _stats(context, kitchen)),
+              const SizedBox(height: AppSpacing.xl),
+              AppSectionHeading(text: l10n.ingredientsHeading),
+              if (detail.ingredients.isEmpty)
+                Text(
+                  l10n.noIngredientsYet,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 )
-                .toList(growable: false),
+              else
+                ...detail.ingredients.map(
+                  (RecipeIngredient line) => _ingredientRow(line, units),
+                ),
+              const SizedBox(height: AppSpacing.xl),
+              AppSectionHeading(text: l10n.stepsHeading),
+              if (detail.displaySteps.isEmpty)
+                Text(
+                  l10n.noStepsYet,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                )
+              else
+                ...detail.displaySteps.map(
+                  (RecipeStep step) => _StepRow(step: step),
+                ),
+              ..._sourceFooter(context),
+            ],
           ),
-        ],
-        const SizedBox(height: 24),
-        AppSectionHeading(text: l10n.ingredientsHeading),
-        if (detail.ingredients.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(l10n.noIngredientsYet),
-          )
-        else
-          ...detail.ingredients.map(
-            (RecipeIngredient line) => _IngredientRow(
-              line: line,
-              units: units,
-              locale: detail.readingLocale,
-              l10n: l10n,
-            ),
-          ),
-        const SizedBox(height: 24),
-        AppSectionHeading(text: l10n.stepsHeading),
-        if (detail.displaySteps.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(l10n.noStepsYet),
-          )
-        else
-          ...detail.displaySteps.map((RecipeStep step) => _StepRow(step: step)),
-        if (recipe.sourceAttribution != null ||
-            recipe.sourceUrl != null) ...<Widget>[
-          const SizedBox(height: 24),
-          // Stored and displayed for every import (docs/ROADMAP.md, standing
-          // rules). Nothing in 1c sets it, but the display is the half that
-          // must not be forgotten later.
-          Text(
-            <String>[
-              if (recipe.sourceAttribution != null) recipe.sourceAttribution!,
-              if (recipe.sourceUrl != null) recipe.sourceUrl!,
-            ].join('\n'),
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
+        ),
       ],
     );
   }
-}
 
-class _IngredientRow extends StatelessWidget {
-  const _IngredientRow({
-    required this.line,
-    required this.units,
-    required this.locale,
-    required this.l10n,
-  });
+  /// The badge and chips that qualify this recipe, and the gap under them.
+  ///
+  /// All three are caveats, never endorsements: a draft is a recipe nobody
+  /// has vouched for yet, and the machine-translation chip disappears of its
+  /// own accord once `review_recipe_translation` sets
+  /// `is_machine_generated = false` (Phase 3, part 3). There is no
+  /// "Reviewed" chip and there should not be one -- the disappearance is the
+  /// signal.
+  ///
+  /// `Draft` is an [AppBadge] rather than a `Chip` now: a chip in this app is
+  /// a control, and nothing taps this.
+  List<Widget> _caveats(BuildContext context) {
+    final List<Widget> chips = <Widget>[
+      if (detail.recipe.status == RecipeStatus.draft)
+        AppBadge(label: l10n.draftChipLabel),
+      if (detail.isShowingMachineTranslation)
+        Chip(
+          avatar: const Icon(Icons.language, size: AppSizes.iconInMeta),
+          label: Text(l10n.machineTranslationChipLabel),
+        ),
+      if (translating)
+        const Chip(
+          label: SizedBox(
+            width: AppSizes.iconInMeta,
+            height: AppSizes.iconInMeta,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+    ];
+    if (chips.isEmpty) return const <Widget>[];
+    return <Widget>[
+      Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.sm,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: chips,
+      ),
+      const SizedBox(height: AppSpacing.md),
+    ];
+  }
 
-  final RecipeIngredient line;
-  final UnitCatalog units;
+  /// Servings, prep, cook and the rating -- only the ones this recipe has,
+  /// except the rating, which is a control rather than a fact and is offered
+  /// even when unrated.
+  List<AppStatColumn> _stats(BuildContext context, KitchenColors kitchen) {
+    final TextStyle? value = Theme.of(context).textTheme.bodyLarge?.copyWith(
+      color: kitchen.statValue,
+    );
+    final Recipe recipe = detail.recipe;
+    return <AppStatColumn>[
+      if (recipe.servings != null)
+        AppStatColumn(
+          label: l10n.statServingsLabel,
+          value: Text('${recipe.servings}', style: value),
+        ),
+      if (recipe.prepMinutes != null)
+        AppStatColumn(
+          label: l10n.statPrepLabel,
+          value: Text(l10n.statMinutesValue(recipe.prepMinutes!), style: value),
+        ),
+      if (recipe.cookMinutes != null)
+        AppStatColumn(
+          label: l10n.statCookLabel,
+          value: Text(l10n.statMinutesValue(recipe.cookMinutes!), style: value),
+        ),
+      AppStatColumn(
+        label: l10n.statRatingLabel,
+        value: _RatingStars(rating: rating, onRate: onSetRating, l10n: l10n),
+      ),
+    ];
+  }
 
-  /// The reader's own locale, not `recipe.originalLocale` -- a translated
-  /// method reading in one language beside a unit spelled in another would
-  /// be the same bug D81 fixed for the display name, one column over.
-  final String locale;
-
-  final AppLocalizations l10n;
-
-  @override
-  Widget build(BuildContext context) {
-    final TextTheme text = Theme.of(context).textTheme;
-
-    // The measured half of the line, assembled from the structured columns.
-    // Empty whenever the parse found no quantity, which is normal.
-    final String amount = <String>[
-      if (line.quantity != null) formatQuantity(line.quantity!),
-      if (line.unitCode != null)
-        units.displayName(line.unitCode!, locale: locale),
-    ].join(' ');
-
+  /// One line, assembled from the structured columns into the shared row.
+  ///
+  /// `resolvedName` is the catalog's word when the line matched and the raw
+  /// line when it did not. One definition, so the detail screen and the
+  /// shopping list cannot disagree.
+  ///
+  /// The unit is spelled in the **reader's** locale, not
+  /// `recipe.originalLocale` -- a translated method read in one language
+  /// beside a unit spelled in another would be the same bug D81 fixed for the
+  /// display name, one column over.
+  Widget _ingredientRow(RecipeIngredient line, UnitCatalog units) {
     final String trailer = <String>[
       if (line.note != null) line.note!,
       if (line.isOptional && line.note == null) l10n.ingredientOptionalTrailer,
     ].join(', ');
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
+    return IngredientLineRow(
+      quantity:
+          line.quantity == null ? null : formatQuantity(line.quantity!),
+      unit: line.unitCode == null
+          ? null
+          : units.displayName(line.unitCode!, locale: detail.readingLocale),
+      name: line.resolvedName,
+      trailer: trailer.isEmpty ? null : trailer,
+      isMatched: line.isMatched,
+      unmatchedTooltip: l10n.ingredientNotMatchedTooltip,
+    );
+  }
+
+  /// Where the recipe came from. Stored and displayed for every import
+  /// (docs/ROADMAP.md, standing rules). Nothing in 1c sets it, but the
+  /// display is the half that must not be forgotten later.
+  List<Widget> _sourceFooter(BuildContext context) {
+    final Recipe recipe = detail.recipe;
+    if (recipe.sourceAttribution == null && recipe.sourceUrl == null) {
+      return const <Widget>[];
+    }
+    final ThemeData theme = Theme.of(context);
+    return <Widget>[
+      const SizedBox(height: AppSpacing.xl),
+      const Divider(),
+      const SizedBox(height: AppSpacing.md),
+      Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          SizedBox(
-            width: 72,
-            child: Text(amount, style: text.bodyMedium),
+          Icon(
+            Icons.link,
+            size: AppSizes.iconInMeta,
+            color: theme.colorScheme.outline,
           ),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                // resolvedName is the catalog's word when the line matched and
-                // the raw line when it did not. One definition, so the detail
-                // screen and the shopping list cannot disagree.
-                Text(line.resolvedName, style: text.bodyMedium),
-                if (trailer.isNotEmpty)
-                  Text(trailer, style: text.bodySmall),
-              ],
+            child: Text(
+              <String>[
+                if (recipe.sourceAttribution != null)
+                  recipe.sourceAttribution!,
+                if (recipe.sourceUrl != null) recipe.sourceUrl!,
+              ].join('\n'),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
-          if (!line.isMatched)
-            Tooltip(
-              message: l10n.ingredientNotMatchedTooltip,
-              child: Icon(Icons.help_outline,
-                  size: 18, color: Theme.of(context).colorScheme.outline),
-            ),
         ],
       ),
-    );
+    ];
   }
 }
 
+/// The 16:9 well the recipe's photo sits in -- and sits in empty, when there
+/// is none.
+///
+/// A missing picture is not a failure state (rule 3's spirit), so there is no
+/// broken-image icon: the well shows a quiet `image_outlined` in `outline`,
+/// the same thing it shows when a signed URL has outlived its TTL or the
+/// object behind it was replaced. Either way the recipe still renders.
+class _PhotoWell extends StatelessWidget {
+  const _PhotoWell({required this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String? url = imageUrl;
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: ColoredBox(
+        color: theme.colorScheme.surfaceContainerHighest,
+        child: url == null
+            ? _placeholder(theme)
+            : Image.network(
+                url,
+                fit: BoxFit.cover,
+                loadingBuilder: (
+                  BuildContext context,
+                  Widget child,
+                  ImageChunkEvent? progress,
+                ) => progress == null
+                    ? child
+                    : const Center(child: CircularProgressIndicator()),
+                errorBuilder: (_, _, _) => _placeholder(theme),
+              ),
+      ),
+    );
+  }
+
+  Widget _placeholder(ThemeData theme) => Center(
+    child: Icon(
+      Icons.image_outlined,
+      size: AppSizes.icon,
+      color: theme.colorScheme.outline,
+    ),
+  );
+}
+
+/// One step: its number in a tonal disc, then the step itself.
+///
+/// The disc is what makes a list of steps countable at a glance while
+/// cooking -- a bare `1.` in the text column reads as part of the sentence.
 class _StepRow extends StatelessWidget {
   const _StepRow({required this.step});
 
   final RecipeStep step;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            SizedBox(
-              width: 28,
-              child: Text('${step.position + 1}.',
-                  style: Theme.of(context).textTheme.bodyMedium),
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final KitchenColors kitchen = theme.extension<KitchenColors>()!;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: AppSizes.stepDisc,
+            height: AppSizes.stepDisc,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: kitchen.todayContainer,
+              shape: BoxShape.circle,
             ),
-            Expanded(child: Text(step.text)),
-          ],
-        ),
-      );
+            child: Text(
+              '${step.position + 1}',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(step.text, style: theme.textTheme.bodyLarge),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Five tap targets, filled up to the current rating. Tapping the star that
 /// already *is* the rating clears it back to unrated (decision 6) -- unrated
 /// is `rating == null`, never zero.
+///
+/// It sits in the stat strip's fourth column. **A deliberate exception to the
+/// 48dp target**: five stars cannot each be 48 wide inside a quarter of a
+/// phone's width. Widening them would cost the column, and the column is what
+/// stops the strip reflowing in Serbian.
+///
+/// Making that exception actually hold takes more than `padding: zero` and
+/// `constraints: BoxConstraints()`. An M3 `IconButton` sizes itself from its
+/// **style**, and `app_theme.dart`'s `iconButtonTheme` sets
+/// `minimumSize: Size(target, target)` -- 48dp -- which those two widget-level
+/// properties do not override. Phase 7 part 3's device walk found the result:
+/// each star claimed ~44dp, five wanted ~220dp inside an ~86dp column, and
+/// stars three through five sat off the right edge of the screen, unreachable.
+/// Nobody could rate a recipe above 2. The stars had always been that wide;
+/// before part 3 they had a full-width row to sprawl in, so it never showed.
+///
+/// So the style is overridden here: `minimumSize: Size.zero` plus
+/// `tapTargetSize: shrinkWrap` makes each button exactly its icon, 16dp, and
+/// five of them 80dp. The 48dp minimum stays right everywhere else in the app,
+/// which is why this is a local override and not a theme change. The
+/// [FittedBox] underneath is the backstop: 80dp fits a quarter column on any
+/// phone down to about 340dp wide, and below that the row scales rather than
+/// overflowing again.
 class _RatingStars extends StatelessWidget {
   const _RatingStars({
     required this.rating,
@@ -605,26 +752,43 @@ class _RatingStars extends StatelessWidget {
   final AppLocalizations l10n;
 
   @override
-  Widget build(BuildContext context) => Row(
-        // Keyed so widget tests can scope to these five stars without
-        // conflating them with the AppBar's own favorite star/star_border
-        // icon.
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final KitchenColors kitchen = theme.extension<KitchenColors>()!;
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        // Keyed so widget tests can scope to these five stars. The key
+        // predates the heart -- it was there to keep them apart from the
+        // AppBar's own favorite star -- and it still earns its place now that
+        // the bar's icon is a heart, because the recipe cards behind a route
+        // also carry stars.
         key: const Key('ratingStars'),
         mainAxisSize: MainAxisSize.min,
         children: List<Widget>.generate(5, (int i) {
           final int star = i + 1;
           final bool filled = rating != null && star <= rating!;
           return IconButton(
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            iconSize: AppSizes.iconInMeta,
+            // See the class doc: the theme's 48dp minimum is what put three
+            // of these five off the screen, and only the style overrides it.
+            style: IconButton.styleFrom(
+              minimumSize: Size.zero,
+              padding: EdgeInsets.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
             tooltip: star == rating
                 ? l10n.clearRatingTooltip
                 : l10n.ratingStarsTooltip(star),
-            icon: Icon(filled ? Icons.star : Icons.star_border),
+            icon: Icon(
+              filled ? Icons.star : Icons.star_border,
+              color: filled ? kitchen.rating : theme.colorScheme.outline,
+            ),
             onPressed: () => onRate(star),
           );
         }),
-      );
+      ),
+    );
+  }
 }
 

@@ -54,7 +54,7 @@
 
   "recipeDetailFallbackTitle": "Recept",
   "@recipeDetailFallbackTitle": {
-    "description": "Recipe detail screen, AppBar title shown before the recipe has loaded."
+    "description": "The word for a recipe with no title to show. Phase 7 part 3 took the recipe detail screen's AppBar title away -- the recipe's own name now sits in the body -- so the only reader left is the meal plan's entry label, which falls back to this when an entry's recipe title is missing."
   },
   "couldNotLoadRecipe": "Nije moguće učitati ovaj recept.",
   "@couldNotLoadRecipe": {
@@ -366,6 +366,32 @@
   "ingredientNotMatchedTooltip": "Nije povezano sa sastojkom",
   "@ingredientNotMatchedTooltip": {
     "description": "Recipe detail screen, the icon tooltip on an ingredient line the catalog did not match."
+  },
+
+  "statServingsLabel": "Porcije",
+  "@statServingsLabel": {
+    "description": "Recipe detail screen, the stat strip's servings column label. A bare noun, not a count -- the number is the value beneath it, which is why this is not recipeServingsCount."
+  },
+  "statPrepLabel": "Priprema",
+  "@statPrepLabel": {
+    "description": "Recipe detail screen, the stat strip's prep-time column label."
+  },
+  "statCookLabel": "Kuvanje",
+  "@statCookLabel": {
+    "description": "Recipe detail screen, the stat strip's cook-time column label."
+  },
+  "statRatingLabel": "Ocena",
+  "@statRatingLabel": {
+    "description": "Recipe detail screen, the stat strip's rating column label -- the five stars sit under it."
+  },
+  "statMinutesValue": "{minutes} min",
+  "@statMinutesValue": {
+    "description": "Recipe detail screen, the prep and cook columns' value. Just the number and the unit: the column's own label already says which of the two it is, unlike recipePrepMinutes, which carries the word because it stands alone in a meta row.",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
   },
 
   "snackSlotCount": "{count, plural, one{{count} obroku} few{{count} obroka} other{{count} obroka}}",

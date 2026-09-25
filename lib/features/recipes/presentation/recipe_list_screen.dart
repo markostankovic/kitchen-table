@@ -6,9 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/app_locale.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
+import '../../../core/recipes/widgets/recipe_card.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/app_search_field.dart';
 import '../application/recipe_providers.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_tag.dart';
@@ -115,25 +118,16 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
       body: Column(
         children: <Widget>[
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: TextField(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.sm,
+            ),
+            child: AppSearchField(
               controller: _search,
+              hintText: l10n.searchRecipesHint,
               onChanged: _onQueryChanged,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: l10n.searchRecipesHint,
-                prefixIcon: const Icon(Icons.search),
-                border: const OutlineInputBorder(),
-                suffixIcon: _search.text.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _search.clear();
-                          _onQueryChanged('');
-                        },
-                      ),
-              ),
             ),
           ),
           _FilterRow(
@@ -170,11 +164,22 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
                           ),
                         ),
                         child: ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            0,
+                            AppSpacing.lg,
+                            AppSpacing.xxl,
+                          ),
                           itemCount: items.length,
                           separatorBuilder: (_, _) =>
-                              const Divider(height: 1),
+                              const SizedBox(height: AppSpacing.md),
                           itemBuilder: (BuildContext context, int i) =>
-                              _RecipeTile(recipe: items[i], l10n: l10n),
+                              RecipeCard(
+                                recipe: items[i],
+                                l10n: l10n,
+                                onTap: () =>
+                                    RecipeDetailRoute(items[i].id).go(context),
+                              ),
                         ),
                       );
               },
@@ -182,66 +187,6 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _RecipeTile extends StatelessWidget {
-  const _RecipeTile({required this.recipe, required this.l10n});
-
-  final Recipe recipe;
-  final AppLocalizations l10n;
-
-  @override
-  Widget build(BuildContext context) {
-    final List<String> meta = <String>[
-      if (recipe.servings != null) l10n.recipeServingsCount(recipe.servings!),
-      if (recipe.prepMinutes != null)
-        l10n.recipePrepMinutes(recipe.prepMinutes!),
-      if (recipe.cookMinutes != null)
-        l10n.recipeCookMinutes(recipe.cookMinutes!),
-      if (recipe.rating != null) '★ ${recipe.rating}',
-    ];
-
-    // Display-only (decision 5): no in-place toggle here, favoriting and
-    // rating both happen on the detail screen.
-    final List<Widget> trailingChildren = <Widget>[
-      if (recipe.isFavorite) const Icon(Icons.star, size: 20),
-      if (recipe.status == RecipeStatus.draft)
-        Chip(label: Text(l10n.draftChipLabel)),
-    ];
-
-    return ListTile(
-      leading: recipe.imageUrl == null
-          ? null
-          : ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: Image.network(
-                recipe.imageUrl!,
-                width: 56,
-                height: 56,
-                fit: BoxFit.cover,
-                // A stale or since-invalidated signed URL falls back to no
-                // thumbnail rather than a broken-image icon in every row.
-                errorBuilder: (_, _, _) => const SizedBox(width: 56),
-              ),
-            ),
-      title: Text(recipe.title),
-      subtitle: meta.isEmpty ? null : Text(meta.join(' · ')),
-      // A draft is a recipe nobody has vouched for yet -- the standing rule
-      // that keeps AI-produced recipes marked applies to hand-entered ones too.
-      trailing: trailingChildren.isEmpty
-          ? null
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                for (int i = 0; i < trailingChildren.length; i++) ...<Widget>[
-                  if (i > 0) const SizedBox(width: 4),
-                  trailingChildren[i],
-                ],
-              ],
-            ),
-      onTap: () => RecipeDetailRoute(recipe.id).go(context),
     );
   }
 }
@@ -302,19 +247,26 @@ class _FilterRow extends ConsumerWidget {
     if (!hasAnyRecipe && !filterActive) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: <Widget>[
+            // No star avatar. A star means a rating and nothing else after
+            // Phase 7 part 3; selection already reads as `secondaryContainer`
+            // plus a check, so the chip is its label alone, like the tags.
             FilterChip(
-              avatar: const Icon(Icons.star, size: 18),
               label: Text(l10n.favoritesFilterLabel),
               selected: favoritesOnly,
               onSelected: (_) => onFavoritesTap(),
             ),
             for (final RecipeTag tag in chips) ...<Widget>[
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               FilterChip(
                 label: Text(tag.label),
                 selected: tag.key == selectedTag,

@@ -40,6 +40,10 @@ abstract final class AppSizes {
   /// A recipe card's photo, and the monogram tile that stands in for one.
   static const double thumb = 72;
 
+  /// The step-number disc on a recipe's detail screen -- a tonal circle with
+  /// the 1-based step number centred in it.
+  static const double stepDisc = 32;
+
   /// `AppEmptyState`'s icon. Deliberately its own name rather than borrowing
   /// [target]: they are the same number today, but one is a hit area and the
   /// other is a drawing, and they have no reason to move together.

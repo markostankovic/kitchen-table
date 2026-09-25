@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -5,6 +6,11 @@ import 'package:kitchen_table/core/error/app_failure.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/meal_plan/meal_plan_writer.dart';
+import 'package:kitchen_table/core/recipes/widgets/recipe_card.dart';
+import 'package:kitchen_table/core/theme/app_theme.dart';
+import 'package:kitchen_table/core/widgets/app_badge.dart';
+import 'package:kitchen_table/core/widgets/app_meta_row.dart';
+import 'package:kitchen_table/core/widgets/app_monogram_tile.dart';
 import 'package:kitchen_table/features/ingredients/domain/ingredient_match.dart';
 import 'package:kitchen_table/features/ingredients/domain/quantity.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
@@ -145,11 +151,14 @@ Future<void> _pumpList(
       // The AppBar title reads AppLocalizations now (D77, Phase 3 part 1),
       // so this screen needs the delegates wired in -- the real app root
       // does this once in `main.dart`; a bare `MaterialApp` in a widget test
-      // has to do it itself.
-      child: const MaterialApp(
+      // has to do it itself. Phase 7 part 3 adds the theme for the same
+      // reason: the redesigned widgets read `KitchenColors` off it, and a
+      // default `ThemeData` carries no extensions.
+      child: MaterialApp(
+        theme: AppTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: appSupportedLocales,
-        home: RecipeListScreen(),
+        home: const RecipeListScreen(),
       ),
     ),
   );
@@ -236,12 +245,13 @@ Future<void> _pumpDetail(
             .overrideWith((Ref ref) async => tagLabels),
         if (writer != null) mealPlanWriterProvider.overrideWith(() => writer),
       ],
-      // The screen now reads AppLocalizations too (Phase 3 part 2), on
-      // `_pumpList`'s own precedent above.
-      child: const MaterialApp(
+      // The screen now reads AppLocalizations too (Phase 3 part 2), and the
+      // theme for `KitchenColors`, both on `_pumpList`'s own precedent above.
+      child: MaterialApp(
+        theme: AppTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: appSupportedLocales,
-        home: RecipeDetailScreen(recipeId: 'r1'),
+        home: const RecipeDetailScreen(recipeId: 'r1'),
       ),
     ),
   );
@@ -261,7 +271,9 @@ void main() {
         (WidgetTester tester) async {
       await _pumpList(tester, recipes: <Recipe>[_torta, _pita]);
 
-      expect(find.widgetWithText(Chip, 'Draft'), findsOneWidget);
+      // An AppBadge since Phase 7 part 3, not a Chip: a chip in this app is
+      // a control, and nothing taps this.
+      expect(find.widgetWithText(AppBadge, 'Draft'), findsOneWidget);
     });
 
     testWidgets('an empty household gets the invitation, not "no match"',
@@ -320,30 +332,43 @@ void main() {
       );
     });
 
-    testWidgets('a recipe with no photo shows no thumbnail, unchanged',
+    testWidgets('a recipe with no photo gets a monogram tile, not a gap',
         (WidgetTester tester) async {
       await _pumpList(tester, recipes: <Recipe>[_torta, _pita]);
 
+      // Phase 7 part 3: an empty leading square read as a thumbnail that had
+      // failed to load, and most recipes in this app will never have a
+      // photo. The tile is the title's first letter, upper-cased.
       expect(find.byType(Image), findsNothing);
+      expect(find.byType(AppMonogramTile), findsNWidgets(2));
+      expect(find.widgetWithText(AppMonogramTile, 'Š'), findsOneWidget);
+      expect(find.widgetWithText(AppMonogramTile, 'P'), findsOneWidget);
     });
 
-    testWidgets('a favorited, rated recipe shows a star and the rating',
+    testWidgets('a favorited, rated recipe shows a heart and the rating',
         (WidgetTester tester) async {
       final Recipe favorited =
           _torta.copyWith(isFavorite: true, rating: 4);
       await _pumpList(tester, recipes: <Recipe>[favorited, _pita]);
 
-      // Scoped to the tile, not `find.byIcon(Icons.star)` alone: the
-      // Favorites filter chip (Phase 6, part 2's row, now visible even with
-      // no tags) carries its own star icon as an avatar.
+      // Phase 7 part 3 split the two meanings the star used to carry:
+      // favourite is a heart, and a star is a rating and nothing else. The
+      // Favorites filter chip lost its star avatar in the same change, so
+      // this no longer has to scope around it -- but it stays scoped to the
+      // card, because the meta row's own rating star is also an Icons.star.
+      final Finder card = find.byType(RecipeCard);
       expect(
-        find.descendant(
-          of: find.byType(ListTile),
-          matching: find.byIcon(Icons.star),
-        ),
+        find.descendant(of: card, matching: find.byIcon(Icons.favorite)),
         findsOneWidget,
       );
-      expect(find.textContaining('★ 4'), findsOneWidget);
+      // The rating is its own meta item now, a star beside a bare number --
+      // never the `★ 4` run that used to be glued into the joined meta line.
+      expect(
+        find.descendant(of: card, matching: find.byIcon(Icons.star)),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(AppMetaItem, '4'), findsOneWidget);
+      expect(find.textContaining('★'), findsNothing);
     });
 
     testWidgets('shows a chip per distinct tag', (WidgetTester tester) async {
@@ -486,8 +511,11 @@ void main() {
       await _pumpDetail(tester, _detail);
 
       // D1: the cook typed the genitive `šargarepe`; the catalog says
-      // `šargarepa`, and that is what a reader sees.
-      expect(find.text('šargarepa'), findsOneWidget);
+      // `šargarepa`, and that is what a reader sees. Unit and name are one
+      // run of text since Phase 7 part 3 -- `g šargarepa` reads as one
+      // phrase, with the quantity alone in its own column.
+      expect(find.text('g šargarepa'), findsOneWidget);
+      expect(find.text('200'), findsOneWidget);
       expect(find.text('200 g šargarepe'), findsNothing);
     });
 
@@ -504,10 +532,10 @@ void main() {
         (WidgetTester tester) async {
       await _pumpDetail(tester, _detail);
 
-      expect(find.text('1 kašika'), findsOneWidget);
-      expect(find.text('1 tbsp'), findsNothing);
+      expect(find.text('kašika ajvar'), findsOneWidget);
+      expect(find.textContaining('tbsp'), findsNothing);
       // Grams are spelled the same either way.
-      expect(find.text('200 g'), findsOneWidget);
+      expect(find.text('g šargarepa'), findsOneWidget);
     });
 
     testWidgets('quantities render as fractions, never decimals',
@@ -549,11 +577,18 @@ void main() {
       );
     });
 
-    testWidgets('renders unchanged when the recipe has no photo',
-        (WidgetTester tester) async {
+    testWidgets('a recipe with no photo still gets the well, with a '
+        'placeholder in it', (WidgetTester tester) async {
       await _pumpDetail(tester, _detail);
 
+      // Phase 7 part 3: the hero used to be omitted entirely, so the screen
+      // started somewhere different depending on whether a recipe had a
+      // picture. A missing picture is not a failure (rule 3's spirit), so
+      // the well renders with a quiet placeholder rather than a broken-image
+      // icon.
       expect(find.byType(Image), findsNothing);
+      expect(find.byIcon(Icons.image_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.broken_image_outlined), findsNothing);
     });
 
     testWidgets('three filled and two outlined stars for rating: 3',
@@ -571,6 +606,98 @@ void main() {
       expect(
         find.descendant(of: stars, matching: find.byIcon(Icons.star_border)),
         findsNWidgets(2),
+      );
+    });
+
+    // Phase 7 part 3's device walk found stars three, four and five off the
+    // right edge of a real phone: `app_theme.dart`'s `iconButtonTheme` sets a
+    // 48dp minimum, which `padding: zero` and `constraints: BoxConstraints()`
+    // do not override, so five stars wanted ~220dp inside a quarter-width
+    // column. Nobody could rate a recipe above 2. The old tests all pumped at
+    // 800x600, where a 220dp row simply fits -- so this one pumps a phone.
+    testWidgets('all five stars stay inside the stat strip at phone width',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1080, 2340);
+      tester.view.devicePixelRatio = 3; // 360 x 780 logical -- a small phone
+      addTearDown(tester.view.reset);
+
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          recipe: _torta.copyWith(
+            servings: 8,
+            prepMinutes: 30,
+            cookMinutes: 45,
+            rating: 3,
+          ),
+        ),
+      );
+
+      final Finder stars = find.byKey(const Key('ratingStars'));
+      final double screenWidth = tester.view.physicalSize.width /
+          tester.view.devicePixelRatio;
+
+      // Every star is on screen...
+      for (final Finder star in <Finder>[
+        find.descendant(of: stars, matching: find.byIcon(Icons.star)),
+        find.descendant(of: stars, matching: find.byIcon(Icons.star_border)),
+      ]) {
+        for (final Element e in star.evaluate()) {
+          final Rect box = tester.getRect(find.byWidget(e.widget));
+          expect(box.right, lessThanOrEqualTo(screenWidth),
+              reason: 'a star ran off the right edge');
+          expect(box.left, greaterThanOrEqualTo(0));
+        }
+      }
+
+      // ...and all five are still there, with the fourth column intact.
+      expect(
+        find.descendant(of: stars, matching: find.byIcon(Icons.star)),
+        findsNWidgets(3),
+      );
+      expect(
+        find.descendant(of: stars, matching: find.byIcon(Icons.star_border)),
+        findsNWidgets(2),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    // Being on screen is not quite the claim; the claim is that a tap on the
+    // fifth star reaches the fifth star. This hit-tests rather than tapping,
+    // because a real tap runs `_setRating` into the repository and this suite
+    // stubs no Supabase client -- reachability is what the walk found broken,
+    // and reachability is what this asserts.
+    testWidgets('a tap on the fifth star reaches it at phone width',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1080, 2340);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          recipe: _torta.copyWith(
+            servings: 8,
+            prepMinutes: 30,
+            cookMinutes: 45,
+          ),
+        ),
+      );
+
+      final Finder fifth = find
+          .descendant(
+            of: find.byKey(const Key('ratingStars')),
+            matching: find.byIcon(Icons.star_border),
+          )
+          .last;
+      final RenderObject target = tester.renderObject(fifth);
+      final HitTestResult result =
+          tester.hitTestOnBinding(tester.getCenter(fifth));
+
+      expect(
+        result.path.any((HitTestEntry<HitTestTarget> e) => e.target == target),
+        isTrue,
+        reason: 'the fifth star did not receive the hit at its own centre',
       );
     });
 

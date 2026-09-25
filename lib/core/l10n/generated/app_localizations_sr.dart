@@ -286,6 +286,23 @@ class AppLocalizationsSr extends AppLocalizations {
   String get ingredientNotMatchedTooltip => 'Nije povezano sa sastojkom';
 
   @override
+  String get statServingsLabel => 'Porcije';
+
+  @override
+  String get statPrepLabel => 'Priprema';
+
+  @override
+  String get statCookLabel => 'Kuvanje';
+
+  @override
+  String get statRatingLabel => 'Ocena';
+
+  @override
+  String statMinutesValue(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
   String snackSlotCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -170,7 +170,7 @@ abstract class AppLocalizations {
   /// **'Prijavi se Google nalogom'**
   String get signInWithGoogle;
 
-  /// Recipe detail screen, AppBar title shown before the recipe has loaded.
+  /// The word for a recipe with no title to show. Phase 7 part 3 took the recipe detail screen's AppBar title away -- the recipe's own name now sits in the body -- so the only reader left is the meal plan's entry label, which falls back to this when an entry's recipe title is missing.
   ///
   /// In sr, this message translates to:
   /// **'Recept'**
@@ -583,6 +583,36 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Nije povezano sa sastojkom'**
   String get ingredientNotMatchedTooltip;
+
+  /// Recipe detail screen, the stat strip's servings column label. A bare noun, not a count -- the number is the value beneath it, which is why this is not recipeServingsCount.
+  ///
+  /// In sr, this message translates to:
+  /// **'Porcije'**
+  String get statServingsLabel;
+
+  /// Recipe detail screen, the stat strip's prep-time column label.
+  ///
+  /// In sr, this message translates to:
+  /// **'Priprema'**
+  String get statPrepLabel;
+
+  /// Recipe detail screen, the stat strip's cook-time column label.
+  ///
+  /// In sr, this message translates to:
+  /// **'Kuvanje'**
+  String get statCookLabel;
+
+  /// Recipe detail screen, the stat strip's rating column label -- the five stars sit under it.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ocena'**
+  String get statRatingLabel;
+
+  /// Recipe detail screen, the prep and cook columns' value. Just the number and the unit: the column's own label already says which of the two it is, unlike recipePrepMinutes, which carries the word because it stands alone in a meta row.
+  ///
+  /// In sr, this message translates to:
+  /// **'{minutes} min'**
+  String statMinutesValue(int minutes);
 
   /// Meal plan screen (part 6), the repeat-warning dialog's count of snack slots already holding this recipe. Added here alongside the other plurals so the vocabulary is complete before that screen's own part localizes the sentence around it.
   ///

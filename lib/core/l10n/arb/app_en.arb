@@ -89,6 +89,11 @@
   "recipeCookMinutes": "{minutes} min cook",
   "ingredientOptionalTrailer": "optional",
   "ingredientNotMatchedTooltip": "Not matched to an ingredient",
+  "statServingsLabel": "Servings",
+  "statPrepLabel": "Prep",
+  "statCookLabel": "Cook",
+  "statRatingLabel": "Rating",
+  "statMinutesValue": "{minutes} min",
   "snackSlotCount": "{count, plural, one{{count} snack slot} other{{count} snack slots}}",
   "ingredientsMatchedCount": "{count, plural, one{{count} ingredient} other{{count} ingredients}}",
 

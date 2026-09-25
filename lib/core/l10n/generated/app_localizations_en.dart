@@ -283,6 +283,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ingredientNotMatchedTooltip => 'Not matched to an ingredient';
 
   @override
+  String get statServingsLabel => 'Servings';
+
+  @override
+  String get statPrepLabel => 'Prep';
+
+  @override
+  String get statCookLabel => 'Cook';
+
+  @override
+  String get statRatingLabel => 'Rating';
+
+  @override
+  String statMinutesValue(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
   String snackSlotCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

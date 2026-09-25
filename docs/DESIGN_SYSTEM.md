@@ -221,6 +221,7 @@ number in the table.
 | `nav` | 80 | `NavigationBar` |
 | `icon` / `iconInButton` / `iconInMeta` | 24 / 20 / 16 | actions · inside buttons · in meta lines |
 | `thumb` | 72 | recipe card photo or monogram tile |
+| `stepDisc` | 32 | the step-number disc on a recipe |
 | `emptyStateIcon` | 48 | `AppEmptyState`'s icon |
 
 `emptyStateIcon` is its own name rather than a borrowed `target`: they are the
@@ -292,6 +293,13 @@ single most important action. Everything else is quieter:
 | Outlined | none, `outline` border | cancel-weight (Discard this import) |
 | Text in `error` | none | destructive (Delete recipe, Leave household) |
 
+**The FAB** — the recipe list's is the only one in the app — is `primary` on
+`onPrimary`, radius 16, elevation 0. Not Material's `primaryContainer` default:
+unthemed, it sat at 1.94:1 against the dark surface and was invisible to a
+person while present in the widget tree (Phase 7 part 2's device walk). It is
+the screen's one filled action, and the one filled action is `primary`
+everywhere else here.
+
 ### Cards
 
 `surfaceContainerLow`, a 1dp `outlineVariant` hairline, radius 12, elevation 0.
@@ -310,6 +318,20 @@ Filled, 52dp, radius 8, no underline. **The label sits above the field** in
 `titleSmall`, not floating inside it. Focus is a 2dp `primary` border.
 Validation text is `error`, below the field.
 
+**Field text and hint are sans** — `bodyMedium`, not the `bodyLarge` serif
+Flutter falls through to. A field is furniture, not something a person reads,
+and `bodyLarge` became Literata in part 2. The hint half is set once in
+`inputDecorationTheme`; the typed half **cannot be themed**, so every
+`TextField` passes `style: bodyMedium` at its call site. Forgetting it is
+exactly the defect part 2's walk found in the search box.
+
+**The search field is the stadium exception.** A stadium is a shape, not a
+radius, so it is not in `AppRadii` — and because `InputBorder` takes only a
+`BorderRadius`, inside a decoration it is spelled
+`BorderRadius.circular(AppSizes.field / 2)`. It is `AppSearchField`: no resting
+border, `surfaceContainerHighest`, a magnifier in `outline`, and a clear button
+once there is something to clear.
+
 ### Chips
 
 40dp, radius 8 (32dp for an input/tag chip). Selected is `secondaryContainer`
@@ -325,7 +347,10 @@ right-aligned in its own narrow column so fractions line up; the unit is
 
 - **matched** — plain
 - **optional** — an `opciono` / `optional` suffix in muted `bodySmall`
-- **unmatched** — a dashed `unmatched` ring, rendered as typed
+- **unmatched** — rendered exactly as typed, with a 16dp dashed `unmatched`
+  ring on the trailing edge (a small `CustomPainter`, not a package, and not a
+  ring around the whole row). Never `error`, never red — a line the catalog did
+  not know is a supported outcome, not a fault
 - **flagged** (import review only) — a 3px `reviewMarker` left edge and a
   tinted row
 
@@ -372,6 +397,30 @@ sentence without scrolling.
 
 A 48dp icon in `outline`, a `titleMedium` title, a `bodyMedium` body, and at
 most one tonal action.
+
+### The shared widgets, and where each one is
+
+Reach for these rather than re-deriving them. Homes follow § Where a component
+lives, below.
+
+| Widget | File |
+|---|---|
+| `AppBadge` | `core/widgets/app_badge.dart` |
+| `AppMetaRow` / `AppMetaItem` | `core/widgets/app_meta_row.dart` |
+| `AppMonogramTile` | `core/widgets/app_monogram_tile.dart` |
+| `AppStatStrip` / `AppStatColumn` | `core/widgets/app_stat_strip.dart` |
+| `AppSearchField` | `core/widgets/app_search_field.dart` |
+| `AppEmptyState` | `core/widgets/app_empty_state.dart` |
+| `AppErrorView` | `core/widgets/app_error_view.dart` |
+| `AppSectionHeading` | `core/widgets/app_section_heading.dart` |
+| `RecipeCard` | `core/recipes/widgets/recipe_card.dart` |
+| `IngredientLineRow` | `core/ingredients/widgets/ingredient_line_row.dart` |
+
+`IngredientLineRow` takes **primitives, not a model** — a `RecipeIngredient`
+and a `RecipeDraftLine` carry the same five facts under different types, and
+strings are what let the detail screen and the import review screen share one
+row. `AppStatColumn`'s value is a `Widget` for the same reason: one column on a
+recipe is five stars.
 
 ---
 

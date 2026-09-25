@@ -149,6 +149,31 @@ abstract final class AppTheme {
           borderSide: BorderSide(color: scheme.error, width: 2),
         ),
         errorStyle: textTheme.bodySmall?.copyWith(color: scheme.error),
+        // Sans, not the serif. `TextField` has no themed style for the text
+        // the cook *types* -- it falls through to `bodyLarge`, which is
+        // Literata since part 2 -- so each field also passes
+        // `style: bodyMedium` at its call site. Only the hint can be set
+        // from here, and it is set here so the two halves of a field cannot
+        // disagree about their face. A search box is UI furniture.
+        hintStyle: textTheme.bodyMedium?.copyWith(
+          color: scheme.onSurfaceVariant,
+        ),
+      ),
+
+      // `primary`, not Material's `primaryContainer` default. Phase 7 part
+      // 2's device walk found the unthemed FAB sitting at 1.94:1 against the
+      // dark surface -- present in the tree and invisible to a person. The
+      // one filled action on a screen is `primary` everywhere else in this
+      // app; the FAB is no exception, and `primary`/`onPrimary` reads in
+      // both brightnesses.
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
+        elevation: 0,
+        highlightElevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+        ),
       ),
 
       filledButtonTheme: FilledButtonThemeData(
