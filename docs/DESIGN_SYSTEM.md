@@ -55,7 +55,7 @@ values were designed as a pair.
 |---|---|---|---|
 | `primary` | `#366A35` | `#9ED498` | main actions, "today", links |
 | `onPrimary` | `#FFFFFF` | `#013908` | label on primary |
-| `primaryContainer` | `#B9F1B3` | `#1D511E` | tonal buttons, today's day card, step-number disc |
+| `primaryContainer` | `#B9F1B3` | `#1D511E` | tonal buttons, the meal plan's drop highlight, step-number disc |
 | `onPrimaryContainer` | `#032B00` | `#BFF6B8` | content on it |
 
 ### Secondary — mustard, the small golden highlight
@@ -257,8 +257,8 @@ in sync — what it adds is a name for what the colour *means here*.
 
 | Token | Alias of | Means |
 |---|---|---|
-| `today` | `primary` | the "Danas"/"Today" pill and the day header it belongs to |
-| `todayContainer` | `primaryContainer` | today's day card, and the step-number disc |
+| `today` | `primary` | the "Danas"/"Today" pill and the 2dp outline of today's day card |
+| `todayContainer` | `primaryContainer` | the step-number disc (today's day card is outlined in `today`, not filled) |
 | `reviewMarker` | `tertiary` | the 3px left edge on an import line flagged for a second look |
 | `favorite` | `tertiary` | a filled heart — only ever a heart |
 | `rating` | `tertiary` | filled stars; an empty star is `outline` |
@@ -375,11 +375,50 @@ small outlined badge, radius 4, in `labelMedium`.
 
 ### Meal entries
 
-`MealEntry` is a nested card inside its day card: slot and servings in muted
-`bodySmall`, the recipe title in Literata below. `LeftoverEntry` is the same
-shape with a dashed border and a return icon in `leftover` — it reads as
-derived from another meal rather than as a meal of its own. `EmptySlot` is a
-quiet text button (`+ Doručak`), inviting without shouting.
+All of these are private classes in `meal_plan_screen.dart` — each has one
+consumer, so none of them is in `core/widgets/`.
+
+**The day card.** The theme's `Card` (`surfaceContainerLow`, 1dp
+`outlineVariant`, radius 12), padded `md`, with the day header in
+`titleSmall` `onSurface` — `weekdayAndDay` (`pon 14`) in the week view, where
+the week bar already names the month, and `shortDateLabel` in the Today view.
+Today's card keeps that fill and gets a **2dp border in `today`** plus a
+`Danas`/`Today` pill beside the header: `today` fill, `onPrimary` text in
+`labelMedium`, `StadiumBorder`, `sm` horizontal padding. Today is outlined,
+not filled.
+
+**Entry cards.** Nested inside the day card, grouped by slot in
+`MealSlot.ordered` order, `sm` apart: `surfaceContainerLowest` fill, 1dp
+`outlineVariant`, radius 12, padded `md`. On top an `AppMetaRow` — the slot as
+plain `bodySmall` `onSurfaceVariant` text, then a servings item
+(`soup_kitchen_outlined`) for a recipe, a `Napomena`/`Note` item
+(`edit_note_outlined`) for a note, or `od pon 14.`/`from Mon 14`
+(`event_outlined`) for a leftover whose source is in the loaded week. Then,
+`xs` below, the title in `titleMedium`, or a note's own words in `bodyLarge`,
+wrapping rather than truncating. **No thumbnail or monogram** — an entry
+carries a recipe's title and servings, not the recipe (D53).
+
+**Leftovers.** The same card with a **dashed 1dp `outline` border** (a private
+`CustomPainter` along the `RRect`, no package) and a leading return icon in
+`leftover`, so it reads as derived from another meal rather than as a meal of
+its own. The source's day is the abbreviated `weekdayAndDay` on purpose: a
+full Serbian weekday would have to be declined after `od`.
+
+**Adding.** Under the entries, a `Wrap(spacing: sm, runSpacing: xs)`: a quiet
+`+ <Slot>` text button (`onSurfaceVariant`) for each **empty** slot — inviting
+without shouting — then a trailing icon-only `+` in `primary` that opens the
+slot chooser (a small bottom sheet of the four slots). The `+` is how a second
+entry gets into a filled slot. **A week-view day with nothing planned, other
+than today, collapses** to one compact card on `surface` — lighter than a
+planned day — with the header on the left and `+ Dodaj obrok`/`+ Add meal` in
+`primary` on the right, which opens the same chooser. The Today view never
+collapses.
+
+**Drag.** Long-press lifts the entry card itself at its own width, on
+`Material` elevation 2. Three drop targets, each highlighted in
+`primaryContainer` while a drag is over it: a filled slot's group of entry
+cards, a `+ <Slot>` button, and a collapsed day — which **keeps the entry's
+own slot**, since it shows none to aim at.
 
 ### Menu, snackbar, banner
 

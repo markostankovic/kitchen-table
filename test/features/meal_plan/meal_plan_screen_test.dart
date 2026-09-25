@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -95,8 +96,11 @@ class _StubPlan extends MealPlanEditor {
     required DateTime entryDate,
     required MealSlot slot,
   }) async {
-    calls.addedLeftover =
-        (sourceId: sourceEntryId, date: entryDate, slot: slot);
+    calls.addedLeftover = (
+      sourceId: sourceEntryId,
+      date: entryDate,
+      slot: slot,
+    );
   }
 
   @override
@@ -137,10 +141,11 @@ Future<_Calls> _pump(
   Reachability? networkStatus,
   Locale? locale,
   bool weekView = false,
+  Size surface = const Size(1200, 3000),
 }) async {
   // The week list is taller than the default 800x600 test surface -- without
   // this, days below the fold simply are not there to find.
-  tester.view.physicalSize = const Size(1200, 3000);
+  tester.view.physicalSize = surface;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
@@ -150,7 +155,8 @@ Future<_Calls> _pump(
     ProviderScope(
       overrides: [
         mealPlanEditorProvider.overrideWith(
-            () => _StubPlan(initial, calls, repeatCount: repeatCount)),
+          () => _StubPlan(initial, calls, repeatCount: repeatCount),
+        ),
         visibleWeekProvider.overrideWith(() => _PinnedWeek()),
         plannableRecipesProvider(query: '')
             .overrideWith((Ref ref) async => plannable),
@@ -184,16 +190,21 @@ Future<_Calls> _pump(
   return calls;
 }
 
-Recipe _plannableRecipe({required String id, required String title}) =>
-    Recipe(
-      id: id,
-      householdId: 'h1',
-      title: title,
-      originalLocale: 'sr',
-      sourceType: RecipeSourceType.manual,
-      status: RecipeStatus.tested,
-      createdBy: 'u1',
-    );
+/// A `+ <Slot>` / `+ Add meal` button by its label. `TextButton.icon` builds
+/// a private `TextButton` subclass, so `find.widgetWithText(TextButton, ...)`
+/// -- an exact-type match -- would never see it.
+Finder _textButton(String label) =>
+    find.ancestor(of: find.text(label), matching: find.bySubtype<TextButton>());
+
+Recipe _plannableRecipe({required String id, required String title}) => Recipe(
+  id: id,
+  householdId: 'h1',
+  title: title,
+  originalLocale: 'sr',
+  sourceType: RecipeSourceType.manual,
+  status: RecipeStatus.tested,
+  createdBy: 'u1',
+);
 
 void main() {
   testWidgets('the AppBar is titled Plan', (WidgetTester tester) async {
@@ -201,70 +212,114 @@ void main() {
     expect(find.widgetWithText(AppBar, 'Plan'), findsOneWidget);
   });
 
-  testWidgets('shows all 7 day headers and 28 slot rows',
-      (WidgetTester tester) async {
-    await _pump(tester, initial: MealPlanWeek.empty(_week), weekView: true);
+  testWidgets(
+    'an empty week shows all 7 day headers, each day collapsed to one Add '
+    'meal button',
+    (WidgetTester tester) async {
+      await _pump(tester, initial: MealPlanWeek.empty(_week), weekView: true);
 
-    for (final DateTime day in _week.days) {
-      expect(find.text(weekdayAndDay(day, 'en')), findsOneWidget);
-    }
-    // Every slot -- populated or not -- carries exactly one "Add" chip.
-    expect(find.widgetWithText(ActionChip, 'Add'), findsNWidgets(28));
-  });
+      for (final DateTime day in _week.days) {
+        expect(find.text(weekdayAndDay(day, 'en')), findsOneWidget);
+      }
+      // The pinned week is in June 2026, so today is outside it and every day
+      // collapses -- no `+ <Slot>` button anywhere.
+      expect(_textButton('Add meal'), findsNWidgets(7));
+      expect(find.text('Breakfast'), findsNothing);
+    },
+  );
 
-  testWidgets('an empty week renders with no entry tiles',
-      (WidgetTester tester) async {
+  testWidgets(
+    'in the current week, today stays expanded among six collapsed days',
+    (WidgetTester tester) async {
+      // The rendered days come from the plan's own week, not the pinned one.
+      await _pump(
+        tester,
+        initial: MealPlanWeek.empty(PlanWeek.of(DateTime.now())),
+        weekView: true,
+      );
+
+      expect(_textButton('Add meal'), findsNWidgets(6));
+      for (final String slot in <String>[
+        'Breakfast',
+        'Lunch',
+        'Dinner',
+        'Snack',
+      ]) {
+        expect(_textButton(slot), findsOneWidget);
+      }
+    },
+  );
+
+  testWidgets('an empty week renders with no entry cards', (
+    WidgetTester tester,
+  ) async {
     await _pump(tester, initial: MealPlanWeek.empty(_week));
-    expect(find.byType(Chip), findsNothing);
+    expect(find.byType(LongPressDraggable<MealPlanEntry>), findsNothing);
   });
 
   testWidgets(
-      'Today is the default view: one day section, four Add chips, no week '
-      'chevrons', (WidgetTester tester) async {
-    await _pump(tester, initial: MealPlanWeek.empty(_week));
+    'Today is the default view: one expanded day, four slot buttons and '
+    'the chooser +, the Today pill, no week chevrons',
+    (WidgetTester tester) async {
+      await _pump(tester, initial: MealPlanWeek.empty(_week));
 
-    // One _DaySection -- each ends in exactly one Divider.
-    expect(find.byType(Divider), findsOneWidget);
-    expect(find.widgetWithText(ActionChip, 'Add'), findsNWidgets(4));
-    expect(find.byTooltip('Previous week'), findsNothing);
-    expect(find.byTooltip('Next week'), findsNothing);
-    expect(find.byTooltip('This week'), findsNothing);
-  });
+      for (final String slot in <String>[
+        'Breakfast',
+        'Lunch',
+        'Dinner',
+        'Snack',
+      ]) {
+        expect(_textButton(slot), findsOneWidget);
+      }
+      expect(find.byTooltip('Add meal'), findsOneWidget);
+      expect(_textButton('Add meal'), findsNothing);
+      // The segmented button's label, and the pill beside today's header.
+      expect(find.text('Today'), findsNWidgets(2));
+      expect(find.byTooltip('Previous week'), findsNothing);
+      expect(find.byTooltip('Next week'), findsNothing);
+      expect(find.byTooltip('This week'), findsNothing);
+    },
+  );
 
-  testWidgets('the Today header renders shortDateLabel(DateTime.now(), en)',
-      (WidgetTester tester) async {
+  testWidgets('the Today header renders shortDateLabel(DateTime.now(), en)', (
+    WidgetTester tester,
+  ) async {
     await _pump(tester, initial: MealPlanWeek.empty(_week));
     expect(find.text(shortDateLabel(DateTime.now(), 'en')), findsOneWidget);
   });
 
   testWidgets(
-      'switching to This week shows seven headers and 28 Add chips, and '
-      'the chevrons come back', (WidgetTester tester) async {
-    await _pump(tester, initial: MealPlanWeek.empty(_week), weekView: true);
+    'switching to This week shows seven collapsed days, and the chevrons '
+    'come back',
+    (WidgetTester tester) async {
+      await _pump(tester, initial: MealPlanWeek.empty(_week), weekView: true);
 
-    expect(find.byType(Divider), findsNWidgets(7));
-    expect(find.widgetWithText(ActionChip, 'Add'), findsNWidgets(28));
-    expect(find.byTooltip('Previous week'), findsOneWidget);
-    expect(find.byTooltip('Next week'), findsOneWidget);
-  });
+      expect(_textButton('Add meal'), findsNWidgets(7));
+      expect(find.byTooltip('Previous week'), findsOneWidget);
+      expect(find.byTooltip('Next week'), findsOneWidget);
+    },
+  );
 
   testWidgets(
-      'the pin: paging forward in week view then switching back to Today '
-      'still renders the real today, not wherever the week view had paged '
-      'to', (WidgetTester tester) async {
-    await _pump(tester, initial: MealPlanWeek.empty(_week), weekView: true);
+    'the pin: paging forward in week view then switching back to Today '
+    'still renders the real today, not wherever the week view had paged '
+    'to',
+    (WidgetTester tester) async {
+      await _pump(tester, initial: MealPlanWeek.empty(_week), weekView: true);
 
-    await tester.tap(find.byTooltip('Next week'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Next week'));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Today'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Today'));
+      await tester.pumpAndSettle();
 
-    expect(find.text(shortDateLabel(DateTime.now(), 'en')), findsOneWidget);
-  });
+      expect(find.text(shortDateLabel(DateTime.now(), 'en')), findsOneWidget);
+    },
+  );
 
-  testWidgets('a recipe entry renders its title in the right slot',
-      (WidgetTester tester) async {
+  testWidgets('a recipe entry renders its title in the right slot', (
+    WidgetTester tester,
+  ) async {
     final MealPlanWeek plan = MealPlanWeek(
       week: _week,
       planId: 'plan-1',
@@ -307,39 +362,50 @@ void main() {
     expect(find.text('zzz kupi mleko'), findsOneWidget);
   });
 
-  testWidgets('next / previous / today navigate the visible week',
-      (WidgetTester tester) async {
+  testWidgets('next / previous / today navigate the visible week', (
+    WidgetTester tester,
+  ) async {
     await _pump(tester, initial: MealPlanWeek.empty(_week), weekView: true);
 
-    expect(find.text(weekRangeLabel(_week.start, _week.end, 'en')),
-        findsOneWidget);
+    expect(
+      find.text(weekRangeLabel(_week.start, _week.end, 'en')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byTooltip('Next week'));
     await tester.pumpAndSettle();
     expect(
-        find.text(weekRangeLabel(_week.next.start, _week.next.end, 'en')),
-        findsOneWidget);
+      find.text(weekRangeLabel(_week.next.start, _week.next.end, 'en')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byTooltip('Previous week'));
     await tester.pumpAndSettle();
-    expect(find.text(weekRangeLabel(_week.start, _week.end, 'en')),
-        findsOneWidget);
+    expect(
+      find.text(weekRangeLabel(_week.start, _week.end, 'en')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byTooltip('Next week'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('This week'));
     await tester.pumpAndSettle();
     final PlanWeek today = PlanWeek.of(DateTime.now());
-    expect(find.text(weekRangeLabel(today.start, today.end, 'en')),
-        findsOneWidget);
+    expect(
+      find.text(weekRangeLabel(today.start, today.end, 'en')),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('tapping Add, then "Add a note instead" calls addNote',
-      (WidgetTester tester) async {
-    final _Calls calls = await _pump(tester,
-        initial: MealPlanWeek.empty(_week), weekView: true);
+  testWidgets('tapping + Breakfast, then "Add a note instead" calls addNote', (
+    WidgetTester tester,
+  ) async {
+    final _Calls calls = await _pump(
+      tester,
+      initial: MealPlanWeek.empty(_week),
+    );
 
-    await tester.tap(find.widgetWithText(ActionChip, 'Add').first);
+    await tester.tap(_textButton('Breakfast'));
     await tester.pumpAndSettle();
 
     expect(find.text('Add a note instead'), findsOneWidget);
@@ -352,12 +418,13 @@ void main() {
 
     expect(calls.addedNote, isNotNull);
     expect(calls.addedNote!.note, 'zzz eating out');
-    expect(calls.addedNote!.date, _monday);
+    expect(isSameDate(calls.addedNote!.date, DateTime.now()), isTrue);
     expect(calls.addedNote!.slot, MealSlot.breakfast);
   });
 
-  testWidgets('tapping an entry then Remove calls removeEntry',
-      (WidgetTester tester) async {
+  testWidgets('tapping an entry then Remove calls removeEntry', (
+    WidgetTester tester,
+  ) async {
     final MealPlanWeek plan = MealPlanWeek(
       week: _week,
       planId: 'plan-1',
@@ -384,69 +451,71 @@ void main() {
   });
 
   testWidgets(
-      'the action sheet offers "Plan leftovers..." for a recipe entry, not '
-      'for a note or a leftover', (WidgetTester tester) async {
-    final MealPlanWeek plan = MealPlanWeek(
-      week: _week,
-      planId: 'plan-1',
-      entries: <MealPlanEntry>[
-        MealPlanEntry(
-          id: 'e-recipe',
-          mealPlanId: 'plan-1',
-          entryDate: _monday,
-          slot: MealSlot.lunch,
-          position: 0,
-          entryKind: MealEntryKind.recipe,
-          recipeId: 'r1',
-          recipeTitle: 'zzz recipe entry',
-        ),
-        MealPlanEntry(
-          id: 'e-note',
-          mealPlanId: 'plan-1',
-          entryDate: _monday,
-          slot: MealSlot.breakfast,
-          position: 0,
-          entryKind: MealEntryKind.note,
-          note: 'zzz note entry',
-        ),
-        MealPlanEntry(
-          id: 'e-leftover',
-          mealPlanId: 'plan-1',
-          entryDate: _tuesday,
-          slot: MealSlot.dinner,
-          position: 0,
-          entryKind: MealEntryKind.leftover,
-          recipeId: 'r1',
-          recipeTitle: 'zzz leftover entry',
-          leftoverOfEntryId: 'e-recipe',
-        ),
-      ],
-    );
-    await _pump(tester, initial: plan, weekView: true);
+    'the action sheet offers "Plan leftovers..." for a recipe entry, not '
+    'for a note or a leftover',
+    (WidgetTester tester) async {
+      final MealPlanWeek plan = MealPlanWeek(
+        week: _week,
+        planId: 'plan-1',
+        entries: <MealPlanEntry>[
+          MealPlanEntry(
+            id: 'e-recipe',
+            mealPlanId: 'plan-1',
+            entryDate: _monday,
+            slot: MealSlot.lunch,
+            position: 0,
+            entryKind: MealEntryKind.recipe,
+            recipeId: 'r1',
+            recipeTitle: 'zzz recipe entry',
+          ),
+          MealPlanEntry(
+            id: 'e-note',
+            mealPlanId: 'plan-1',
+            entryDate: _monday,
+            slot: MealSlot.breakfast,
+            position: 0,
+            entryKind: MealEntryKind.note,
+            note: 'zzz note entry',
+          ),
+          MealPlanEntry(
+            id: 'e-leftover',
+            mealPlanId: 'plan-1',
+            entryDate: _tuesday,
+            slot: MealSlot.dinner,
+            position: 0,
+            entryKind: MealEntryKind.leftover,
+            recipeId: 'r1',
+            recipeTitle: 'zzz leftover entry',
+            leftoverOfEntryId: 'e-recipe',
+          ),
+        ],
+      );
+      await _pump(tester, initial: plan, weekView: true);
 
-    await tester.tap(find.text('zzz recipe entry'));
-    await tester.pumpAndSettle();
-    expect(find.text('Plan leftovers...'), findsOneWidget);
-    await tester.tapAt(const Offset(10, 10)); // dismiss via the modal barrier
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('zzz recipe entry'));
+      await tester.pumpAndSettle();
+      expect(find.text('Plan leftovers...'), findsOneWidget);
+      await tester.tapAt(const Offset(10, 10)); // dismiss via the modal barrier
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('zzz note entry'));
-    await tester.pumpAndSettle();
-    expect(find.text('Plan leftovers...'), findsNothing);
-    await tester.tapAt(const Offset(10, 10));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('zzz note entry'));
+      await tester.pumpAndSettle();
+      expect(find.text('Plan leftovers...'), findsNothing);
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Leftovers: zzz leftover entry'));
-    await tester.pumpAndSettle();
-    expect(find.text('Plan leftovers...'), findsNothing);
-    await tester.tapAt(const Offset(10, 10));
-    await tester.pumpAndSettle();
-  });
+      await tester.tap(find.text('Leftovers: zzz leftover entry'));
+      await tester.pumpAndSettle();
+      expect(find.text('Plan leftovers...'), findsNothing);
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+    },
+  );
 
-  testWidgets(
-      '"Plan leftovers..." defaults to the source date + 1 day and the '
-      "source's own slot, and confirming calls addLeftover",
-      (WidgetTester tester) async {
+  testWidgets('"Plan leftovers..." defaults to the source date + 1 day and the '
+      "source's own slot, and confirming calls addLeftover", (
+    WidgetTester tester,
+  ) async {
     final MealPlanWeek plan = MealPlanWeek(
       week: _week,
       planId: 'plan-1',
@@ -464,8 +533,11 @@ void main() {
       ],
     );
     final _Calls calls = await _pump(tester, initial: plan, weekView: true);
-    final DateTime expectedDefault =
-        DateTime(_monday.year, _monday.month, _monday.day + 1);
+    final DateTime expectedDefault = DateTime(
+      _monday.year,
+      _monday.month,
+      _monday.day + 1,
+    );
 
     await tester.tap(find.text('zzz sarma'));
     await tester.pumpAndSettle();
@@ -485,60 +557,63 @@ void main() {
   });
 
   testWidgets(
-      'the action sheet shows Move up only when not first, Move down only '
-      'when not last', (WidgetTester tester) async {
-    final MealPlanWeek plan = MealPlanWeek(
-      week: _week,
-      planId: 'plan-1',
-      entries: <MealPlanEntry>[
-        MealPlanEntry(
-          id: 'e0',
-          mealPlanId: 'plan-1',
-          entryDate: _monday,
-          slot: MealSlot.breakfast,
-          position: 0,
-          entryKind: MealEntryKind.note,
-          note: 'zzz note 0',
-        ),
-        MealPlanEntry(
-          id: 'e1',
-          mealPlanId: 'plan-1',
-          entryDate: _monday,
-          slot: MealSlot.breakfast,
-          position: 1,
-          entryKind: MealEntryKind.note,
-          note: 'zzz note 1',
-        ),
-        MealPlanEntry(
-          id: 'e2',
-          mealPlanId: 'plan-1',
-          entryDate: _monday,
-          slot: MealSlot.breakfast,
-          position: 2,
-          entryKind: MealEntryKind.note,
-          note: 'zzz note 2',
-        ),
-      ],
-    );
-    await _pump(tester, initial: plan, weekView: true);
+    'the action sheet shows Move up only when not first, Move down only '
+    'when not last',
+    (WidgetTester tester) async {
+      final MealPlanWeek plan = MealPlanWeek(
+        week: _week,
+        planId: 'plan-1',
+        entries: <MealPlanEntry>[
+          MealPlanEntry(
+            id: 'e0',
+            mealPlanId: 'plan-1',
+            entryDate: _monday,
+            slot: MealSlot.breakfast,
+            position: 0,
+            entryKind: MealEntryKind.note,
+            note: 'zzz note 0',
+          ),
+          MealPlanEntry(
+            id: 'e1',
+            mealPlanId: 'plan-1',
+            entryDate: _monday,
+            slot: MealSlot.breakfast,
+            position: 1,
+            entryKind: MealEntryKind.note,
+            note: 'zzz note 1',
+          ),
+          MealPlanEntry(
+            id: 'e2',
+            mealPlanId: 'plan-1',
+            entryDate: _monday,
+            slot: MealSlot.breakfast,
+            position: 2,
+            entryKind: MealEntryKind.note,
+            note: 'zzz note 2',
+          ),
+        ],
+      );
+      await _pump(tester, initial: plan, weekView: true);
 
-    await tester.tap(find.text('zzz note 0'));
-    await tester.pumpAndSettle();
-    expect(find.text('Move up'), findsNothing);
-    expect(find.text('Move down'), findsOneWidget);
-    await tester.tapAt(const Offset(10, 10));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('zzz note 0'));
+      await tester.pumpAndSettle();
+      expect(find.text('Move up'), findsNothing);
+      expect(find.text('Move down'), findsOneWidget);
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('zzz note 2'));
-    await tester.pumpAndSettle();
-    expect(find.text('Move up'), findsOneWidget);
-    expect(find.text('Move down'), findsNothing);
-    await tester.tapAt(const Offset(10, 10));
-    await tester.pumpAndSettle();
-  });
+      await tester.tap(find.text('zzz note 2'));
+      await tester.pumpAndSettle();
+      expect(find.text('Move up'), findsOneWidget);
+      expect(find.text('Move down'), findsNothing);
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+    },
+  );
 
-  testWidgets('tapping Move up calls reorderEntry with index - 1',
-      (WidgetTester tester) async {
+  testWidgets('tapping Move up calls reorderEntry with index - 1', (
+    WidgetTester tester,
+  ) async {
     final MealPlanWeek plan = MealPlanWeek(
       week: _week,
       planId: 'plan-1',
@@ -583,32 +658,34 @@ void main() {
   });
 
   testWidgets(
-      'picking a repeated snack recipe warns, and Cancel writes nothing',
-      (WidgetTester tester) async {
-    final Recipe recipe = _plannableRecipe(id: 'r1', title: 'zzz snack bar');
-    final _Calls calls = await _pump(
-      tester,
-      initial: MealPlanWeek.empty(_week),
-      plannable: <Recipe>[recipe],
-      repeatCount: 2,
-    );
+    'picking a repeated snack recipe warns, and Cancel writes nothing',
+    (WidgetTester tester) async {
+      final Recipe recipe = _plannableRecipe(id: 'r1', title: 'zzz snack bar');
+      final _Calls calls = await _pump(
+        tester,
+        initial: MealPlanWeek.empty(_week),
+        plannable: <Recipe>[recipe],
+        repeatCount: 2,
+      );
 
-    // Monday's slot rows are breakfast(0), lunch(1), dinner(2), snack(3).
-    await tester.tap(find.widgetWithText(ActionChip, 'Add').at(3));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('zzz snack bar'));
-    await tester.pumpAndSettle();
+      await tester.tap(_textButton('Snack'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('zzz snack bar'));
+      await tester.pumpAndSettle();
 
-    expect(calls.snackRepeatCountCalled, isTrue);
-    expect(find.text('Already planned recently'), findsOneWidget);
-    expect(find.text('Already in 2 snack slots this fortnight.'),
-        findsOneWidget);
+      expect(calls.snackRepeatCountCalled, isTrue);
+      expect(find.text('Already planned recently'), findsOneWidget);
+      expect(
+        find.text('Already in 2 snack slots this fortnight.'),
+        findsOneWidget,
+      );
 
-    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.pumpAndSettle();
 
-    expect(calls.addedRecipe, isNull);
-  });
+      expect(calls.addedRecipe, isNull);
+    },
+  );
 
   testWidgets('picking a repeated snack recipe, then Add anyway calls '
       'addRecipe', (WidgetTester tester) async {
@@ -620,7 +697,7 @@ void main() {
       repeatCount: 2,
     );
 
-    await tester.tap(find.widgetWithText(ActionChip, 'Add').at(3));
+    await tester.tap(_textButton('Snack'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('zzz snack bar'));
     await tester.pumpAndSettle();
@@ -634,44 +711,295 @@ void main() {
   });
 
   testWidgets(
-      'a non-snack slot never calls snackRepeatCount, and adds immediately',
-      (WidgetTester tester) async {
-    final Recipe recipe = _plannableRecipe(id: 'r1', title: 'zzz lunch dish');
-    final _Calls calls = await _pump(
-      tester,
-      initial: MealPlanWeek.empty(_week),
-      plannable: <Recipe>[recipe],
-      repeatCount: 99,
+    'a non-snack slot never calls snackRepeatCount, and adds immediately',
+    (WidgetTester tester) async {
+      final Recipe recipe = _plannableRecipe(id: 'r1', title: 'zzz lunch dish');
+      final _Calls calls = await _pump(
+        tester,
+        initial: MealPlanWeek.empty(_week),
+        plannable: <Recipe>[recipe],
+        repeatCount: 99,
+      );
+
+      await tester.tap(_textButton('Lunch'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('zzz lunch dish'));
+      await tester.pumpAndSettle();
+
+      expect(calls.snackRepeatCountCalled, isFalse);
+      expect(find.text('Already planned recently'), findsNothing);
+      expect(calls.addedRecipe, isNotNull);
+      expect(calls.addedRecipe!.slot, MealSlot.lunch);
+    },
+  );
+
+  testWidgets(
+    "a collapsed day's Add meal opens the slot chooser, and picking Dinner "
+    'reaches the recipe picker for that day and slot',
+    (WidgetTester tester) async {
+      final _Calls calls = await _pump(
+        tester,
+        initial: MealPlanWeek.empty(_week),
+        weekView: true,
+      );
+
+      await tester.tap(_textButton('Add meal').first); // Monday
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(ListTile, 'Breakfast'), findsOneWidget);
+      await tester.tap(find.widgetWithText(ListTile, 'Dinner'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Add a note instead'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'zzz out');
+      await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+      await tester.pumpAndSettle();
+
+      expect(calls.addedNote, (
+        date: _monday,
+        slot: MealSlot.dinner,
+        note: 'zzz out',
+      ));
+    },
+  );
+
+  testWidgets('the trailing + on a day with a filled slot opens the chooser', (
+    WidgetTester tester,
+  ) async {
+    final MealPlanWeek plan = MealPlanWeek(
+      week: _week,
+      planId: 'plan-1',
+      entries: <MealPlanEntry>[
+        MealPlanEntry(
+          id: 'e1',
+          mealPlanId: 'plan-1',
+          entryDate: _monday,
+          slot: MealSlot.breakfast,
+          position: 0,
+          entryKind: MealEntryKind.note,
+          note: 'zzz breakfast',
+        ),
+      ],
     );
+    await _pump(tester, initial: plan, weekView: true);
 
-    // Monday's lunch Add chip -- breakfast(0), lunch(1), dinner(2), snack(3).
-    await tester.tap(find.widgetWithText(ActionChip, 'Add').at(1));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('zzz lunch dish'));
+    // Monday is expanded: breakfast is filled, so no + Breakfast button.
+    expect(_textButton('Breakfast'), findsNothing);
+    expect(_textButton('Lunch'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Add meal'));
     await tester.pumpAndSettle();
 
-    expect(calls.snackRepeatCountCalled, isFalse);
-    expect(find.text('Already planned recently'), findsNothing);
-    expect(calls.addedRecipe, isNotNull);
-    expect(calls.addedRecipe!.slot, MealSlot.lunch);
+    // All four slots, the filled one included -- the + is how a second entry
+    // gets into it.
+    for (final String slot in <String>[
+      'Breakfast',
+      'Lunch',
+      'Dinner',
+      'Snack',
+    ]) {
+      expect(find.widgetWithText(ListTile, slot), findsOneWidget);
+    }
   });
 
+  testWidgets(
+    "a leftover whose source is in the week names the source's day; one "
+    'whose source is not shows only the slot',
+    (WidgetTester tester) async {
+      final MealPlanWeek plan = MealPlanWeek(
+        week: _week,
+        planId: 'plan-1',
+        entries: <MealPlanEntry>[
+          MealPlanEntry(
+            id: 'e-source',
+            mealPlanId: 'plan-1',
+            entryDate: _monday,
+            slot: MealSlot.dinner,
+            position: 0,
+            entryKind: MealEntryKind.recipe,
+            recipeId: 'r1',
+            recipeTitle: 'zzz sarma',
+          ),
+          MealPlanEntry(
+            id: 'e-found',
+            mealPlanId: 'plan-1',
+            entryDate: _tuesday,
+            slot: MealSlot.lunch,
+            position: 0,
+            entryKind: MealEntryKind.leftover,
+            recipeId: 'r1',
+            recipeTitle: 'zzz sarma',
+            leftoverOfEntryId: 'e-source',
+          ),
+          MealPlanEntry(
+            id: 'e-missing',
+            mealPlanId: 'plan-1',
+            entryDate: _week.days[2],
+            slot: MealSlot.snack,
+            position: 0,
+            entryKind: MealEntryKind.leftover,
+            recipeId: 'r2',
+            recipeTitle: 'zzz gibanica',
+            leftoverOfEntryId: 'e-last-week',
+          ),
+        ],
+      );
+      await _pump(tester, initial: plan, weekView: true);
+
+      expect(find.text('from ${weekdayAndDay(_monday, 'en')}'), findsOneWidget);
+      expect(find.textContaining('from '), findsOneWidget);
+
+      final Finder missingCard = find.ancestor(
+        of: find.text('Leftovers: zzz gibanica'),
+        matching: find.byType(Card),
+      );
+      expect(
+        find.descendant(of: missingCard, matching: find.text('Snack')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  group('drag and drop', () {
+    MealPlanWeek planWithOne() => MealPlanWeek(
+      week: _week,
+      planId: 'plan-1',
+      entries: <MealPlanEntry>[
+        MealPlanEntry(
+          id: 'e1',
+          mealPlanId: 'plan-1',
+          entryDate: _monday,
+          slot: MealSlot.breakfast,
+          position: 0,
+          entryKind: MealEntryKind.note,
+          note: 'zzz drag me',
+        ),
+      ],
+    );
+
+    Future<void> dragTo(WidgetTester tester, Offset target) async {
+      final TestGesture gesture = await tester.startGesture(
+        tester.getCenter(find.text('zzz drag me')),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+      await gesture.moveBy(const Offset(0, 20));
+      await tester.pump();
+      await gesture.moveTo(target);
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('onto a + Dinner button moves the entry to that day and slot', (
+      WidgetTester tester,
+    ) async {
+      final _Calls calls = await _pump(
+        tester,
+        initial: planWithOne(),
+        weekView: true,
+      );
+
+      await dragTo(tester, tester.getCenter(_textButton('Dinner')));
+
+      expect(calls.moved, (id: 'e1', date: _monday, slot: MealSlot.dinner));
+    });
+
+    testWidgets("onto a collapsed day keeps the entry's own slot", (
+      WidgetTester tester,
+    ) async {
+      final _Calls calls = await _pump(
+        tester,
+        initial: planWithOne(),
+        weekView: true,
+      );
+
+      await dragTo(
+        tester,
+        tester.getCenter(find.text(weekdayAndDay(_tuesday, 'en'))),
+      );
+
+      expect(calls.moved, (id: 'e1', date: _tuesday, slot: MealSlot.breakfast));
+    });
+  });
+
+  testWidgets(
+    'Serbian at 360x780 lays out without overflow, in both views -- the '
+    "part-3 rating bug hid behind a test surface wider than any phone's",
+    (WidgetTester tester) async {
+      final MealPlanWeek plan = MealPlanWeek(
+        week: _week,
+        planId: 'plan-1',
+        entries: <MealPlanEntry>[
+          MealPlanEntry(
+            id: 'e1',
+            mealPlanId: 'plan-1',
+            entryDate: _monday,
+            slot: MealSlot.dinner,
+            position: 0,
+            entryKind: MealEntryKind.recipe,
+            recipeId: 'r1',
+            recipeTitle: 'Punjene paprike sa mlevenim mesom i pirinčem po bakinom receptu',
+            servings: 12,
+          ),
+          MealPlanEntry(
+            id: 'e2',
+            mealPlanId: 'plan-1',
+            entryDate: _tuesday,
+            slot: MealSlot.lunch,
+            position: 0,
+            entryKind: MealEntryKind.leftover,
+            recipeId: 'r1',
+            recipeTitle: 'Punjene paprike sa mlevenim mesom i pirinčem po bakinom receptu',
+            leftoverOfEntryId: 'e1',
+          ),
+          MealPlanEntry(
+            id: 'e3',
+            mealPlanId: 'plan-1',
+            entryDate: _tuesday,
+            slot: MealSlot.breakfast,
+            position: 0,
+            entryKind: MealEntryKind.note,
+            note: 'zzz jedemo napolju kod komšija',
+          ),
+        ],
+      );
+      await _pump(
+        tester,
+        initial: plan,
+        locale: srLatn,
+        surface: const Size(360, 780),
+      );
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.text(AppLocalizationsSr().weekViewLabel));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      await tester.scrollUntilVisible(
+        find.text(weekdayAndDay(_week.days[6], 'sr')),
+        300,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   group('the saved-copy line', () {
-    testWidgets('renders when NetworkStatus is offline',
-        (WidgetTester tester) async {
+    testWidgets('renders when NetworkStatus is offline', (
+      WidgetTester tester,
+    ) async {
       await _pump(
         tester,
         initial: MealPlanWeek.empty(_week),
         networkStatus: Reachability.offline,
       );
-      expect(
-        find.textContaining('Showing your saved copy'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Showing your saved copy'), findsOneWidget);
     });
 
-    testWidgets('does not render when NetworkStatus is online',
-        (WidgetTester tester) async {
+    testWidgets('does not render when NetworkStatus is online', (
+      WidgetTester tester,
+    ) async {
       await _pump(
         tester,
         initial: MealPlanWeek.empty(_week),
@@ -680,15 +1008,33 @@ void main() {
       expect(find.textContaining('Showing your saved copy'), findsNothing);
     });
 
-    testWidgets('does not render on the default Reachability.unknown',
-        (WidgetTester tester) async {
+    testWidgets('does not render on the default Reachability.unknown', (
+      WidgetTester tester,
+    ) async {
       await _pump(tester, initial: MealPlanWeek.empty(_week));
       expect(find.textContaining('Showing your saved copy'), findsNothing);
     });
+
+    testWidgets('is onSurfaceVariant, not error -- offline is calm', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        initial: MealPlanWeek.empty(_week),
+        networkStatus: Reachability.offline,
+      );
+      final ColorScheme scheme = AppTheme.light().colorScheme;
+      final Text line = tester.widget<Text>(
+        find.textContaining('Showing your saved copy'),
+      );
+      expect(line.style?.color, scheme.onSurfaceVariant);
+      expect(line.style?.color, isNot(scheme.error));
+    });
   });
 
-  testWidgets('an AppFailure from the provider renders its message',
-      (WidgetTester tester) async {
+  testWidgets('an AppFailure from the provider renders its message', (
+    WidgetTester tester,
+  ) async {
     tester.view.physicalSize = const Size(1200, 3000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -700,11 +1046,11 @@ void main() {
           visibleWeekProvider.overrideWith(() => _PinnedWeek()),
         ],
         // The AppBar title reads AppLocalizations now (D77, Phase 3 part 1).
-      child: const MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: appSupportedLocales,
-        home: MealPlanScreen(),
-      ),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: appSupportedLocales,
+          home: MealPlanScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -715,34 +1061,32 @@ void main() {
   });
 
   testWidgets(
-      'under srLatn, the week label and day headers render Serbian, Latin '
-      'script (D91 -- invisible if only English is ever pumped)',
-      (WidgetTester tester) async {
-    await _pump(
-      tester,
-      initial: MealPlanWeek.empty(_week),
-      locale: srLatn,
-    );
+    'under srLatn, the week label and day headers render Serbian, Latin '
+    'script (D91 -- invisible if only English is ever pumped)',
+    (WidgetTester tester) async {
+      await _pump(tester, initial: MealPlanWeek.empty(_week), locale: srLatn);
 
-    // Today's own header, in Latin-script Serbian -- the D91 regression
-    // covers the new header path too, not just the week view's.
-    expect(find.text(shortDateLabel(DateTime.now(), 'sr')), findsOneWidget);
+      // Today's own header, in Latin-script Serbian -- the D91 regression
+      // covers the new header path too, not just the week view's.
+      expect(find.text(shortDateLabel(DateTime.now(), 'sr')), findsOneWidget);
+      // A Serbian string nowhere in the English vocabulary.
+      expect(find.text(AppLocalizationsSr().mealSlotBreakfast), findsOneWidget);
 
-    // Switch to the week view for the rest of this test's assertions --
-    // `_pump`'s `weekView` flag taps the English label, so this test does it
-    // itself on the localized one.
-    await tester.tap(find.text(AppLocalizationsSr().weekViewLabel));
-    await tester.pumpAndSettle();
+      // Switch to the week view for the rest of this test's assertions --
+      // `_pump`'s `weekView` flag taps the English label, so this test does it
+      // itself on the localized one.
+      await tester.tap(find.text(AppLocalizationsSr().weekViewLabel));
+      await tester.pumpAndSettle();
 
-    // A Serbian string nowhere in the English vocabulary.
-    expect(find.text(AppLocalizationsSr().mealSlotBreakfast), findsWidgets);
-    // A Latin-script date -- Cyrillic would fail this exact-text match.
-    expect(
-      find.text(weekRangeLabel(_week.start, _week.end, 'sr')),
-      findsOneWidget,
-    );
-    expect(find.text(weekdayAndDay(_monday, 'sr')), findsOneWidget);
-  });
+      expect(find.text(AppLocalizationsSr().addMealButton), findsNWidgets(7));
+      // A Latin-script date -- Cyrillic would fail this exact-text match.
+      expect(
+        find.text(weekRangeLabel(_week.start, _week.end, 'sr')),
+        findsOneWidget,
+      );
+      expect(find.text(weekdayAndDay(_monday, 'sr')), findsOneWidget);
+    },
+  );
 }
 
 class _ThrowingPlan extends MealPlanEditor {

@@ -1042,6 +1042,23 @@
       }
     }
   },
+  "addMealButton": "Dodaj obrok",
+  "@addMealButton": {
+    "description": "Meal plan screen (Phase 7 part 4), a collapsed empty day's add button, the trailing + button's tooltip, and the slot chooser sheet's title."
+  },
+  "mealEntryNoteLabel": "Napomena",
+  "@mealEntryNoteLabel": {
+    "description": "Meal plan screen (Phase 7 part 4), the meta item on a note entry's card -- the same word addNoteDialogTitle uses for a note."
+  },
+  "leftoverFromDay": "od {day}",
+  "@leftoverFromDay": {
+    "description": "Meal plan screen (Phase 7 part 4), a leftover entry's meta item naming the day its source was cooked. {day} is weekdayAndDay's abbreviated form (pon 14.) on purpose: a full weekday name would have to be declined after 'od' (od ponedeljka), and a generated date string cannot be.",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
 
   "regenerateTooltip": "Osveži",
   "@regenerateTooltip": {

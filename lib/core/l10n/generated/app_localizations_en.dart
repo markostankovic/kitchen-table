@@ -787,6 +787,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get addMealButton => 'Add meal';
+
+  @override
+  String get mealEntryNoteLabel => 'Note';
+
+  @override
+  String leftoverFromDay(String day) {
+    return 'from $day';
+  }
+
+  @override
   String get regenerateTooltip => 'Regenerate';
 
   @override

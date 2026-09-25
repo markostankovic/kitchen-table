@@ -247,6 +247,9 @@
   "moveButton": "Move",
   "planLeftoversDialogTitle": "Plan leftovers",
   "leftoverEntryLabel": "Leftovers: {title}",
+  "addMealButton": "Add meal",
+  "mealEntryNoteLabel": "Note",
+  "leftoverFromDay": "from {day}",
 
   "regenerateTooltip": "Regenerate",
   "copyListTooltip": "Copy list",

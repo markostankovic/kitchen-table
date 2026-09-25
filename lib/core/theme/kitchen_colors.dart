@@ -57,10 +57,12 @@ class KitchenColors extends ThemeExtension<KitchenColors> {
     destructive: scheme.error,
   );
 
-  /// The "Danas"/"Today" pill and its day header. Alias of `primary`.
+  /// The "Danas"/"Today" pill and the 2dp outline of today's day card.
+  /// Alias of `primary`.
   final Color today;
 
-  /// Today's day card, and the step-number disc. Alias of `primaryContainer`.
+  /// The step-number disc. Today's day card is outlined in [today], not
+  /// filled with this. Alias of `primaryContainer`.
   final Color todayContainer;
 
   /// The 3px left edge on a flagged import line. Alias of `tertiary`, which

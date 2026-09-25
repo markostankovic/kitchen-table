@@ -795,6 +795,17 @@ class AppLocalizationsSr extends AppLocalizations {
   }
 
   @override
+  String get addMealButton => 'Dodaj obrok';
+
+  @override
+  String get mealEntryNoteLabel => 'Napomena';
+
+  @override
+  String leftoverFromDay(String day) {
+    return 'od $day';
+  }
+
+  @override
   String get regenerateTooltip => 'Osveži';
 
   @override

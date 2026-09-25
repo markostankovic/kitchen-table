@@ -1448,6 +1448,24 @@ abstract class AppLocalizations {
   /// **'Ostaci: {title}'**
   String leftoverEntryLabel(String title);
 
+  /// Meal plan screen (Phase 7 part 4), a collapsed empty day's add button, the trailing + button's tooltip, and the slot chooser sheet's title.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaj obrok'**
+  String get addMealButton;
+
+  /// Meal plan screen (Phase 7 part 4), the meta item on a note entry's card -- the same word addNoteDialogTitle uses for a note.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napomena'**
+  String get mealEntryNoteLabel;
+
+  /// Meal plan screen (Phase 7 part 4), a leftover entry's meta item naming the day its source was cooked. {day} is weekdayAndDay's abbreviated form (pon 14.) on purpose: a full weekday name would have to be declined after 'od' (od ponedeljka), and a generated date string cannot be.
+  ///
+  /// In sr, this message translates to:
+  /// **'od {day}'**
+  String leftoverFromDay(String day);
+
   /// Shopping list screen (part 6), the AppBar's regenerate icon tooltip -- shown only once a list exists.
   ///
   /// In sr, this message translates to:
