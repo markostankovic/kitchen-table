@@ -63,9 +63,24 @@ order of age:
   confirming lands the ex-owner on `CreateHouseholdRoute` with no restart;
   creating a new household afterward works. Needs a throwaway household —
   the signed-in device account has real recipes.
-- **Phase 7 part 1** — `sr`/`en` × light/dark across recipe list, recipe
-  detail, meal plan, shopping list, household, settings: nothing truncates,
-  wraps badly or overflows in Serbian; nothing is unreadable in dark.
+- **Phase 7 part 1** — walked on the physical Galaxy across `sr`/`en` ×
+  light/dark on recipe list, recipe detail, meal plan, shopping list,
+  household, settings. Two defects found, loop stays open:
+  - Recipe list card's meta line wraps badly in Serbian: `4 porcije · 10 min
+    priprema · 10 min kuvanja · ★ 5` breaks after "kuvanja", leaving `· ★ 5`
+    orphaned on its own line. The English equivalent (`4 servings · 10 min
+    prep · 10 min cook · ★ 5`) fits on one line at the same width. Confirmed
+    in both light and dark — a width problem, not a colour one.
+  - The shopping list screen (`Lista`/`List` tab) leaves several UI strings
+    untranslated when the app language is Serbian: the "Generated Thu, Sep
+    24 for Mon, Sep 21 – Sun, Sep 27" line, the "Probably have (N)" section
+    header, and its "Cupboard staples" subtitle all render in English.
+    `test/core/l10n/arb_parity_test.dart` only checks that ARB keys exist on
+    both sides, so it didn't catch this — worth checking whether these
+    strings are hardcoded rather than routed through `AppLocalizations`, or
+    whether the `sr` ARB entries are simply missing. (Ingredient names
+    themselves — bread, milk, egg, flour — were also English, but that's
+    recipe data, not a UI string, and out of scope here.)
 
 All eight need `make install-hosted` on the physical Galaxy device — not the
 emulator, not `flutter run`, not the local stack (CLAUDE.md). A future
