@@ -6,6 +6,10 @@ import '../../theme/app_sizes.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/kitchen_colors.dart';
 
+/// The review marker's width, named in DESIGN_SYSTEM. Private on purpose: one
+/// number is not worth a cross-file constant.
+const double _markerWidth = 3;
+
 /// One ingredient line, read-only: the quantity in its own column, then the
 /// unit and the name as a single run of text.
 ///
@@ -58,8 +62,14 @@ class IngredientLineRow extends StatelessWidget {
   final bool isMatched;
 
   /// An import line a human still has to look at: a 3px `reviewMarker` left
-  /// edge. Nothing in the recipes surface sets this; it is here so the import
-  /// review screen does not have to fork the row to get it.
+  /// edge on a `surfaceContainerLow` tint. Nothing in the recipes surface sets
+  /// this; it is here so the import review screen does not have to fork the
+  /// row to get it.
+  ///
+  /// The marker is a *foreground* decoration, so it paints over the row
+  /// without taking layout. As a decoration border it added 3px to the
+  /// padding and pushed the quantity column out of line with its neighbours.
+  /// For the same reason the tint gets breathing room on the right only.
   final bool isFlagged;
 
   /// The localized "not matched to an ingredient" string, shown on the ring.
@@ -76,16 +86,28 @@ class IngredientLineRow extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
+        color: isFlagged ? theme.colorScheme.surfaceContainerLow : null,
         border: Border(
           bottom: showDivider
               ? BorderSide(color: theme.colorScheme.outlineVariant)
               : BorderSide.none,
-          left: isFlagged
-              ? BorderSide(color: kitchen.reviewMarker, width: 3)
-              : BorderSide.none,
         ),
       ),
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      foregroundDecoration: isFlagged
+          ? BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: kitchen.reviewMarker,
+                  width: _markerWidth,
+                ),
+              ),
+            )
+          : null,
+      padding: EdgeInsets.only(
+        top: AppSpacing.sm,
+        bottom: AppSpacing.sm,
+        right: isFlagged ? AppSpacing.sm : 0,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[

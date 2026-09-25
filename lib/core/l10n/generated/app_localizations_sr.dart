@@ -944,4 +944,29 @@ class AppLocalizationsSr extends AppLocalizations {
   String nextListRangeLine(String from, String to) {
     return 'Sledeća lista: $from – $to';
   }
+
+  @override
+  String importStepsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count koraka',
+      few: '$count koraka',
+      one: '$count korak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get discardImportDialogTitle => 'Odbaciti ovaj uvoz?';
+
+  @override
+  String get discardImportConfirmBody =>
+      'Recept neće biti sačuvan. Možete ga ponovo uvesti kasnije.';
+
+  @override
+  String get discardButton => 'Odbaci';
+
+  @override
+  String get doneButton => 'Gotovo';
 }

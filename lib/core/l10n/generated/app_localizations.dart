@@ -1699,6 +1699,36 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Sledeća lista: {from} – {to}'**
   String nextListRangeLine(String from, String to);
+
+  /// Import review screen (Phase 7 part 6), the Method card's subtitle while it is collapsed: how many steps the import found.
+  ///
+  /// In sr, this message translates to:
+  /// **'{count, plural, one{{count} korak} few{{count} koraka} other{{count} koraka}}'**
+  String importStepsCount(int count);
+
+  /// Import review screen (Phase 7 part 6), the title of the confirm dialog behind Discard on a successful review. The Failed state discards without asking, because a failed parse has nothing left to lose.
+  ///
+  /// In sr, this message translates to:
+  /// **'Odbaciti ovaj uvoz?'**
+  String get discardImportDialogTitle;
+
+  /// Import review screen (Phase 7 part 6), the body of the discard confirm dialog.
+  ///
+  /// In sr, this message translates to:
+  /// **'Recept neće biti sačuvan. Možete ga ponovo uvesti kasnije.'**
+  String get discardImportConfirmBody;
+
+  /// The destructive action in a discard confirm dialog (Phase 7 part 6, import review). Drawn as a TextButton in KitchenColors.destructive, never a filled button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Odbaci'**
+  String get discardButton;
+
+  /// Import review screen (Phase 7 part 6), under an ingredient line opened for editing: closes it back into a read-only row.
+  ///
+  /// In sr, this message translates to:
+  /// **'Gotovo'**
+  String get doneButton;
 }
 
 class _AppLocalizationsDelegate

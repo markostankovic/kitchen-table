@@ -289,5 +289,10 @@
   "listIsInSerbian": "This list is in Serbian",
   "listIsInEnglish": "This list is in English",
   "pickDatesSegment": "Dates",
-  "nextListRangeLine": "Next list: {from} – {to}"
+  "nextListRangeLine": "Next list: {from} – {to}",
+  "importStepsCount": "{count, plural, one{{count} step} other{{count} steps}}",
+  "discardImportDialogTitle": "Discard this import?",
+  "discardImportConfirmBody": "The recipe won't be saved. You can import it again later.",
+  "discardButton": "Discard",
+  "doneButton": "Done"
 }

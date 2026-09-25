@@ -17,11 +17,7 @@ void main() {
   ) async {
     await _pump(
       tester,
-      const IngredientLineRow(
-        quantity: '½',
-        unit: 'kg',
-        name: 'mlevenog mesa',
-      ),
+      const IngredientLineRow(quantity: '½', unit: 'kg', name: 'mlevenog mesa'),
     );
 
     // `½ kg mlevenog mesa` is read as one phrase, so unit and name are one
@@ -103,9 +99,8 @@ void main() {
     expect(theme.colorScheme.error, isNot(theme.colorScheme.outline));
   });
 
-  testWidgets('a flagged line gets the review marker on its leading edge', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('a flagged line gets the review marker, as a foreground, on a '
+      'tint', (WidgetTester tester) async {
     final ThemeData theme = AppTheme.light();
     await _pump(
       tester,
@@ -117,12 +112,64 @@ void main() {
       ),
     );
 
-    final BoxDecoration decoration =
-        tester.widget<Container>(find.byType(Container).first).decoration!
-            as BoxDecoration;
-    final Border border = decoration.border! as Border;
-    expect(border.left.width, 3);
-    expect(border.left.color, theme.colorScheme.tertiary);
+    final Container row = tester.widget<Container>(
+      find.byType(Container).first,
+    );
+    expect(
+      (row.decoration! as BoxDecoration).color,
+      theme.colorScheme.surfaceContainerLow,
+    );
+    final Border marker =
+        (row.foregroundDecoration! as BoxDecoration).border! as Border;
+    expect(marker.left.width, 3);
+    expect(marker.left.color, theme.colorScheme.tertiary);
+  });
+
+  // The detail screen, the shopping list and the meal plan never flag a row,
+  // so none of them may pick up the tint or the marker.
+  testWidgets('an unflagged line has no tint and no marker', (
+    WidgetTester tester,
+  ) async {
+    await _pump(
+      tester,
+      const IngredientLineRow(quantity: '1', unit: null, name: 'jaje'),
+    );
+
+    final Container row = tester.widget<Container>(
+      find.byType(Container).first,
+    );
+    expect((row.decoration! as BoxDecoration).color, isNull);
+    expect(row.foregroundDecoration, isNull);
+  });
+
+  // The regression the foreground move fixes: as a decoration border the
+  // marker added 3px of padding and pushed the quantity column out of line.
+  testWidgets('the quantity column lines up across a flagged row', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(
+          body: Column(
+            children: <Widget>[
+              IngredientLineRow(quantity: '200', unit: 'g', name: 'brašna'),
+              IngredientLineRow(
+                quantity: '1½',
+                unit: null,
+                name: 'jaje',
+                isFlagged: true,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester.getTopRight(find.text('1½')).dx,
+      tester.getTopRight(find.text('200')).dx,
+    );
   });
 
   testWidgets('showDivider: false drops the bottom hairline; the default '

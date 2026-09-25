@@ -935,4 +935,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String nextListRangeLine(String from, String to) {
     return 'Next list: $from – $to';
   }
+
+  @override
+  String importStepsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count steps',
+      one: '$count step',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get discardImportDialogTitle => 'Discard this import?';
+
+  @override
+  String get discardImportConfirmBody =>
+      'The recipe won\'t be saved. You can import it again later.';
+
+  @override
+  String get discardButton => 'Discard';
+
+  @override
+  String get doneButton => 'Done';
 }
