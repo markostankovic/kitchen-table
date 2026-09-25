@@ -1,61 +1,76 @@
 # State — 2026-09-25
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 2 (`b74552c`) — the Garden tokens. The seed is
-gone: `app_theme.dart` now returns one of two `const ColorScheme` values with
-every role written out from the Claude Design export, `surfaceTint`
-transparent in both to kill Material's elevation tint app-wide. Literata is
-bundled under `assets/fonts/` (weights 400/600, CLAUDE.md rule 8 — no font
-package) and carries everything a person reads; UI furniture stays on the
-platform sans. `AppRadii`, `AppSizes` and `AppDurations` join `AppSpacing`,
-and `KitchenColors` lands as the app's first `ThemeExtension` — twelve members,
-each an alias of a role, so there is no second palette. Five component themes
-became seventeen. D118 supersedes D117 on both counts (no seed; dark
-`tertiary` is now the palette's `#FF9569`), while keeping D117's constraint
-that `tertiary` is signal-only and has to read at 3px. The three shared
-widgets the repaint changed were retuned — the offline banner is now a calm
-inset card, not an `errorContainer` strip — two nav glyphs swapped, and
-`placeholder_screen.dart` deleted. **No screen file under `lib/features/**`
-was edited**, by design. `docs/DESIGN.md` is now a pointer at
-`docs/DESIGN_SYSTEM.md`, which describes the code rather than the target.
-Verified with `dart analyze` (clean), `flutter test` (587/587), `check_layers`
-(OK), `l10n-check` (green, no new ARB key), and a full device walk on the
-physical Galaxy across `sr`/`en` × light/dark on all six surfaces. `make
-check` is green except the pre-existing `seed-check`. No `supabase/` file
+**Last shipped:** Phase 7 part 3 (`f487c64`) — the recipes surface, and the
+first slice of the redesign to touch a screen. The recipe list and detail take
+the Garden language, built out of seven shared widgets: `AppBadge`,
+`AppMetaRow`/`AppMetaItem`, `AppMonogramTile`, `AppStatStrip` and
+`AppSearchField` in `core/widgets/`, plus `RecipeCard` and `IngredientLineRow`
+in the `core/<feature>/widgets/` middle ground (D43/D53). `AppMetaRow` is the
+point of the slice: a recipe's facts are now indivisible icon-plus-text items
+in a `Wrap`, so a fact that does not fit moves to the next line **whole** —
+the Serbian meta-line defect fixed structurally, where part 2 had resolved it
+by luck with two points of font size. Favourite becomes a heart, so a star
+means a rating and nothing else anywhere in the app. The detail screen's app
+bar loses its title to the body's `headlineSmall`, and gains a photo well that
+renders with or without a photo, a four-column stat strip, hairline ingredient
+rows, 32dp step discs and a source footer. Two of part 2's walk defects are
+struck here, this being the only screen with either: the FAB gains a theme
+(`primary`/`onPrimary` — Material's `primaryContainer` default sat at 1.94:1
+in dark and vanished), and the search field is sans rather than Literata via
+`AppSearchField`, which both consumers now share. `AppSizes` gains `stepDisc`;
+five ARB key pairs feed the stat strip. D119 records the vocabulary; D120
+records the rating row's local exception to the 48dp target, which the device
+walk forced. Verified with `dart analyze` (clean), `flutter test` (**621/621**),
+`check_layers` (OK), and a full device walk on the physical Galaxy across
+`sr`/`en` × light/dark on the list, the detail and the recipe picker sheet.
+`make check` is green except the pre-existing `seed-check`. No `supabase/` file
 touched, so `make test-sql` and the Deno suite were not run.
 **In flight:** none
-**Next:** Phase 7's remaining parts are per-surface — recipe list and detail,
-meal plan, shopping list, household and settings, auth and onboarding — and
-independent of each other; `docs/design/MIGRATION_PLAN.md` § 4 sequences them
-as slices 2–7. Plan whichever is highest-value with `/plan-slice-ui`. The
-tokens are settled ground now, so these are layout and component slices, not
-colour ones. Four defects part 2's walk surfaced are listed below and each
-belongs to one of those slices — the shopping list's week-header wrap and its
-still-untranslated strings would make the shopping-list slice the
-highest-value next.
-**Latest decision:** D118
+**Next:** Phase 7's remaining parts are per-surface and independent;
+`docs/design/MIGRATION_PLAN.md` § 4 sequences them as slices 3–7 — meal plan,
+shopping list, import review, forms, auth/household. Plan whichever is
+highest-value with `/plan-slice-ui`. **The shopping list is the strongest
+candidate**: it carries two of the three open part-1/part-2 defects (the
+week-range header wrapping to three lines in Serbian, and the per-screen
+offline line still in `error` crimson while the global banner is calm), plus
+part 1's untranslated Serbian strings, which nothing has touched yet. The
+tokens and now the component vocabulary are settled ground, so these are
+layout slices, not colour ones — and slice 5 should reuse `IngredientLineRow`
+(it takes primitives precisely so import review can) rather than build its own.
+**Latest decision:** D120
 
-**Nine device-walk loops are open — none closed yet.** Phase 7 part 2's
-walk ran on the physical Galaxy (2026-09-25) and resolved one of part 1's two
-defects; the other stands, and the repaint found four more. In
-order of age:
+**Six device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+Galaxy (2026-09-25) and closed four — Phase 6 1a and 2, and part 2's own FAB
+and search-field defects. It found one defect of its own, which was fixed and
+re-walked in the same sitting, so part 3's loop closes too. Part 1's
+shopping-list translation gap and part 2's two remaining defects still stand.
+In order of age:
 
 - **Phase 5 part 5** — copy a generated shopping list, see the SnackBar,
   paste the text somewhere else. Not confirmed on a real device.
 - **Phase 5 part 6** — Translate from the editor saves, calls the Edge
   Function, and shows Review instead of Translate afterward. Not confirmed.
-- **Phase 6 part 1a** — a `Posno`/`Lenten` pair shows the translated chip on
-  both list and detail when the language is switched; a second untranslated
-  tag still reads as typed; tapping a translated chip still narrows the
-  list. Not confirmed.
+- ~~**Phase 6 part 1a**~~ — **closed by Phase 7 part 3's walk (2026-09-25).**
+  On the physical Galaxy, switching to English relabelled the household's
+  `Doručak` tag to `Breakfast` on the list and `Slatko`/`Užina` to
+  `Sweet`/`Snack` on the detail; the recipe's own title came through as
+  `Crêpes` under a `Machine translation` chip; tapping the translated
+  `Breakfast` chip still narrowed the list to one recipe.
 - **Phase 6 part 1b** — saving a recipe with a brand-new Serbian tag mints
   its English pair; the chip relabels on a language switch; saving again
   makes no second model call (`ai_usage` rows or the function log). Not
-  confirmed.
-- **Phase 6 part 2** — typing a tag's spelling in either language narrows
-  the list; a title match and a tag match appear together for one query; a
-  chip tap still narrows by whole token only; a household with recipes but
-  no tags still shows the Favorites chip. Not confirmed.
+  confirmed — Phase 7 part 3's walk read the recipes surface but minted no new
+  tag, which is what this loop needs.
+- ~~**Phase 6 part 2**~~ — **closed by Phase 7 part 3's walk (2026-09-25).**
+  With the app in English, typing the *Serbian* spelling `doru` narrowed to
+  the recipe tagged `Doručak` — cross-language tag search works from the
+  field, not only from the chips. A chip tap narrowed by whole token, and the
+  Favorites chip rendered alongside the tag chips throughout.
+
+  Not exercised: a single query matching one recipe by title and another by
+  tag at the same time. This household has two recipes and no query separates
+  them that way; it needs seed data built for it rather than another walk.
 - **Phase 6 part 3b** — with a second account joined: owner sees Remove on
   the other member's row and no Leave on their own; the adult sees Leave on
   their own and no Remove on the owner's; both write through and the row
@@ -94,7 +109,8 @@ order of age:
   renders every Serbian Latin diacritic in both weights (`č ć ž š đ Č Ć Ž Š
   Đ`, checked against real recipe copy, no tofu), nothing truncates or
   overflows in Serbian, both brightnesses are legible throughout, and the
-  offline banner reads calm in both. Four things stay open:
+  offline banner reads calm in both. Of the four things it left open, part 3
+  resolved two (the FAB and the search field, struck below); two stay open:
   - The shopping list's week-range header wraps badly. In Serbian `pon 21.
     sep – ned 27. sep` breaks across **three** lines with `sep` orphaned on
     the last; English `Mon, Sep 21 – Sun, Sep 27` takes two. It shares a row
@@ -108,19 +124,18 @@ order of age:
     list. MIGRATION_PLAN § 2.1 settled that offline is calm; part 2 only
     restyled the global banner (`core/net/offline_banner.dart`), so the
     per-screen lines on the shopping list and meal plan still contradict it.
-  - The FAB has **no `FloatingActionButtonThemeData`** — it was not in part
-    2's component list, so it takes Material's defaults
-    (`primaryContainer`/`onPrimaryContainer`). In light that lands on a
-    bright mint square that reads well; in dark `primaryContainer`
-    (`#1D511E`) sits at 1.94:1 against the surface and the FAB recedes into
-    the ground. The `+` glyph itself is fine (7.60:1), so this is presence,
-    not legibility. `docs/DESIGN_SYSTEM.md` § Shape already says the FAB is
-    `AppRadii.lg`, so the theme has somewhere to go.
-  - The search field's hint and input text render in **Literata**, because
-    Flutter's `InputDecoration` takes `bodyLarge` and part 2 made that role
-    the serif. A search box is UI furniture, not reading text, so by § Type's
-    own rule it should be the platform sans. Cosmetic, legible, but wrong on
-    the rule.
+  - ~~The FAB has **no `FloatingActionButtonThemeData`**~~ — **resolved by
+    Phase 7 part 3**, which added one (`primary`/`onPrimary`, elevation 0,
+    radius `AppRadii.lg`). Confirmed on the device 2026-09-25: in dark the
+    FAB is now a light-green `primary` square that is unmistakably present,
+    where `primaryContainer` had it at 1.94:1 receding into the ground.
+  - ~~The search field's hint and input text render in **Literata**~~ —
+    **resolved by Phase 7 part 3**, which put the hint on
+    `inputDecorationTheme.hintStyle` and the typed text on `AppSearchField`'s
+    own `style:` (a `TextField`'s *input* style cannot be themed). Confirmed
+    on the device 2026-09-25 in **both** consumers — the recipe list and the
+    meal plan's recipe picker sheet. The forms elsewhere still need their own
+    `style:`; slice 6 sweeps them.
 
   Not verified: the 3px paprika review marker on `import_review_screen.dart`
   in dark (D117's constraint, now carried by `tertiary` `#FF9569`). Reaching
@@ -129,14 +144,64 @@ order of age:
   The value measures 8.44:1 against the dark surface, well clear of the
   generated value D117 rejected, but nobody has looked at it at 3px.
 
-All nine need `make install-hosted` on the physical Galaxy device — not the
+- ~~**Phase 7 part 3**~~ — **closed 2026-09-25.** Walked on the physical
+  Galaxy across `sr`/`en` × light/dark on the recipe list, the recipe detail
+  and the meal plan's recipe picker sheet. The surface is right: **the meta
+  row wraps by whole items** — in Serbian `Palačinke` takes three lines
+  (`4 porcije` / `10 min priprema` / `10 min kuvanja ★ 2`) and no item is ever
+  split from its own icon, which is the Serbian defect fixed structurally
+  rather than by two points of font size. Monogram tiles stand in for missing
+  photos, the heart/star split reads clearly, the stat strip's four Serbian
+  labels (`Porcije` `Priprema` `Kuvanje` `Ocena`) each fit on one line at
+  phone width, step discs and ingredient hairlines are legible in both
+  brightnesses, and `RecipeCard` renders identically in the picker sheet.
+
+  One defect found, and fixed in the same sitting:
+  - ~~**The stat strip's rating column overflowed**~~ — stars three, four and
+    five sat off the right edge, untappable, so nobody could rate a recipe
+    above 2. `_RatingStars` is five `IconButton`s, and an M3 `IconButton`
+    sizes itself from its **style**: `app_theme.dart`'s `iconButtonTheme`
+    sets `minimumSize: Size(target, target)` (48dp), which the widget-level
+    `padding: zero` / `constraints: BoxConstraints()` do **not** override. Five
+    stars wanted ~220dp inside an ~86dp quarter-width column. The stars had
+    always been that wide; before part 3 they had a full-width row to sprawl
+    in, so it never showed.
+
+    Fixed locally in `_RatingStars` — `IconButton.styleFrom(minimumSize:
+    Size.zero, padding: EdgeInsets.zero, tapTargetSize: shrinkWrap)` makes
+    each button exactly its 16dp icon, and a `FittedBox(scaleDown)` is the
+    backstop below ~340dp of screen width. Not a theme change: the 48dp
+    minimum is right everywhere else in the app.
+
+    Re-walked after the fix on the same device: all five stars inside the
+    Rating column in `sr`/`en` × light/dark, and tapping the fifth registered
+    a 5 against hosted data (set back to its original 2 immediately).
+
+    Guarded by two new tests that pump a 360×780 surface — the old ones all
+    pumped 800×600, where a 220dp row simply fits. One asserts every star's
+    rect is on screen, the other hit-tests the fifth star's centre and asserts
+    the hit reaches it. Both fail against the pre-fix widget.
+
+  Fixed alongside it: **the strip's values did not share an optical line.**
+  Each column's value hung from its own top edge, so a 16dp star row sat lower
+  than a 26dp line of text and the strip read as four things at four heights.
+  `AppStatStrip` now centres every value in a box one `bodyLarge` line tall
+  (a minimum, so a two-line value grows rather than clipping), with its own
+  alignment test.
+
+  Not exercised: an unmatched ingredient line's dashed ring. No recipe in this
+  household has an unmatched line, so there was nothing to look at — it needs
+  seeded data rather than another walk.
+
+All six need `make install-hosted` on the physical Galaxy device — not the
 emulator, not `flutter run`, not the local stack (CLAUDE.md). A future
 session should close as many as it reasonably can in one sitting rather than
 walking one loop at a time; 3b and 3c's second-account/throwaway-household
-setup can close both together. Phase 7 part 2's own walk (2026-09-25) proved
-the device loop works end to end — release build, both languages, both
-brightnesses, airplane mode for the offline banner — so the older loops are
-blocked on nothing but someone sitting down with the phone.
+setup can close both together. Phase 7 parts 2 and 3 both walked cleanly on
+the device (2026-09-25) — release build, both languages, both brightnesses —
+so the older loops are blocked on nothing but someone sitting down with the
+phone. Phase 5 part 5's clipboard loop and Phase 6 1b's tag-minting loop are
+the two that need an action taken rather than a screen read.
 
 **This Flutter SDK's `flutter_test` does not stub the clipboard channel.**
 Discovered in Phase 5 part 5: an unmocked call to `Clipboard.setData` (or

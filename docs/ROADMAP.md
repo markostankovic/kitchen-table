@@ -518,6 +518,8 @@ device-walk loops still open, several waiting since Phase 5. They verify
 to move, and a loop left to go stale behind a redesign is a loop that never
 closes. Either close them first, or fold them into Part 1's own device walk —
 that walk already puts you on the device in both languages and both themes.
+(This is being done as the phase goes: Part 3's walk closed Phase 6 1a and 2
+along with two of Part 2's own defects, taking the list from nine to six.)
 
 The design language itself is not recorded here. `docs/DESIGN_SYSTEM.md` holds it, the
 way `docs/ARCHITECTURE.md` holds the layering rules: this file records what
@@ -545,6 +547,29 @@ and `KitchenColors` adds the semantic layer between screens and roles. A
 repaint only — no screen file under `lib/features/**` was edited. Walked on
 the physical device across `sr`/`en` × light/dark; four defects it surfaced are
 open in `docs/STATE.md`.
+
+---
+
+### Part 3 — The recipes surface
+
+**Status: complete** (`f487c64`). Decisions taken during it: D119, D120. See
+`docs/journal/phase-7.md`.
+
+Slice 2 of `docs/design/MIGRATION_PLAN.md` § 4, and the first slice to touch a
+screen. The recipe list and detail take the Garden language, built out of seven
+shared widgets — `AppBadge`, `AppMetaRow`/`AppMetaItem`, `AppMonogramTile`,
+`AppStatStrip` and `AppSearchField` in `core/widgets/`, `RecipeCard` and
+`IngredientLineRow` in D43/D53's middle ground. `AppMetaRow` fixes the Serbian
+meta-line defect structurally, where Part 2 had resolved it by luck. Favourite
+becomes a heart, so a star means a rating and nothing else. The detail screen's
+app bar loses its title to the body's `headlineSmall`. Two of Part 2's walk
+defects — the unthemed FAB and the Literata search field — are fixed here,
+this being the only screen with either.
+
+Walked on the physical device across `sr`/`en` × light/dark. It found one
+defect (the stat strip's rating column overflowed, making stars 3–5
+untappable), which was fixed and re-walked in the same sitting — D120. Three
+older walk loops closed with it: Phase 6 1a, Phase 6 2, and Part 2's own two.
 
 ---
 

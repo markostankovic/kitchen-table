@@ -206,3 +206,155 @@ hosted quota plus an `import_jobs` row) and that was deliberately skipped;
 D117 rejected, but nobody has looked at it at 3px.
 
 ---
+
+### Part 3 — The recipes surface
+
+**Status: complete** (`f487c64`). Decisions taken during it: D119.
+
+Slice 2 of `docs/design/MIGRATION_PLAN.md` § 4, and the first slice to touch a
+screen. Part 2 repainted the app without editing a single file under
+`lib/features/**`; this one edits two of them, and builds the six shared
+widgets the migration plan said the recipes surface would need.
+
+The centre of it is the meta row. A recipe card's facts used to be a single
+`Text` of strings joined with ` · ` — `8 porcija · 30 min priprema · 45 min
+kuvanja`. A joined run has no choice but to break wherever the line runs out,
+so in Serbian `30 min` ended one line and `priprema` began the next, and the
+two halves of one fact stopped reading as one fact. Part 1's walk logged it;
+Part 2 resolved it *incidentally*, by dropping the subtitle from 14pt to 12pt.
+That was luck, and two points of font size is not a fix. `AppMetaRow` is: each
+fact is its own `Row(mainAxisSize: min)` inside a `Wrap`, so an item is
+indivisible and a fact that does not fit moves to the next line whole. There
+are no separators — the gaps separate.
+
+- **Six new widgets, seven counting `AppMetaItem`.** `AppBadge`,
+  `AppMetaRow`/`AppMetaItem`, `AppMonogramTile`, `AppStatStrip` and
+  `AppSearchField` in `lib/core/widgets/`; `RecipeCard` in
+  `core/recipes/widgets/` and `IngredientLineRow` in
+  `core/ingredients/widgets/` — D43/D53's middle ground, for a widget that
+  knows its subject but is needed by two features. `RecipeCard`'s second
+  consumer is wired in this slice rather than promised: `recipe_picker_sheet.dart`
+  deleted its own `_RecipeTile` and lists `RecipeCard`s. `IngredientLineRow`
+  takes **primitives, not a model**, because the import review screen renders
+  `RecipeDraftLine`s where this one renders `RecipeIngredient`s, and strings
+  are what let slice 5 reuse it instead of forking it.
+- **`AppSearchField` was not in the migration plan's widget table.** It earned
+  its way in: generic, subject-free, and with a second consumer *today* — the
+  recipe list and the picker sheet both held a debounced search box, and both
+  needed the same three corrections (stadium, sans input, sans hint). It owns
+  the decoration and the clear button but **not** the debounce: the two screens
+  key different providers, so each keeps its own `Timer`. Its table row was
+  added to `MIGRATION_PLAN.md` § 1.
+- **The recipe list** — `_RecipeTile` is gone. Cards in a padded `ListView`
+  with `AppSpacing.md` between them, a monogram tile wherever there is no photo
+  (and on an image error, since a signed URL can outlive its TTL), the
+  favourite marker as a heart at the title's first line, and the Favorites
+  chip stripped of its star avatar.
+- **The recipe detail** — the app bar loses its title. The recipe's own name
+  moves into the body at `headlineSmall`, which is what § Type reserves that
+  role for; an app bar repeating it in `titleLarge` would be the same words
+  twice in two sizes. The mock floats circular buttons over a full-bleed photo
+  and that was deliberately not built: an arbitrary photo in two brightnesses
+  has no contrast guarantee behind an icon, and the favourite toggle has to
+  stay reachable at any scroll position. Below it: a 16:9 photo well that
+  renders **with or without** a photo (a missing picture is not a failure
+  state — rule 3's spirit — so `broken_image_outlined` is gone), the stat
+  strip replacing the old `meta.join(' · ')` line, `IngredientLineRow`s, 32dp
+  step discs, and a source footer.
+- **Favourite is a heart.** It used to be a star, one app bar away from five
+  more stars that meant a rating. After this slice a star is a rating
+  everywhere in the app and nothing else is — the two `Icons.star` left in
+  `lib/` are both ratings.
+- **Two of Part 2's walk defects are fixed here**, this being the only screen
+  in the app with either. The FAB gains a `FloatingActionButtonThemeData`
+  (`primary`/`onPrimary`, elevation 0, radius `AppRadii.lg`); Material's
+  `primaryContainer` default sat at 1.94:1 on the dark surface and the FAB
+  receded into the ground. And the search field is sans: the hint via
+  `inputDecorationTheme.hintStyle`, the typed text via `AppSearchField`'s own
+  `style:`, because a `TextField`'s *input* style cannot be themed and falls
+  through to `bodyLarge`, which Part 2 made Literata.
+- **Tokens and strings** — `AppSizes` gains `stepDisc` (32). Five ARB key
+  pairs feed the stat strip (`statServingsLabel`, `statPrepLabel`,
+  `statCookLabel`, `statRatingLabel`, `statMinutesValue`). Every literal in the
+  three files this slice opened migrated to a token.
+
+**One thing the plan got wrong.** It said to delete `recipeDetailFallbackTitle`
+from both ARB files because the detail screen's app bar no longer reads it.
+`meal_plan_screen.dart` still does — it is the fallback for a plan entry whose
+recipe title is missing. The key stayed; its description was rewritten to name
+its remaining reader.
+
+**Two things the plan settled that were kept.** Prep and cook stay two
+separate meta items with their existing strings, rather than the mock's
+combined `3 h 30 min`: the app has no hour/minute formatter and inventing one
+would merge two facts into one. And the FAB with its `MenuAnchor` stays, where
+the mock puts a bare `+` in the app bar — four import routes need a menu.
+
+**How it was verified.** `dart analyze` — clean. `flutter test` — **621/621**
+green (587 before; 34 new, one file per new widget plus the screen tests).
+`dart run tool/check_layers.dart` — OK; nothing here crosses a layer.
+`make check` is green except `seed-check`, red on `main` since `c8be2bc` for an
+unrelated reason. `make test-sql` and the Deno suite were not run: no
+`supabase/` file is touched. `l10n-check` regenerates clean and is idempotent.
+
+Tests were updated with the redesign, not worked around: the draft chip test
+asserts `AppBadge`, the favourite test asserts a heart and a bare rating
+number scoped to `RecipeCard`, the no-photo tests assert a monogram tile and
+the well's placeholder, and the ingredient tests assert `g šargarepa` as one
+run with `200` alone in its column. Two harnesses gained `theme:
+AppTheme.light()` — `recipe_screens_test.dart` and
+`meal_plan_screen_test.dart`, the latter because the picker sheet now lists
+`RecipeCard`s — since the redesigned widgets read `KitchenColors` and a
+default `ThemeData` carries no extensions.
+
+**The device walk happened** (2026-09-25, physical Galaxy SM-S931B, release
+build against hosted via `make install-hosted`; no emulator attached), across
+`sr`/`en` × light/dark on the list, the detail and the picker sheet. **The
+meta row wraps by whole items**: in Serbian `Palačinke` takes three lines
+(`4 porcije` / `10 min priprema` / `10 min kuvanja ★ 2`) and no item is ever
+split from its own icon; the same card in English takes two. That is the
+Serbian defect fixed structurally rather than by luck. Monogram tiles, the
+heart/star split, the four Serbian stat labels at phone width, step discs and
+ingredient hairlines all hold in both brightnesses, and `RecipeCard` renders
+identically in the picker sheet. The FAB is unmistakably present in dark now,
+and the search field is sans in both of its consumers.
+
+**The walk found one defect, and it was fixed and re-walked in the same
+sitting.** The stat strip's rating column overflowed: stars three, four and
+five sat off the right edge, untappable, so nobody could rate a recipe above
+2. An M3 `IconButton` sizes itself from its **style**, and `app_theme.dart`'s
+`iconButtonTheme` sets `minimumSize: Size(target, target)` (48dp), which the
+widget-level `padding: zero` / `constraints: BoxConstraints()` do not
+override. Five stars wanted ~220dp inside an ~86dp quarter-width column. The
+stars had always been that wide — before this slice they had a full-width row
+to sprawl in, so it never showed, which is also why the plan's "keep today's
+compact, zero-constraint `IconButton`s, do not fix it" instruction was wrong
+about what "today's" meant. Fixed locally in `_RatingStars` with
+`IconButton.styleFrom(minimumSize: Size.zero, padding: EdgeInsets.zero,
+tapTargetSize: shrinkWrap)` plus a `FittedBox(scaleDown)` backstop; not a theme
+change, because the 48dp minimum is right everywhere else. Alongside it, the
+strip's values did not share an optical line — each hung from its own top
+edge, so a 16dp star row sat lower than a 26dp line of text; `AppStatStrip`
+now centres every value in a box one `bodyLarge` line tall, as a minimum so a
+two-line value grows rather than clipping.
+
+Re-walked after the fix on the same device: all five stars inside the Rating
+column in all four combinations, and tapping the fifth registered a 5 against
+hosted data (set back to its original 2 immediately). Three new tests guard
+it, two of them pumping a 360×780 surface — the old tests all pumped 800×600,
+where a 220dp row simply lays out, which is why none of them caught it. Both
+width tests fail against the pre-fix widget.
+
+**Three older walk loops closed with it**, taking `docs/STATE.md`'s list from
+nine to six: Phase 6 1a (switching to English relabelled `Doručak` →
+`Breakfast` on the list and `Slatko`/`Užina` → `Sweet`/`Snack` on the detail,
+the title came through as `Crêpes` under a Machine translation chip, and
+tapping a translated chip still narrowed), Phase 6 2 (typing the *Serbian*
+`doru` while the app was in English narrowed to the recipe tagged `Doručak` —
+cross-language tag search works from the field, not only from the chips), and
+Part 2's own FAB and search-field defects. Not exercised: a single query
+matching one recipe by title and another by tag at once, which needs seeded
+data this household does not have; and an unmatched ingredient line's dashed
+ring, for the same reason — no recipe here has an unmatched line.
+
+---
