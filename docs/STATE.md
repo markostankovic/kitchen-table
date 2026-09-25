@@ -1,46 +1,41 @@
 # State — 2026-09-25
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 3 (`f487c64`) — the recipes surface, and the
-first slice of the redesign to touch a screen. The recipe list and detail take
-the Garden language, built out of seven shared widgets: `AppBadge`,
-`AppMetaRow`/`AppMetaItem`, `AppMonogramTile`, `AppStatStrip` and
-`AppSearchField` in `core/widgets/`, plus `RecipeCard` and `IngredientLineRow`
-in the `core/<feature>/widgets/` middle ground (D43/D53). `AppMetaRow` is the
-point of the slice: a recipe's facts are now indivisible icon-plus-text items
-in a `Wrap`, so a fact that does not fit moves to the next line **whole** —
-the Serbian meta-line defect fixed structurally, where part 2 had resolved it
-by luck with two points of font size. Favourite becomes a heart, so a star
-means a rating and nothing else anywhere in the app. The detail screen's app
-bar loses its title to the body's `headlineSmall`, and gains a photo well that
-renders with or without a photo, a four-column stat strip, hairline ingredient
-rows, 32dp step discs and a source footer. Two of part 2's walk defects are
-struck here, this being the only screen with either: the FAB gains a theme
-(`primary`/`onPrimary` — Material's `primaryContainer` default sat at 1.94:1
-in dark and vanished), and the search field is sans rather than Literata via
-`AppSearchField`, which both consumers now share. `AppSizes` gains `stepDisc`;
-five ARB key pairs feed the stat strip. D119 records the vocabulary; D120
-records the rating row's local exception to the 48dp target, which the device
-walk forced. Verified with `dart analyze` (clean), `flutter test` (**621/621**),
-`check_layers` (OK), and a full device walk on the physical Galaxy across
-`sr`/`en` × light/dark on the list, the detail and the recipe picker sheet.
-`make check` is green except the pre-existing `seed-check`. No `supabase/` file
-touched, so `make test-sql` and the Deno suite were not run.
+**Last shipped:** Phase 7 part 4 (`3689c56`) — the meal plan surface.
+`meal_plan_screen.dart` takes the Garden "Plan — week" layout: day cards with
+entry cards nested inside, grouped by slot. Today's card is **outlined** 2dp
+in `KitchenColors.today` with a `Danas`/`Today` pill, not filled, so
+`todayContainer` now means only the step-number disc. Entry meta is an
+`AppMetaRow` (slot, servings, `Napomena`, `od pon 14.`), with no thumbnail
+(D53). A leftover gets a dashed `outline` border (a private `CustomPainter`)
+and a mustard return icon, and names its source's day only when that source
+is in the loaded week. Empty slots are quiet `+ <Slot>` buttons followed by a
+trailing `+` that opens a slot chooser, and a Week-view day with nothing
+planned, other than today, collapses to one `+ Dodaj obrok` row. Drag now
+carries the entry, so a drop onto a collapsed day keeps its slot. No
+affordance was lost: toggle, week nav, action sheet, three dialogs, snack
+advisory, multi-entry slots, notes and pull-to-refresh all remain. Part 2's
+walk defect for this screen is fixed: the per-screen saved-copy line is
+`onSurfaceVariant`, not crimson. Three ARB key pairs were added. D121 records
+the vocabulary. Verified with `dart analyze` (clean), `flutter test`
+(**629/629**, including a 360×780 Serbian no-overflow test and long-press
+drag tests), `check_layers` (OK) and `l10n-check` (idempotent). `make check`
+is green except the pre-existing `seed-check`. No `supabase/` file was
+touched. **Not yet walked on the device** (see below).
 **In flight:** none
-**Next:** Phase 7's remaining parts are per-surface and independent;
-`docs/design/MIGRATION_PLAN.md` § 4 sequences them as slices 3–7 — meal plan,
-shopping list, import review, forms, auth/household. Plan whichever is
-highest-value with `/plan-slice-ui`. **The shopping list is the strongest
-candidate**: it carries two of the three open part-1/part-2 defects (the
-week-range header wrapping to three lines in Serbian, and the per-screen
-offline line still in `error` crimson while the global banner is calm), plus
-part 1's untranslated Serbian strings, which nothing has touched yet. The
-tokens and now the component vocabulary are settled ground, so these are
-layout slices, not colour ones — and slice 5 should reuse `IngredientLineRow`
-(it takes primitives precisely so import review can) rather than build its own.
-**Latest decision:** D120
+**Next:** first, `/design-walk meal-plan` on the physical Galaxy to close part
+4's own loop. Then the next per-surface slice of
+`docs/design/MIGRATION_PLAN.md` § 4. Slices 4–7 are left (shopping list,
+import review, forms, auth/household), to plan with `/plan-slice-ui`. **The
+shopping list is the strongest candidate.** It carries both of the
+remaining part-1/part-2 defects: the week-range header wrapping to three
+lines in Serbian, and its own saved-copy line still in `error` crimson.
+Part 4 fixed the meal plan's copy; `_SavedCopyLine` there is the precedent.
+It also has part 1's untranslated Serbian strings. Slice 5 should reuse
+`IngredientLineRow` rather than build its own.
+**Latest decision:** D121
 
-**Six device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Seven device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four — Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closes too. Part 1's
@@ -122,8 +117,10 @@ In order of age:
     "Showing your saved copy — no connection." line is still drawn in
     `error` crimson, and the two appear on screen together on the shopping
     list. MIGRATION_PLAN § 2.1 settled that offline is calm; part 2 only
-    restyled the global banner (`core/net/offline_banner.dart`), so the
-    per-screen lines on the shopping list and meal plan still contradict it.
+    restyled the global banner (`core/net/offline_banner.dart`). **Fixed for
+    the meal plan by Phase 7 part 4** (`onSurfaceVariant`, with a test on
+    its colour), which has not yet been confirmed on the device. **Still open
+    for the shopping list**, whose slice owns it.
   - ~~The FAB has **no `FloatingActionButtonThemeData`**~~ — **resolved by
     Phase 7 part 3**, which added one (`primary`/`onPrimary`, elevation 0,
     radius `AppRadii.lg`). Confirmed on the device 2026-09-25: in dark the
@@ -193,7 +190,23 @@ In order of age:
   household has an unmatched line, so there was nothing to look at — it needs
   seeded data rather than another walk.
 
-All six need `make install-hosted` on the physical Galaxy device — not the
+- **Phase 7 part 4** — the meal plan surface, not yet walked.
+  `/design-walk meal-plan` on the physical Galaxy across `sr`/`en` ×
+  light/dark. Look at: today's 2dp outline and `Danas` pill legible in dark
+  (`#9ED498` on `#1C1C16`, `#013908` pill text); an add row `+ Doručak +
+  Ručak + Večera + Užina + [+]` wrapping by whole buttons at phone width, with
+  the trailing `+` not reading as a stray duplicate of `+ Užina`; the
+  leftover's dashed border reading as dashed at 1dp in both brightnesses and
+  the mustard return icon visible in dark (`#E8C174`); a long Serbian recipe
+  title wrapping, not truncating; a collapsed `pon 14 … + Dodaj obrok` on one
+  line; the Serbian week range on one line (two at worst) between the
+  chevrons; the drop highlight on a `+ Slot` button, a filled slot's group
+  and a collapsed day; a drop on a collapsed day keeping the slot; the action
+  sheet, all three dialogs and the snack-repeat dialog still opening; the
+  saved-copy line grey in airplane mode beside the calm banner; and an empty
+  Today view showing all four `+ Slot` buttons.
+
+All seven need `make install-hosted` on the physical Galaxy device — not the
 emulator, not `flutter run`, not the local stack (CLAUDE.md). A future
 session should close as many as it reasonably can in one sitting rather than
 walking one loop at a time; 3b and 3c's second-account/throwaway-household

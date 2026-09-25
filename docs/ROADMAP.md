@@ -573,6 +573,23 @@ older walk loops closed with it: Phase 6 1a, Phase 6 2, and Part 2's own two.
 
 ---
 
+### Part 4 — The meal plan surface
+
+**Status: complete** (`3689c56`). Decisions taken during it: D121. See
+`docs/journal/phase-7.md`.
+
+Slice 3 of `docs/design/MIGRATION_PLAN.md` § 4. The meal plan becomes day
+cards with nested entry cards. Today is outlined in `today` and carries a pill.
+Leftovers get a dashed border and a mustard return icon. Empty slots become
+quiet `+ <Slot>` buttons plus a `+` that opens a slot chooser, and a Week-view
+day with nothing planned collapses to one `+ Dodaj obrok` row. Drag carries
+the entry, so a drop onto a collapsed day keeps its slot. No affordance was
+lost. The per-screen offline line goes calm here, which is Part 2's walk
+defect for this screen; the shopping list's copy of it stays open. Not yet
+walked on the device — open in `docs/STATE.md`.
+
+---
+
 ## Standing rules across phases
 
 - Anything AI-produced is `status = 'draft'` until a human marks it tested.

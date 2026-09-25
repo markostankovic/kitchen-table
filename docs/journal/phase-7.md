@@ -358,3 +358,120 @@ data this household does not have; and an unmatched ingredient line's dashed
 ring, for the same reason — no recipe here has an unmatched line.
 
 ---
+
+### Part 4 — The meal plan surface
+
+**Status: complete** (`3689c56`). Decisions taken during it: D121.
+
+Slice 3 of `docs/design/MIGRATION_PLAN.md` § 4. `meal_plan_screen.dart` takes
+the Garden "Plan — week" layout. It is presentation only: no provider,
+repository, route or `supabase/` file changed, and the only other files
+touched are the ARBs, `kitchen_colors.dart`'s doc comments, the screen's test
+and `docs/DESIGN_SYSTEM.md`.
+
+The old screen was a flat list of days, each with four slot rows of chips and
+an `Add` chip in every slot, so an empty week was 28 identical `Add`s with
+`Divider`s between them. The new one is a padded list of **day cards**, with
+each entry nested inside as a card of its own. The brief was that **no
+affordance is lost**. The Today/Week toggle, week navigation, the per-entry
+action sheet (open, cooking for, plan leftovers, move to, move up, move
+down, remove), its three dialogs, the snack-repeat advisory, several entries
+in one slot, notes, pull-to-refresh, and long-press drag with a visible drop
+highlight all survive.
+
+- **Day cards.** A day with any entry, and today always, is expanded: its
+  entries grouped by slot in `MealSlot.ordered` order, then an add row. Today
+  keeps the ordinary day-card fill and gets a **2dp border in
+  `KitchenColors.today`** plus a `Danas`/`Today` pill (`labelMedium` on
+  `today`, `StadiumBorder`). Today is outlined, not filled, which leaves
+  `todayContainer` meaning only the step-number disc. Its doc comment and
+  DESIGN_SYSTEM's semantic-layer row were rewritten to say so. The header
+  drops its `FontWeight.bold` for plain `titleSmall`.
+- **Collapsed empty days.** In Week view, a day with nothing planned that is
+  not today collapses to one compact card on `surface` (lighter than a
+  planned day, as in the mock), with its header and a `+ Dodaj obrok` / `+ Add
+  meal` button. The button opens a **slot chooser**, a small bottom sheet of
+  the four slots, and the chosen slot runs the same `_add` flow as a direct
+  `+ <Slot>` tap. An empty week is seven collapsed cards, not an empty state.
+  The Today view never collapses.
+- **The add row.** A `+ <Slot>` text button in quiet `onSurfaceVariant` for
+  each *empty* slot, then a trailing icon-only `+` in `primary` that opens
+  the same chooser. The `+` is load-bearing: it is the only way a second
+  entry gets into an already-filled slot, and several entries per slot is a
+  supported feature.
+- **Entry cards.** `surfaceContainerLowest`, radius 12, and an `AppMetaRow`
+  above the title (D119: never a ` · `-joined string). The row holds the slot
+  as plain text, then a servings item for a recipe, a `Napomena`/`Note` item
+  for a note, or `od pon 1.`/`from Mon 1` for a leftover. Titles are
+  `titleMedium`, and a note's own words are `bodyLarge`. Both wrap rather
+  than truncate. There is no thumbnail, since an entry carries a recipe's
+  title and servings but not the recipe itself (D53).
+- **Leftovers.** The same card with a dashed 1dp `outline` border, drawn by
+  a private `_DashedRoundedRectPainter` that runs `_DashedRingPainter`'s
+  approach along an `RRect`'s `PathMetric` (rule 8: no package), plus a
+  leading return icon in `KitchenColors.leftover`. The source's day is shown
+  only when the source entry is in the week the screen already holds, which
+  avoids a new query. It uses the abbreviated `weekdayAndDay` form because a
+  full Serbian weekday would have to be declined after `od`.
+- **Drag.** `LongPressDraggable` now carries the `MealPlanEntry` rather than
+  its id, because a drop onto a collapsed day has to know which slot to keep.
+  There are three targets: a filled slot's group of cards, a `+ <Slot>`
+  button, and a collapsed day, which **keeps the entry's own slot**. The
+  feedback is the card itself at its source width (a `LayoutBuilder`) on
+  `Material` elevation 2. The highlight is `primaryContainer`. On a filled
+  slot it tints the entry cards themselves, because their own fill would hide
+  a highlight drawn behind them. The plan did not say how to show it there;
+  this was the build's call.
+- **Part 2's walk defect for this screen is fixed.** The per-screen "Showing
+  your saved copy" line is `onSurfaceVariant` instead of `error` crimson,
+  matching the calm global banner (MIGRATION_PLAN § 2.1). The shopping list's
+  copy of the line is still crimson and stays with that slice.
+- **Tokens and strings.** Every literal the plan listed migrated to
+  `AppSpacing`, `AppRadii` or `AppSizes`, including the `withValues(alpha:
+  0.3)` tint on the old drop highlight. The week bar centres its range in an
+  `Expanded` between the chevrons, and the segmented toggle is full-width
+  (`expandedInsets: EdgeInsets.zero`). Three ARB key pairs were added:
+  `addMealButton`, `mealEntryNoteLabel` and `leftoverFromDay`.
+
+**Settled in planning and kept.** The toggle keeps the app's `Danas | Ova
+nedelja` order and Today default, although the mock has them the other way
+round. Phase 5 chose to open on Today, and a mock does not overrule that.
+The mock's "Already planned recently" line under an entry was **not built**:
+the app keeps no per-entry repeat flag, and the snack-variety check is an
+advisory at add time (D58), so showing it persistently would need new data.
+
+**How it was verified.** `dart analyze` was clean. `flutter test` passed
+**629/629**. The meal plan file has 32 tests, several of them new: the slot
+chooser from a collapsed day reaching the recipe picker with that day and
+*Dinner*; the trailing `+` on a filled day opening the chooser with all four
+slots; a leftover showing `from Mon 1` when its source is in the week and
+only its slot when it is not; long-press drag onto `+ Dinner` calling
+`moveEntry(slot: dinner)`, and onto a collapsed Tuesday calling it with the
+entry's own slot; the offline line's colour being `onSurfaceVariant` and not
+`error`; and Serbian at **360×780** in both views with a long recipe title,
+a leftover and a note, with no overflow. Existing tests were rewritten to the
+new structure, not worked around. `ActionChip 'Add'` counts became
+`+ <Slot>` and `Add meal` button counts, the `Divider` counts went, and the
+add-a-note and snack tests tap `+ Breakfast` / `+ Snack` in the Today view.
+One thing surfaced while writing them: `TextButton.icon` builds a private
+`TextButton` subclass, so `find.widgetWithText(TextButton, …)`, an
+exact-type match, never sees one. The suite finds them with
+`find.bySubtype<TextButton>()` instead. The test file was also reflowed by
+`dart format`, so its diff is wider than its changes.
+`dart run tool/check_layers.dart` passed. `l10n-check` regenerates
+identically. `make check` is otherwise green except the pre-existing
+`seed-check`. `make test-sql` and the Deno suite were not run, since no
+`supabase/` file was touched.
+
+**Not yet walked on the device.** The plan's `/design-walk meal-plan` covers
+`sr`/`en` × light/dark on the physical Galaxy and has not happened. It is
+open in `docs/STATE.md` with the plan's checklist: today's outline and pill
+in dark, the add row wrapping by whole buttons (and the trailing `+` not
+reading as a duplicate of `+ Užina`), the dashed border at 1dp and the
+mustard icon in dark, long Serbian titles wrapping, a collapsed day on one
+line, the week range between the chevrons, the three drop highlights,
+dropping on a collapsed day keeping the slot, the action sheet and all four
+dialogs, the offline line in airplane mode, and an empty Today view showing
+all four `+ Slot` buttons.
+
+---
