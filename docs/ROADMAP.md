@@ -590,6 +590,33 @@ walked on the device — open in `docs/STATE.md`.
 
 ---
 
+### Part 5 — The shopping list surface
+
+**Status: complete** (`f6c5dcc`). Decisions taken during it: D122. See
+`docs/journal/phase-7.md`.
+
+Slice 4 of `docs/design/MIGRATION_PLAN.md` § 4. The shopping list gets:
+
+- a three-segment range bar whose selection is derived from the range, with
+  no selected check
+- a `Sledeća lista: …` line, shown only when the range differs from the
+  list's own
+- an always-on `SR`/`EN` doc-language tag
+- one document card of `IngredientLineRow`s, grouped by category without
+  headings (D105-amended), with a hairline on every row but the last
+- a collapsed staples card
+
+It closes both remaining part-2 walk defects: the three-line range header,
+and the crimson saved-copy line. It also explains part 1's "untranslated
+strings": a list generated in English, rendering in English as D94 designs.
+
+Walked on the physical Galaxy across `sr`/`en` × light/dark. The walk found
+two defects: the selected segment wrapping, and category gaps reading as
+uneven spacing. Both were fixed and re-walked in the same sitting. Parts 1
+and 2's walk loops close with it.
+
+---
+
 ## Standing rules across phases
 
 - Anything AI-produced is `status = 'draft'` until a human marks it tested.

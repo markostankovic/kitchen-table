@@ -475,3 +475,150 @@ dialogs, the offline line in airplane mode, and an empty Today view showing
 all four `+ Slot` buttons.
 
 ---
+
+### Part 5 — The shopping list surface
+
+**Status: complete** (`f6c5dcc`). Decisions taken during it: D122.
+
+Slice 4 of `docs/design/MIGRATION_PLAN.md` § 4. `shopping_list_screen.dart`
+takes the Garden "List — offline, document in SR" layout. It is presentation
+only: no provider, repository, route or `supabase/` file changed. The other
+files touched are `format_item_quantity.dart` (pure-Dart `domain/`),
+`IngredientLineRow`, the ARBs, three test files, `docs/DESIGN_SYSTEM.md` and
+`docs/design/MIGRATION_PLAN.md`.
+
+The old screen had a `Row` holding the date range in `titleMedium`, two
+`TextButton`s and a calendar icon. Under that came a flat run of dense
+`ListTile`s with the summed quantities trailing, and a bare `ExpansionTile`
+for staples. The new one:
+
+- **The range bar.** A full-width `SegmentedButton`: `Ova nedelja` ·
+  `Sledeća` · `Datumi` (the third with a date icon and the longer `Izaberi
+  datume` as its tooltip). The selection is **derived**: a range equal to
+  `PlanWeek.of(now)` or its `.next` selects that segment, and anything else
+  selects `Datumi`. A single-select `SegmentedButton` ignores a tap on its
+  selected segment, so `emptySelectionAllowed: true` turns that tap into an
+  empty set, and an empty set while `Datumi` is selected reopens the picker.
+  That is how a second custom range gets picked. The range text leaves the
+  button row for its own `bodySmall` line, `Sledeća lista: {from} – {to}`,
+  shown **only** when there is no list or the selected range differs from
+  the list's own (compared by date). This fixes part 2's defect, where the
+  range wrapped to three lines in Serbian beside the buttons.
+- **Provenance and the doc-language tag.** The generated-at line, then the
+  saved-copy line when offline, both `bodySmall` `onSurfaceVariant`. The
+  saved-copy line was `error` crimson, part 2's other open defect. Under
+  them is a new `_DocumentLanguageTag`: a stadium with `docLanguage` fill and
+  an `outlineVariant` ring, holding the code from `list.locale` and a
+  sentence in the **reader's** locale (`Ova lista je na engleskom`). It is
+  always shown, not only when the two locales differ.
+- **The document card.** One theme `Card` of `IngredientLineRow`s (its third
+  consumer, D53). The first quantity goes in the row's quantity column with
+  its unit beside the name. Further unit families (`+ 300 g`, never merged,
+  D9) and each unmatched raw line go in the trailer. Items are ordered by
+  `groupByCategory`, the call the clipboard export uses, with an `md` gap
+  between category blocks and **no heading** (D105-amended; the Garden mock
+  draws them and was declined). A long-press still toggles a pantry staple,
+  and `_togglePantry` is unchanged.
+- **The staples card.** A second `Card` (`Clip.antiAlias`) holding the
+  collapsed `ExpansionTile`, with `const Border()` shapes so it draws no
+  lines of its own.
+- **Supporting changes.** `formatItemQuantityParts` returns `(number, unit)`,
+  and `formatItemQuantity` is now `'${p.number} ${p.unit}'` on top of it, so
+  the screen's split form and the export's joined form cannot drift.
+  `IngredientLineRow` gains `showDivider` (default `true`, so recipe detail
+  is unchanged). Four ARB key pairs were added: `listIsInSerbian`,
+  `listIsInEnglish`, `pickDatesSegment` (`Datumi`, short on purpose: a
+  segment gets ~109dp) and `nextListRangeLine`. Every literal the plan
+  listed migrated to `AppSpacing`.
+
+**Part 1's "untranslated strings" was not a missing translation.** Both
+ARBs had `generatedForRangeLine`, `probablyHaveHeading` and
+`cupboardStaplesSubtitle`. The list on the device had been *generated in
+English*, and D94 renders the document in its generating locale. The English
+ingredient names in the same report were the same fact. Nothing moved to
+the reader's locale. The tag is what makes the split legible.
+
+**Changed by the walk.** The device walk found two defects, both fixed and
+re-walked on the device the same evening. They differ from the plan in two
+places:
+
+1. **No selected check on the segments.** The plan expected `Ova nedelja`
+   to fit with the check icon. On the Galaxy it wrapped to two lines, and
+   `This week` did too, so the cause was width rather than Serbian length.
+   The bar grew from 48dp to 56dp while that segment was selected.
+   `showSelectedIcon: false` fixes it; the `secondaryContainer` fill still
+   marks the selection in both brightnesses.
+2. **A hairline on every to-buy row but the card's last.** The plan dropped
+   the hairline on the last row of every category block. On a real list
+   (`mleko, jaje` · `brašno` · `hleb`) most blocks hold one item, so the only
+   hairline on screen sat between milk and eggs, and the gaps read as uneven
+   row spacing rather than as groups. Now every row keeps it, the card's edge
+   stands in for the last, and the `md` gap still separates blocks. The
+   grouping is a quiet cue, which suits a list read while shopping. The
+   staples card already worked this way.
+
+**How it was verified.** `dart analyze` was clean. `flutter test` passed
+**645/645**. The shopping list screen file has 30 tests, many of them new:
+the column form of quantities (`1.2` and `kg brašno`); a second family in
+the trailer (`+ 300 g`); the unmatched marker; the saved-copy line's colour
+being `onSurfaceVariant`, not `error`; an English list under a Serbian reader
+showing `EN`, `Ova lista je na engleskom` and an English `Probably have (1)`,
+which pins D94 as intended; no category label rendering while the order
+holds; Serbian at **360×780** with a list, a two-family item, a long name, an
+unmatched line and staples, with no overflow; the derived selection
+(`thisWeek` by default, `nextWeek` after tapping `Sledeća`); the range line
+absent for the list's own range and present for another; re-tapping the
+selected `Datumi` opening `DateRangePickerDialog`; the selected segment
+carrying no check; and a block's last row keeping its hairline while only
+the card's last drops it. The last two fail against the pre-fix code.
+`format_item_quantity_test.dart` covers `formatItemQuantityParts` and pins
+`formatItemQuantity` as its join. `ingredient_line_row_test.dart` covers
+`showDivider: false`.
+
+`flutter_test`'s square-glyph font wraps `Ova nedelja` at any segment width,
+so no widget test can measure the segment wrap. The test pins the flag
+instead. `check_layers` passed. `l10n-check` regenerates identically (the
+generated files have to be staged for its `git diff`). `make test-sql` and
+the Deno suite passed. `make check` is otherwise green except the
+pre-existing `seed-check`. `dart format` was not applied to the existing
+test files, so the diff is only the changes.
+
+**Walked on the device.** `/design-walk shopping-list` on the physical
+Galaxy, hosted release build, across `sr`/`en` × light/dark:
+
+- Quantities line up in their `primary` column.
+- The `SR`/`EN` tag is legible in dark.
+- The staples card expands and collapses, and its trailers read in both
+  brightnesses.
+- `Sledeća` and a custom `Datumi` range select correctly. The range line
+  sits on one line (`Sledeća lista: uto 22. sep – čet 24. sep`), and
+  re-tapping `Datumi` reopens the picker pre-filled.
+- In airplane mode the saved-copy line is grey under the grey banner.
+- Long-press marked `hleb` as a staple with the "applies next time"
+  snackbar, and the list on screen stayed as it was (D13). The next
+  regenerate moved it to `Verovatno imate`, and a second long-press set it
+  back.
+- Copy shows `Lista kopirana.`.
+- Regenerated once under each language, the document followed the
+  generating locale both ways, and the tag said so.
+
+Three lists were regenerated on hosted in the process.
+
+Not exercised:
+
+- A two-family `+ 300 g` trailer on the device: nothing planned that week
+  summed two unit families.
+- The paste half of Phase 5 part 5's clipboard loop, which would have meant
+  writing a note into one of the user's own apps.
+
+Noticed, not this slice's: the global offline banner's Serbian string has a
+literal `--`, and Flutter's own `sr` date-picker header reads `22. sep to
+24. sep`.
+
+**Closed by it.** Part 1's loop (its translation item, explained above),
+part 2's loop (the range header and the crimson line), and part 5's own.
+Phase 5 part 5 is half confirmed.
+
+**Out of scope, noted as ideas:** a Serbian decimal comma (`1,5`); count
+units reading `3 kom jaje`; the mock's genitive names (`kiselog kupusa`),
+which would need catalog data.
