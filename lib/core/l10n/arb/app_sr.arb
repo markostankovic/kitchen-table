@@ -45,7 +45,7 @@
 
   "signInTagline": "Recepti koje vaš dom već kuva, za celo domaćinstvo, na oba jezika.",
   "@signInTagline": {
-    "description": "Sign-in screen, the Literata line under the 'Kitchen Table' wordmark: what the app is, not how to sign in -- the button below already says that."
+    "description": "Sign-in screen, the line under the 'Kitchen Table' wordmark: what the app is, not how to sign in -- the button below already says that."
   },
   "signInWithGoogle": "Prijavi se Google nalogom",
   "@signInWithGoogle": {

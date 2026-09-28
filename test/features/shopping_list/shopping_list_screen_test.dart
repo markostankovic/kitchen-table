@@ -226,11 +226,11 @@ void main() {
       ]),
     );
 
-    // The number in IngredientLineRow's quantity column, the unit riding
-    // with the name.
-    expect(find.text('1.2'), findsOneWidget);
-    expect(find.text('kg brašno'), findsOneWidget);
-    expect(find.text('1.2 kg'), findsNothing);
+    // IngredientLineRow's amount: the unit rides with the number, on the
+    // right, apart from the name (D127).
+    expect(find.text('1.2 kg'), findsOneWidget);
+    expect(find.text('brašno'), findsOneWidget);
+    expect(find.text('kg brašno'), findsNothing);
   });
 
   testWidgets(
@@ -248,9 +248,8 @@ void main() {
       ),
     );
 
-    expect(find.text('3'), findsOneWidget);
-    expect(find.text('pc eggs'), findsOneWidget);
-    expect(find.text('kom eggs'), findsNothing);
+    expect(find.text('3 pc'), findsOneWidget);
+    expect(find.text('3 kom'), findsNothing);
   });
 
   testWidgets('two families on one line are shown side by side, never merged',
@@ -265,9 +264,9 @@ void main() {
       ]),
     );
 
-    // The first family in the quantity column, the second in the trailer.
-    expect(find.text('480'), findsOneWidget);
-    expect(find.text('ml brašno'), findsOneWidget);
+    // The first family in the amount, the second in the trailer.
+    expect(find.text('480 ml'), findsOneWidget);
+    expect(find.text('brašno'), findsOneWidget);
     expect(find.text('+ 300 g'), findsOneWidget);
   });
 
@@ -279,7 +278,9 @@ void main() {
       ]),
     );
 
-    expect(find.text('so po ukusu'), findsOneWidget);
+    // `textContaining`: the ring is a WidgetSpan inline after the name, so
+    // the run's plain text carries its placeholder.
+    expect(find.textContaining('so po ukusu'), findsOneWidget);
     // Unmatched is marked quietly, never as an error.
     expect(find.byKey(const Key('unmatchedMarker')), findsOneWidget);
   });
@@ -303,14 +304,14 @@ void main() {
 
     expect(find.text('Probably have (1)'), findsOneWidget);
     // Collapsed: present in the tree as a heading, the item itself not yet
-    // rendered. (The unit rides with the name in IngredientLineRow.)
-    expect(find.text('g so'), findsNothing);
+    // rendered.
+    expect(find.text('5 g'), findsNothing);
 
     await tester.tap(find.text('Probably have (1)'));
     await tester.pumpAndSettle();
 
     // Expanding shows it -- nothing was ever dropped from the snapshot.
-    expect(find.text('g so'), findsOneWidget);
+    expect(find.text('5 g'), findsOneWidget);
   });
 
   testWidgets(
@@ -388,7 +389,7 @@ void main() {
       initial: _list(<ShoppingItem>[_item('so po ukusu', id: null)]),
     );
 
-    await tester.longPress(find.text('so po ukusu'));
+    await tester.longPress(find.textContaining('so po ukusu'));
     await tester.pumpAndSettle();
 
     expect(calls.pantryPref, isNull);

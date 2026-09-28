@@ -5,6 +5,7 @@ import '../../theme/app_radii.dart';
 import '../../theme/app_sizes.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/kitchen_colors.dart';
+import '../../theme/kitchen_type.dart';
 import '../../widgets/app_badge.dart';
 import '../../widgets/app_meta_row.dart';
 import '../../widgets/app_monogram_tile.dart';
@@ -50,7 +51,7 @@ class RecipeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final KitchenColors kitchen = theme.extension<KitchenColors>()!;
-    final TextStyle? titleStyle = theme.textTheme.titleMedium;
+    final TextStyle titleStyle = theme.extension<KitchenType>()!.recipeTitle;
 
     return Card(
       child: InkWell(
@@ -84,7 +85,7 @@ class RecipeCard extends StatelessWidget {
                 // the heart sits *on* the title whether that title runs to
                 // one line or two.
                 SizedBox(
-                  height: (titleStyle?.fontSize ?? 0) * (titleStyle?.height ?? 1),
+                  height: (titleStyle.fontSize ?? 0) * (titleStyle.height ?? 1),
                   child: Center(
                     child: Icon(
                       Icons.favorite,
@@ -124,9 +125,11 @@ class RecipeCard extends StatelessWidget {
     return AppMonogramTile(
       letter: trimmed.isEmpty ? '' : trimmed.substring(0, 1).toUpperCase(),
       size: AppSizes.thumb,
-      // A 72dp tile carries `headlineSmall`; the tile's own default
-      // `titleMedium` would leave the letter swimming in it.
-      textStyle: Theme.of(context).textTheme.headlineSmall,
+      // A 72dp tile carries the 26pt serif; the tile's own default
+      // `titleMedium` would leave the letter swimming in it. The letter is
+      // the recipe's name standing in for its photo, so it is a recipe
+      // title's face (D127).
+      textStyle: Theme.of(context).extension<KitchenType>()!.recipeTitleLarge,
     );
   }
 

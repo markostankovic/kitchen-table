@@ -10,8 +10,8 @@ import '../../theme/kitchen_colors.dart';
 /// number is not worth a cross-file constant.
 const double _markerWidth = 3;
 
-/// One ingredient line, read-only: the quantity in its own column, then the
-/// unit and the name as a single run of text.
+/// One ingredient line, read-only: the name on the left, the amount on the
+/// right (`docs/DESIGN_SYSTEM.md` § Ingredient lines, D127).
 ///
 /// **It takes primitives, not a model.** The recipe detail screen renders
 /// `RecipeIngredient`s and the import review screen renders
@@ -21,25 +21,25 @@ const double _markerWidth = 3;
 /// `core/ingredients/` middle ground (D43, D53) rather than in the recipes
 /// feature.
 ///
-/// The quantity sits alone in a fixed-width right-aligned column so that
-/// fractions line up down the list -- `½` under `1¼` under `200` -- and the
-/// unit rides with the name rather than with the number, because `½ kg
-/// mlevenog mesa` is read as one phrase. That is why unit and name are one
-/// `Text.rich` and not two `Text`s: a break between them would be a break
-/// mid-phrase.
+/// The unit rides with the number, not the name: `½ kg` is one amount, set
+/// as one `Text.rich` that never wraps, and the amounts line up on the right
+/// edge down a list. The name takes whatever width is left and wraps on the
+/// left. A line with no amount is the name alone, with no gap reserved.
 ///
 /// [isMatched] `false` is **not an error state** (CLAUDE.md rule 3, and
 /// `KitchenColors.unmatched`'s doc). The line renders exactly what the cook
 /// typed, which is a fine outcome; the marker is a quiet dashed ring in
-/// `outline`, and it is never red.
+/// `outline`, inline after the name, and it is never red.
 class IngredientLineRow extends StatelessWidget {
   const IngredientLineRow({
     required this.quantity,
     required this.unit,
     required this.name,
+    this.optionalLabel,
     this.trailer,
     this.isMatched = true,
     this.isFlagged = false,
+    this.inset = false,
     this.unmatchedTooltip,
     this.showDivider = true,
     super.key,
@@ -56,7 +56,12 @@ class IngredientLineRow extends StatelessWidget {
   /// one. One string either way: the caller has already resolved which.
   final String name;
 
-  /// The line's note, or the `opciono` / `optional` suffix.
+  /// The localized `opciono` / `optional`, set as a muted suffix inline after
+  /// the name. `null` for a required line.
+  final String? optionalLabel;
+
+  /// A second line under the name: the note, a `→ catalog name`, extra
+  /// quantities, unmatched raw lines.
   final String? trailer;
 
   final bool isMatched;
@@ -67,10 +72,16 @@ class IngredientLineRow extends StatelessWidget {
   /// row to get it.
   ///
   /// The marker is a *foreground* decoration, so it paints over the row
-  /// without taking layout. As a decoration border it added 3px to the
-  /// padding and pushed the quantity column out of line with its neighbours.
-  /// For the same reason the tint gets breathing room on the right only.
+  /// without taking layout. A flagged row is always [inset], so the name
+  /// clears the marker.
   final bool isFlagged;
+
+  /// Pads the row's content `md` in from both edges while the hairline and
+  /// the flagged tint still run the full width. Import review sets it on every
+  /// row, so a flagged name lines up with its unflagged neighbours (`Review
+  /// import@1x.png`); the recipe detail and the shopping list sit flush with
+  /// the gutter.
+  final bool inset;
 
   /// The localized "not matched to an ingredient" string, shown on the ring.
   final String? unmatchedTooltip;
@@ -81,15 +92,26 @@ class IngredientLineRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
     final KitchenColors kitchen = theme.extension<KitchenColors>()!;
     final String? trailerText = trailer;
+    final String? quantityText = quantity?.isEmpty ?? true ? null : quantity;
+    final String? unitText = unit?.isEmpty ?? true ? null : unit;
+    final String? optionalText = optionalLabel?.isEmpty ?? true
+        ? null
+        : optionalLabel;
+    final bool hasAmount = quantityText != null || unitText != null;
+    final TextStyle? reading = theme.textTheme.bodyLarge;
+    final TextStyle? muted = theme.textTheme.bodySmall?.copyWith(
+      color: scheme.onSurfaceVariant,
+    );
 
     return Container(
       decoration: BoxDecoration(
-        color: isFlagged ? theme.colorScheme.surfaceContainerLow : null,
+        color: isFlagged ? scheme.surfaceContainerLow : null,
         border: Border(
           bottom: showDivider
-              ? BorderSide(color: theme.colorScheme.outlineVariant)
+              ? BorderSide(color: scheme.outlineVariant)
               : BorderSide.none,
         ),
       ),
@@ -103,25 +125,16 @@ class IngredientLineRow extends StatelessWidget {
               ),
             )
           : null,
+      constraints: const BoxConstraints(minHeight: AppSizes.target),
       padding: EdgeInsets.only(
         top: AppSpacing.sm,
         bottom: AppSpacing.sm,
-        right: isFlagged ? AppSpacing.sm : 0,
+        left: inset || isFlagged ? AppSpacing.md : 0,
+        right: inset || isFlagged ? AppSpacing.md : 0,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          SizedBox(
-            width: AppSizes.thumb,
-            child: Text(
-              quantity ?? '',
-              textAlign: TextAlign.right,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,42 +142,75 @@ class IngredientLineRow extends StatelessWidget {
                 Text.rich(
                   TextSpan(
                     children: <InlineSpan>[
-                      if (unit != null && unit!.isNotEmpty)
-                        TextSpan(
-                          text: '$unit ',
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurfaceVariant,
+                      TextSpan(text: name),
+                      if (optionalText != null)
+                        TextSpan(text: ' · $optionalText', style: muted),
+                      // A word joiner glues the ring to the last word: a
+                      // line may otherwise break before the placeholder and
+                      // strand the ring alone on the next line.
+                      if (!isMatched) const TextSpan(text: '\u2060'),
+                      if (!isMatched)
+                        WidgetSpan(
+                          alignment: PlaceholderAlignment.middle,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: AppSpacing.sm),
+                            child: Tooltip(
+                              message: unmatchedTooltip ?? '',
+                              // Keyed because `CustomPaint` is a common
+                              // enough internal for `find.byType` to be
+                              // useless against it -- `ratingStars`'
+                              // precedent, one screen over.
+                              child: CustomPaint(
+                                key: const Key('unmatchedMarker'),
+                                size: const Size.square(AppSizes.iconInMeta),
+                                painter: _DashedRingPainter(
+                                  color: kitchen.unmatched,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      TextSpan(text: name),
                     ],
                   ),
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
+                  style: reading?.copyWith(color: scheme.onSurface),
                 ),
                 if (trailerText != null && trailerText.isNotEmpty)
-                  Text(
-                    trailerText,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
+                  Text(trailerText, style: muted),
               ],
             ),
           ),
-          if (!isMatched) ...<Widget>[
-            const SizedBox(width: AppSpacing.sm),
-            Tooltip(
-              message: unmatchedTooltip ?? '',
-              // Keyed because `CustomPaint` is a common enough internal for
-              // `find.byType` to be useless against it -- `ratingStars`'
-              // precedent, one screen over.
-              child: CustomPaint(
-                key: const Key('unmatchedMarker'),
-                size: const Size.square(AppSizes.iconInMeta),
-                painter: _DashedRingPainter(color: kitchen.unmatched),
+          if (hasAmount) ...<Widget>[
+            const SizedBox(width: AppSpacing.xl),
+            Text.rich(
+              TextSpan(
+                children: <InlineSpan>[
+                  if (quantityText != null)
+                    TextSpan(
+                      text: quantityText,
+                      style: TextStyle(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w600,
+                        fontFeatures: const <FontFeature>[
+                          FontFeature.tabularFigures(),
+                        ],
+                      ),
+                    ),
+                  if (quantityText != null && unitText != null)
+                    const TextSpan(text: ' '),
+                  if (unitText != null)
+                    TextSpan(
+                      text: unitText,
+                      style: TextStyle(
+                        color: scheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                ],
               ),
+              key: const Key('ingredientAmount'),
+              style: reading,
+              softWrap: false,
+              textAlign: TextAlign.end,
             ),
           ],
         ],

@@ -49,8 +49,9 @@ abstract final class AppSizes {
   static const double avatar = 40;
 
   /// The step-number disc on a recipe's detail screen -- a tonal circle with
-  /// the 1-based step number centred in it.
-  static const double stepDisc = 32;
+  /// the 1-based step number centred in it. 28, one `bodyLarge` line (18/28),
+  /// so a top-aligned disc centres on the step's first line with no offset.
+  static const double stepDisc = 28;
 
   /// `AppEmptyState`'s icon. Deliberately its own name rather than borrowing
   /// [target]: they are the same number today, but one is a hit area and the

@@ -158,7 +158,7 @@ abstract class AppLocalizations {
   /// **'Jezik'**
   String get languageSectionTitle;
 
-  /// Sign-in screen, the Literata line under the 'Kitchen Table' wordmark: what the app is, not how to sign in -- the button below already says that.
+  /// Sign-in screen, the line under the 'Kitchen Table' wordmark: what the app is, not how to sign in -- the button below already says that.
   ///
   /// In sr, this message translates to:
   /// **'Recepti koje vaš dom već kuva, za celo domaćinstvo, na oba jezika.'**

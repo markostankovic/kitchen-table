@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/theme/app_theme.dart';
 import 'package:kitchen_table/core/theme/kitchen_colors.dart';
+import 'package:kitchen_table/core/theme/kitchen_type.dart';
 
 void main() {
   group('AppTheme', () {
@@ -52,35 +53,57 @@ void main() {
       expect(AppTheme.dark().colorScheme.surfaceTint, Colors.transparent);
     });
 
-    test('the type scale is Literata for reading, sans for furniture', () {
+    test('the type scale is sans, bar the wordmark', () {
       final TextTheme light = AppTheme.light().textTheme;
       final TextTheme dark = AppTheme.dark().textTheme;
 
-      // The two sizes this slice moved, and are easy to regress.
       expect(light.titleMedium?.fontSize, 18);
       expect(light.titleMedium?.fontWeight, FontWeight.w600);
-      expect(light.bodyLarge?.fontSize, 17);
-      expect(dark.titleMedium?.fontSize, 18);
+      expect(light.bodyLarge?.fontSize, 18);
+      expect(light.bodyLarge?.height, 28 / 18);
+      expect(dark.bodyLarge?.fontSize, 18);
 
-      // The serif only ever sits on content a person reads.
+      // D127: Literata reaches a screen only through `displaySmall` or
+      // KitchenType. Every other role leaves `fontFamily` null, which the
+      // platform fills in (Roboto under the test VM) -- so what is
+      // assertable is that the serif did not leak onto it.
       expect(light.displaySmall?.fontFamily, 'Literata');
-      expect(light.headlineSmall?.fontFamily, 'Literata');
-      expect(light.titleLarge?.fontFamily, 'Literata');
-      expect(light.titleMedium?.fontFamily, 'Literata');
-      expect(light.bodyLarge?.fontFamily, 'Literata');
+      for (final TextStyle? role in <TextStyle?>[
+        light.headlineSmall,
+        light.titleLarge,
+        light.titleMedium,
+        light.titleSmall,
+        light.bodyLarge,
+        light.bodyMedium,
+        light.bodySmall,
+        light.labelLarge,
+        light.labelMedium,
+      ]) {
+        expect(role?.fontFamily, isNot('Literata'));
+      }
+    });
 
-      // Furniture is the platform sans. `AppTheme` leaves `fontFamily` null
-      // on these roles, which is how a role asks for Roboto / San Francisco;
-      // by the time it is a `ThemeData` the platform has filled its own name
-      // in (Roboto under the test VM), so what is assertable -- and what
-      // actually matters -- is that the serif did not leak onto them. A
-      // button label in a serif reads as decoration, which is why
-      // labelLarge is in this list.
-      expect(light.bodyMedium?.fontFamily, isNot('Literata'));
-      expect(light.labelLarge?.fontFamily, isNot('Literata'));
-      expect(light.titleSmall?.fontFamily, isNot('Literata'));
-      expect(light.bodySmall?.fontFamily, isNot('Literata'));
-      expect(light.labelMedium?.fontFamily, isNot('Literata'));
+    test('KitchenType is present: Literata recipe titles in onSurface', () {
+      for (final ThemeData theme in <ThemeData>[
+        AppTheme.light(),
+        AppTheme.dark(),
+      ]) {
+        final KitchenType? type = theme.extension<KitchenType>();
+        expect(type, isNotNull, reason: 'the recipe titles must ride along');
+
+        final KitchenType t = type!;
+        expect(t.recipeTitle.fontFamily, 'Literata');
+        expect(t.recipeTitle.fontSize, 18);
+        expect(t.recipeTitle.height, 24 / 18);
+        expect(t.recipeTitle.fontWeight, FontWeight.w600);
+        expect(t.recipeTitle.color, theme.colorScheme.onSurface);
+
+        expect(t.recipeTitleLarge.fontFamily, 'Literata');
+        expect(t.recipeTitleLarge.fontSize, 26);
+        expect(t.recipeTitleLarge.height, 32 / 26);
+        expect(t.recipeTitleLarge.fontWeight, FontWeight.w600);
+        expect(t.recipeTitleLarge.color, theme.colorScheme.onSurface);
+      }
     });
 
     test('the nav indicator is primary, not Material default', () {

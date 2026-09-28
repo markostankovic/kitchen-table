@@ -511,11 +511,10 @@ void main() {
       await _pumpDetail(tester, _detail);
 
       // D1: the cook typed the genitive `šargarepe`; the catalog says
-      // `šargarepa`, and that is what a reader sees. Unit and name are one
-      // run of text since Phase 7 part 3 -- `g šargarepa` reads as one
-      // phrase, with the quantity alone in its own column.
-      expect(find.text('g šargarepa'), findsOneWidget);
-      expect(find.text('200'), findsOneWidget);
+      // `šargarepa`, and that is what a reader sees. The amount `200 g` sits
+      // apart on the right (D127).
+      expect(find.text('šargarepa'), findsOneWidget);
+      expect(find.text('200 g'), findsOneWidget);
       expect(find.text('200 g šargarepe'), findsNothing);
     });
 
@@ -524,7 +523,42 @@ void main() {
       await _pumpDetail(tester, _detail);
 
       // Rule 3: a failed match is a supported state, and the line survives it.
-      expect(find.text('malo domaćeg sira'), findsOneWidget);
+      // `textContaining`: the unmatched ring is a WidgetSpan inline after
+      // the name.
+      expect(find.textContaining('malo domaćeg sira'), findsOneWidget);
+      expect(find.text('po ukusu'), findsOneWidget);
+    });
+
+    testWidgets('an unmatched line with an amount says it once, as typed', (
+      WidgetTester tester,
+    ) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          ingredients: <RecipeIngredient>[
+            RecipeIngredient(
+              position: 0,
+              rawText: '1,5 kg mlevenog mesa',
+              quantity: Quantity.fraction(3, 2),
+              unitCode: 'g',
+            ),
+          ],
+        ),
+      );
+
+      // The raw text already carries `1,5 kg`; a second amount on the right
+      // would say it twice.
+      expect(find.textContaining('1,5 kg mlevenog mesa'), findsOneWidget);
+      expect(find.byKey(const Key('ingredientAmount')), findsNothing);
+    });
+
+    testWidgets('an optional line whose note already says so gets no inline '
+        'opciono', (WidgetTester tester) async {
+      await _pumpDetail(tester, _detail);
+
+      // The parser moved `po ukusu` into the note; `opciono` beside it too
+      // would say the same thing twice.
+      expect(find.textContaining('opciono'), findsNothing);
       expect(find.text('po ukusu'), findsOneWidget);
     });
 
@@ -532,10 +566,10 @@ void main() {
         (WidgetTester tester) async {
       await _pumpDetail(tester, _detail);
 
-      expect(find.text('kašika ajvar'), findsOneWidget);
+      expect(find.text('1 kašika'), findsOneWidget);
       expect(find.textContaining('tbsp'), findsNothing);
       // Grams are spelled the same either way.
-      expect(find.text('g šargarepa'), findsOneWidget);
+      expect(find.text('200 g'), findsOneWidget);
     });
 
     testWidgets('quantities render as fractions, never decimals',

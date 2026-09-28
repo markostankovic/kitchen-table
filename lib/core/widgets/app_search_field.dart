@@ -12,9 +12,9 @@ import '../theme/app_sizes.dart';
 /// widget is what keeps them from drifting again.
 ///
 /// It also fixes the part-2 walk's defect: a `TextField` with no `style` falls
-/// through to `bodyLarge`, and `bodyLarge` is Literata. **A search box is UI
-/// furniture, not something a person reads**, so both the typed text and the
-/// hint are `bodyMedium` sans. The hint half is settled in
+/// through to `bodyLarge`, which is the 18/28 reading size. **A search box is
+/// UI furniture, not something a person reads**, so both the typed text and
+/// the hint are `bodyMedium`. The hint half is settled in
 /// `app_theme.dart`'s `inputDecorationTheme`; the typed half cannot be
 /// themed, so it is set here.
 ///

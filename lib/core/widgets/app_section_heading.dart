@@ -12,12 +12,10 @@ import '../theme/app_spacing.dart';
 /// now: `titleMedium`, with `AppSpacing.sm` underneath it so the section's
 /// content sits close.
 ///
-/// Phase 7 part 2 changed what `titleMedium` *is* -- 18pt Literata rather
-/// than 17pt platform sans (`docs/DESIGN_SYSTEM.md` § Type, D118) -- without
-/// changing a line of this widget. The 8dp beneath still reads right against
-/// the heavier heading: the serif carries its own optical space, so adding
-/// more would start to look like a gap rather than a heading with its
-/// section under it.
+/// `titleMedium` is 18/24 w600 platform sans (`docs/DESIGN_SYSTEM.md` § Type,
+/// D127; part 2 had briefly made it Literata). The 8dp beneath keeps the
+/// section's content close; more would start to look like a gap rather than
+/// a heading with its section under it.
 class AppSectionHeading extends StatelessWidget {
   const AppSectionHeading({required this.text, super.key});
 

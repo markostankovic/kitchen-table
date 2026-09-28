@@ -15,6 +15,7 @@ import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/kitchen_colors.dart';
+import '../../../core/theme/kitchen_type.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_meta_row.dart';
 import '../application/meal_plan_providers.dart';
@@ -1048,9 +1049,7 @@ class _MealEntryCard extends ConsumerWidget {
                         ? theme.textTheme.bodyLarge?.copyWith(
                             color: scheme.onSurface,
                           )
-                        : theme.textTheme.titleMedium?.copyWith(
-                            color: scheme.onSurface,
-                          ),
+                        : theme.extension<KitchenType>()!.recipeTitle,
                   ),
                 ],
               ),

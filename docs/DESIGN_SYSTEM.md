@@ -6,10 +6,14 @@ the seven screen references under `docs/design/screens/`), which is the visual
 source of truth for the Phase 7 redesign.
 
 **Status.** This file describes **the code**. Phase 7 part 2 (D118) landed
-the tokens: both `ColorScheme`s, the Literata type scale, `AppRadii`,
+the tokens: both `ColorScheme`s, the type scale, `AppRadii`,
 `AppSizes`, `AppDurations` and `KitchenColors` are in
-`lib/core/theme/` as written here. It replaces `docs/DESIGN.md`, which is now
-only a pointer at this file.
+`lib/core/theme/` as written here. The 2026-09-28 design fixes round
+(`docs/design/BRIEF_design_fixes.md`, Claude Design's updated
+`design-system.pdf` and screens) is part of the source too: part 9a (D127)
+moved the type to sans with serif recipe titles only, flipped the ingredient
+row and lightened the steps. It replaces `docs/DESIGN.md`, which is now only a
+pointer at this file.
 
 What is *described* here and what is *applied* are two different things. The
 tokens are real everywhere — the palette and typeface repaint every screen at
@@ -142,30 +146,44 @@ small golden highlight, paprika only as a signal. A screen that reads as
 
 ## Type
 
-Two faces. **Literata** — bundled, OFL, weights 400 and 600 under
-`assets/fonts/` — for reading and titles. **The platform sans** (Roboto on
-Android, San Francisco on iOS) for UI furniture: labels, buttons, captions.
+Two faces. **The platform sans** (Roboto on Android, San Francisco on iOS) for
+every Material role but one. **Literata** — bundled, OFL, weights 400 and 600
+under `assets/fonts/` — for recipe titles and the wordmark, nothing else.
 
 A screen picks a role for what the text *is*, never a raw `fontSize`.
 
 | Role | Size / line | Weight | Face | For |
 |---|---|---|---|---|
 | `displaySmall` | 36 / 44 | 600 | Literata | the wordmark, in `primary`, and nothing else |
-| `headlineSmall` | 26 / 32 | 600 | Literata | a recipe's own title on its detail screen, and the household's name on its screen |
-| `titleLarge` | 22 / 28 | 600 | Literata | screen and dialog titles |
-| `titleMedium` | 18 / 24 | 600 | Literata | section headings, card titles |
-| `titleSmall` | 14 / 20 | 600 | sans | field labels, tile titles |
-| `bodyLarge` | 17 / 26 | 400 | Literata | the reading text — recipe steps, ingredient lines |
-| `bodyMedium` | 14 / 20 | 400 | sans | default copy, empty states |
-| `bodySmall` | 12 / 16 | 400 | sans | captions, meta lines |
-| `labelLarge` | 14 / 20 | 600 | sans | buttons, chips |
+| `headlineSmall` | 26 / 32 | 600 | sans | the household's name (a *recipe's* detail title is `KitchenType.recipeTitleLarge`) |
+| `titleLarge` | 22 / 28 | 600 | sans | app bar, dialog titles |
+| `titleMedium` | 18 / 24 | 600 | sans | section headings, sheet titles, empty-state titles |
+| `titleSmall` | 14 / 20 | 600 | sans | labels, settings group headers |
+| `bodyLarge` | 18 / 28 | 400 | sans | the reading text — recipe steps, ingredient lines |
+| `bodyMedium` | 14 / 20 | 400 | sans | default copy |
+| `bodySmall` | 12 / 16 | 400 | sans | captions, meta |
+| `labelLarge` | 14 / 20 | 600 | sans | buttons, chips, the step number |
 | `labelMedium` | 12 / 16 | 500 | sans | badges, nav labels |
 
 Roles not listed keep Material 3's defaults; nothing in the app needs them.
 
-The serif is doing the domestic, handwritten-recipe-box work, and it is only
-ever on content a person reads: a title, a step, an ingredient line. A button
-label in a serif reads as decoration, which is why `labelLarge` is sans.
+### `KitchenType` — the recipe titles
+
+A `ThemeExtension` in `lib/core/theme/kitchen_type.dart`, read as
+`Theme.of(context).extension<KitchenType>()!`, built from the scheme like
+`KitchenColors`. Deliberately not a Material role.
+
+| Token | Size / line | Weight | Face | For |
+|---|---|---|---|---|
+| `recipeTitle` | 18 / 24 | 600 | Literata, `onSurface` | a recipe's name on a recipe card and on a meal-plan entry |
+| `recipeTitleLarge` | 26 / 32 | 600 | Literata, `onSurface` | a recipe's title on its detail screen, and the monogram letter on a card's 72dp tile |
+
+**Literata reaches a screen only through `displaySmall` or `KitchenType`**
+(D127). A serif on screen always means "this is a recipe's name". Screen
+titles, section headings, steps, ingredient lines and the household name are
+sans. The warmth the all-serif scale used to carry now comes from the cream
+ground, the green / mustard / paprika palette, the monogram tiles, and the
+serif recipe names.
 
 ---
 
@@ -224,7 +242,7 @@ number in the table.
 | `nav` | 80 | `NavigationBar` |
 | `icon` / `iconInButton` / `iconInMeta` | 24 / 20 / 16 | actions · inside buttons · in meta lines |
 | `thumb` | 72 | recipe card photo or monogram tile |
-| `stepDisc` | 32 | the step-number disc on a recipe |
+| `stepDisc` | 28 | the step-number disc on a recipe — one `bodyLarge` line, so it centres on the first line with no offset |
 | `avatar` | 40 | a person's monogram circle — member, profile |
 | `emptyStateIcon` | 48 | `AppEmptyState`'s icon |
 
@@ -255,6 +273,8 @@ Scrim behind dialogs and sheets: `#1F190F` at 32% in light, black at 50% in dark
 ---
 
 ## The semantic layer — `KitchenColors`
+
+(Its type counterpart, `KitchenType`, is in § Type.)
 
 A `ThemeExtension` read as `Theme.of(context).extension<KitchenColors>()!`.
 Every member is an alias of a role above, so there is no second palette to keep
@@ -330,7 +350,7 @@ That hairline is what separates a card from the ground — not a shadow.
 
 ### Navigation
 
-App bar 64dp on `surface`, no elevation, title in Literata `titleLarge`,
+App bar 64dp on `surface`, no elevation, title in sans `titleLarge`,
 left-aligned. `NavigationBar` 80dp on `surfaceContainer`; the selected
 destination is a **`primary` pill with an `onPrimary` icon and a `primary`
 label** — not Material's default `secondaryContainer` indicator.
@@ -341,9 +361,9 @@ Filled, 52dp, radius 8, no underline. **The label sits above the field** in
 `titleSmall`, not floating inside it. Focus is a 2dp `primary` border.
 Validation text is `error`, below the field.
 
-**Field text and hint are sans** — `bodyMedium`, not the `bodyLarge` serif
-Flutter falls through to. A field is furniture, not something a person reads,
-and `bodyLarge` became Literata in part 2. The hint half is set once in
+**Field text and hint are `bodyMedium`**, not the 18/28 `bodyLarge` Flutter
+falls through to. A field is furniture, not something a person reads; since
+part 9a the reason is size, not face (`bodyLarge` is sans now too). The hint half is set once in
 `inputDecorationTheme`; the typed half **cannot be themed**, so every
 `TextField` passes `style: bodyMedium` at its call site. Forgetting it is
 exactly the defect part 2's walk found in the search box.
@@ -380,25 +400,41 @@ downward and eats the list beneath it.
 
 ### Ingredient lines
 
-`bodyLarge`, with a hairline between lines. The quantity is `primary`,
-right-aligned in its own narrow column so fractions line up; the unit is
-`onSurfaceVariant`; the name is `onSurface`. Four states:
+**Name left, amount right**: a row of `Expanded` name column, a 24dp (`xl`)
+gap, then the amount — grid `1fr | auto`. `bodyLarge` 18/28, min height 48,
+`sm` vertical padding, a hairline between lines.
+
+The amount is one `Text.rich` that never wraps: the number in `primary`, w600,
+tabular figures, then the unit in `onSurfaceVariant` beside it (`½ kg`). It
+sizes to its content, so amounts line up on the right edge down a list. The
+name, in `onSurface`, takes what is left and wraps on the left. **No amount →
+name only**, with no gap reserved. Under the name, the `trailer` (note,
+`→ catalog name`, extra quantities, unmatched raw lines) in `bodySmall` muted.
 
 - **matched** — plain
-- **optional** — an `opciono` / `optional` suffix in muted `bodySmall`
+- **optional** — the `optionalLabel` (`opciono` / `optional`) inline after the
+  name as ` · opciono` in muted `bodySmall`. Callers do not fold it into the
+  trailer
 - **unmatched** — rendered exactly as typed, with a 16dp dashed `unmatched`
-  ring on the trailing edge (a small `CustomPainter`, not a package, and not a
-  ring around the whole row). Never `error`, never red — a line the catalog did
-  not know is a supported outcome, not a fault
+  ring **inline after the name** (a `WidgetSpan`, `sm` before it; a small
+  `CustomPainter`, not a package). A word joiner (U+2060) sits before it so a
+  line can't break there and strand the ring alone on the next line. The PDF draws it at 14; 16 is the existing
+  `iconInMeta` and a token for 2dp is not worth it. Never `error`, never red —
+  a line the catalog did not know is a supported outcome, not a fault
 - **flagged** (import review only) — a 3px `reviewMarker` left edge painted
-  as a **foreground** (it takes no layout, so the quantity column stays
-  aligned) on a `surfaceContainerLow` tint, with `sm` of right padding and
-  none on the left
+  as a **foreground** (it takes no layout) on a `surfaceContainerLow` tint.
+  A flagged row is always inset (below), so the name clears the marker
+
+**`inset`** pads a row's content `md` in from both edges, while its hairline
+and tint still run the full width. Import review sets it on **every** row, so
+flagged and unflagged names and amounts line up (`Review import@1x.png`). The
+recipe detail and the shopping list sit flush with the gutter
+(`Recipe@1x.png`).
 
 On import review the name is the local parse of the raw text, falling back to
 the whole raw text when there is no usable parse, and a matched line's trailer
 leads with `→ <catalog name>` (in the recipe's language), joined to the note
-or `opciono` with ` · `.
+with ` · `.
 
 **The match chip under a field being typed** (`IngredientMatchChip`) follows
 two people. Its **status words** — `No match` / `Nema poklapanja`, and the
@@ -415,14 +451,17 @@ uneven spacing, not as a break.
 
 ### Steps and stats
 
-A step number sits in a 32dp `todayContainer` disc, the step itself in
-`bodyLarge`. The servings / prep / cook / rating strip puts labels in
-`bodySmall` muted above values in `statValue`.
+A step number, in `labelLarge` `onPrimaryContainer`, sits in a 28dp
+`todayContainer` disc; `lg` (16) to the step itself in `bodyLarge` (sans
+18/28, w400 — no bold); `xl` (24) between steps. The servings / prep / cook /
+rating strip puts labels in `bodySmall` muted above values in `bodyLarge`
+w600 `statValue`.
 
 ### Recipe card
 
 A 72dp photo, or — far more often — a monogram tile: the title's first letter
-on `secondaryContainer`. Then the title, then a meta row.
+on `secondaryContainer`, in `KitchenType.recipeTitleLarge`. Then the title in
+`KitchenType.recipeTitle`, then a meta row.
 
 **The meta row is a component with a rule**: each item is an icon plus its own
 text, and **an item never splits across lines — a whole item wraps instead**.
@@ -453,7 +492,8 @@ plain `bodySmall` `onSurfaceVariant` text, then a servings item
 (`soup_kitchen_outlined`) for a recipe, a `Napomena`/`Note` item
 (`edit_note_outlined`) for a note, or `od pon 14.`/`from Mon 14`
 (`event_outlined`) for a leftover whose source is in the loaded week. Then,
-`xs` below, the title in `titleMedium`, or a note's own words in `bodyLarge`,
+`xs` below, a recipe or leftover title in `KitchenType.recipeTitle`, or a
+note's own words in sans `bodyLarge`,
 wrapping rather than truncating. **No thumbnail or monogram** — an entry
 carries a recipe's title and servings, not the recipe (D53).
 
@@ -602,7 +642,7 @@ Menus radius 16 at level 2. Snackbars on `inverseSurface` with the action in
 
 ### Dialog
 
-`surfaceContainerHigh`, radius 28, level 3. Title in `titleLarge` Literata,
+`surfaceContainerHigh`, radius 28, level 3. Title in `titleLarge` (sans),
 body in `bodyMedium`. A destructive confirm is a `TextButton` in
 `destructive` (`TextButton.styleFrom(foregroundColor: kitchen.destructive)`),
 never a filled button: Discard import, Remove member, Leave household, Delete

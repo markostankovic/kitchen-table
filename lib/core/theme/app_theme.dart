@@ -4,6 +4,7 @@ import 'app_radii.dart';
 import 'app_sizes.dart';
 import 'app_spacing.dart';
 import 'kitchen_colors.dart';
+import 'kitchen_type.dart';
 
 /// Application theme -- the Garden design system
 /// (`docs/DESIGN_SYSTEM.md` § Colour, § Type, § Component themes; D118).
@@ -23,12 +24,14 @@ import 'kitchen_colors.dart';
 /// has to stay legible at 3px against a dark surface. It is never a surface
 /// something else sits on.
 ///
-/// Type is Literata (bundled under `assets/fonts/`, CLAUDE.md rule 8 -- no
-/// font package) for anything a person *reads*, and the platform sans
-/// (`fontFamily: null`) for UI furniture. A button label set in a serif reads
-/// as decoration, which is why `labelLarge` is sans.
+/// Type is the platform sans (`fontFamily: null`) for every Material role
+/// but `displaySmall`, the wordmark. Literata (bundled under `assets/fonts/`,
+/// CLAUDE.md rule 8 -- no font package) reaches a screen only through
+/// `displaySmall` or [KitchenType]'s recipe titles (D127, superseding the
+/// Type half of D118): the serif marks a recipe's name, not reading text.
 ///
-/// [KitchenColors] rides along on both themes as the app's semantic layer.
+/// [KitchenColors] and [KitchenType] ride along on both themes as the app's
+/// semantic layer.
 abstract final class AppTheme {
   static ThemeData light() => _build(Brightness.light);
 
@@ -44,7 +47,10 @@ abstract final class AppTheme {
       colorScheme: scheme,
       textTheme: textTheme,
       scaffoldBackgroundColor: scheme.surface,
-      extensions: <ThemeExtension<dynamic>>[KitchenColors.of(scheme)],
+      extensions: <ThemeExtension<dynamic>>[
+        KitchenColors.of(scheme),
+        KitchenType.of(scheme),
+      ],
 
       // Flat by default: a container-role tone step plus a 1dp hairline does
       // the separating, not a shadow. `surfaceTint` being transparent in the
@@ -149,12 +155,12 @@ abstract final class AppTheme {
           borderSide: BorderSide(color: scheme.error, width: 2),
         ),
         errorStyle: textTheme.bodySmall?.copyWith(color: scheme.error),
-        // Sans, not the serif. `TextField` has no themed style for the text
-        // the cook *types* -- it falls through to `bodyLarge`, which is
-        // Literata since part 2 -- so each field also passes
-        // `style: bodyMedium` at its call site. Only the hint can be set
-        // from here, and it is set here so the two halves of a field cannot
-        // disagree about their face. A search box is UI furniture.
+        // 14, not 18. `TextField` has no themed style for the text the cook
+        // *types* -- it falls through to `bodyLarge`, which is the 18/28
+        // reading size -- so each field also passes `style: bodyMedium` at
+        // its call site. Only the hint can be set from here, and it is set
+        // here so the two halves of a field cannot disagree about their
+        // size. A search box is UI furniture.
         hintStyle: textTheme.bodyMedium?.copyWith(
           color: scheme.onSurfaceVariant,
         ),
@@ -410,7 +416,7 @@ abstract final class AppTheme {
     shadow: Color(0xFF000000),
   );
 
-  /// Literata for what a person reads, the platform sans for UI furniture.
+  /// The platform sans throughout, except the wordmark's `displaySmall`.
   ///
   /// `fontFamily: null` is not an omission -- it is how a role asks for
   /// Roboto / San Francisco. Line heights are written as the ratio literal
@@ -418,37 +424,35 @@ abstract final class AppTheme {
   /// `docs/DESIGN_SYSTEM.md` § Type. Roles not set here keep Material's
   /// defaults.
   static TextTheme _textTheme(ColorScheme scheme) {
-    const String serif = 'Literata';
     const TextTheme base = TextTheme(
-      // The wordmark, and nothing else.
+      // The wordmark, and nothing else. The only serif Material role; recipe
+      // titles reach Literata through [KitchenType] instead (D127).
       displaySmall: TextStyle(
-        fontFamily: serif,
+        fontFamily: 'Literata',
         fontSize: 36,
         height: 44 / 36,
         fontWeight: FontWeight.w600,
       ),
-      // A recipe's title on its detail screen.
+      // The household name. A recipe's detail title is
+      // `KitchenType.recipeTitleLarge`, not this.
       headlineSmall: TextStyle(
-        fontFamily: serif,
         fontSize: 26,
         height: 32 / 26,
         fontWeight: FontWeight.w600,
       ),
-      // Screen and dialog titles.
+      // App bar and dialog titles.
       titleLarge: TextStyle(
-        fontFamily: serif,
         fontSize: 22,
         height: 28 / 22,
         fontWeight: FontWeight.w600,
       ),
-      // Section headings, card titles.
+      // Section headings, sheet titles, empty-state titles.
       titleMedium: TextStyle(
-        fontFamily: serif,
         fontSize: 18,
         height: 24 / 18,
         fontWeight: FontWeight.w600,
       ),
-      // Field labels, tile titles. Sans: furniture, not reading.
+      // Labels, settings group headers.
       titleSmall: TextStyle(
         fontSize: 14,
         height: 20 / 14,
@@ -456,9 +460,8 @@ abstract final class AppTheme {
       ),
       // Reading text: steps, ingredient lines.
       bodyLarge: TextStyle(
-        fontFamily: serif,
-        fontSize: 17,
-        height: 26 / 17,
+        fontSize: 18,
+        height: 28 / 18,
         fontWeight: FontWeight.w400,
       ),
       // Default copy, empty states.
@@ -473,8 +476,7 @@ abstract final class AppTheme {
         height: 16 / 12,
         fontWeight: FontWeight.w400,
       ),
-      // Buttons, chips. Sans on purpose: a serif button label reads as
-      // decoration.
+      // Buttons, chips, the step number.
       labelLarge: TextStyle(
         fontSize: 14,
         height: 20 / 14,

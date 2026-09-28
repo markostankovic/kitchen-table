@@ -448,7 +448,6 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
     final String trailer = <String>[
       if (line.isMatched && line.displayName != null) '→ ${line.displayName}',
       if (line.note != null) line.note!,
-      if (line.isOptional && line.note == null) l10n.ingredientOptionalTrailer,
     ].join(' · ');
 
     return IngredientLineRow(
@@ -459,9 +458,15 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
           ? null
           : units!.displayName(line.unitCode!, locale: draft.originalLocale),
       name: whole ? line.rawText : parsedName,
+      // The parser moves the optional marker into the note, so a line with a
+      // note already says it; the inline `opciono` is for one without.
+      optionalLabel: line.isOptional && line.note == null
+          ? l10n.ingredientOptionalTrailer
+          : null,
       trailer: trailer.isEmpty ? null : trailer,
       isMatched: line.isMatched,
       isFlagged: isFlagged,
+      inset: true,
       unmatchedTooltip: l10n.ingredientNotMatchedTooltip,
       showDivider: showDivider,
     );

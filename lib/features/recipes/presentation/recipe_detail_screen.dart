@@ -16,6 +16,7 @@ import '../../../core/text/text_normalizer.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/kitchen_colors.dart';
+import '../../../core/theme/kitchen_type.dart';
 import '../../../core/widgets/app_badge.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_section_heading.dart';
@@ -87,8 +88,8 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
 
     return Scaffold(
       // No title. The recipe's own name is the one thing on this screen that
-      // earns `headlineSmall`, and it says it once -- in the body, under the
-      // photo, where § Type reserves that role for it. An app bar repeating
+      // earns `KitchenType.recipeTitleLarge`, and it says it once -- in the
+      // body, under the photo, where § Type reserves it. An app bar repeating
       // it in `titleLarge` would be the same words twice in two sizes.
       //
       // The bar stays opaque on `surface` rather than floating circular
@@ -415,9 +416,7 @@ class _Body extends ConsumerWidget {
               // no title (see the `AppBar` above).
               Text(
                 detail.displayTitle,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                ),
+                style: theme.extension<KitchenType>()!.recipeTitleLarge,
               ),
               if (description != null && description.isNotEmpty) ...<Widget>[
                 const SizedBox(height: AppSpacing.sm),
@@ -530,6 +529,7 @@ class _Body extends ConsumerWidget {
   List<AppStatColumn> _stats(BuildContext context, KitchenColors kitchen) {
     final TextStyle? value = Theme.of(context).textTheme.bodyLarge?.copyWith(
       color: kitchen.statValue,
+      fontWeight: FontWeight.w600,
     );
     final Recipe recipe = detail.recipe;
     return <AppStatColumn>[
@@ -565,20 +565,28 @@ class _Body extends ConsumerWidget {
   /// `recipe.originalLocale` -- a translated method read in one language
   /// beside a unit spelled in another would be the same bug D81 fixed for the
   /// display name, one column over.
+  ///
+  /// A line with no catalog name shows the whole raw text, which already
+  /// carries its amount, so it gets no amount of its own -- `1,5 kg mesa`
+  /// beside `1½ kg` would say it twice (rule 3: the line renders as typed).
+  ///
+  /// The parser moves an optional marker (`po ukusu`, `opciono`) into the
+  /// note, so an optional line with a note already says so in the trailer;
+  /// the inline `opciono` is only for one without.
   Widget _ingredientRow(RecipeIngredient line, UnitCatalog units) {
-    final String trailer = <String>[
-      if (line.note != null) line.note!,
-      if (line.isOptional && line.note == null) l10n.ingredientOptionalTrailer,
-    ].join(', ');
-
+    final bool asTyped = line.displayName == null;
     return IngredientLineRow(
-      quantity:
-          line.quantity == null ? null : formatQuantity(line.quantity!),
-      unit: line.unitCode == null
+      quantity: asTyped || line.quantity == null
+          ? null
+          : formatQuantity(line.quantity!),
+      unit: asTyped || line.unitCode == null
           ? null
           : units.displayName(line.unitCode!, locale: detail.readingLocale),
       name: line.resolvedName,
-      trailer: trailer.isEmpty ? null : trailer,
+      optionalLabel: line.isOptional && line.note == null
+          ? l10n.ingredientOptionalTrailer
+          : null,
+      trailer: line.note,
       isMatched: line.isMatched,
       unmatchedTooltip: l10n.ingredientNotMatchedTooltip,
     );
@@ -685,7 +693,7 @@ class _StepRow extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final KitchenColors kitchen = theme.extension<KitchenColors>()!;
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -704,7 +712,7 @@ class _StepRow extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: AppSpacing.lg),
           Expanded(
             child: Text(step.text, style: theme.textTheme.bodyLarge),
           ),
