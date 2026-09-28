@@ -67,11 +67,15 @@ Order: **sr/light → sr/dark → en/light → en/dark**.
 
 - **Language** is the in-app toggle on the settings screen
   (`lib/features/auth/presentation/settings_screen.dart`).
-- **Brightness is not an in-app setting.** `lib/main.dart` sets no
-  `themeMode`, so the app follows the system. Switch it with
-  `adb -s <serial> shell cmd uimode night yes|no`. If this Samsung build
-  refuses that command, say so and fall back to toggling it in the device's
-  own Settings rather than skipping the dark pass.
+- **Brightness** is also an in-app setting: the `Svetla` / `Tamna`
+  (`Light` / `Dark`) segments in the same screen's Izgled group (D128). The
+  app ignores the phone's own dark mode, so `adb shell cmd uimode night
+  yes|no` does **not** switch it. Use `uimode` only to confirm that
+  (phone dark + app `Svetla` must stay light), and reset it to `no`
+  afterward.
+- Both toggles belong to the walk account: language is saved on its hosted
+  profile, and the theme on the device. Put both back where you found them
+  (normally `Srpski` / `Svetla`) before reporting.
 
 ## 4. Screenshot each, and read the screenshots properly
 

@@ -39,9 +39,6 @@ Noticed along the way, not fixed (not part 9b's):
 
 - on a cold start, tag chips show raw keys (`sweet` in a Serbian row) for a
   frame before their labels load;
-- `.claude/commands/design-walk.md` § 3 still says brightness follows the
-  system and to use `adb shell cmd uimode`. Since D128, use the in-app
-  toggle.
 - Still open from 9a: the shopping list prints `1.5 kg` in Serbian; units
   don't inflect (`2 glavica`); the recipe-delete confirm is a filled button.
 
