@@ -15,10 +15,7 @@ void main() {
     );
 
     expect(find.text('Š'), findsOneWidget);
-    expect(
-      tester.getSize(find.byType(AppMonogramTile)),
-      const Size.square(72),
-    );
+    expect(tester.getSize(find.byType(AppMonogramTile)), const Size.square(72));
   });
 
   testWidgets('sits on secondaryContainer, not on primary', (
@@ -65,5 +62,26 @@ void main() {
       tester.widget<Text>(find.text('Š')).style?.fontSize,
       theme.textTheme.headlineSmall?.fontSize,
     );
+  });
+
+  testWidgets('circular: a person is a circle, still on secondaryContainer', (
+    WidgetTester tester,
+  ) async {
+    final ThemeData theme = AppTheme.light();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        home: const Scaffold(
+          body: AppMonogramTile(letter: 'M', size: 40, circular: true),
+        ),
+      ),
+    );
+
+    final BoxDecoration decoration =
+        tester.widget<Container>(find.byType(Container)).decoration!
+            as BoxDecoration;
+    expect(decoration.shape, BoxShape.circle);
+    expect(decoration.borderRadius, isNull);
+    expect(decoration.color, theme.colorScheme.secondaryContainer);
   });
 }

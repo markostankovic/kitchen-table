@@ -40,7 +40,8 @@ class AppLocalizationsSr extends AppLocalizations {
   String get languageSectionTitle => 'Jezik';
 
   @override
-  String get signInSubtitle => 'Prijavite se svojim Google nalogom.';
+  String get signInTagline =>
+      'Recepti koje vaš dom već kuva, za celo domaćinstvo, na oba jezika.';
 
   @override
   String get signInWithGoogle => 'Prijavi se Google nalogom';
@@ -511,7 +512,7 @@ class AppLocalizationsSr extends AppLocalizations {
       'Nema aktivnih kodova. Napravite jedan i pročitajte ga onome ko se priključuje.';
 
   @override
-  String get copyCodeTooltip => 'Kopiraj kod';
+  String get copyCodeButton => 'Kopiraj kod';
 
   @override
   String get creatingEllipsis => 'Pravljenje...';
@@ -556,10 +557,27 @@ class AppLocalizationsSr extends AppLocalizations {
   String get householdRoleAdult => 'Član';
 
   @override
+  String householdMemberCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count članova',
+      few: '$count člana',
+      one: '$count član',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String householdMemberYou(String role) {
+    return '$role · vi';
+  }
+
+  @override
   String get unknownDisplayName => 'Nepoznato';
 
   @override
-  String get removeMemberTooltip => 'Ukloni člana';
+  String get removeMemberMenuItem => 'Ukloni člana';
 
   @override
   String get removeMemberDialogTitle => 'Ukloniti člana?';
@@ -575,7 +593,7 @@ class AppLocalizationsSr extends AppLocalizations {
   String get memberRemovedSnackbar => 'Član uklonjen.';
 
   @override
-  String get leaveHouseholdTooltip => 'Napusti domaćinstvo';
+  String get leaveHouseholdButton => 'Napusti domaćinstvo';
 
   @override
   String get leaveHouseholdDialogTitle => 'Napustiti domaćinstvo?';
@@ -588,7 +606,7 @@ class AppLocalizationsSr extends AppLocalizations {
   String get leaveButton => 'Napusti';
 
   @override
-  String get revokeInviteTooltip => 'Opozovi kod';
+  String get revokeInviteButton => 'Opozovi';
 
   @override
   String get inviteRevokedSnackbar => 'Kod opozvan.';

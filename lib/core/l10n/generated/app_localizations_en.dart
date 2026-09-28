@@ -40,7 +40,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageSectionTitle => 'Language';
 
   @override
-  String get signInSubtitle => 'Sign in with your Google account.';
+  String get signInTagline =>
+      'The recipes your home already cooks, for the whole household, in both languages.';
 
   @override
   String get signInWithGoogle => 'Sign in with Google';
@@ -505,7 +506,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'No active codes. Create one and read it out to whoever is joining.';
 
   @override
-  String get copyCodeTooltip => 'Copy code';
+  String get copyCodeButton => 'Copy code';
 
   @override
   String get creatingEllipsis => 'Creating...';
@@ -548,10 +549,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get householdRoleAdult => 'Member';
 
   @override
+  String householdMemberCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '$count member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String householdMemberYou(String role) {
+    return '$role · you';
+  }
+
+  @override
   String get unknownDisplayName => 'Unknown';
 
   @override
-  String get removeMemberTooltip => 'Remove member';
+  String get removeMemberMenuItem => 'Remove member';
 
   @override
   String get removeMemberDialogTitle => 'Remove member?';
@@ -567,7 +584,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memberRemovedSnackbar => 'Member removed.';
 
   @override
-  String get leaveHouseholdTooltip => 'Leave household';
+  String get leaveHouseholdButton => 'Leave household';
 
   @override
   String get leaveHouseholdDialogTitle => 'Leave household?';
@@ -580,7 +597,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get leaveButton => 'Leave';
 
   @override
-  String get revokeInviteTooltip => 'Revoke code';
+  String get revokeInviteButton => 'Revoke';
 
   @override
   String get inviteRevokedSnackbar => 'Code revoked.';

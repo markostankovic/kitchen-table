@@ -299,7 +299,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Ana'), findsOneWidget);
-      expect(find.text(sr.householdRoleOwner), findsOneWidget);
+      // The caller is the owner, so their own row carries `· vi`.
+      expect(find.text(sr.householdMemberYou(sr.householdRoleOwner)),
+          findsOneWidget);
       expect(find.text(sr.householdRoleAdult), findsOneWidget);
       expect(find.text('482913'), findsOneWidget);
     });

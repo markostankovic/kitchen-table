@@ -130,5 +130,52 @@ void main() {
         expect(c.unmatched, isNot(scheme.error));
       }
     });
+
+    // The theme once set `primary` on every FilledButton, which painted the
+    // tonal variant green as well (Phase 7 part 8's device walk).
+    for (final (String name, ThemeData theme) in <(String, ThemeData)>[
+      ('light', AppTheme.light()),
+      ('dark', AppTheme.dark()),
+    ]) {
+      testWidgets('$name: filled is primary, tonal is secondaryContainer', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme,
+            home: Scaffold(
+              body: Column(
+                children: <Widget>[
+                  FilledButton(onPressed: () {}, child: const Text('filled')),
+                  FilledButton.tonal(
+                    onPressed: () {},
+                    child: const Text('tonal'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        Color? fill(String label) => tester
+            .widget<Material>(
+              find
+                  .descendant(
+                    of: find.ancestor(
+                      of: find.text(label),
+                      matching: find.byWidgetPredicate(
+                        (Widget w) => w is FilledButton,
+                      ),
+                    ),
+                    matching: find.byType(Material),
+                  )
+                  .first,
+            )
+            .color;
+
+        expect(fill('filled'), theme.colorScheme.primary);
+        expect(fill('tonal'), theme.colorScheme.secondaryContainer);
+      });
+    }
   });
 }

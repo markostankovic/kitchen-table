@@ -6,6 +6,10 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_monogram_tile.dart';
+import '../../../core/widgets/app_section_heading.dart';
 import '../application/auth_providers.dart';
 import '../domain/app_user.dart';
 import '../domain/profile.dart';
@@ -39,40 +43,49 @@ class SettingsScreen extends ConsumerWidget {
               title: Text(loc.profileLoading),
             ),
             error: (Object e, _) => ListTile(
-              leading: Icon(Icons.person_outline,
-                  color: Theme.of(context).colorScheme.error),
+              leading: const Icon(Icons.person_outline),
               title: Text(loc.profileLoadError),
               subtitle: Text(localizedErrorMessage(e, loc)),
             ),
             data: (Profile? p) => ListTile(
-              leading: const Icon(Icons.person_outline),
+              leading: AppMonogramTile(
+                letter: _initial(p?.displayName),
+                size: AppSizes.avatar,
+                circular: true,
+              ),
               title: Text(p?.displayName ?? loc.profileNone),
               subtitle: Text(user.value?.email ?? ''),
             ),
           ),
-          const Divider(),
+          const SizedBox(height: AppSpacing.xl),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Text(loc.languageSectionTitle,
-                style: Theme.of(context).textTheme.labelLarge),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: AppSectionHeading(text: loc.languageSectionTitle),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             // Language names are never translated -- 'Srpski' and 'English'
             // read the same in both locales, the same choice
             // `recipe_edit_screen.dart`'s "Written in" toggle already made.
             child: SegmentedButton<AppLocale>(
               segments: const <ButtonSegment<AppLocale>>[
                 ButtonSegment<AppLocale>(
-                    value: AppLocale.sr, label: Text('Srpski')),
+                  value: AppLocale.sr,
+                  label: Text('Srpski'),
+                ),
                 ButtonSegment<AppLocale>(
-                    value: AppLocale.en, label: Text('English')),
+                  value: AppLocale.en,
+                  label: Text('English'),
+                ),
               ],
               selected: <AppLocale>{profile.value?.locale ?? AppLocale.sr},
               onSelectionChanged: (Set<AppLocale> selection) =>
                   _setLocale(context, ref, selection.first),
             ),
           ),
+          // The theme's Divider takes 1dp of space, so without this the
+          // hairline sits flush under the toggle (Phase 7 part 8's walk).
+          const SizedBox(height: AppSpacing.lg),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.home_outlined),
@@ -89,6 +102,14 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// The avatar's letter. `substring(0, 1)` rather than `package:characters`
+  /// (rule 8), on `RecipeCard._monogram`'s precedent; empty when there is no
+  /// name, so the circle still holds the row's alignment.
+  static String _initial(String? name) {
+    final String trimmed = (name ?? '').trim();
+    return trimmed.isEmpty ? '' : trimmed.substring(0, 1).toUpperCase();
   }
 
   /// Writes the choice, then invalidates `ownProfileProvider` -- the write
@@ -110,9 +131,8 @@ class SettingsScreen extends ConsumerWidget {
     } on AppFailure catch (e) {
       if (!context.mounted) return;
       final AppLocalizations loc = AppLocalizations.of(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.localized(loc))),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localized(loc))));
     }
   }
 

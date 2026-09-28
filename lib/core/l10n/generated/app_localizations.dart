@@ -158,11 +158,11 @@ abstract class AppLocalizations {
   /// **'Jezik'**
   String get languageSectionTitle;
 
-  /// Sign-in screen subtitle. The screen is Google-only.
+  /// Sign-in screen, the Literata line under the 'Kitchen Table' wordmark: what the app is, not how to sign in -- the button below already says that.
   ///
   /// In sr, this message translates to:
-  /// **'Prijavite se svojim Google nalogom.'**
-  String get signInSubtitle;
+  /// **'Recepti koje vaš dom već kuva, za celo domaćinstvo, na oba jezika.'**
+  String get signInTagline;
 
   /// Sign-in screen, the Google sign-in button. 'Google' is a brand name and stays untranslated, the same way 'Kitchen Table' does.
   ///
@@ -962,11 +962,11 @@ abstract class AppLocalizations {
   /// **'Nema aktivnih kodova. Napravite jedan i pročitajte ga onome ko se priključuje.'**
   String get noActiveCodesMessage;
 
-  /// Household screen, the icon button that copies an invite code to the clipboard.
+  /// Household screen, the tonal button on an invite card that copies its code to the clipboard.
   ///
   /// In sr, this message translates to:
   /// **'Kopiraj kod'**
-  String get copyCodeTooltip;
+  String get copyCodeButton;
 
   /// Household screen, the create-invite button's own label while the request is in flight.
   ///
@@ -1016,17 +1016,29 @@ abstract class AppLocalizations {
   /// **'Član'**
   String get householdRoleAdult;
 
+  /// Household screen, the line under the household's name in the header.
+  ///
+  /// In sr, this message translates to:
+  /// **'{count, plural, one{{count} član} few{{count} člana} other{{count} članova}}'**
+  String householdMemberCount(int count);
+
+  /// Household screen, the caller's own member row's subtitle: their role label, then 'you'. Formal plural, matching 'Izgubićete'.
+  ///
+  /// In sr, this message translates to:
+  /// **'{role} · vi'**
+  String householdMemberYou(String role);
+
   /// Household screen, a member row's title when the co-member profile policy withheld the display name.
   ///
   /// In sr, this message translates to:
   /// **'Nepoznato'**
   String get unknownDisplayName;
 
-  /// Household screen, the icon button on another member's row that the owner uses to remove them.
+  /// Household screen, the one item in the overflow menu on another member's row, shown only to the owner. Destructive-coloured.
   ///
   /// In sr, this message translates to:
   /// **'Ukloni člana'**
-  String get removeMemberTooltip;
+  String get removeMemberMenuItem;
 
   /// Household screen, the remove-member confirm dialog's title.
   ///
@@ -1052,11 +1064,11 @@ abstract class AppLocalizations {
   /// **'Član uklonjen.'**
   String get memberRemovedSnackbar;
 
-  /// Household screen, the icon button on the caller's own row that an adult uses to leave.
+  /// Household screen, the adult-only destructive row at the bottom of the screen -- the owner's Delete row takes the same slot, and only one of the two ever renders.
   ///
   /// In sr, this message translates to:
   /// **'Napusti domaćinstvo'**
-  String get leaveHouseholdTooltip;
+  String get leaveHouseholdButton;
 
   /// Household screen, the leave-household confirm dialog's title.
   ///
@@ -1076,11 +1088,11 @@ abstract class AppLocalizations {
   /// **'Napusti'**
   String get leaveButton;
 
-  /// Household screen, the icon button on an invite row that revokes the code. No confirm dialog -- cheap and undone by minting another code.
+  /// Household screen, the destructive text button on an invite card that revokes the code. No confirm dialog -- cheap and undone by minting another code.
   ///
   /// In sr, this message translates to:
-  /// **'Opozovi kod'**
-  String get revokeInviteTooltip;
+  /// **'Opozovi'**
+  String get revokeInviteButton;
 
   /// Household screen, the SnackBar shown after successfully revoking an invite code.
   ///

@@ -5,6 +5,9 @@ import '../theme/app_radii.dart';
 /// A single letter centred on a tonal square -- what stands in for a photo
 /// when there is no photo.
 ///
+/// [circular] makes it a circle instead. A circle is a person (a household
+/// member, the signed-in profile); a square is a thing (a recipe).
+///
 /// Most recipes in this app will never have a picture: they come out of a
 /// notebook, not a food blog. A row with an empty space where a thumbnail
 /// would be reads as a row that failed to load one, so a recipe without a
@@ -24,12 +27,14 @@ class AppMonogramTile extends StatelessWidget {
     required this.letter,
     required this.size,
     this.textStyle,
+    this.circular = false,
     super.key,
   });
 
   final String letter;
   final double size;
   final TextStyle? textStyle;
+  final bool circular;
 
   @override
   Widget build(BuildContext context) {
@@ -38,10 +43,15 @@ class AppMonogramTile extends StatelessWidget {
       width: size,
       height: size,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(AppRadii.sm),
-      ),
+      decoration: circular
+          ? BoxDecoration(
+              shape: BoxShape.circle,
+              color: theme.colorScheme.secondaryContainer,
+            )
+          : BoxDecoration(
+              color: theme.colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+            ),
       child: Text(
         letter,
         style: (textStyle ?? theme.textTheme.titleMedium)?.copyWith(

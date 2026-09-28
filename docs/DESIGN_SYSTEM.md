@@ -150,8 +150,8 @@ A screen picks a role for what the text *is*, never a raw `fontSize`.
 
 | Role | Size / line | Weight | Face | For |
 |---|---|---|---|---|
-| `displaySmall` | 36 / 44 | 600 | Literata | the wordmark, and nothing else |
-| `headlineSmall` | 26 / 32 | 600 | Literata | a recipe's own title on its detail screen |
+| `displaySmall` | 36 / 44 | 600 | Literata | the wordmark, in `primary`, and nothing else |
+| `headlineSmall` | 26 / 32 | 600 | Literata | a recipe's own title on its detail screen, and the household's name on its screen |
 | `titleLarge` | 22 / 28 | 600 | Literata | screen and dialog titles |
 | `titleMedium` | 18 / 24 | 600 | Literata | section headings, card titles |
 | `titleSmall` | 14 / 20 | 600 | sans | field labels, tile titles |
@@ -216,7 +216,8 @@ number in the table.
 | Name | Value | For |
 |---|---|---|
 | `target` | 48 | minimum hit area, every control |
-| `button` | 48 | all buttons — the sign-in button is 52 |
+| `button` | 48 | all buttons — the sign-in button is `signInButton` |
+| `signInButton` | 52 | the sign-in screen's Google button |
 | `field` | 52 | filled text field, search |
 | `chip` | 40 | filter chips — 32 for input tags |
 | `appBar` | 64 | top app bar |
@@ -224,11 +225,13 @@ number in the table.
 | `icon` / `iconInButton` / `iconInMeta` | 24 / 20 / 16 | actions · inside buttons · in meta lines |
 | `thumb` | 72 | recipe card photo or monogram tile |
 | `stepDisc` | 32 | the step-number disc on a recipe |
+| `avatar` | 40 | a person's monogram circle — member, profile |
 | `emptyStateIcon` | 48 | `AppEmptyState`'s icon |
 
 `emptyStateIcon` is its own name rather than a borrowed `target`: they are the
 same number today, but one is a hit area and the other is a drawing, and they
-have no reason to move together.
+have no reason to move together. `signInButton` is not `field` for the same
+reason.
 
 `AppDurations`: 150 ms for a small state change, 250 ms for a transition,
 emphasized easing. **No decorative animation.** The class exists so later
@@ -294,6 +297,10 @@ single most important action. Everything else is quieter:
 | Tonal | `secondaryContainer` | a second-rank action (Copy code) |
 | Outlined | none, `outline` border | cancel-weight (Discard this import) |
 | Text in `error` | none | destructive (Delete recipe, Leave household) |
+
+The household screen has no filled button: its invite action is outlined and
+Copy is tonal, because nothing on it is the screen's one action. The sign-in
+button is the 52dp filled `primary`, with no logo.
 
 **The FAB** — the recipe list's is the only one in the app — is `primary` on
 `onPrimary`, radius 16, elevation 0. Not Material's `primaryContainer` default:
@@ -559,6 +566,35 @@ behind a confirm dialog whose destructive action is a `TextButton` in
 `destructive` — text, not a filled button. The Failed state's discard needs
 no confirm: a failed parse has nothing to lose.
 
+### Household
+
+All of these are private in `household_screen.dart`; none is in
+`core/widgets/` (one consumer each).
+
+**The header.** The household's name in `headlineSmall`, wrapping with no
+`maxLines`, and under it `xs` then the member count (`2 člana` / `2 members`)
+in `bodySmall` `onSurfaceVariant`, once the members have loaded. The edit
+icon sits top-right beside it and opens the rename dialog.
+
+**Member rows.** `ListTile`s: a 40dp (`avatar`) mustard
+`AppMonogramTile(circular: true)`, the name, and the role as subtitle —
+`Član · vi` / `Member · you` on the caller's own row. The role is in the
+text, so the avatar is never colour-coded by it. A `⋮` overflow with one
+`destructive` item, Remove member, appears **only** on another member's row
+when the caller is the owner. A full-width hairline under every row.
+
+**Invite cards.** A theme `Card` padded `lg`, `md` apart: the code in
+`titleLarge` with `sm` letter spacing and tabular figures (the join field's
+exact style), `xs`, the expiry in `bodySmall` `onSurfaceVariant`, `md`, then a
+`Wrap` of a tonal Copy code and a `destructive` text Revoke — a narrow card
+wraps by whole button. No codes is one `bodyMedium` `onSurfaceVariant` line,
+not `AppEmptyState`. Create invite code is an outlined button, left-aligned.
+
+**The destructive row.** One slot at the bottom, under a hairline: Delete
+household for the owner, Leave household for an adult, text and icon in
+`destructive`. Only one ever renders, and neither while the caller's role is
+unknown — absent, not disabled (D115).
+
 ### Menu, snackbar, banner
 
 Menus radius 16 at level 2. Snackbars on `inverseSurface` with the action in
@@ -567,7 +603,10 @@ Menus radius 16 at level 2. Snackbars on `inverseSurface` with the action in
 ### Dialog
 
 `surfaceContainerHigh`, radius 28, level 3. Title in `titleLarge` Literata,
-body in `bodyMedium`, a destructive action as text in `error`. The longest body
+body in `bodyMedium`. A destructive confirm is a `TextButton` in
+`destructive` (`TextButton.styleFrom(foregroundColor: kitchen.destructive)`),
+never a filled button: Discard import, Remove member, Leave household, Delete
+household. The longest body
 copy in the app lives in these — they have to hold a 147-character Serbian
 sentence without scrolling.
 
@@ -595,6 +634,9 @@ lives, below.
 | `AppActionBar` | `core/widgets/app_action_bar.dart` |
 | `RecipeCard` | `core/recipes/widgets/recipe_card.dart` |
 | `IngredientLineRow` | `core/ingredients/widgets/ingredient_line_row.dart` |
+
+`AppMonogramTile(circular: true)` is a person (member, profile); the square
+is a thing (recipe).
 
 `IngredientLineRow` takes **primitives, not a model** — a `RecipeIngredient`
 and a `RecipeDraftLine` carry the same five facts under different types, and

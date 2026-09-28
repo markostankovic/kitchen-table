@@ -5,6 +5,8 @@ import '../../../core/env/env.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
+import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../application/auth_providers.dart';
 
 /// The way in: Google, the only path (D96).
@@ -57,8 +59,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     });
 
     try {
-      await ref.read(authRepositoryProvider).signInWithPassword(
-          email: Env.devLoginEmail, password: Env.devLoginPassword);
+      await ref
+          .read(authRepositoryProvider)
+          .signInWithPassword(
+            email: Env.devLoginEmail,
+            password: Env.devLoginPassword,
+          );
     } on AppFailure catch (e) {
       if (!mounted) return;
       setState(() => _failure = e);
@@ -70,56 +76,80 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations loc = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                // The brand name, not chrome -- never localized, the same
-                // way 'Srpski'/'English' are never localized either.
-                Text('Kitchen Table',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                    textAlign: TextAlign.center),
-                const SizedBox(height: 8),
-                Text(
-                  loc.signInSubtitle,
-                  textAlign: TextAlign.center,
-                ),
-                if (_failure != null) ...<Widget>[
-                  const SizedBox(height: 12),
-                  Text(
-                    _failure!.localized(loc),
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.error),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        // The brand name, not chrome -- never localized, the
+                        // same way 'Srpski'/'English' are never localized
+                        // either.
+                        Text(
+                          'Kitchen Table',
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          loc.signInTagline,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (_failure != null) ...<Widget>[
+                          const SizedBox(height: AppSpacing.lg),
+                          Text(
+                            _failure!.localized(loc),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.error,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                ],
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _signingInWithGoogle ? null : _signInWithGoogle,
-                  child: _signingInWithGoogle
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : Text(loc.signInWithGoogle),
                 ),
-                if (Env.hasDevLogin) ...<Widget>[
-                  const SizedBox(height: 12),
-                  // Developer chrome in emulator builds only, never seen by a
-                  // user -- so not localized, like the brand name above.
-                  OutlinedButton(
-                    onPressed:
-                        _signingInWithGoogle ? null : _signInWithDevLogin,
-                    child: Text('Dev login: ${Env.devLoginEmail}'),
-                  ),
-                ],
+              ),
+              // The screen's one action, so the one filled button -- in
+              // `primary`, with no logo (the repo has no asset for one).
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(AppSizes.signInButton),
+                ),
+                onPressed: _signingInWithGoogle ? null : _signInWithGoogle,
+                child: _signingInWithGoogle
+                    ? const SizedBox.square(
+                        dimension: AppSizes.iconInMeta,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(loc.signInWithGoogle),
+              ),
+              if (Env.hasDevLogin) ...<Widget>[
+                const SizedBox(height: AppSpacing.sm),
+                // Developer chrome in emulator builds only, never seen by a
+                // user -- so not localized, like the brand name above.
+                OutlinedButton(
+                  onPressed: _signingInWithGoogle ? null : _signInWithDevLogin,
+                  child: Text('Dev login: ${Env.devLoginEmail}'),
+                ),
               ],
-            ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
           ),
         ),
       ),

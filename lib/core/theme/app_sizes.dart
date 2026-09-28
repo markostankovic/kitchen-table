@@ -15,6 +15,11 @@ abstract final class AppSizes {
   /// All buttons.
   static const double button = 48;
 
+  /// The sign-in screen's Google button -- the one button taller than
+  /// [button]. Not [field], though the number matches: a button and a field
+  /// have no reason to move together.
+  static const double signInButton = 52;
+
   /// A filled text field, and the search field.
   static const double field = 52;
 
@@ -39,6 +44,9 @@ abstract final class AppSizes {
 
   /// A recipe card's photo, and the monogram tile that stands in for one.
   static const double thumb = 72;
+
+  /// A person's monogram circle: a household member, the signed-in profile.
+  static const double avatar = 40;
 
   /// The step-number disc on a recipe's detail screen -- a tonal circle with
   /// the 1-based step number centred in it.

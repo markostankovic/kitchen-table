@@ -176,10 +176,13 @@ abstract final class AppTheme {
         ),
       ),
 
+      // No backgroundColor/foregroundColor: a theme style overrides every
+      // FilledButton variant alike, so setting `primary` here painted
+      // `FilledButton.tonal` green too (Phase 7 part 8's device walk). Material
+      // 3's defaults already give filled `primary`/`onPrimary` and tonal
+      // `secondaryContainer`/`onSecondaryContainer`.
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: scheme.primary,
-          foregroundColor: scheme.onPrimary,
           minimumSize: const Size(0, AppSizes.button),
           shape: const StadiumBorder(),
           textStyle: textTheme.labelLarge,

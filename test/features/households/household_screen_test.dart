@@ -12,6 +12,9 @@ import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
 import 'package:kitchen_table/core/supabase/supabase_client.dart';
+import 'package:kitchen_table/core/theme/app_theme.dart';
+import 'package:kitchen_table/core/theme/kitchen_colors.dart';
+import 'package:kitchen_table/core/widgets/app_monogram_tile.dart';
 import 'package:kitchen_table/features/households/application/household_providers.dart';
 import 'package:kitchen_table/features/households/data/household_repository.dart';
 import 'package:kitchen_table/features/households/domain/household.dart';
@@ -57,8 +60,7 @@ class _FakeRepo implements HouseholdRepository {
     required String userId,
     void Function()? onReachable,
     void Function()? onUnreachable,
-  }) =>
-      throw UnimplementedError();
+  }) => throw UnimplementedError();
 
   @override
   Future<String> create(String name) => throw UnimplementedError();
@@ -119,14 +121,12 @@ Future<void> _pump(
         // re-fetch (household_repository.dart's own doc comment on why
         // `rename` doesn't clear the local cache).
         currentHouseholdProvider.overrideWith(
-          (Ref ref) async => Household(
-            id: _householdId,
-            name: readName(),
-            createdBy: 'u1',
-          ),
+          (Ref ref) async =>
+              Household(id: _householdId, name: readName(), createdBy: 'u1'),
         ),
       ],
       child: MaterialApp(
+        theme: AppTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: appSupportedLocales,
         locale: const Locale('sr'),
@@ -137,9 +137,72 @@ Future<void> _pump(
   await tester.pumpAndSettle();
 }
 
+const List<HouseholdMember> _ownerAndAdult = <HouseholdMember>[
+  HouseholdMember(
+    householdId: _householdId,
+    userId: 'u1',
+    role: HouseholdRole.owner,
+    displayName: 'Owner',
+  ),
+  HouseholdMember(
+    householdId: _householdId,
+    userId: 'u2',
+    role: HouseholdRole.adult,
+    displayName: 'Adult',
+  ),
+];
+
+HouseholdInvite _invite() => HouseholdInvite(
+  id: 'inv1',
+  householdId: _householdId,
+  code: '123456',
+  createdBy: 'u1',
+  createdAt: DateTime.now(),
+  expiresAt: DateTime.now().add(const Duration(days: 1)),
+);
+
+/// The owner's path to Remove: the overflow on the other member's row, then
+/// its one item.
+Future<void> _openRemove(WidgetTester tester) async {
+  await tester.tap(find.byIcon(Icons.more_vert));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(sr.removeMemberMenuItem));
+  await tester.pumpAndSettle();
+}
+
+/// The bottom destructive row sits below the fold on the default test
+/// surface, so scroll it into view before tapping.
+Future<void> _tapBottomRow(WidgetTester tester, String label) async {
+  await tester.ensureVisible(find.text(label));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label));
+  await tester.pumpAndSettle();
+}
+
+/// A destructive confirm is a text button in `KitchenColors.destructive`,
+/// never a fill.
+void _expectDestructiveTextButton(WidgetTester tester, String label) {
+  final Finder button = find.widgetWithText(TextButton, label);
+  expect(button, findsOneWidget);
+  final BuildContext context = tester.element(button);
+  final Color destructive = Theme.of(context)
+      .extension<KitchenColors>()!
+      .destructive;
+  expect(
+    tester
+        .widget<TextButton>(button)
+        .style
+        ?.foregroundColor
+        ?.resolve(<WidgetState>{}),
+    destructive,
+  );
+  expect(find.widgetWithText(FilledButton, label), findsNothing);
+}
+
 void main() {
-  testWidgets('the edit icon opens the rename dialog',
-      (WidgetTester tester) async {
+  testWidgets('the edit icon opens the rename dialog', (
+    WidgetTester tester,
+  ) async {
     const String name = 'Test Household';
     await _pump(tester, repo: _FakeRepo(), readName: () => name);
 
@@ -152,8 +215,9 @@ void main() {
     expect(find.text(sr.renameHouseholdDialogTitle), findsOneWidget);
   });
 
-  testWidgets('Save writes the trimmed name, and the row shows it',
-      (WidgetTester tester) async {
+  testWidgets('Save writes the trimmed name, and the row shows it', (
+    WidgetTester tester,
+  ) async {
     String name = 'Test Household';
     final _FakeRepo repo = _FakeRepo();
     await _pump(tester, repo: repo, readName: () => name);
@@ -174,8 +238,9 @@ void main() {
     expect(find.text(sr.householdRenamedSnackbar), findsOneWidget);
   });
 
-  testWidgets('an empty field is refused and writes nothing',
-      (WidgetTester tester) async {
+  testWidgets('an empty field is refused and writes nothing', (
+    WidgetTester tester,
+  ) async {
     const String name = 'Test Household';
     final _FakeRepo repo = _FakeRepo();
     await _pump(tester, repo: repo, readName: () => name);
@@ -210,76 +275,83 @@ void main() {
 
   group('member row affordances (phase6-part3b)', () {
     testWidgets(
-      'the owner sees Remove on another member\'s row and nothing on their '
-      'own',
+      'the owner sees the overflow on another member\'s row, nothing on '
+      'their own, and no Leave row',
       (WidgetTester tester) async {
         final _FakeRepo repo = _FakeRepo()
           ..members = const <HouseholdMember>[
             HouseholdMember(
-                householdId: _householdId,
-                userId: 'u1',
-                role: HouseholdRole.owner,
-                displayName: 'Owner'),
-            HouseholdMember(
-                householdId: _householdId,
-                userId: 'u2',
-                role: HouseholdRole.adult,
-                displayName: 'Adult'),
-          ];
-        await _pump(tester, repo: repo, readName: () => 'H', userId: 'u1');
-
-        expect(find.byIcon(Icons.person_remove_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.logout), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'an adult sees Leave on their own row and nothing on the owner\'s',
-      (WidgetTester tester) async {
-        final _FakeRepo repo = _FakeRepo()
-          ..members = const <HouseholdMember>[
-            HouseholdMember(
-                householdId: _householdId,
-                userId: 'u1',
-                role: HouseholdRole.owner,
-                displayName: 'Owner'),
-            HouseholdMember(
-                householdId: _householdId,
-                userId: 'u2',
-                role: HouseholdRole.adult,
-                displayName: 'Adult'),
-          ];
-        await _pump(tester, repo: repo, readName: () => 'H', userId: 'u2');
-
-        expect(find.byIcon(Icons.logout), findsOneWidget);
-        expect(find.byIcon(Icons.person_remove_outlined), findsNothing);
-      },
-    );
-  });
-
-  group('remove member', () {
-    testWidgets('confirming removes and shows a snackbar',
-        (WidgetTester tester) async {
-      final _FakeRepo repo = _FakeRepo()
-        ..members = const <HouseholdMember>[
-          HouseholdMember(
               householdId: _householdId,
               userId: 'u1',
               role: HouseholdRole.owner,
-              displayName: 'Owner'),
-          HouseholdMember(
+              displayName: 'Owner',
+            ),
+            HouseholdMember(
               householdId: _householdId,
               userId: 'u2',
               role: HouseholdRole.adult,
-              displayName: 'Adult'),
+              displayName: 'Adult',
+            ),
+          ];
+        await _pump(tester, repo: repo, readName: () => 'H', userId: 'u1');
+
+        expect(find.byIcon(Icons.more_vert), findsOneWidget);
+        expect(find.text(sr.leaveHouseholdButton), findsNothing);
+      },
+    );
+
+    testWidgets('an adult sees the Leave row, no overflow and no Delete', (
+      WidgetTester tester,
+    ) async {
+      final _FakeRepo repo = _FakeRepo()
+        ..members = const <HouseholdMember>[
+          HouseholdMember(
+            householdId: _householdId,
+            userId: 'u1',
+            role: HouseholdRole.owner,
+            displayName: 'Owner',
+          ),
+          HouseholdMember(
+            householdId: _householdId,
+            userId: 'u2',
+            role: HouseholdRole.adult,
+            displayName: 'Adult',
+          ),
+        ];
+      await _pump(tester, repo: repo, readName: () => 'H', userId: 'u2');
+
+      expect(find.text(sr.leaveHouseholdButton), findsOneWidget);
+      expect(find.byIcon(Icons.more_vert), findsNothing);
+      expect(find.text(sr.deleteHouseholdButton), findsNothing);
+    });
+  });
+
+  group('remove member', () {
+    testWidgets('confirming removes and shows a snackbar', (
+      WidgetTester tester,
+    ) async {
+      final _FakeRepo repo = _FakeRepo()
+        ..members = const <HouseholdMember>[
+          HouseholdMember(
+            householdId: _householdId,
+            userId: 'u1',
+            role: HouseholdRole.owner,
+            displayName: 'Owner',
+          ),
+          HouseholdMember(
+            householdId: _householdId,
+            userId: 'u2',
+            role: HouseholdRole.adult,
+            displayName: 'Adult',
+          ),
         ];
       await _pump(tester, repo: repo, readName: () => 'H', userId: 'u1');
 
-      await tester.tap(find.byIcon(Icons.person_remove_outlined));
-      await tester.pumpAndSettle();
+      await _openRemove(tester);
       expect(find.text(sr.removeMemberDialogTitle), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(FilledButton, sr.removeButton));
+      _expectDestructiveTextButton(tester, sr.removeButton);
+      await tester.tap(find.widgetWithText(TextButton, sr.removeButton));
       await tester.pumpAndSettle();
 
       expect(repo.removedMemberId, 'u2');
@@ -290,20 +362,21 @@ void main() {
       final _FakeRepo repo = _FakeRepo()
         ..members = const <HouseholdMember>[
           HouseholdMember(
-              householdId: _householdId,
-              userId: 'u1',
-              role: HouseholdRole.owner,
-              displayName: 'Owner'),
+            householdId: _householdId,
+            userId: 'u1',
+            role: HouseholdRole.owner,
+            displayName: 'Owner',
+          ),
           HouseholdMember(
-              householdId: _householdId,
-              userId: 'u2',
-              role: HouseholdRole.adult,
-              displayName: 'Adult'),
+            householdId: _householdId,
+            userId: 'u2',
+            role: HouseholdRole.adult,
+            displayName: 'Adult',
+          ),
         ];
       await _pump(tester, repo: repo, readName: () => 'H', userId: 'u1');
 
-      await tester.tap(find.byIcon(Icons.person_remove_outlined));
-      await tester.pumpAndSettle();
+      await _openRemove(tester);
       await tester.tap(find.widgetWithText(TextButton, sr.cancelButton));
       await tester.pumpAndSettle();
 
@@ -316,46 +389,51 @@ void main() {
       final _FakeRepo repo = _FakeRepo()
         ..members = const <HouseholdMember>[
           HouseholdMember(
-              householdId: _householdId,
-              userId: 'u1',
-              role: HouseholdRole.owner,
-              displayName: 'Owner'),
+            householdId: _householdId,
+            userId: 'u1',
+            role: HouseholdRole.owner,
+            displayName: 'Owner',
+          ),
           HouseholdMember(
-              householdId: _householdId,
-              userId: 'u2',
-              role: HouseholdRole.adult,
-              displayName: 'Adult'),
+            householdId: _householdId,
+            userId: 'u2',
+            role: HouseholdRole.adult,
+            displayName: 'Adult',
+          ),
         ];
       await _pump(tester, repo: repo, readName: () => 'H', userId: 'u2');
 
-      await tester.tap(find.byIcon(Icons.logout));
-      await tester.pumpAndSettle();
+      await _tapBottomRow(tester, sr.leaveHouseholdButton);
       expect(find.text(sr.leaveHouseholdDialogTitle), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(FilledButton, sr.leaveButton));
+      _expectDestructiveTextButton(tester, sr.leaveButton);
+      await tester.tap(find.widgetWithText(TextButton, sr.leaveButton));
       await tester.pumpAndSettle();
 
       expect(repo.leaveHouseholdCalls, 1);
     });
 
-    testWidgets('cancelling leaves nothing called', (WidgetTester tester) async {
+    testWidgets('cancelling leaves nothing called', (
+      WidgetTester tester,
+    ) async {
       final _FakeRepo repo = _FakeRepo()
         ..members = const <HouseholdMember>[
           HouseholdMember(
-              householdId: _householdId,
-              userId: 'u1',
-              role: HouseholdRole.owner,
-              displayName: 'Owner'),
+            householdId: _householdId,
+            userId: 'u1',
+            role: HouseholdRole.owner,
+            displayName: 'Owner',
+          ),
           HouseholdMember(
-              householdId: _householdId,
-              userId: 'u2',
-              role: HouseholdRole.adult,
-              displayName: 'Adult'),
+            householdId: _householdId,
+            userId: 'u2',
+            role: HouseholdRole.adult,
+            displayName: 'Adult',
+          ),
         ];
       await _pump(tester, repo: repo, readName: () => 'H', userId: 'u2');
 
-      await tester.tap(find.byIcon(Icons.logout));
-      await tester.pumpAndSettle();
+      await _tapBottomRow(tester, sr.leaveHouseholdButton);
       await tester.tap(find.widgetWithText(TextButton, sr.cancelButton));
       await tester.pumpAndSettle();
 
@@ -370,25 +448,27 @@ void main() {
         final _FakeRepo repo = _FakeRepo()
           ..members = const <HouseholdMember>[
             HouseholdMember(
-                householdId: _householdId,
-                userId: 'u1',
-                role: HouseholdRole.owner,
-                displayName: 'Owner'),
+              householdId: _householdId,
+              userId: 'u1',
+              role: HouseholdRole.owner,
+              displayName: 'Owner',
+            ),
             HouseholdMember(
-                householdId: _householdId,
-                userId: 'u2',
-                role: HouseholdRole.adult,
-                displayName: 'Adult'),
+              householdId: _householdId,
+              userId: 'u2',
+              role: HouseholdRole.adult,
+              displayName: 'Adult',
+            ),
           ];
         await _pump(tester, repo: repo, readName: () => 'H', userId: 'u1');
 
         expect(find.text(sr.deleteHouseholdButton), findsOneWidget);
 
-        await tester.tap(find.text(sr.deleteHouseholdButton));
-        await tester.pumpAndSettle();
+        await _tapBottomRow(tester, sr.deleteHouseholdButton);
         expect(find.text(sr.deleteHouseholdDialogTitle), findsOneWidget);
 
-        await tester.tap(find.widgetWithText(FilledButton, sr.deleteButton));
+        _expectDestructiveTextButton(tester, sr.deleteButton);
+        await tester.tap(find.widgetWithText(TextButton, sr.deleteButton));
         await tester.pumpAndSettle();
 
         expect(repo.deleteHouseholdCalls, 1);
@@ -399,40 +479,44 @@ void main() {
       final _FakeRepo repo = _FakeRepo()
         ..members = const <HouseholdMember>[
           HouseholdMember(
-              householdId: _householdId,
-              userId: 'u1',
-              role: HouseholdRole.owner,
-              displayName: 'Owner'),
+            householdId: _householdId,
+            userId: 'u1',
+            role: HouseholdRole.owner,
+            displayName: 'Owner',
+          ),
           HouseholdMember(
-              householdId: _householdId,
-              userId: 'u2',
-              role: HouseholdRole.adult,
-              displayName: 'Adult'),
+            householdId: _householdId,
+            userId: 'u2',
+            role: HouseholdRole.adult,
+            displayName: 'Adult',
+          ),
         ];
       await _pump(tester, repo: repo, readName: () => 'H', userId: 'u1');
 
-      await tester.tap(find.text(sr.deleteHouseholdButton));
-      await tester.pumpAndSettle();
+      await _tapBottomRow(tester, sr.deleteHouseholdButton);
       await tester.tap(find.widgetWithText(TextButton, sr.cancelButton));
       await tester.pumpAndSettle();
 
       expect(repo.deleteHouseholdCalls, 0);
     });
 
-    testWidgets('an adult does not see the delete row at all',
-        (WidgetTester tester) async {
+    testWidgets('an adult does not see the delete row at all', (
+      WidgetTester tester,
+    ) async {
       final _FakeRepo repo = _FakeRepo()
         ..members = const <HouseholdMember>[
           HouseholdMember(
-              householdId: _householdId,
-              userId: 'u1',
-              role: HouseholdRole.owner,
-              displayName: 'Owner'),
+            householdId: _householdId,
+            userId: 'u1',
+            role: HouseholdRole.owner,
+            displayName: 'Owner',
+          ),
           HouseholdMember(
-              householdId: _householdId,
-              userId: 'u2',
-              role: HouseholdRole.adult,
-              displayName: 'Adult'),
+            householdId: _householdId,
+            userId: 'u2',
+            role: HouseholdRole.adult,
+            displayName: 'Adult',
+          ),
         ];
       await _pump(tester, repo: repo, readName: () => 'H', userId: 'u2');
 
@@ -457,7 +541,7 @@ void main() {
           ];
         await _pump(tester, repo: repo, readName: () => 'H', userId: 'u1');
 
-        await tester.tap(find.byIcon(Icons.link_off));
+        await tester.tap(find.text(sr.revokeInviteButton));
         await tester.pumpAndSettle();
 
         expect(find.byType(AlertDialog), findsNothing);
@@ -465,5 +549,84 @@ void main() {
         expect(find.text(sr.inviteRevokedSnackbar), findsOneWidget);
       },
     );
+  });
+
+  group('layout (phase7 part 8)', () {
+    testWidgets(
+      'at 360x780 in Serbian, the invite card\'s buttons fit and the name '
+      'is headlineSmall',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(360, 780);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        const String name = 'Domaćinstvo porodice Stanković-Petrović';
+        final _FakeRepo repo = _FakeRepo()
+          ..members = _ownerAndAdult
+          ..invites = <HouseholdInvite>[_invite()];
+        await _pump(tester, repo: repo, readName: () => name, userId: 'u1');
+
+        expect(tester.takeException(), isNull);
+
+        await tester.ensureVisible(find.text(sr.revokeInviteButton));
+        await tester.pumpAndSettle();
+        for (final Finder button in <Finder>[
+          // `tonalIcon` builds a private FilledButton subclass, which
+          // `widgetWithText`'s exact type match would miss.
+          find.ancestor(
+            of: find.text(sr.copyCodeButton),
+            matching: find.byWidgetPredicate((Widget w) => w is FilledButton),
+          ),
+          find.widgetWithText(TextButton, sr.revokeInviteButton),
+        ]) {
+          final Rect r = tester.getRect(button);
+          expect(
+            r.left >= 0 && r.top >= 0 && r.right <= 360 && r.bottom <= 780,
+            isTrue,
+            reason: '$button at $r',
+          );
+        }
+
+        await tester.scrollUntilVisible(
+          find.text(name),
+          -200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        final BuildContext context = tester.element(find.text(name));
+        expect(
+          tester.widget<Text>(find.text(name)).style,
+          Theme.of(context).textTheme.headlineSmall,
+        );
+      },
+    );
+
+    testWidgets('the member count takes the few form: 2 člana', (
+      WidgetTester tester,
+    ) async {
+      final _FakeRepo repo = _FakeRepo()..members = _ownerAndAdult;
+      await _pump(tester, repo: repo, readName: () => 'H', userId: 'u1');
+
+      expect(find.text('2 člana'), findsOneWidget);
+    });
+
+    testWidgets('the caller\'s own row says vi, and members are circles', (
+      WidgetTester tester,
+    ) async {
+      final _FakeRepo repo = _FakeRepo()..members = _ownerAndAdult;
+      await _pump(tester, repo: repo, readName: () => 'H', userId: 'u2');
+
+      expect(
+        find.text(sr.householdMemberYou(sr.householdRoleAdult)),
+        findsOneWidget,
+      );
+      expect(find.text(sr.householdRoleOwner), findsOneWidget);
+      expect(
+        tester
+            .widgetList<AppMonogramTile>(find.byType(AppMonogramTile))
+            .map((AppMonogramTile t) => t.circular),
+        everyElement(isTrue),
+      );
+    });
   });
 }
