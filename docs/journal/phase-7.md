@@ -890,3 +890,126 @@ Not exercised:
 **Closed by it.** Phase 5 part 6's loop, and part 6's "`Nema poklapanja`
 under an English reader" note. **Opened:** part 7's own loop, for the
 onboarding screens only.
+
+### Part 8 — Sign-in, settings and household
+
+**Status: complete** (`47ec811`). Decisions taken during it: D126.
+
+Slice 7 of `docs/design/MIGRATION_PLAN.md` § 4, and the last per-surface
+slice: every surface is now on the Garden vocabulary. It is presentation
+only, apart from one theme fix found on the walk (below). No provider,
+repository, route or `supabase/` file changed. `docs/DESIGN_SYSTEM.md` was
+updated in the code commit: § Type, § Size and motion, § Buttons, § Dialog,
+a new § Household, and a line under the shared-widgets table.
+
+- **Sign-in.** The `Kitchen Table` wordmark moved from `headlineMedium` to
+  `displaySmall`, in `primary`, with a Literata `bodyLarge` tagline under it
+  in `onSurfaceVariant`. The new key `signInTagline` replaces
+  `signInSubtitle`, which only repeated the button. One full-width 52dp
+  filled `primary` button (the new `AppSizes.signInButton`) is pinned at the
+  bottom, with no logo. The D125 dev-login button sits under it, unchanged.
+  The failure line is `bodySmall` `error`.
+- **Settings.** The profile row leads with a circular monogram avatar
+  (`AppSizes.avatar`, 40), and the error icon lost its `error` colour.
+  `Jezik` is an `AppSectionHeading`. Sign-out is not destructive-coloured.
+- **Household.**
+  - The first `ListTile` became a header: the name in `headlineSmall`, and
+    `2 člana` / `2 members` in `bodySmall` under it (the new plural
+    `householdMemberCount`).
+  - Members have circular mustard avatars. The caller's own row reads
+    `Član · vi` / `Member · you` (`householdMemberYou`).
+  - Only the owner sees a `⋮` on another member's row, holding one
+    destructive item, `Ukloni člana`.
+  - Invites are theme `Card`s. The code uses the join field's exact style.
+    A tonal Copy and a destructive text Revoke sit in a `Wrap`.
+  - Create invite code is outlined, so the screen has no filled button.
+  - Leave moved off the adult's own row into the one bottom destructive
+    slot, which the owner's Delete already used. Only one of the two ever
+    renders, and neither renders while the role is unknown.
+  - The Remove / Leave / Delete confirms became `TextButton`s in
+    `destructive`, on import review's `_discard` pattern.
+  - The rename field lost its border and label.
+- **Keys.** The four tooltip keys became labels: `copyCodeButton`,
+  `revokeInviteButton` (now `Opozovi` / `Revoke`, dropping "kod"),
+  `leaveHouseholdButton` and `removeMemberMenuItem`. The old keys are gone.
+- **`AppMonogramTile`** gained `circular`. A circle is a person and a square
+  is a thing.
+
+**Changed by the walk.**
+
+- **Tonal buttons were green app-wide.** `filledButtonTheme` set
+  `backgroundColor: primary` / `foregroundColor: onPrimary`. A theme style
+  applies to every `FilledButton` variant, so `FilledButton.tonal` rendered
+  as a filled green button. That included import review's `Open recipe`
+  since D123, and nobody had noticed. Material 3's defaults already give
+  filled `primary` and tonal `secondaryContainer`, so the two lines came
+  out.
+- **Settings' toggle sat flush on the hairline under it.** The theme
+  `Divider` takes 1dp of space, so an `lg` gap went above it.
+
+**How it was verified.** `dart analyze` was clean. `flutter test` passed
+**673/673**, nine more than before. New tests:
+
+- A Serbian 360×780 household with two members and a live invite. It
+  asserts no exception, Copy and Revoke fully on screen, and the name in
+  `headlineSmall`.
+- The member count reads `2 člana` (the `few` form).
+- The caller's own row has `· vi`, and every avatar is circular.
+- All three confirms are `TextButton`s whose foreground is
+  `KitchenColors.destructive`, with no `FilledButton`.
+- `AppMonogramTile(circular: true)` is a `BoxShape.circle` on
+  `secondaryContainer`.
+- A new sign-in test: the Google button is 52 tall, the wordmark is
+  `displaySmall` in `primary`, and there is no dev-login button without its
+  defines.
+- Light and dark theme tests: filled is `primary` and tonal is
+  `secondaryContainer`. They fail on the old theme.
+
+The household tests find Leave, Remove and Revoke by their new labels. The
+D115 gating tests keep their meaning. `app_shell_test` expected a bare
+`Vlasnik` on the caller's own row and now expects `Vlasnik · vi`; the plan
+missed that file. `make test-sql`, the Deno suite, `l10n-check` and
+`check_layers` passed. `make check` is otherwise green except the
+pre-existing `seed-check`.
+
+**Walked on the emulator.** `/design-walk auth-household` ran on the
+emulator, not the Galaxy, which wasn't attached. The command now allows the
+emulator for anything behind sign-in that needs no Google account. It used
+the hosted release build via `make install-emulator` and the D125 dev-login
+account, which is an **adult** in the device household. It covered
+`sr`/`en` × light/dark:
+
+- **Sign-in:** the wordmark fits on one line, and the Serbian tagline wraps
+  evenly over two. The 52dp button shows the spinner while busy. The
+  `#9ED498` wordmark and button are legible in dark. Dismissing Google's
+  add-account screen returns to idle with no error line.
+- **Settings:** the avatar circle is legible in dark (`#FFE5B9` on
+  `#5B4300`), and `Jezik` / `Language` is in Literata.
+- **Household:**
+  - `Renamed Household`, `2 člana` / `2 members`, circles, and `Član · vi`
+    / `Member · you`.
+  - The Leave row is present, with no `⋮` and no Delete (the adult half of
+    Phase 6 3b and 3c).
+  - The six serif digits read as a code, evenly spaced.
+  - `Kopiraj kod` + `Opozovi` fit on one row.
+  - Revoke and Leave are crimson in light and pink in dark.
+  - The Leave dialog has a crimson text confirm. It was cancelled, because
+    leaving would drop the dev account from the real household.
+- **Writes to hosted:** one invite code was minted, copied, and revoked.
+
+Not exercised:
+
+- the owner side: the `⋮` → `Ukloni člana`, and the Remove and Delete
+  dialogs;
+- a long Serbian household name wrapping on the device (the 360dp test
+  covers the layout);
+- the sign-in failure line;
+- create / join household;
+- a fresh Google account via `on_auth_user_created`.
+
+All of these need the Galaxy, or an owner or memberless account on the
+emulator.
+
+**Closed by it:** nothing outright. The adult halves of Phase 6 3b and 3c
+are confirmed. **Opened:** part 8's own loop, for the owner side and the
+Google-only checks.

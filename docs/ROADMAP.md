@@ -502,9 +502,11 @@ front. What is fixed up front is Part 1, and the constraints below.
 - **Presentation-only.** Rule 1 and the layering wall are untouched. If a
   redesign part appears to need a data-layer change to look right, that is a
   different slice and should be named as one.
-- Verified the way CLAUDE.md's "Running the app" says: `make install-hosted`
-  on the physical device. Not the emulator, not `flutter run`, not the local
-  stack.
+- Verified the way CLAUDE.md's "Running the app" says: the hosted release
+  build. That means `make install-hosted` on the physical device, or, since
+  Part 8, `make install-emulator` on the emulator with D125's dev login for
+  anything behind sign-in that needs no Google account. Never `flutter
+  run`, never the local stack.
 
 **Ordering.** Part 1 is ordered first — there is no design language for a
 per-screen part to cite until it lands. Everything after it is expected to be
@@ -671,6 +673,37 @@ fixed with `lg` padding and the editor's `Camera` / `Gallery` words, then
 re-walked. Phase 5 part 6's Translate-from-the-editor loop closes with it.
 The onboarding screens are still unwalked, because they need an account
 with no household.
+
+---
+
+### Part 8 — Sign-in, settings and household
+
+**Status: complete** (`47ec811`). Decisions taken during it: D126. See
+`docs/journal/phase-7.md`.
+
+Slice 7 of `docs/design/MIGRATION_PLAN.md` § 4, and the last per-surface
+slice. Changes by screen:
+
+- **Sign-in:** a `displaySmall` wordmark in `primary` over a Literata
+  tagline, with one 52dp filled Google button at the bottom and no logo.
+- **Settings:** a circular monogram avatar and a real `Jezik` heading.
+- **Household:**
+  - a header with the name in `headlineSmall` and the member count;
+  - circular all-mustard avatars, with `· vi` on your own row;
+  - an owner-only `⋮` → Remove;
+  - invite cards with a tonal Copy and a destructive text Revoke;
+  - one bottom destructive row: Delete for the owner, Leave for an adult,
+    with D115's gating unchanged;
+  - text-button destructive confirms.
+
+The walk found `filledButtonTheme` painting every tonal button green, so its
+colours came out of the theme.
+
+Walked on the emulator (the dev-login account, an adult) across `sr`/`en` ×
+light/dark. It found two defects, the green tonal button and a toggle flush
+on its hairline. Both were fixed and re-walked. The adult halves of Phase 6
+3b and 3c are confirmed. The owner side, create / join, and the
+Google-only checks are still open for the Galaxy.
 
 ---
 

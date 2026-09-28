@@ -1,52 +1,65 @@
 # State — 2026-09-28
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 7 (`46c6742`), the form vocabulary. The recipe
-editor, translation review, the import paste / URL / photo screens and
-create / join household now share one form vocabulary:
+**Last shipped:** Phase 7 part 8 (`47ec811`): sign-in, settings and
+household. This is the last per-surface slice of
+`docs/design/MIGRATION_PLAN.md` § 4, so every surface is now on the Garden
+vocabulary.
 
-- `AppFieldLabel` (new, `core/widgets/`): every label sits above its field
-  in `titleSmall`. Fields come from the theme with no local border, and
-  typed text is `bodyMedium` at every call site.
-- `AppActionBar` (new, `core/widgets/`): the import review's `surface` +
-  hairline bar, now under every bottom save button. The import review
-  renders the same.
-- The editor's numbers row labels its columns in a separate row,
-  bottom-aligned, so a wrapped label never staggers the fields.
-- Onboarding titles are on `titleLarge`, and the join code is in
-  `titleLarge` with tabular figures.
-- `IngredientMatchChip`'s status words (`No match` / `Nema poklapanja`,
-  `{name}?`) follow the reader. Amounts, units, the suggested name and the
-  hint stay with the recipe (D86).
-- The photo import's pickers are `Camera` / `Gallery` (`Kamera` /
-  `Galerija`) with `lg` padding. This was changed on the walk, and only the
-  ARB values changed, not the keys.
+- **Sign-in:** a `displaySmall` wordmark in `primary` over a Literata
+  tagline (`signInTagline`, which replaces `signInSubtitle`). One 52dp
+  filled `primary` Google button (`AppSizes.signInButton`, no logo) is
+  pinned at the bottom, and D125's dev-login button stays under it.
+- **Settings:** a circular monogram avatar (`AppSizes.avatar`, 40), and
+  `Jezik` as an `AppSectionHeading`.
+- **Household:**
+  - a header with the name in `headlineSmall` and `2 člana` under it;
+  - circular all-mustard avatars, with `Član · vi` on your own row;
+  - an owner-only `⋮` → `Ukloni člana`;
+  - invite cards (the join field's code style, a tonal Copy, a destructive
+    text Revoke, in a `Wrap`) and an outlined create button;
+  - one bottom destructive row: Delete for the owner, Leave for an adult,
+    with D115's gating unchanged;
+  - `TextButton` destructive confirms.
+- **`AppMonogramTile`** gained `circular`.
+- **The theme:** `filledButtonTheme` no longer sets colours. It had been
+  painting every `FilledButton.tonal` green, including import review's
+  `Open recipe`. This was found on the walk.
 
-D124 records it, and `docs/DESIGN_SYSTEM.md` gains § Action bar plus
-additions to § Inputs, § Ingredient lines and the shared-widgets table.
+D126 records it, and `docs/DESIGN_SYSTEM.md` gains § Household plus edits to
+§ Type, § Size, § Buttons and § Dialog.
 
-Verified with `dart analyze` (clean), `flutter test` (**664/664**, including
-`AppFieldLabel`/`AppActionBar` tests, a reader-locale chip test, a 360×780
-Serbian editor test with the number fields on one line, and a no-Literata
-check on every editor field), `l10n-check`, `make test-sql` and Deno
-(green). `make check` is green except the pre-existing `seed-check`.
+Verified with `dart analyze` (clean), `flutter test` (**673/673**),
+`l10n-check`, `make test-sql`, Deno and `check_layers`. `make check` is
+green except the pre-existing `seed-check`. New tests cover:
 
-**Walked on the physical Galaxy** across `sr`/`en` × light/dark, spending one
-AI translation on hosted. The walk found one defect: the photo import's
-pickers wrapped in both languages. It was fixed and re-walked. The walk also
-closed Phase 5 part 6's Translate-from-the-editor loop: `Kajgana` now has an
-unreviewed machine English translation on hosted. Create / join household
-were not walked, because they need an account with no household.
+- a Serbian 360×780 household;
+- `2 člana`;
+- destructive text confirms;
+- a circular tile;
+- the sign-in button and wordmark;
+- filled vs tonal colours in both themes.
+
+**Walked on the emulator**, not the Galaxy (it wasn't attached), across
+`sr`/`en` × light/dark. `/design-walk` now allows the emulator via `make
+install-emulator` and the dev login. It found two defects, both fixed and
+re-walked: the green tonal button, and the language toggle sitting flush on
+its hairline. The dev account is an adult, so it confirmed the adult halves
+of Phase 6 3b and 3c. The owner side is still open.
 **In flight:** none
-**Next:** first, `/design-walk meal-plan` on the physical Galaxy, to close
-part 4's own loop, which also confirms the meal plan's saved-copy line. Then
-the last per-surface slice of `docs/design/MIGRATION_PLAN.md` § 4: slice 7,
-`phase7-auth-household`, planned with `/plan-slice-ui`. It folds in Phase 6
-3b/3c's walks, and its throwaway household is also how part 7's onboarding
-screens get walked, including whether the serif join digits read as a code.
-**Latest decision:** D124
+**Next:** the per-surface redesign is done, so what's left in Phase 7 is
+closing walk loops. One sitting with the physical Galaxy should cover:
 
-**Six device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+- `/design-walk meal-plan` (part 4);
+- the owner halves of Phase 6 3b and 3c (a second account joined, then a
+  throwaway household);
+- part 7's create / join screens;
+- part 8's owner-side, failure-line and fresh-Google-account checks.
+
+After that, pick the next phase from `docs/ROADMAP.md`.
+**Latest decision:** D126
+
+**Seven device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -59,7 +72,10 @@ defect, fixed and re-walked in the same sitting, and answered part 2's
 marker-in-dark and part 3's dashed-ring leftovers below. Part 7's walk
 (`/design-walk forms`, 2026-09-26, with its defect re-walked 2026-09-28)
 closed Phase 5 part 6. It opened part 7's own loop, which now holds only
-the unwalked onboarding screens. Oldest first:
+the unwalked onboarding screens. Part 8's walk (`/design-walk
+auth-household`, 2026-09-28, on the emulator) confirmed the adult halves of
+Phase 6 3b and 3c. It opened part 8's own loop for the owner side and the
+Google-only checks. Oldest first:
 
 - **Phase 5 part 5** — copy a generated shopping list, see the SnackBar,
   paste the text somewhere else. **Half confirmed by Phase 7 part 5's walk
@@ -102,11 +118,20 @@ the unwalked onboarding screens. Oldest first:
   their own and no Remove on the owner's; both write through and the row
   disappears; Leave lands the now-memberless account on
   `CreateHouseholdRoute` with no restart. Needs a second Google account.
+  **Adult half confirmed by Phase 7 part 8's walk (2026-09-28, emulator):**
+  the D125 dev-login account is an adult in the device household. It sees
+  the bottom `Napusti domaćinstvo` row, no `⋮` on anyone's row, and no
+  Delete. The Leave dialog opens with a crimson text confirm and was
+  cancelled, because leaving would drop the dev account from the real
+  household. Still open: the owner's `⋮` → `Ukloni člana`, and both
+  write-throughs.
 - **Phase 6 part 3c** — on a throwaway household: the owner sees the Delete
   row and an adult does not; the confirm dialog names the household;
   confirming lands the ex-owner on `CreateHouseholdRoute` with no restart;
   creating a new household afterward works. Needs a throwaway household —
-  the signed-in device account has real recipes.
+  the signed-in device account has real recipes. **Adult half confirmed by
+  Phase 7 part 8's walk (2026-09-28):** an adult sees no Delete row. The
+  owner half is still open.
 - ~~**Phase 7 part 1**~~ — **closed by Phase 7 part 5's walk (2026-09-25).**
   Walked on the physical Galaxy across `sr`/`en` ×
   light/dark on recipe list, recipe detail, meal plan, shopping list,
@@ -330,12 +355,50 @@ the unwalked onboarding screens. Oldest first:
   recipes, so the join code's serif digits are still unjudged. Slice 7
   (`phase7-auth-household`) can walk them with its throwaway household.
 
-All six open ones need `make install-hosted` on the physical Galaxy device — not the
-emulator, not `flutter run`, not the local stack (CLAUDE.md). A future
+- **Phase 7 part 8** — sign-in, settings, household
+  (`phase7-auth-household`). Walked on the **emulator** (2026-09-28,
+  `make install-emulator`, dev-login account) across `sr`/`en` ×
+  light/dark. All right:
+  - **Sign-in:** the green wordmark on one line; the Serbian tagline wraps
+    evenly over two lines; the 52dp button is pinned at the bottom with the
+    spinner while busy; legible in dark. Dismissing Google's add-account
+    screen returns to idle with no error line.
+  - **Settings:** a mustard circle avatar, legible in dark; `Jezik` /
+    `Language` in Literata; `Srpski` / `English` on one line each.
+  - **Household:** `Renamed Household` / `2 člana` / `2 members`; circles,
+    not squares; `Član · vi` / `Member · you`. The invite card's six serif
+    digits are evenly spaced and read as a code. `Kopiraj kod` + `Opozovi`
+    fit on one row. Revoke and the Leave row are crimson in light and pink in
+    dark. Copy and Revoke both write through.
+
+  **Two defects, fixed and re-walked the same sitting:**
+  - The tonal Copy button rendered **filled green**. `filledButtonTheme` set
+    `backgroundColor: primary`, which overrides every `FilledButton`
+    variant, and it also painted the import review's tonal `Open recipe`
+    green. The two colour lines came out of the theme (Material 3's
+    defaults already give filled `primary` and tonal
+    `secondaryContainer`), with a light/dark theme test that fails on the
+    old theme.
+  - Settings' language toggle sat flush on the hairline under it: the theme
+    `Divider` takes 1dp of space. An `lg` gap was added.
+
+  **Not walked** (they need the Galaxy, or an owner account on the
+  emulator):
+  - the owner's `⋮` → `Ukloni člana` and the Remove / Delete dialogs;
+  - a long Serbian household name wrapping under the edit icon (the 360dp
+    widget test covers the layout, not the device);
+  - the sign-in failure line;
+  - part 7's create / join screens;
+  - a fresh Google account via `on_auth_user_created`.
+
+All seven open ones need the hosted release build: `make install-hosted` on
+the Galaxy, or `make install-emulator` on the emulator for anything behind
+sign-in that needs no Google account (`.claude/commands/design-walk.md`
+§ 1). Never `flutter run`, never the local stack (CLAUDE.md). A future
 session should close as many as it reasonably can in one sitting rather than
 walking one loop at a time; 3b and 3c's second-account/throwaway-household
-setup can close both together, and slice 7's throwaway household can close
-part 7's onboarding loop with them. Phase 7 parts 2, 3, 5, 6 and 7 all
+setup can close both together. The same throwaway household can close part
+7's onboarding loop and part 8's owner side with them. Phase 7 parts 2, 3, 5, 6 and 7 all
 walked on the device (2026-09-25/28) — release build, both languages, both brightnesses —
 so the older loops are blocked on nothing but someone sitting down with the
 phone. Phase 5 part 5's clipboard loop and Phase 6 1b's tag-minting loop are

@@ -1,9 +1,9 @@
 ---
-description: Install the hosted release build on the physical device and walk one surface in sr/en x light/dark
+description: Install the hosted release build on the Galaxy or the emulator and walk one surface in sr/en x light/dark
 argument-hint: <surface-or-slice-name>
 ---
 
-Walk the surface named `$ARGUMENTS` on the physical device — e.g.
+Walk the surface named `$ARGUMENTS` on a device running the hosted release build — e.g.
 `recipe-list`, `phase7-part1`, or a slice name.
 
 This is verification, not a slice. `docs/DESIGN_SYSTEM.md` § Both languages and §
@@ -16,7 +16,7 @@ open.
 If `$ARGUMENTS` is empty, read `docs/STATE.md`'s open-device-walk list and ask
 the user which one to close.
 
-## 1. Confirm a physical device — not the emulator
+## 1. Pick the device — the Galaxy or the emulator
 
 `adb` is not on PATH. Prefix:
 
@@ -24,14 +24,23 @@ the user which one to close.
 export PATH="$HOME/Library/Android/sdk/platform-tools:$PATH"
 ```
 
-Run `adb devices -l` and identify the Galaxy by serial. CLAUDE.md's "running
-the app" means the physical device: the emulator cannot hold a Google account
-at all, so it cannot even reach a signed-in screen.
+Run `adb devices -l`. Either target is a valid walk. Both run the same
+release APK against hosted Supabase:
 
-**If the emulator is attached alongside it, stop and say so.**
-`make install-hosted` runs a bare `adb install -r` with no `-s`, which is
-ambiguous with two devices. Either ask the user to close the emulator, or
-install by serial by hand:
+- **The Galaxy** (physical, by serial). It is the only one that can do Google
+  sign-in, so a check that needs a real Google account runs here. That covers
+  the Google button's busy/failure path, a brand-new account landing via
+  `on_auth_user_created`, and a second *Google* account.
+- **The emulator** (`emulator-5554`). It cannot hold a Google account, so it
+  signs in through D125's `Dev login` button
+  (`test-user@kitchen-table.test`). Everything behind sign-in walks the same.
+  Colour, type, and Serbian width are the build's, not the device's. The
+  emulator's screen is not the Galaxy's, so name the device in the report.
+  If a check needs Google, say it was not reached rather than calling the
+  walk clean on it.
+
+**If both are attached**, `make install-hosted`'s bare `adb install -r` is
+ambiguous. Install by serial by hand instead:
 
 ```
 flutter build apk --release --dart-define-from-file=env/hosted.json
@@ -42,7 +51,10 @@ Do not edit the Makefile to work around this.
 
 ## 2. Install
 
-`make install-hosted`.
+- Galaxy: `make install-hosted`.
+- Emulator: `make install-emulator`, which is the same hosted release APK plus
+  `env/dev_login.json`. It writes the same output path, so rebuild with
+  `install-hosted` before putting a build on the phone.
 
 If it fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, a debug-signed build
 (from `make run-hosted`) is installed and the two can never overwrite each
