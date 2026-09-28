@@ -20,6 +20,12 @@
 /// feature's business, the same way `core/ingredients/` exposes the catalog's
 /// providers without becoming a second owner of `Ingredient`.
 ///
+/// [currentHouseholdSummary] is the one exception, and a narrow one (Phase 7
+/// part 9b): the Settings screen (`features/auth/`) shows the household's
+/// name and member count on the row that opens the household screen. It
+/// crosses as a record of exactly those two facts, not the `Household`
+/// model, so this file still hands out no households-feature types.
+///
 /// `core/` may depend on `features/` (docs/ARCHITECTURE.md); `tool/check_layers.dart`
 /// derives layer and feature only from `lib/features` paths and does not
 /// apply the cross-feature rule here, which is what makes this the sanctioned
@@ -31,6 +37,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../features/households/application/household_providers.dart';
 import '../../features/households/domain/household.dart';
+import '../../features/households/domain/household_member.dart';
 
 part 'current_household.g.dart';
 
@@ -38,4 +45,18 @@ part 'current_household.g.dart';
 Future<String?> currentHouseholdId(Ref ref) async {
   final Household? household = await ref.watch(currentHouseholdProvider.future);
   return household?.id;
+}
+
+/// The current household's name and member count, or null when there is no
+/// household -- see this file's doc comment for why a record.
+@riverpod
+Future<({String name, int memberCount})?> currentHouseholdSummary(
+  Ref ref,
+) async {
+  final Household? household = await ref.watch(currentHouseholdProvider.future);
+  if (household == null) return null;
+  final List<HouseholdMember> members = await ref.watch(
+    householdMembersProvider.future,
+  );
+  return (name: household.name, memberCount: members.length);
 }

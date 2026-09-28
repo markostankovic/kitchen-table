@@ -9,7 +9,6 @@
   "profileLoading": "Loading...",
   "profileLoadError": "Could not load your profile",
   "profileNone": "No profile",
-  "householdMenuItem": "Household",
   "signOut": "Sign out",
   "languageSectionTitle": "Language",
 
@@ -296,5 +295,18 @@
   "discardImportDialogTitle": "Discard this import?",
   "discardImportConfirmBody": "The recipe won't be saved. You can import it again later.",
   "discardButton": "Discard",
-  "doneButton": "Done"
+  "doneButton": "Done",
+
+  "appearanceSectionTitle": "Appearance",
+  "themeTitle": "Theme",
+  "themeSubtitle": "Applies to this app only, whatever your phone uses.",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "householdSectionTitle": "Household",
+  "accountSectionTitle": "Account",
+  "signedInWithGoogle": "Signed in with Google",
+  "clearFiltersChip": "Clear",
+  "clearFiltersButton": "Clear filters",
+  "noRecipesMatchFilterBody": "Try removing a filter to see more recipes.",
+  "recipeCount": "{count, plural, one{{count} recipe} other{{count} recipes}}"
 }

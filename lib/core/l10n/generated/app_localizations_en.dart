@@ -31,9 +31,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileNone => 'No profile';
 
   @override
-  String get householdMenuItem => 'Household';
-
-  @override
   String get signOut => 'Sign out';
 
   @override
@@ -976,4 +973,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get doneButton => 'Done';
+
+  @override
+  String get appearanceSectionTitle => 'Appearance';
+
+  @override
+  String get themeTitle => 'Theme';
+
+  @override
+  String get themeSubtitle =>
+      'Applies to this app only, whatever your phone uses.';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get householdSectionTitle => 'Household';
+
+  @override
+  String get accountSectionTitle => 'Account';
+
+  @override
+  String get signedInWithGoogle => 'Signed in with Google';
+
+  @override
+  String get clearFiltersChip => 'Clear';
+
+  @override
+  String get clearFiltersButton => 'Clear filters';
+
+  @override
+  String get noRecipesMatchFilterBody =>
+      'Try removing a filter to see more recipes.';
+
+  @override
+  String recipeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recipes',
+      one: '$count recipe',
+    );
+    return '$_temp0';
+  }
 }

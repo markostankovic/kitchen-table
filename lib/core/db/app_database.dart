@@ -242,6 +242,20 @@ class RecipeTagNameCache extends Table {
   Set<Column> get primaryKey => <Column<Object>>{id};
 }
 
+/// Device-local preferences -- a plain key/value table, Phase 7 part 9b
+/// (D128). The first table in this file that is NOT a cache: nothing here
+/// can be refetched from Supabase, so it is exempt from both the
+/// drop-and-recreate upgrade below and [AppDatabase.clearHouseholdCache].
+/// The theme choice is its first and only key today ([themeModeKey] in
+/// `device_preferences.dart`).
+class DevicePreferences extends Table {
+  TextColumn get key => text()();
+  TextColumn get value => text()();
+
+  @override
+  Set<Column> get primaryKey => <Column<Object>>{key};
+}
+
 @DriftDatabase(
   tables: <Type>[
     ShoppingListCache,
@@ -252,6 +266,7 @@ class RecipeTagNameCache extends Table {
     SyncWatermarks,
     CurrentHouseholdCache,
     RecipeTagNameCache,
+    DevicePreferences,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -302,14 +317,23 @@ class AppDatabase extends _$AppDatabase {
   /// Bumped to 7 in Phase 6 part 1a for [RecipeTagNameCache] -- a tag's
   /// name in each locale, replaced wholesale per household rather than
   /// delta-synced.
+  ///
+  /// Bumped to 8 in Phase 7 part 9b for [DevicePreferences] (D128) -- and
+  /// `onUpgrade` stopped dropping every table: that one holds a choice the
+  /// user made on this device, not a copy of server data, so a later cache
+  /// bump must not reset it. `createAll` is `CREATE TABLE IF NOT EXISTS`,
+  /// so a surviving table is left as it is.
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) => m.createAll(),
         onUpgrade: (Migrator m, int from, int to) async {
           for (final TableInfo<Table, dynamic> table in allTables) {
+            if (table.actualTableName == devicePreferences.actualTableName) {
+              continue;
+            }
             await m.deleteTable(table.actualTableName);
           }
           await m.createAll();
@@ -329,6 +353,10 @@ class AppDatabase extends _$AppDatabase {
   /// any authenticated user, and wiping it would put `3 clove` (or a raw
   /// ingredient id where a Serbian name belongs) back on the very first
   /// offline session after the next person signs in (D70).
+  ///
+  /// [DevicePreferences] is untouched too, for a different reason (D128): it
+  /// is not user or household data at all, but how this phone shows the app
+  /// -- the next person to sign in on it keeps the same Light or Dark.
   Future<void> clearHouseholdCache() =>
       cacheWrite('household clear', () => transaction(() async {
             await delete(shoppingListCache).go();

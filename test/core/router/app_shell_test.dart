@@ -6,9 +6,12 @@
 // Providers are overridden rather than mocked -- Riverpod's own override
 // mechanism means no mocking package, so CLAUDE.md rule 8 is never triggered.
 
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/db/app_database.dart';
+import 'package:kitchen_table/core/db/device_preferences.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_en.dart';
@@ -77,6 +80,7 @@ Future<void> pumpApp(
   Household? household = _household,
   Profile profile = _profile,
   Reachability? networkStatus,
+  AppDatabase? db,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -92,10 +96,23 @@ Future<void> pumpApp(
         liveInvitesProvider.overrideWith((Ref ref) async => _invites),
         if (networkStatus != null)
           networkStatusProvider.overrideWithValue(networkStatus),
+        if (db != null) appDatabaseProvider.overrideWithValue(db),
       ],
       child: const KitchenTableApp(),
     ),
   );
+  await tester.pumpAndSettle();
+}
+
+/// Settings' household row, by the household's name (Phase 7 part 9b --
+/// there is no fixed "Household" label on it any more).
+Future<void> _openHousehold(WidgetTester tester) async {
+  await tester.scrollUntilVisible(
+    find.text('Test Household'),
+    100,
+    scrollable: find.byType(Scrollable).last,
+  );
+  await tester.tap(find.text('Test Household'));
   await tester.pumpAndSettle();
 }
 
@@ -276,11 +293,12 @@ void main() {
       expect(find.text('Marko'), findsOneWidget);
       expect(find.text('a@example.com'), findsOneWidget);
 
-      await tester.tap(find.text(sr.householdMenuItem));
-      await tester.pumpAndSettle();
+      await _openHousehold(tester);
 
       expect(find.widgetWithText(AppBar, sr.householdScreenTitle),
           findsOneWidget);
+      // The Settings screen underneath is offstage, so this finds only the
+      // household screen's own header.
       expect(find.text('Test Household'), findsOneWidget);
       expect(find.byType(NavigationBar), findsOneWidget,
           reason: 'the household screen is nested inside the Settings tab');
@@ -295,8 +313,7 @@ void main() {
         matching: find.text(sr.navSettings),
       ));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(sr.householdMenuItem));
-      await tester.pumpAndSettle();
+      await _openHousehold(tester);
 
       expect(find.text('Ana'), findsOneWidget);
       // The caller is the owner, so their own row carries `· vi`.
@@ -325,6 +342,104 @@ void main() {
       expect(toggle.selected, <AppLocale>{AppLocale.sr});
       expect(find.text('Srpski'), findsOneWidget);
       expect(find.text('English'), findsOneWidget);
+    });
+  });
+
+  // Phase 7 part 9b: the grouped Settings screen.
+  group('settings layout', () {
+    Future<void> openSettings(WidgetTester tester) async {
+      await tester.tap(find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text(sr.navSettings),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('renders in Serbian at 360x780 without overflow',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(360, 780);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await pumpApp(tester);
+      await openSettings(tester);
+
+      expect(tester.takeException(), isNull);
+      expect(find.text(sr.appearanceSectionTitle), findsOneWidget);
+      expect(find.text(sr.themeSubtitle), findsOneWidget);
+      expect(find.text(sr.signedInWithGoogle), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text(sr.signOut),
+        100,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.text(sr.householdMemberCount(2)), findsOneWidget);
+      expect(find.text(sr.accountSectionTitle), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('sign-out is a neutral OutlinedButton, not error-coloured',
+        (WidgetTester tester) async {
+      await pumpApp(tester);
+      await openSettings(tester);
+      await tester.scrollUntilVisible(
+        find.text(sr.signOut),
+        100,
+        scrollable: find.byType(Scrollable).last,
+      );
+
+      final Finder button = find.ancestor(
+        of: find.text(sr.signOut),
+        matching: find.byWidgetPredicate((Widget w) => w is OutlinedButton),
+      );
+      expect(button, findsOneWidget);
+      final ColorScheme scheme =
+          Theme.of(tester.element(button)).colorScheme;
+      final Color? fg = tester
+          .widget<ButtonStyleButton>(button)
+          .style
+          ?.foregroundColor
+          ?.resolve(<WidgetState>{});
+      expect(fg, scheme.onSurface);
+      expect(fg, isNot(scheme.error));
+    });
+
+    testWidgets('the theme segment writes the device store',
+        (WidgetTester tester) async {
+      final AppDatabase db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      await pumpApp(tester, db: db);
+      await openSettings(tester);
+
+      await tester.tap(find.text(sr.themeDark));
+      await tester.pumpAndSettle();
+
+      expect(await DevicePreferenceStore(db).read(themeModeKey), 'dark');
+      final MaterialApp app =
+          tester.widget<MaterialApp>(find.byType(MaterialApp));
+      expect(app.themeMode, ThemeMode.dark);
+    });
+
+    testWidgets('the language labels are never translated',
+        (WidgetTester tester) async {
+      await pumpApp(
+        tester,
+        profile: const Profile(
+          id: 'u1',
+          displayName: 'Marko',
+          locale: AppLocale.en,
+        ),
+      );
+      await tester.tap(find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text(en.navSettings),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Srpski'), findsOneWidget);
+      expect(find.text('English'), findsOneWidget);
+      expect(find.text(en.themeLight), findsOneWidget);
     });
   });
 

@@ -140,12 +140,6 @@ abstract class AppLocalizations {
   /// **'Nema profila'**
   String get profileNone;
 
-  /// Settings screen, the row that opens the household screen.
-  ///
-  /// In sr, this message translates to:
-  /// **'Domaćinstvo'**
-  String get householdMenuItem;
-
   /// Settings screen, the sign-out row.
   ///
   /// In sr, this message translates to:
@@ -1741,6 +1735,78 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Gotovo'**
   String get doneButton;
+
+  /// Settings screen, the header of the Light/Dark group.
+  ///
+  /// In sr, this message translates to:
+  /// **'Izgled'**
+  String get appearanceSectionTitle;
+
+  /// Settings screen, the title above the Light/Dark selector.
+  ///
+  /// In sr, this message translates to:
+  /// **'Tema'**
+  String get themeTitle;
+
+  /// Settings screen, the line under the theme title: the choice ignores the phone's own dark mode (D128).
+  ///
+  /// In sr, this message translates to:
+  /// **'Važi samo za ovu aplikaciju, bez obzira na podešavanje telefona.'**
+  String get themeSubtitle;
+
+  /// Settings screen, the Light segment of the theme selector.
+  ///
+  /// In sr, this message translates to:
+  /// **'Svetla'**
+  String get themeLight;
+
+  /// Settings screen, the Dark segment of the theme selector.
+  ///
+  /// In sr, this message translates to:
+  /// **'Tamna'**
+  String get themeDark;
+
+  /// Settings screen, the header of the group holding the row that opens the household screen.
+  ///
+  /// In sr, this message translates to:
+  /// **'Domaćinstvo'**
+  String get householdSectionTitle;
+
+  /// Settings screen, the header above the sign-out button.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nalog'**
+  String get accountSectionTitle;
+
+  /// Settings screen, the line under the email in the profile card.
+  ///
+  /// In sr, this message translates to:
+  /// **'Prijavljeni ste Google nalogom'**
+  String get signedInWithGoogle;
+
+  /// Recipe list, the chip at the start of the filter row that deselects Favorites and the tag (not the search text).
+  ///
+  /// In sr, this message translates to:
+  /// **'Poništi'**
+  String get clearFiltersChip;
+
+  /// Recipe list, the button in the no-results state while a filter is on.
+  ///
+  /// In sr, this message translates to:
+  /// **'Poništi filtere'**
+  String get clearFiltersButton;
+
+  /// Recipe list, the body of the no-results state while a filter is on.
+  ///
+  /// In sr, this message translates to:
+  /// **'Uklonite neki filter da biste videli više recepata.'**
+  String get noRecipesMatchFilterBody;
+
+  /// Recipe list, the result count under the filter row, shown only while the list is narrowed.
+  ///
+  /// In sr, this message translates to:
+  /// **'{count, plural, one{{count} recept} few{{count} recepta} other{{count} recepata}}'**
+  String recipeCount(int count);
 }
 
 class _AppLocalizationsDelegate

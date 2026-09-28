@@ -505,6 +505,118 @@ void main() {
     });
   });
 
+  // Phase 7 part 9b: Clear, the result count, the filter-aware empty state.
+  group('recipe list filters', () {
+    final List<Recipe> tagged = <Recipe>[
+      _torta.copyWith(isFavorite: true, tags: <String>['Posno']),
+      _pita.copyWith(tags: <String>['Brzo']),
+    ];
+
+    testWidgets('Clear appears only while a filter is on',
+        (WidgetTester tester) async {
+      await _pumpList(tester, recipes: tagged);
+      expect(find.widgetWithText(ActionChip, 'Clear'), findsNothing);
+
+      await tester.tap(find.text('Posno'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ActionChip, 'Clear'), findsOneWidget);
+
+      await tester.tap(find.text('Posno'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ActionChip, 'Clear'), findsNothing);
+    });
+
+    testWidgets('a query alone does not bring Clear up',
+        (WidgetTester tester) async {
+      await _pumpList(tester, recipes: tagged);
+
+      await tester.enterText(find.byType(TextField), 'pita');
+      await tester.pumpAndSettle(const Duration(milliseconds: 300));
+
+      expect(find.widgetWithText(ActionChip, 'Clear'), findsNothing);
+    });
+
+    testWidgets('Clear resets the tag and favorites, not the query',
+        (WidgetTester tester) async {
+      await _pumpList(
+        tester,
+        recipes: <Recipe>[
+          ...tagged,
+          _pita.copyWith(id: 'r3', title: 'Pita sa jabukama'),
+        ],
+      );
+
+      await tester.enterText(find.byType(TextField), 'pita');
+      await tester.pumpAndSettle(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Brzo'));
+      await tester.pumpAndSettle();
+      expect(find.text('Pita sa sirom'), findsOneWidget);
+      expect(find.text('Pita sa jabukama'), findsNothing);
+
+      await tester.tap(find.widgetWithText(ActionChip, 'Clear'));
+      await tester.pumpAndSettle();
+
+      // Tag gone: both pitas back. Query kept: the torte stays out.
+      expect(find.text('Pita sa sirom'), findsOneWidget);
+      expect(find.text('Pita sa jabukama'), findsOneWidget);
+      expect(find.text('Šargarepa torta'), findsNothing);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller?.text,
+        'pita',
+      );
+      final FilterChip favorites = tester.widget<FilterChip>(
+        find.widgetWithText(FilterChip, 'Favorites'),
+      );
+      expect(favorites.selected, isFalse);
+    });
+
+    testWidgets('the result count shows only while narrowed',
+        (WidgetTester tester) async {
+      await _pumpList(tester, recipes: tagged);
+      expect(find.text('2 recipes'), findsNothing);
+
+      await tester.tap(find.text('Posno'));
+      await tester.pumpAndSettle();
+      expect(find.text('1 recipe'), findsOneWidget);
+    });
+
+    test('the count reads right in Serbian: 1 / 2 / 5', () {
+      final AppLocalizations sr = lookupAppLocalizations(const Locale('sr'));
+      expect(sr.recipeCount(1), '1 recept');
+      expect(sr.recipeCount(2), '2 recepta');
+      expect(sr.recipeCount(5), '5 recepata');
+    });
+
+    testWidgets('the no-results state with a filter on offers Clear filters, '
+        'and it restores the list', (WidgetTester tester) async {
+      await _pumpList(tester, recipes: tagged);
+
+      await tester.tap(find.text('Favorites'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Brzo'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Try removing a filter to see more recipes.'),
+          findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Clear filters'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Šargarepa torta'), findsOneWidget);
+      expect(find.text('Pita sa sirom'), findsOneWidget);
+    });
+
+    testWidgets('a query alone that matches nothing gets no action',
+        (WidgetTester tester) async {
+      await _pumpList(tester, recipes: tagged);
+
+      await tester.enterText(find.byType(TextField), 'zzz');
+      await tester.pumpAndSettle(const Duration(milliseconds: 300));
+
+      expect(find.textContaining('No recipes match'), findsOneWidget);
+      expect(find.byType(FilledButton), findsNothing);
+    });
+  });
+
   group('recipe detail', () {
     testWidgets('a matched line renders the catalog name, not the raw text',
         (WidgetTester tester) async {

@@ -31,9 +31,6 @@ class AppLocalizationsSr extends AppLocalizations {
   String get profileNone => 'Nema profila';
 
   @override
-  String get householdMenuItem => 'Domaćinstvo';
-
-  @override
   String get signOut => 'Odjavi se';
 
   @override
@@ -987,4 +984,51 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get doneButton => 'Gotovo';
+
+  @override
+  String get appearanceSectionTitle => 'Izgled';
+
+  @override
+  String get themeTitle => 'Tema';
+
+  @override
+  String get themeSubtitle =>
+      'Važi samo za ovu aplikaciju, bez obzira na podešavanje telefona.';
+
+  @override
+  String get themeLight => 'Svetla';
+
+  @override
+  String get themeDark => 'Tamna';
+
+  @override
+  String get householdSectionTitle => 'Domaćinstvo';
+
+  @override
+  String get accountSectionTitle => 'Nalog';
+
+  @override
+  String get signedInWithGoogle => 'Prijavljeni ste Google nalogom';
+
+  @override
+  String get clearFiltersChip => 'Poništi';
+
+  @override
+  String get clearFiltersButton => 'Poništi filtere';
+
+  @override
+  String get noRecipesMatchFilterBody =>
+      'Uklonite neki filter da biste videli više recepata.';
+
+  @override
+  String recipeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recepata',
+      few: '$count recepta',
+      one: '$count recept',
+    );
+    return '$_temp0';
+  }
 }

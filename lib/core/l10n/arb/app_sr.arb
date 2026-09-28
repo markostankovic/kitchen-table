@@ -30,10 +30,6 @@
   "@profileNone": {
     "description": "Settings screen, fallback when there is no display name yet."
   },
-  "householdMenuItem": "Domaćinstvo",
-  "@householdMenuItem": {
-    "description": "Settings screen, the row that opens the household screen."
-  },
   "signOut": "Odjavi se",
   "@signOut": {
     "description": "Settings screen, the sign-out row."
@@ -1305,5 +1301,59 @@
   "doneButton": "Gotovo",
   "@doneButton": {
     "description": "Import review screen (Phase 7 part 6), under an ingredient line opened for editing: closes it back into a read-only row."
+  },
+
+  "appearanceSectionTitle": "Izgled",
+  "@appearanceSectionTitle": {
+    "description": "Settings screen, the header of the Light/Dark group."
+  },
+  "themeTitle": "Tema",
+  "@themeTitle": {
+    "description": "Settings screen, the title above the Light/Dark selector."
+  },
+  "themeSubtitle": "Važi samo za ovu aplikaciju, bez obzira na podešavanje telefona.",
+  "@themeSubtitle": {
+    "description": "Settings screen, the line under the theme title: the choice ignores the phone's own dark mode (D128)."
+  },
+  "themeLight": "Svetla",
+  "@themeLight": {
+    "description": "Settings screen, the Light segment of the theme selector."
+  },
+  "themeDark": "Tamna",
+  "@themeDark": {
+    "description": "Settings screen, the Dark segment of the theme selector."
+  },
+  "householdSectionTitle": "Domaćinstvo",
+  "@householdSectionTitle": {
+    "description": "Settings screen, the header of the group holding the row that opens the household screen."
+  },
+  "accountSectionTitle": "Nalog",
+  "@accountSectionTitle": {
+    "description": "Settings screen, the header above the sign-out button."
+  },
+  "signedInWithGoogle": "Prijavljeni ste Google nalogom",
+  "@signedInWithGoogle": {
+    "description": "Settings screen, the line under the email in the profile card."
+  },
+  "clearFiltersChip": "Poništi",
+  "@clearFiltersChip": {
+    "description": "Recipe list, the chip at the start of the filter row that deselects Favorites and the tag (not the search text)."
+  },
+  "clearFiltersButton": "Poništi filtere",
+  "@clearFiltersButton": {
+    "description": "Recipe list, the button in the no-results state while a filter is on."
+  },
+  "noRecipesMatchFilterBody": "Uklonite neki filter da biste videli više recepata.",
+  "@noRecipesMatchFilterBody": {
+    "description": "Recipe list, the body of the no-results state while a filter is on."
+  },
+  "recipeCount": "{count, plural, one{{count} recept} few{{count} recepta} other{{count} recepata}}",
+  "@recipeCount": {
+    "description": "Recipe list, the result count under the filter row, shown only while the list is narrowed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The launch screen's one colour: the brand primary green (Garden's
+         `primary`, lib/core/theme/app_theme.dart). Deliberately NOT split into
+         a values-night variant. The app's Light/Dark is its own setting, stored
+         in Drift (D128), and Android draws this before any Dart runs, so it
+         can't know which one the app will open in. A brand colour reads as
+         intended in front of either; a cream or near-black one reads as the
+         wrong theme flashing (Phase 7 part 9b's device walk). -->
+    <color name="splash_background">#FF366A35</color>
+</resources>

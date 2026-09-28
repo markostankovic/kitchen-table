@@ -65,6 +65,15 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
     setState(() => _favoritesOnly = !_favoritesOnly);
   }
 
+  /// Deselects Favorites and the tag -- not the search text, which keeps its
+  /// own clear button in the field (Phase 7 part 9b).
+  void _clearFilters() {
+    setState(() {
+      _tag = '';
+      _favoritesOnly = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -135,6 +144,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
             favoritesOnly: _favoritesOnly,
             onTagTap: _toggleTag,
             onFavoritesTap: _toggleFavoritesOnly,
+            onClear: _clearFilters,
             l10n: l10n,
           ),
           Expanded(
@@ -143,9 +153,11 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
               error: (Object e, _) =>
                   AppErrorView(message: localizedErrorMessage(e, l10n)),
               data: (List<Recipe> items) {
-                final bool narrowed = _query.isNotEmpty ||
-                    _tag.isNotEmpty ||
-                    _favoritesOnly;
+                final bool filtered = _tag.isNotEmpty || _favoritesOnly;
+                final bool narrowed = _query.isNotEmpty || filtered;
+                // A filter is the one narrowing with a way out on this
+                // screen, so only it earns the empty state's one tonal
+                // action. A query alone has the field's own clear button.
                 return items.isEmpty
                     ? AppEmptyState(
                         icon: narrowed
@@ -154,6 +166,13 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
                         title: narrowed
                             ? l10n.noRecipesMatch
                             : l10n.noRecipesYet,
+                        body: filtered ? l10n.noRecipesMatchFilterBody : null,
+                        action: filtered
+                            ? FilledButton.tonal(
+                                onPressed: _clearFilters,
+                                child: Text(l10n.clearFiltersButton),
+                              )
+                            : null,
                       )
                     : RefreshIndicator(
                         onRefresh: () async => ref.invalidate(
@@ -170,16 +189,27 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
                             AppSpacing.lg,
                             AppSpacing.xxl,
                           ),
-                          itemCount: items.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: AppSpacing.md),
-                          itemBuilder: (BuildContext context, int i) =>
-                              RecipeCard(
-                                recipe: items[i],
-                                l10n: l10n,
-                                onTap: () =>
-                                    RecipeDetailRoute(items[i].id).go(context),
-                              ),
+                          // The result count rides as item 0 while narrowed,
+                          // so it scrolls away with the list rather than
+                          // pinning a line of chrome above it.
+                          itemCount: items.length + (narrowed ? 1 : 0),
+                          separatorBuilder: (_, int i) => SizedBox(
+                            height: narrowed && i == 0
+                                ? AppSpacing.sm
+                                : AppSpacing.md,
+                          ),
+                          itemBuilder: (BuildContext context, int i) {
+                            if (narrowed && i == 0) {
+                              return _ResultCount(count: items.length);
+                            }
+                            final Recipe recipe = items[narrowed ? i - 1 : i];
+                            return RecipeCard(
+                              recipe: recipe,
+                              l10n: l10n,
+                              onTap: () =>
+                                  RecipeDetailRoute(recipe.id).go(context),
+                            );
+                          },
                         ),
                       );
               },
@@ -200,6 +230,7 @@ class _FilterRow extends ConsumerWidget {
     required this.favoritesOnly,
     required this.onTagTap,
     required this.onFavoritesTap,
+    required this.onClear,
     required this.l10n,
   });
 
@@ -207,6 +238,7 @@ class _FilterRow extends ConsumerWidget {
   final bool favoritesOnly;
   final ValueChanged<String> onTagTap;
   final VoidCallback onFavoritesTap;
+  final VoidCallback onClear;
   final AppLocalizations l10n;
 
   @override
@@ -246,17 +278,38 @@ class _FilterRow extends ConsumerWidget {
     final bool filterActive = selectedTag.isNotEmpty || favoritesOnly;
     if (!hasAnyRecipe && !filterActive) return const SizedBox.shrink();
 
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+
+    // Full-bleed: the gutter lives on the scroll view, not around it, so the
+    // chips scroll to the screen edge and a cut-off chip signals the scroll.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        0,
-        AppSpacing.lg,
-        AppSpacing.sm,
-      ),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         child: Row(
           children: <Widget>[
+            // First in the row, so it is visible without scrolling while any
+            // filter is on, and gone when none is (Phase 7 part 9b).
+            if (filterActive) ...<Widget>[
+              ActionChip(
+                avatar: const Icon(Icons.close),
+                label: Text(l10n.clearFiltersChip),
+                side: BorderSide(color: scheme.outline),
+                backgroundColor: scheme.surface,
+                onPressed: onClear,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              SizedBox(
+                height: AppSpacing.xl,
+                child: VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: scheme.outlineVariant,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+            ],
             // No star avatar. A star means a rating and nothing else after
             // Phase 7 part 3; selection already reads as `secondaryContainer`
             // plus a check, so the chip is its label alone, like the tags.
@@ -280,3 +333,22 @@ class _FilterRow extends ConsumerWidget {
   }
 }
 
+
+/// `2 recepta` -- how many recipes the narrowed list holds, gutter-aligned by
+/// the list's own padding.
+class _ResultCount extends StatelessWidget {
+  const _ResultCount({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Text(
+      AppLocalizations.of(context).recipeCount(count),
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+}

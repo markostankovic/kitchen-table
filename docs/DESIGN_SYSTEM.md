@@ -315,12 +315,17 @@ single most important action. Everything else is quieter:
 |---|---|---|
 | Filled | `primary` | the one action (Save recipe, Generate list) |
 | Tonal | `secondaryContainer` | a second-rank action (Copy code) |
-| Outlined | none, `outline` border | cancel-weight (Discard this import) |
+| Outlined | none, `outline` border | cancel-weight (Discard this import); Settings' Sign out, in `onSurface` |
 | Text in `error` | none | destructive (Delete recipe, Leave household) |
 
 The household screen has no filled button: its invite action is outlined and
 Copy is tonal, because nothing on it is the screen's one action. The sign-in
 button is the 52dp filled `primary`, with no logo.
+
+**Sign out** is a full-width `OutlinedButton.icon` with the `logout` icon and
+`foregroundColor: onSurface` — label and icon neutral, border `outline`. Not
+`error`, not `primary`: signing out loses nothing, so it is neither destructive
+nor the screen's one action, and it has no confirm dialog.
 
 **The FAB** — the recipe list's is the only one in the app — is `primary` on
 `onPrimary`, radius 16, elevation 0. Not Material's `primaryContainer` default:
@@ -397,6 +402,20 @@ once there is something to clear.
 plus a check icon — selection reads as colour, not only as an outline. **A
 filter row scrolls horizontally and never wraps**: a wrapping row grows
 downward and eats the list beneath it.
+
+**The row is full-bleed.** The `lg` gutter is the `SingleChildScrollView`'s own
+padding, not a `Padding` around it, so the chips scroll to the screen edge and
+the cut-off last chip is what says the row scrolls.
+
+**Clear.** While any filter is on (the recipe list: Favorites or a tag), the
+row starts with an `ActionChip` — `close` avatar, `Poništi` / `Clear`,
+`outline` border on a `surface` fill so it reads outlined, not selected — then
+`sm`, a 1dp × 24 `outlineVariant` vertical line, `sm`, and the filter chips.
+It is absent, not disabled, when nothing is selected, and it clears the
+filters only: the search field keeps its text and its own clear button. While
+the list is narrowed and non-empty, a result count (`2 recepta` /
+`2 recipes`, `bodySmall` `onSurfaceVariant`) sits `sm` under the row and `sm`
+above the first card.
 
 ### Ingredient lines
 
@@ -635,6 +654,31 @@ household for the owner, Leave household for an adult, text and icon in
 `destructive`. Only one ever renders, and neither while the caller's role is
 unknown — absent, not disabled (D115).
 
+### Settings
+
+All private in `settings_screen.dart`; none is in `core/widgets/`.
+
+**Groups.** A `titleSmall` `onSurfaceVariant` header (`Izgled`, `Jezik`,
+`Domaćinstvo`, `Nalog`), `sm`, then a theme `Card` padded `lg`. Groups sit
+`xl` (24) apart. The profile card comes first, with no header: the 40dp
+circular monogram, `md`, then the name in `titleMedium`, the email in
+`bodyMedium`, and `Prijavljeni ste Google nalogom` in `bodySmall`, both
+`onSurfaceVariant`. Loading and error keep their text in the same card.
+
+**The two selectors.** Both full-width `SegmentedButton`s. Theme: `Tema` in
+`titleMedium`, `xs`, the "this app only" line in `bodySmall`
+`onSurfaceVariant`, `md`, then `light_mode_outlined` Svetla /
+`dark_mode_outlined` Tamna with `showSelectedIcon: false` — the sun or moon
+stays on the selected segment, not a check. Language: `Srpski` / `English`,
+never translated, with the check.
+
+**The household row.** The whole card is an `InkWell` clipped to its radius:
+`home_outlined` in `onSurfaceVariant`, `md`, the household's name in
+`titleMedium` over `2 člana` in `bodySmall`, and a trailing `chevron_right`.
+
+**Sign out** is set apart: `xl`, a full-width hairline, `xl`, the `Nalog`
+header, then the neutral outlined button (§ Buttons).
+
 ### Menu, snackbar, banner
 
 Menus radius 16 at level 2. Snackbars on `inverseSurface` with the action in
@@ -654,6 +698,13 @@ sentence without scrolling.
 
 A 48dp icon in `outline`, a `titleMedium` title, a `bodyMedium` body, and at
 most one tonal action.
+
+The recipe list's no-results state is the example of that one action. While a
+filter is on (Favorites or a tag) it shows `search_off`, `Nema recepata koji se
+poklapaju.`, the body `Uklonite neki filter da biste videli više recepata.`,
+and a `FilledButton.tonal` `Poništi filtere` that clears the filters. With only
+a search query it has the same title and no action — the field's own clear
+button is the way out.
 
 ### The shared widgets, and where each one is
 
@@ -731,9 +782,23 @@ question.
 
 ## Light and dark
 
-Both are real, both follow the system setting, neither is an afterthought.
-`lib/main.dart` passes `AppTheme.light()` and `AppTheme.dark()` and sets no
-`themeMode`. There is no in-app theme toggle.
+Both are real, neither is an afterthought. The cook picks one in Settings →
+Izgled; the app **does not follow the phone's setting** (D128). `lib/main.dart`
+passes `AppTheme.light()` and `AppTheme.dark()` and takes `themeMode` from
+`appThemeModeProvider` (`core/theme/app_theme_mode.dart`): Light or Dark only,
+Light by default, no System option. The choice is device-local, in the Drift
+`device_preferences` table, and survives sign-out and cache schema bumps.
+`main.dart` reads it before `runApp`, so a Dark cook never sees a Light
+first frame.
+
+**The Android launch screen is flat `primary` green (`#366A35`) in both of
+the phone's modes**, with no icon. Android draws it before any Dart runs, so
+it can't know the in-app choice. A cream or near-black splash would flash the
+wrong theme for half the cooks, while the brand colour looks intended in front
+of either. It lives in `android/app/src/main/res/values/colors.xml`
+(`splash_background`), used by `launch_background.xml`, `values-v31/styles.xml`
+and `NormalTheme`. There is deliberately no `values-night`. Change the brand
+green, change it there too.
 
 Every colour decision holds in both or it is not a decision. A value tuned in
 one brightness and eyeballed in the other is how a redesign ends up with an
