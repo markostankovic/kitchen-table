@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/env/env.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
@@ -40,6 +41,24 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       // to show, nothing to navigate to, just back to idle (D92 has no
       // sentence for it that would not be a lie).
       await ref.read(authRepositoryProvider).signInWithGoogle();
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      setState(() => _failure = e);
+    } finally {
+      if (mounted) setState(() => _signingInWithGoogle = false);
+    }
+  }
+
+  /// The emulator-only path ([Env.hasDevLogin]); same shape as Google's.
+  Future<void> _signInWithDevLogin() async {
+    setState(() {
+      _signingInWithGoogle = true;
+      _failure = null;
+    });
+
+    try {
+      await ref.read(authRepositoryProvider).signInWithPassword(
+          email: Env.devLoginEmail, password: Env.devLoginPassword);
     } on AppFailure catch (e) {
       if (!mounted) return;
       setState(() => _failure = e);
@@ -89,6 +108,16 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2))
                       : Text(loc.signInWithGoogle),
                 ),
+                if (Env.hasDevLogin) ...<Widget>[
+                  const SizedBox(height: 12),
+                  // Developer chrome in emulator builds only, never seen by a
+                  // user -- so not localized, like the brand name above.
+                  OutlinedButton(
+                    onPressed:
+                        _signingInWithGoogle ? null : _signInWithDevLogin,
+                    child: Text('Dev login: ${Env.devLoginEmail}'),
+                  ),
+                ],
               ],
             ),
           ),

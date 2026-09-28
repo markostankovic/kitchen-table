@@ -7,7 +7,7 @@ DART_DEFINE := --dart-define-from-file=env/local.json
 .PHONY: help gen watch lint lint-functions test test-functions test-sql seed \
 	seed-check l10n-check db-reset db-start db-stop db-push config-push \
 	types check functions-serve functions-deploy run run-android run-hosted \
-	install-hosted
+	install-hosted install-emulator
 
 help:
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -126,6 +126,17 @@ run-hosted: ## Run the app against hosted Supabase (requires env/hosted.json)
 install-hosted: ## Build a release APK against hosted Supabase and install it on the attached device
 	flutter build apk --release --dart-define-from-file=env/hosted.json
 	@PATH="$$HOME/Library/Android/sdk/platform-tools:$$PATH" adb install -r build/app/outputs/flutter-apk/app-release.apk
+
+# The emulator variant of install-hosted. An emulator cannot run the Google
+# chooser, so env/dev_login.json adds a "Dev login" button that signs in with a
+# dashboard-created, auto-confirmed email/password account. The credentials are
+# compiled into the APK: this build stays on the emulator, never distributed.
+# Writes to the same output path as install-hosted -- run that again before
+# putting a build on the phone.
+install-emulator: ## Build a release APK against hosted with the dev login, install on the running emulator
+	flutter build apk --release --dart-define-from-file=env/hosted.json \
+		--dart-define-from-file=env/dev_login.json
+	@PATH="$$HOME/Library/Android/sdk/platform-tools:$$PATH" adb -e install -r build/app/outputs/flutter-apk/app-release.apk
 
 types: ## Regenerate Dart models from the Zod schemas
 	@# docs/ARCHITECTURE.md, "Type flow". schema.ts is the source of truth for

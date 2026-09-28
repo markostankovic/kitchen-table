@@ -20,6 +20,18 @@ abstract final class Env {
   static const String supabaseAnonKey =
       String.fromEnvironment('SUPABASE_ANON_KEY');
 
+  /// A throwaway email/password account for emulators, which cannot run the
+  /// Google chooser. Supplied only by `make install-emulator` from the
+  /// gitignored `env/dev_login.json`; every other build leaves both empty, so
+  /// the sign-in screen shows Google alone. Anything passed as a dart-define
+  /// can be read back out of the APK -- never distribute a build that has it.
+  static const String devLoginEmail = String.fromEnvironment('DEV_LOGIN_EMAIL');
+  static const String devLoginPassword =
+      String.fromEnvironment('DEV_LOGIN_PASSWORD');
+
+  static bool get hasDevLogin =>
+      devLoginEmail.isNotEmpty && devLoginPassword.isNotEmpty;
+
   /// Whether both required values were supplied at build time.
   static bool get isConfigured =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;

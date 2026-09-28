@@ -118,6 +118,19 @@ class AuthRepository {
     _googleInitialized = true;
   }
 
+  /// Email/password sign-in, for the emulator-only dev login ([Env.hasDevLogin]).
+  ///
+  /// Not a user-facing path: the account is created by hand in the dashboard
+  /// with auto-confirm, so no email is ever sent. Lands in [watchAuthState]
+  /// through `onAuthStateChange` exactly like [signInWithGoogle].
+  Future<AppUser?> signInWithPassword(
+          {required String email, required String password}) =>
+      runGuarded(() async {
+        final AuthResponse response = await _client.auth
+            .signInWithPassword(email: email, password: password);
+        return _toAppUser(response.user);
+      });
+
   Future<void> signOut() => runGuarded(() async {
         await _client.auth.signOut();
       });
