@@ -705,6 +705,35 @@ on its hairline. Both were fixed and re-walked. The adult halves of Phase 6
 3b and 3c are confirmed. The owner side, create / join, and the
 Google-only checks are still open for the Galaxy.
 
+### Part 9a — Serif recipe titles, name-left ingredient rows, lighter steps
+
+**Status: complete** (`2fb06a8`). Decisions taken during it: D127. See
+`docs/journal/phase-7.md`.
+
+The first half of the design fixes round (`docs/design/BRIEF_design_fixes.md`
+items 1–3):
+
+- **Type:** Literata only on the wordmark (`displaySmall`) and recipe titles
+  (the new `KitchenType` extension); every other role is sans, and
+  `bodyLarge` is 18/28.
+- **The shared ingredient row:** the name on the left, the amount on the
+  right. The optional label and the unmatched ring are inline, and import
+  review insets every row.
+- **Steps:** 28dp discs and more air.
+
+The three walks (recipe detail, import review, shopping list; emulator,
+`sr`/`en` × light/dark) found four defects, all fixed and re-walked:
+
+- a doubled `opciono`;
+- a doubled amount on unmatched lines;
+- flagged-only insets;
+- a ring stranded on its own line.
+
+### Part 9b — Settings, in-app Light/Dark, clear filters
+
+Planned in `docs/active/phase7-part9b-settings-and-filters.md`: the second
+half of the design fixes round (items 4–6).
+
 ---
 
 ## Standing rules across phases

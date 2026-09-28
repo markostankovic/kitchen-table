@@ -1,63 +1,66 @@
 # State — 2026-09-28
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 8 (`47ec811`): sign-in, settings and
-household. This is the last per-surface slice of
-`docs/design/MIGRATION_PLAN.md` § 4, so every surface is now on the Garden
-vocabulary.
+**Last shipped:** Phase 7 part 9a (`2fb06a8`): serif recipe titles,
+name-left ingredient rows, lighter steps. It is the first half of the design
+fixes round (`docs/design/BRIEF_design_fixes.md` items 1–3).
 
-- **Sign-in:** a `displaySmall` wordmark in `primary` over a Literata
-  tagline (`signInTagline`, which replaces `signInSubtitle`). One 52dp
-  filled `primary` Google button (`AppSizes.signInButton`, no logo) is
-  pinned at the bottom, and D125's dev-login button stays under it.
-- **Settings:** a circular monogram avatar (`AppSizes.avatar`, 40), and
-  `Jezik` as an `AppSectionHeading`.
-- **Household:**
-  - a header with the name in `headlineSmall` and `2 člana` under it;
-  - circular all-mustard avatars, with `Član · vi` on your own row;
-  - an owner-only `⋮` → `Ukloni člana`;
-  - invite cards (the join field's code style, a tonal Copy, a destructive
-    text Revoke, in a `Wrap`) and an outlined create button;
-  - one bottom destructive row: Delete for the owner, Leave for an adult,
-    with D115's gating unchanged;
-  - `TextButton` destructive confirms.
-- **`AppMonogramTile`** gained `circular`.
-- **The theme:** `filledButtonTheme` no longer sets colours. It had been
-  painting every `FilledButton.tonal` green, including import review's
-  `Open recipe`. This was found on the walk.
+- **Type.**
+  - Every Material role is the platform sans except `displaySmall`, the
+    wordmark.
+  - `bodyLarge` is sans 18/28.
+  - A new `KitchenType` extension (`lib/core/theme/kitchen_type.dart`)
+    carries Literata recipe titles: `recipeTitle` 18/24 for cards and plan
+    entries, `recipeTitleLarge` 26/32 for the detail title and the monogram
+    letter.
+  - `headlineSmall` (the household name) is sans.
+- **`IngredientLineRow`.**
+  - The name is on the left; the amount (`½ kg`) is on the right, never
+    wraps, and lines up down a list.
+  - `optionalLabel` is inline after the name.
+  - The unmatched ring is inline after the name, glued to the last word.
+  - `inset` pads both edges; import review sets it on every row.
+- **Recipe detail.**
+  - A line with no catalog name gets no second amount.
+  - The inline `opciono` shows only when there is no note.
+  - 28dp step discs, `lg` to the text, `xl` between steps.
+  - Stat values are w600.
 
-D126 records it, and `docs/DESIGN_SYSTEM.md` gains § Household plus edits to
-§ Type, § Size, § Buttons and § Dialog.
+D127 records it and supersedes D118's Type half. `docs/DESIGN_SYSTEM.md` was
+updated in the code commit.
 
-Verified with `dart analyze` (clean), `flutter test` (**673/673**),
-`l10n-check`, `make test-sql`, Deno and `check_layers`. `make check` is
-green except the pre-existing `seed-check`. New tests cover:
+Verified with `dart analyze` (clean) and `flutter test` (**684/684**).
+`make check` is green except the pre-existing `seed-check`. Walked on the
+**emulator** (the Galaxy wasn't attached) across `sr`/`en` × light/dark:
+recipe detail, import review and the shopping list. The walks found four
+defects, all fixed and re-walked:
 
-- a Serbian 360×780 household;
-- `2 člana`;
-- destructive text confirms;
-- a circular tile;
-- the sign-in button and wordmark;
-- filled vs tonal colours in both themes.
+- a doubled `opciono`;
+- a doubled amount on unmatched lines;
+- flagged-only insets on import review;
+- a ring stranded on its own line.
 
-**Walked on the emulator**, not the Galaxy (it wasn't attached), across
-`sr`/`en` × light/dark. `/design-walk` now allows the emulator via `make
-install-emulator` and the dev login. It found two defects, both fixed and
-re-walked: the green tonal button, and the language toggle sitting flush on
-its hairline. The dev account is an adult, so it confirmed the adult halves
-of Phase 6 3b and 3c. The owner side is still open.
-**In flight:** none
-**Next:** the per-surface redesign is done, so what's left in Phase 7 is
-closing walk loops. One sitting with the physical Galaxy should cover:
+Noticed along the way, not fixed (not part 9a's):
 
-- `/design-walk meal-plan` (part 4);
+- the shopping list prints `1.5 kg` in Serbian;
+- units don't inflect (`2 glavica`);
+- the recipe-delete confirm is a filled button.
+
+**In flight:** none. Part 9b is planned but not started.
+**Next:** `/build-slice phase7-part9b-settings-and-filters`, the second half
+of the fixes round: grouped Settings, in-app Light/Dark, and clear filters
+on the recipe list. After that, closing walk loops. One sitting with the
+physical Galaxy should cover:
+
+- `/design-walk meal-plan` (part 4), which now also shows serif entry
+  titles;
 - the owner halves of Phase 6 3b and 3c (a second account joined, then a
   throwaway household);
 - part 7's create / join screens;
 - part 8's owner-side, failure-line and fresh-Google-account checks.
 
-After that, pick the next phase from `docs/ROADMAP.md`.
-**Latest decision:** D126
+Then pick the next phase from `docs/ROADMAP.md`.
+**Latest decision:** D127
 
 **Seven device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -75,7 +78,9 @@ closed Phase 5 part 6. It opened part 7's own loop, which now holds only
 the unwalked onboarding screens. Part 8's walk (`/design-walk
 auth-household`, 2026-09-28, on the emulator) confirmed the adult halves of
 Phase 6 3b and 3c. It opened part 8's own loop for the owner side and the
-Google-only checks. Oldest first:
+Google-only checks. Part 9a's three walks (recipe detail, import review,
+shopping list; 2026-09-28, emulator) found four defects, all fixed and
+re-walked, so part 9a's loop closed. Oldest first:
 
 - **Phase 5 part 5** — copy a generated shopping list, see the SnackBar,
   paste the text somewhere else. **Half confirmed by Phase 7 part 5's walk
@@ -390,6 +395,73 @@ Google-only checks. Oldest first:
   - the sign-in failure line;
   - part 7's create / join screens;
   - a fresh Google account via `on_auth_user_created`.
+
+- ~~**Phase 7 part 9a**~~ — **closed by its own three walks (2026-09-28,
+  emulator).** Serif only on recipe titles, ingredient rows name-left /
+  amount-right, lighter steps (`phase7-part9a-type-and-reading`).
+  **Recipe detail is walked**: on the **emulator**
+  (2026-09-28, `make install-emulator`, dev-login account) across `sr`/`en` ×
+  light/dark, using a throwaway `Walk test 9a` recipe that has since been
+  soft-deleted. `adb` can't type diacritics, so its long name was ASCII. What
+  was right:
+  - **Serif:** the recipe title, card titles and monogram letters are the
+    only serif. The app bar, `Sastojci` / `Koraci` and the dialog title are
+    sans.
+  - **Ingredients:** Palačinke's amounts (`200 g`, `2`, `1 dl`, `3 dl`,
+    `kašičica`) line up on the right edge. The number is green and the unit
+    muted, and both hold in dark. A long unmatched name wraps over two lines
+    with the dashed ring inline after it. `so` shows the name only, with
+    `po ukusu` under it.
+  - **Steps:** 18/28 sans, lighter than before. The 28dp disc centres on the
+    first line.
+  - **Stats:** values are w600.
+
+  **Two defects, fixed and re-walked the same sitting:**
+  - An optional line said `opciono` twice (`limun · opciono` over an
+    `opciono` note). The parser moves the marker into the note, and the
+    slice had dropped the old `note == null` guard. The guard is restored on
+    recipe detail and import review.
+  - An unmatched line showed its amount twice (`1,5 kg meseno…` with
+    `1½ kg` at the right). This predates the slice, but the flip made it
+    obvious. A line with no catalog name now gets no amount of its own
+    (rule 3: it renders as typed).
+
+  **Import review is walked** too, on the emulator the same day across
+  `sr`/`en` × light/dark. It used a pasted `Sarma od kiselog kupusa` that
+  was then discarded: 7 of 8 matched, 3 flagged, one unmatched, a `3–4`
+  range, `so · po ukusu`, and a `lovorov list · opciono` trailer. The
+  marker, tint and muted trailers hold in dark. Two more defects, both fixed
+  and re-walked:
+  - **Only flagged rows were inset.** The mock insets every row 12dp on both
+    sides, which is how flagged names line up with the others. A new
+    `IngredientLineRow.inset` does this, and import review sets it on every
+    row. The hairline and tint still run the full width.
+  - **The unmatched ring could wrap onto a line by itself** (`…od koliko
+    bude` / `◌`). A word joiner before the ring now keeps it with the last
+    word.
+
+  **Shopping list is walked**, clean, the same day across `sr`/`en` ×
+  light/dark. A throwaway Sarma import was saved, planned for Tuesday lunch
+  and used to generate this week's Serbian list; the recipe and the plan
+  entry were removed afterwards. The generated list itself stays, since a
+  list is a snapshot. What was right:
+  - amounts line up on the right edge down the card (`1.5 kg`, `300 ml`,
+    `2 kom`, `1 glavica`);
+  - the long unmatched `komadic … od koliko bude ◌` wraps with its ring;
+  - `so` under `Verovatno imate` shows the name only, with `so, po ukusu`
+    as its trailer;
+  - the gaps between rows fall between category blocks, with no headings,
+    per D105;
+  - legible in dark;
+  - the `SR` tag and the list's own text stay Serbian under English labels,
+    by design.
+
+  **Seen, not part 9a's, left alone:**
+  - the list prints `1.5 kg` with a decimal point in a Serbian list;
+  - units don't inflect (`2 glavica`).
+
+  **Not reached on device:** a *matched* long name against its amount.
+  Catalog names are short, so only the 360dp widget test covers it.
 
 All seven open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind

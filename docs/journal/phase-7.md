@@ -1013,3 +1013,130 @@ emulator.
 **Closed by it:** nothing outright. The adult halves of Phase 6 3b and 3c
 are confirmed. **Opened:** part 8's own loop, for the owner side and the
 Google-only checks.
+
+### Part 9a — Serif recipe titles, name-left ingredient rows, lighter steps
+
+**Status: complete** (`2fb06a8`). Decisions taken during it: D127.
+
+The first half of the design fixes round (`docs/design/BRIEF_design_fixes.md`
+items 1–3, against Claude Design's updated `design-system.pdf` and the
+reference screens). It is presentation only: no provider, repository, route,
+ARB string or `supabase/` file changed, apart from one ARB *description*.
+`docs/DESIGN_SYSTEM.md` was updated in the code commit: § Type (new table,
+new `KitchenType` subsection), § Size and motion, § The semantic layer,
+§ Navigation, § Inputs, § Ingredient lines, § Steps and stats, § Recipe
+card, § Meal entries, § Dialog and the Status paragraph.
+
+- **Type.** Every Material role is the platform sans except `displaySmall`,
+  the wordmark. `bodyLarge` went from Literata 17/26 to sans 18/28.
+  - A new `KitchenType` `ThemeExtension` (`lib/core/theme/kitchen_type.dart`,
+    on `KitchenColors`' pattern) carries the serif recipe titles:
+    - `recipeTitle` 18/24: card titles, and recipe or leftover titles on
+      plan entries. A note on the plan stays `bodyLarge`.
+    - `recipeTitleLarge` 26/32: the detail title and a card's monogram
+      letter.
+  - `headlineSmall` went sans against the PDF, because the Household mock
+    draws the household name in sans (D127).
+  - The sign-in tagline is sans now, which option (b) accepts.
+- **`IngredientLineRow`.** Name left, amount right. The amount is one
+  `Text.rich` with `softWrap: false`: the number in `primary` w600 with
+  tabular figures, the unit in `onSurfaceVariant`, and a 24dp gap only when
+  there is an amount. Minimum height is 48. The fixed `AppSizes.thumb`
+  quantity column is gone.
+  - New `optionalLabel`, inline after the name as ` · opciono`.
+  - The dashed ring is inline after the name, as a `WidgetSpan`. Its size
+    stays `iconInMeta` 16 rather than the PDF's 14; a token for 2dp was not
+    worth it.
+  - The class doc's "unit rides with the name" reasoning was rewritten,
+    since the unit now rides with the number.
+- **Steps and stats.** `stepDisc` went from 32 to 28, one `bodyLarge` line,
+  so it centres on the first line with no offset. The disc→text gap is `lg`,
+  and steps are `xl` apart. Stat values are w600.
+- **Doc comments** in `AppSectionHeading`, `AppSearchField`,
+  `AppMonogramTile` and `app_theme.dart` no longer claim Literata. The
+  `signInTagline` ARB description was updated to match.
+
+**Changed by the walks.** Four fixes, each with a widget test:
+
+- **`opciono` twice.** `limun · opciono` sat over an `opciono` note. The
+  parser moves the optional marker into the note, and the old code had
+  shown the suffix only when there was no note. The slice dropped that
+  guard; recipe detail and import review have it back.
+- **Doubled amount on an unmatched line.** A line with no catalog name
+  renders its raw text, which already carries the amount, so `1,5 kg mesa`
+  also showed `1½ kg` at the right. This predates the slice, but the flip
+  made it obvious. Recipe detail now gives such a line no amount.
+- **Only flagged import rows were inset.** `Review import@1x.png` insets
+  *every* row 12dp on both sides, which is how flagged names line up. The
+  slice plan had given only the flagged row a left pad. The new
+  `IngredientLineRow.inset` is set by import review on every row. A flagged
+  row is always inset, and the hairline and tint still run the full width.
+- **A stranded ring.** `komadic dimljenih rebaraca od koliko bude` wrapped
+  with the ring alone on the second line. A word joiner (U+2060) before the
+  `WidgetSpan` forbids that break.
+
+**How it was verified.** `dart analyze` was clean. `flutter test` passed
+**684/684**. The new or rewritten tests cover:
+
+- the amount right of the name, and the unit beside the number;
+- the number `primary` w600 and the unit muted;
+- right edges lining up down a list;
+- a long Serbian name wrapping at 360dp, at least 24dp clear of a one-line
+  `1,5 kg`;
+- no amount, so no gap;
+- `optionalLabel` inline;
+- a minimum height of 48;
+- the ring inline after the name, and glued to the last word;
+- inset rows lining up with flagged ones on both edges;
+- the flagged name clearing the marker;
+- every role but `displaySmall` not being Literata;
+- `KitchenType` values in both brightnesses;
+- an unmatched line with an amount saying it once;
+- no inline `opciono` when the note already says it.
+
+The recipe-detail and shopping-list tests now find amounts as `200 g` /
+`1.2 kg`, and unmatched names via `textContaining` (the ring's placeholder is
+in the run's plain text). `make test-sql`, the Deno suite and lint passed.
+`make check` is otherwise green except the pre-existing `seed-check`.
+`l10n-check` passes once committed.
+
+A repo-wide `dart format` during the walks rewrote about 115 untouched files.
+The repo is not format-clean. That noise was stripped before the commit.
+
+**Walked on the emulator.** The Galaxy wasn't attached. Three walks ran on
+2026-09-28, each across `sr`/`en` × light/dark, using the hosted release via
+`make install-emulator` and the dev-login account:
+
+- **`/design-walk recipe-detail`.** It used a throwaway `Walk test 9a`
+  recipe, since soft-deleted; `adb` can't type diacritics, so its long name
+  was ASCII.
+  - Only recipe titles, card titles and monogram letters are serif.
+  - Palačinke's amounts line up on the right.
+  - The long unmatched name wraps with its ring.
+  - `so` shows over `po ukusu`.
+  - Steps read lighter, and the disc centres on the first line.
+- **`/design-walk import-review`.** A pasted `Sarma od kiselog kupusa`,
+  discarded afterwards, came back 7/8 matched with 3 flagged, one unmatched
+  and a `3–4` range.
+  - After the inset fix, names and amounts line up flagged or not.
+  - The marker, tint and muted trailers hold in dark.
+- **`/design-walk shopping-list`.** The Sarma was saved, planned for Tuesday
+  lunch, and this week's Serbian list regenerated. The recipe and the plan
+  entry were removed afterwards; the list stays, as a snapshot.
+  - Amounts line up down the card, and the unmatched line wraps with its
+    ring.
+  - `so` under `Verovatno imate` is the name only.
+  - The gaps fall between category blocks (D105).
+  - Legible in dark.
+
+Seen but not part 9a's:
+
+- the list prints `1.5 kg` with a decimal point in Serbian;
+- units don't inflect (`2 glavica`);
+- the recipe-delete confirm is still a filled button, against § Dialog.
+
+Not reached on device: a long *matched* name against its amount, since
+catalog names are short. The 360dp widget test covers it.
+
+**Closed by it:** its own loop, since all three walks ran clean after the
+fixes. **Opened:** nothing.
