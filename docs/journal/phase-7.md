@@ -1140,3 +1140,132 @@ catalog names are short. The 360dp widget test covers it.
 
 **Closed by it:** its own loop, since all three walks ran clean after the
 fixes. **Opened:** nothing.
+
+### Part 9b — Grouped Settings, in-app Light/Dark, clear filters
+
+**Status: complete** (`782ca40`). Decisions taken during it: D128.
+
+The second half of the design fixes round (`docs/design/BRIEF_design_fixes.md`
+items 4–6 and the two extras, against `Settings@1x.png`,
+`Recipes — filters active@1x.png`, `Recipes — no results@1x.png` and the
+PDF's FilterRow and Settings patterns). No Supabase migration and no Edge
+Function. `docs/DESIGN_SYSTEM.md` was updated in the code commit: § Buttons,
+§ Chips, a new § Settings, § Empty state and a rewritten § Light and dark.
+
+- **Theme mode (D128).** Light or Dark, Light by default, no System option.
+  - A new Drift table `DevicePreferences` (`key` / `value`); schema 7 → 8.
+    `onUpgrade` now skips it when it drops tables, and
+    `clearHouseholdCache` leaves it, with a comment saying why.
+  - `core/db/device_preferences.dart`: `DevicePreferenceStore`, on
+    `sync_watermark.dart`'s `cacheOrElse` / `cacheWrite` pattern.
+  - `core/theme/app_theme_mode.dart`: `AppThemeMode`, a keep-alive
+    `AsyncNotifier<ThemeMode>`. `set()` writes, then updates the state.
+  - `main.dart` builds a `ProviderContainer`, awaits the mode, and runs
+    under `UncontrolledProviderScope`. `KitchenTableApp` passes `themeMode`.
+- **Settings.** Rewritten into groups. The profile card comes first, then
+  `Izgled` (the theme segments, sun/moon kept on the selected one, no check)
+  and `Jezik` (unchanged, never translated). Then `Domaćinstvo`: the whole
+  card is the tap target, with the household's name and `2 člana`. Last,
+  after a hairline, `Nalog` and a full-width outlined Sign out in
+  `onSurface`. `_setLocale`, `_signOut` and `_initial` are kept.
+  - The name and count come from a new `currentHouseholdSummaryProvider`
+    in `core/household/current_household.dart`. It returns a
+    `({String name, int memberCount})` record, not the `Household` model
+    (D52).
+  - `householdMenuItem` became unused and was removed from both ARBs.
+- **Recipe list.**
+  - `_clearFilters()` drops the tag and Favorites, never the query.
+  - The `_FilterRow` starts with an outlined `ActionChip` (`Poništi` /
+    `Clear`) and a 1dp × 24 divider while a filter is on.
+  - The row is full-bleed: the gutter moved onto the scroll view.
+  - While narrowed, a `recipeCount` plural line (`2 recepta`) rides as the
+    list's item 0.
+  - With a filter on and no results, the empty state adds
+    `noRecipesMatchFilterBody` and a tonal `Poništi filtere`. A query alone
+    keeps the old title with no action.
+- **12 new ARB keys** in both locales, each with an `@` description.
+
+**Changed by the walk.** One defect, fixed in the slice at the user's call:
+
+- **A Dark cold start flashed white.** The first Flutter frame was already
+  dark, so the preload worked. But the stock Android launch screen
+  (`values*/styles.xml`, white or black by the phone's night mode) came
+  first. The launch screen is now flat `primary` green `#366A35` with no
+  icon, from one `splash_background` colour:
+  - `values-night` is deleted;
+  - `values-v31` sets `windowSplashScreenBackground` and a transparent
+    `windowSplashScreenAnimatedIcon` (the stock Flutter logo was the
+    launcher icon);
+  - `NormalTheme` uses the same colour.
+
+  The first build failed: `--` is not allowed inside an XML comment.
+
+**How it was verified.** `dart analyze` was clean. `flutter test` passed
+**704/704**. The new tests cover:
+
+- `device_preferences_test.dart`: an unwritten key reads null; the store
+  round-trips; `clearHouseholdCache` leaves the row; a v7 file upgrades to
+  v8 with the table created and the caches still dropped; a simulated v9
+  bump keeps the stored theme. With the `onUpgrade` skip removed, the v9
+  test fails.
+- `app_theme_mode_test.dart`: Light by default; an unknown value reads
+  Light; `set(dark)` writes the store; a stored Dark is read back.
+- `app_shell_test.dart` (settings layout): a Serbian 360×780 render with no
+  overflow; Sign out is an `OutlinedButton` in `onSurface`, not `error`; the
+  theme segment writes the store and flips `MaterialApp.themeMode`; the
+  language labels are untranslated in English. The two household-navigation
+  tests now tap the household's name.
+- `recipe_screens_test.dart` (recipe list filters): Clear only with a
+  filter; a query alone brings no Clear; Clear resets the tag and Favorites
+  but keeps the query; the count only while narrowed; `1 recept` /
+  `2 recepta` / `5 recepata`; `Clear filters` restores the list; a query
+  alone gets no action.
+
+`make check` passed lint, tests and Deno tests, then stopped at the
+pre-existing `seed-check`. `make test-sql` and `make l10n-check` pass on
+their own.
+
+**Walked on the emulator.** The Galaxy wasn't attached. All walks ran
+2026-09-28 on the hosted release via `make install-emulator`, with the
+dev-login account.
+
+- **`/design-walk settings`**, `sr`/`en` × light/dark with the in-app
+  toggle.
+  - Every group fits on one 1080×2424 screen. `Važi samo za ovu
+    aplikaciju…` wraps evenly over two lines; the English line fits on one.
+  - Muted headers and subtitles hold in dark.
+  - `Tamna` repaints within 0.6s.
+  - Phone in night mode + app on `Svetla` stays light.
+  - Dark survives sign-out (the sign-in screen stays dark) and signing back
+    in.
+  - The household row opens the household screen.
+- **`/design-walk recipes`**, all four combinations.
+  - No Clear with nothing selected. With a filter on, Clear and the divider
+    come first and are visible without scrolling. The last chip runs off the
+    edge.
+  - `p` + Doručak → `1 recept`; Clear → `p` kept, `2 recepta`.
+  - Omiljeni + Doručak → `search_off`, the title, a one-line body in both
+    languages, and a tonal `Poništi filtere` that restores the list.
+  - Readable in dark.
+- **Cold-start re-walk after the splash fix.** Eight frames per launch in
+  all four phone × app combinations. Each goes from green to the app's own
+  theme; the wrong theme's colour never shows. Nothing green shows through
+  while the keyboard opens.
+
+Not reached:
+
+- `5 recepata` (the household has three recipes; the widget test covers
+  it);
+- anything Google. The dev-login account also shows `Prijavljeni ste Google
+  nalogom`, which is only true of real accounts.
+
+Seen, not part 9b's:
+
+- For a frame on a cold start, the tag chips show raw keys (`doručak`,
+  and `sweet` in English on a Serbian screen) before `tagLabelsProvider`
+  resolves. The fallback is documented as intended.
+- The Clear chip's ✕ takes the theme's `primary` chip-icon colour, which the
+  slice didn't specify.
+
+**Closed by it:** its own loop, since both walks and the cold-start re-walk
+ran clean after the fix. **Opened:** nothing.

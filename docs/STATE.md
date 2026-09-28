@@ -1,56 +1,53 @@
 # State — 2026-09-28
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 9a (`2fb06a8`): serif recipe titles,
-name-left ingredient rows, lighter steps. It is the first half of the design
-fixes round (`docs/design/BRIEF_design_fixes.md` items 1–3).
+**Last shipped:** Phase 7 part 9b (`782ca40`): grouped Settings, in-app
+Light/Dark and clear filters on the recipe list. It is the second half of the
+design fixes round (`docs/design/BRIEF_design_fixes.md` items 4–6), so the
+round is done.
 
-- **Type.**
-  - Every Material role is the platform sans except `displaySmall`, the
-    wordmark.
-  - `bodyLarge` is sans 18/28.
-  - A new `KitchenType` extension (`lib/core/theme/kitchen_type.dart`)
-    carries Literata recipe titles: `recipeTitle` 18/24 for cards and plan
-    entries, `recipeTitleLarge` 26/32 for the detail title and the monogram
-    letter.
-  - `headlineSmall` (the household name) is sans.
-- **`IngredientLineRow`.**
-  - The name is on the left; the amount (`½ kg`) is on the right, never
-    wraps, and lines up down a list.
-  - `optionalLabel` is inline after the name.
-  - The unmatched ring is inline after the name, glued to the last word.
-  - `inset` pads both edges; import review sets it on every row.
-- **Recipe detail.**
-  - A line with no catalog name gets no second amount.
-  - The inline `opciono` shows only when there is no note.
-  - 28dp step discs, `lg` to the text, `xl` between steps.
-  - Stat values are w600.
+- **Theme (D128).**
+  - Settings → Izgled picks Light or Dark for this app only. Light is the
+    default, and there is no System option.
+  - The choice is stored on the device in a new Drift `device_preferences`
+    table (schema 8). It survives cache bumps and sign-out, and
+    `main.dart` reads it before the first frame.
+  - The Android launch screen is flat `primary` green in both phone modes,
+    with no icon and no `values-night`.
+- **Settings.**
+  - Grouped cards, with `titleSmall` headers.
+  - The household row shows the name and `2 člana`, from a new
+    `currentHouseholdSummaryProvider` record in `core/household/`.
+  - A neutral outlined Sign out sits under a hairline.
+- **Recipe list.**
+  - A Clear chip and divider start the full-bleed filter row while a tag
+    or Favorites is on. Clear leaves the search text alone.
+  - A `2 recepta` count shows while the list is narrowed.
+  - The filter-aware no-results state has a tonal `Poništi filtere`.
 
-D127 records it and supersedes D118's Type half. `docs/DESIGN_SYSTEM.md` was
-updated in the code commit.
+D128 records it, in contrast with D77's locale-on-profile.
+`docs/DESIGN_SYSTEM.md` was updated in the code commit.
 
-Verified with `dart analyze` (clean) and `flutter test` (**684/684**).
+Verified with `dart analyze` (clean) and `flutter test` (**704/704**).
 `make check` is green except the pre-existing `seed-check`. Walked on the
 **emulator** (the Galaxy wasn't attached) across `sr`/`en` × light/dark:
-recipe detail, import review and the shopping list. The walks found four
-defects, all fixed and re-walked:
+Settings and the recipe list. The walk found one defect: the stock launch
+screen flashed white before a Dark cold start. It was fixed in the slice, and
+the cold start was re-walked in all four phone × app combinations.
 
-- a doubled `opciono`;
-- a doubled amount on unmatched lines;
-- flagged-only insets on import review;
-- a ring stranded on its own line.
+Noticed along the way, not fixed (not part 9b's):
 
-Noticed along the way, not fixed (not part 9a's):
+- on a cold start, tag chips show raw keys (`sweet` in a Serbian row) for a
+  frame before their labels load;
+- `.claude/commands/design-walk.md` § 3 still says brightness follows the
+  system and to use `adb shell cmd uimode`. Since D128, use the in-app
+  toggle.
+- Still open from 9a: the shopping list prints `1.5 kg` in Serbian; units
+  don't inflect (`2 glavica`); the recipe-delete confirm is a filled button.
 
-- the shopping list prints `1.5 kg` in Serbian;
-- units don't inflect (`2 glavica`);
-- the recipe-delete confirm is a filled button.
-
-**In flight:** none. Part 9b is planned but not started.
-**Next:** `/build-slice phase7-part9b-settings-and-filters`, the second half
-of the fixes round: grouped Settings, in-app Light/Dark, and clear filters
-on the recipe list. After that, closing walk loops. One sitting with the
-physical Galaxy should cover:
+**In flight:** none.
+**Next:** the design fixes round is finished, so close walk loops. One
+sitting with the physical Galaxy should cover:
 
 - `/design-walk meal-plan` (part 4), which now also shows serif entry
   titles;
@@ -60,7 +57,7 @@ physical Galaxy should cover:
 - part 8's owner-side, failure-line and fresh-Google-account checks.
 
 Then pick the next phase from `docs/ROADMAP.md`.
-**Latest decision:** D127
+**Latest decision:** D128
 
 **Seven device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -80,7 +77,10 @@ auth-household`, 2026-09-28, on the emulator) confirmed the adult halves of
 Phase 6 3b and 3c. It opened part 8's own loop for the owner side and the
 Google-only checks. Part 9a's three walks (recipe detail, import review,
 shopping list; 2026-09-28, emulator) found four defects, all fixed and
-re-walked, so part 9a's loop closed. Oldest first:
+re-walked, so part 9a's loop closed. Part 9b's walks (Settings and
+recipes, 2026-09-28, emulator) found one defect, the white native splash on a
+Dark cold start. It was fixed and re-walked the same sitting, so part 9b's
+loop closed. Oldest first:
 
 - **Phase 5 part 5** — copy a generated shopping list, see the SnackBar,
   paste the text somewhere else. **Half confirmed by Phase 7 part 5's walk
@@ -462,6 +462,68 @@ re-walked, so part 9a's loop closed. Oldest first:
 
   **Not reached on device:** a *matched* long name against its amount.
   Catalog names are short, so only the 360dp widget test covers it.
+
+- ~~**Phase 7 part 9b**~~ — **closed by its own walks (2026-09-28,
+  emulator).** Grouped Settings, in-app Light/Dark, clear filters on the
+  recipe list (`phase7-part9b-settings-and-filters`).
+  **Settings is walked**: on the **emulator** (2026-09-28,
+  `make install-emulator`, dev-login account) across `sr`/`en` ×
+  light/dark, using the in-app theme toggle. What was right:
+  - **Layout:** the groups, their headers, the cards and the neutral
+    outlined `Odjavi se` / `Sign out` all fit at 1080×2424 without scrolling.
+    `Važi samo za ovu aplikaciju, bez obzira na podešavanje telefona.` wraps
+    cleanly over two lines, and the English line fits on one. `2 člana` /
+    `2 members` read right. The muted headers and subtitles hold in dark.
+  - **Theme:** tapping `Tamna` repaints within 0.6s. With the phone in
+    night mode and the app on `Svetla`, the app stays light. Dark survives
+    sign-out (the sign-in screen stays dark) and signing back in.
+  - **Household row:** opens the household screen.
+
+  **One defect, fixed and re-walked the same sitting:**
+  - **A cold start in Dark flashed white.** The first Flutter frame
+    is already dark, so the Dart preload works. But Android's native launch
+    screen (`android/app/src/main/res/values*/styles.xml`, the stock white
+    `launch_background` with the Flutter logo) comes first. It follows the
+    phone's night mode, not the app's choice, and it can't read Drift. So a
+    Dark user on a light phone sees a white splash, and a Light user on a
+    dark phone sees a black one. The fix is probably a neutral splash that
+    doesn't depend on the brightness (a brand surface colour, the same in
+    `values` and `values-night`), which is a design call.
+
+    **Fixed in part 9b:** the user chose to fix it inside the slice. The
+    launch screen is now flat `primary` green (`#366A35`) with no icon, from
+    one `splash_background` colour. `values-night` is deleted, and a new
+    `values-v31` sets Android 12+'s `windowSplashScreenBackground` and a
+    transparent icon; the stock Flutter logo was the launcher icon.
+    `NormalTheme` uses the same colour. **Re-walked:** a cold start in all
+    four combinations of phone mode × app theme goes green, then the app's
+    own theme. The wrong theme's colour never appears (`c_phone{L,D}_app{L,D}`
+    strips). Nothing green shows through while the keyboard opens.
+
+  **The recipe list is walked too** (`/design-walk recipes`, same sitting,
+  emulator, all four combinations). All right:
+  - **Filter row:** with nothing selected there is no `Poništi` / `Clear`,
+    and the last chip runs off the right edge (full-bleed). With a tag or
+    Favorites on, the outlined Clear chip and the hairline come first and are
+    visible without scrolling. Both hold in dark.
+  - **Clear:** it drops the tag and Favorites and keeps the search text
+    (`p` + Doručak → `1 recept`; Clear → `p` still in the field,
+    `2 recepta`).
+  - **Count:** `1 recept`, `2 recepta`, `1 recipe`, `2 recipes`, muted and
+    readable in dark. A search on its own shows the count and no Clear chip.
+    `5 recepata` isn't reachable: this household has three recipes, so that
+    form rests on the widget test.
+  - **No results** (Omiljeni + Doručak): `search_off`, `Nema recepata koji se
+    poklapaju.`, the body on one line in both languages, and a tonal
+    `Poništi filtere` / `Clear filters` that restores the full list.
+
+  Seen, not a defect: the Clear chip's ✕ takes the theme's chip-icon colour
+  (green `primary`), which the slice didn't specify.
+
+  **Not reachable on the emulator:** the Google half of `Prijavljeni ste
+  Google nalogom`. The dev-login account shows the line too, which is only
+  true of real (Google-only) accounts.
+
 
 All seven open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind

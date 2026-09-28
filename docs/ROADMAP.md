@@ -731,8 +731,25 @@ The three walks (recipe detail, import review, shopping list; emulator,
 
 ### Part 9b — Settings, in-app Light/Dark, clear filters
 
-Planned in `docs/active/phase7-part9b-settings-and-filters.md`: the second
-half of the design fixes round (items 4–6).
+**Status: complete** (`782ca40`). Decisions taken during it: D128. See
+`docs/journal/phase-7.md`.
+
+The second half of the design fixes round (`docs/design/BRIEF_design_fixes.md`
+items 4–6):
+
+- **Settings:** grouped cards, the household row with its name and member
+  count, and a neutral outlined Sign out set apart under a hairline.
+- **Light/Dark in the app:** stored on the device in Drift, Light by default,
+  no System option. It survives cache bumps and sign-out, and it is read
+  before the first frame.
+- **The recipe list:** a Clear chip first in the full-bleed filter row, a
+  result count while narrowed, and `Poništi filtere` on the filter-aware
+  no-results state.
+
+The walks (Settings and the recipe list; emulator, `sr`/`en` × light/dark)
+found one defect: the Android launch screen flashed white before a Dark cold
+start. It is now one brand green in both phone modes, and the cold start was
+re-walked in all four phone × app combinations.
 
 ---
 
