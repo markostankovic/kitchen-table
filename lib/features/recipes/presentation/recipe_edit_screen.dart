@@ -10,7 +10,12 @@ import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/l10n/language_labels.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/theme/app_radii.dart';
+import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_action_bar.dart';
 import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/app_field_label.dart';
 import '../../../core/widgets/app_section_heading.dart';
 import '../application/recipe_editor.dart';
 import '../domain/recipe.dart';
@@ -197,10 +202,16 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
   }
 
   Widget _buildForm(RecipeDraft draft, AppLocalizations l10n) {
+    final TextStyle? fieldStyle = Theme.of(context).textTheme.bodyMedium;
     return Form(
       key: _formKey,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.xl,
+        ),
         children: <Widget>[
           _PhotoField(
             pickedImage: _pickedImage,
@@ -210,36 +221,48 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
             onRemove: _removeImage,
             l10n: l10n,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
+          AppFieldLabel(text: l10n.titleLabel),
+          const SizedBox(height: AppSpacing.sm),
           TextFormField(
             initialValue: draft.title,
             textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              labelText: l10n.titleLabel,
-              border: const OutlineInputBorder(),
-            ),
+            style: fieldStyle,
             validator: (String? value) =>
                 (value ?? '').trim().isEmpty ? l10n.titleRequiredError : null,
             onChanged: _editor.setTitle,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.lg),
+          AppFieldLabel(text: l10n.descriptionLabel),
+          const SizedBox(height: AppSpacing.sm),
           TextFormField(
             initialValue: draft.description ?? '',
             textCapitalization: TextCapitalization.sentences,
             maxLines: 3,
-            decoration: InputDecoration(
-              labelText: l10n.descriptionLabel,
-              border: const OutlineInputBorder(),
-            ),
+            style: fieldStyle,
             onChanged: _editor.setDescription,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.lg),
+          // Labels in a row of their own, bottom-aligned, above a row of the
+          // fields: at 360dp each column is about 101dp and `Priprema (min)`
+          // in titleSmall can wrap. A wrapped label then pushes all three
+          // fields down together, so they always share one line.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: <Widget>[
+              Expanded(child: AppFieldLabel(text: l10n.servingsFieldLabel)),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(child: AppFieldLabel(text: l10n.prepMinutesFieldLabel)),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(child: AppFieldLabel(text: l10n.cookMinutesFieldLabel)),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Expanded(
                 child: _NumberField(
-                  label: l10n.servingsFieldLabel,
                   value: draft.servings,
                   // The table's check is `servings > 0`; a recipe for nobody
                   // is not a thing.
@@ -248,20 +271,18 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
                   l10n: l10n,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: _NumberField(
-                  label: l10n.prepMinutesFieldLabel,
                   value: draft.prepMinutes,
                   minimum: 0,
                   onChanged: _editor.setPrepMinutes,
                   l10n: l10n,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: _NumberField(
-                  label: l10n.cookMinutesFieldLabel,
                   value: draft.cookMinutes,
                   minimum: 0,
                   onChanged: _editor.setCookMinutes,
@@ -270,11 +291,11 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           // 'sr' and 'en' are the only values the column allows, so this is a
           // closed choice rather than a text field.
-          _FieldLabel(text: l10n.writtenInFieldLabel),
-          const SizedBox(height: 6),
+          AppFieldLabel(text: l10n.writtenInFieldLabel),
+          const SizedBox(height: AppSpacing.sm),
           SegmentedButton<String>(
             segments: const <ButtonSegment<String>>[
               ButtonSegment<String>(value: 'sr', label: Text('Srpski')),
@@ -284,9 +305,9 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
             onSelectionChanged: (Set<String> selection) =>
                 _editor.setLocale(selection.first),
           ),
-          const SizedBox(height: 16),
-          _FieldLabel(text: l10n.statusFieldLabel),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.lg),
+          AppFieldLabel(text: l10n.statusFieldLabel),
+          const SizedBox(height: AppSpacing.sm),
           SegmentedButton<RecipeStatus>(
             segments: <ButtonSegment<RecipeStatus>>[
               ButtonSegment<RecipeStatus>(
@@ -299,17 +320,16 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
             onSelectionChanged: (Set<RecipeStatus> selection) =>
                 _editor.setStatus(selection.first),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
+          AppFieldLabel(text: l10n.tagsFieldLabel),
+          const SizedBox(height: AppSpacing.sm),
           TextFormField(
             initialValue: draft.tags.join(', '),
-            decoration: InputDecoration(
-              labelText: l10n.tagsFieldLabel,
-              helperText: l10n.tagsHelperText,
-              border: const OutlineInputBorder(),
-            ),
+            style: fieldStyle,
+            decoration: InputDecoration(helperText: l10n.tagsHelperText),
             onChanged: (String value) => _editor.setTags(_parseTags(value)),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xl),
           AppSectionHeading(text: l10n.ingredientsHeading),
           ReorderableListView(
             shrinkWrap: true,
@@ -337,7 +357,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
               label: Text(l10n.addIngredientButton),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.xl),
           AppSectionHeading(text: l10n.stepsHeading),
           ReorderableListView(
             shrinkWrap: true,
@@ -374,31 +394,16 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
   }
 
   Widget _buildSaveBar(AppLocalizations l10n) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (_error != null) ...<Widget>[
-              Text(
-                _errorText(l10n),
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-              const SizedBox(height: 8),
-            ],
-            FilledButton(
-              onPressed: _saving ? null : _submit,
-              child: _saving
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text(l10n.saveButton),
-            ),
-          ],
-        ),
+    return AppActionBar(
+      error: _error == null ? null : _errorText(l10n),
+      child: FilledButton(
+        onPressed: _saving ? null : _submit,
+        child: _saving
+            ? const SizedBox.square(
+                dimension: AppSizes.iconInMeta,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(l10n.saveButton),
       ),
     );
   }
@@ -451,7 +456,7 @@ class _PhotoField extends StatelessWidget {
           AspectRatio(
             aspectRatio: 16 / 9,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadii.sm),
               child: bytes != null
                   ? Image.memory(bytes, fit: BoxFit.cover)
                   : Image.network(
@@ -468,7 +473,7 @@ class _PhotoField extends StatelessWidget {
                     ),
             ),
           ),
-        if (hasPhoto) const SizedBox(height: 8),
+        if (hasPhoto) const SizedBox(height: AppSpacing.sm),
         Row(
           children: <Widget>[
             Expanded(
@@ -478,7 +483,7 @@ class _PhotoField extends StatelessWidget {
                 label: Text(l10n.cameraButton),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: () => onPick(ImageSource.gallery),
@@ -487,7 +492,7 @@ class _PhotoField extends StatelessWidget {
               ),
             ),
             if (hasPhoto) ...<Widget>[
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               IconButton(
                 tooltip: l10n.removePhotoTooltip,
                 icon: const Icon(Icons.delete_outline),
@@ -525,14 +530,14 @@ class _EditableRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           ReorderableDragStartListener(
             index: index,
             child: const Padding(
-              padding: EdgeInsets.only(right: 4),
+              padding: EdgeInsets.only(right: AppSpacing.xs),
               child: Icon(Icons.drag_handle),
             ),
           ),
@@ -541,11 +546,8 @@ class _EditableRow extends StatelessWidget {
               initialValue: initialValue,
               maxLines: maxLines,
               textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                hintText: hintText,
-                border: const OutlineInputBorder(),
-                isDense: true,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium,
+              decoration: InputDecoration(hintText: hintText),
               onChanged: onChanged,
             ),
           ),
@@ -563,14 +565,12 @@ class _EditableRow extends StatelessWidget {
 /// A whole-number field that reports null for "not given".
 class _NumberField extends StatelessWidget {
   const _NumberField({
-    required this.label,
     required this.value,
     required this.minimum,
     required this.onChanged,
     required this.l10n,
   });
 
-  final String label;
   final int? value;
   final int minimum;
   final ValueChanged<int?> onChanged;
@@ -581,11 +581,7 @@ class _NumberField extends StatelessWidget {
     return TextFormField(
       initialValue: value?.toString() ?? '',
       keyboardType: TextInputType.number,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        isDense: true,
-      ),
+      style: Theme.of(context).textTheme.bodyMedium,
       // Every one of these columns is nullable, so blank is valid. Anything
       // else has to survive the table's check constraint.
       validator: (String? raw) {
@@ -610,14 +606,4 @@ class _NumberField extends StatelessWidget {
       },
     );
   }
-}
-
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) =>
-      Text(text, style: Theme.of(context).textTheme.labelLarge);
 }

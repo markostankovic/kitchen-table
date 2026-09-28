@@ -637,10 +637,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Fill the frame with the recipe. A whole page is fine -- two columns, a sidebar of ingredients, a photo of the dish. Anything it credits is saved with the recipe.';
 
   @override
-  String get takePhotoButton => 'Take a photo';
+  String get takePhotoButton => 'Camera';
 
   @override
-  String get choosePhotoButton => 'Choose a photo';
+  String get choosePhotoButton => 'Gallery';
 
   @override
   String get importUrlTitle => 'Import from a link';

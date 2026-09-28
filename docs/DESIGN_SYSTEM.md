@@ -302,6 +302,20 @@ person while present in the widget tree (Phase 7 part 2's device walk). It is
 the screen's one filled action, and the one filled action is `primary`
 everywhere else here.
 
+### Action bar
+
+A screen whose save action sits at the bottom puts it on `AppActionBar`:
+`surface` (not `surfaceContainer`, the nav bar's colour — the two would merge)
+with a 1dp `outlineVariant` top hairline, padded `lg`/`md`, and an optional
+already-localized error line above the buttons in `bodySmall` `error`, `sm`
+above them. Its child is one filled button, full width, or equal `Expanded`
+halves `md` apart. The busy spinner inside a button is the call site's,
+`AppSizes.iconInMeta` square.
+
+The onboarding screens (create / join household) do **not** use it: they have
+no app bar and centre their form, so the filled button sits in that column,
+then `sm`, then the text-button switcher.
+
 ### Cards
 
 `surfaceContainerLow`, a 1dp `outlineVariant` hairline, radius 12, elevation 0.
@@ -326,6 +340,22 @@ and `bodyLarge` became Literata in part 2. The hint half is set once in
 `inputDecorationTheme`; the typed half **cannot be themed**, so every
 `TextField` passes `style: bodyMedium` at its call site. Forgetting it is
 exactly the defect part 2's walk found in the search box.
+
+**The label is `AppFieldLabel`** (`titleSmall`, no padding of its own). The
+call site writes the gaps: `sm` from label to field, `lg` from a field to the
+next label, `xl` from the last field of a group to an `AppSectionHeading`. A
+field whose purpose is already said by the paragraph or title above it (the
+paste box, the join code) has no label. `hintText`, `helperText` and
+`counterText: ''` stay in the decoration; `labelText`, a local
+`OutlineInputBorder` and `isDense` do not appear at all.
+
+**A row of short fields labels its columns in a row of their own**, above
+the row of fields: labels `Expanded` and bottom-aligned, then `sm`, then the
+fields top-aligned. A label that wraps at 360dp (`Priprema (min)`) pushes all
+the fields down together, so they never stagger. Columns sit `sm` apart.
+
+**A code-entry field** (the join code) is `titleLarge` with `sm` letter
+spacing and tabular figures, centred, no label.
 
 **The search field is the stadium exception.** A stadium is a shape, not a
 radius, so it is not in `AppRadii` — and because `InputBorder` takes only a
@@ -362,6 +392,14 @@ On import review the name is the local parse of the raw text, falling back to
 the whole raw text when there is no usable parse, and a matched line's trailer
 leads with `→ <catalog name>` (in the recipe's language), joined to the note
 or `opciono` with ` · `.
+
+**The match chip under a field being typed** (`IngredientMatchChip`) follows
+two people. Its **status words** — `No match` / `Nema poklapanja`, and the
+`{name}?` wrapper of a suggestion — are chrome and follow the **reader**. The
+amount, the unit names inside it, the suggested catalog name and the field's
+hint follow the **recipe** (D86). Unmatched and suggested chips set their label
+in `onSurfaceVariant` and their `help_outline` icon in `outline` — `outline`
+is never text.
 
 Rows take `showDivider`: the last row of a card omits its hairline, so the
 card's own edge does the separating. Every other row keeps it, including the
@@ -513,9 +551,8 @@ Border()` shapes, `expand_more` in `outline`): `Postupak` in `titleMedium`,
 `N koraka` in `bodySmall` `onSurfaceVariant`. It expands **in place** to the
 step fields and Add step. No route, so no chevron.
 
-**The action bar.** Pinned under the list, on `surface` (not
-`surfaceContainer`, the nav bar's colour — the two would merge) with a 1dp
-`outlineVariant` top hairline, padded `lg`/`md`. Outlined `Odbaci ovaj uvoz`
+**The action bar.** `AppActionBar` (§ Action bar), pinned under the list —
+this screen's bar is the one the widget was lifted from. Outlined `Odbaci ovaj uvoz`
 and filled `Sačuvaj recept` as equal halves, `md` apart, each with `lg`
 horizontal padding so the Serbian fits on one line at 360dp. Discard sits
 behind a confirm dialog whose destructive action is a `TextButton` in
@@ -554,6 +591,8 @@ lives, below.
 | `AppEmptyState` | `core/widgets/app_empty_state.dart` |
 | `AppErrorView` | `core/widgets/app_error_view.dart` |
 | `AppSectionHeading` | `core/widgets/app_section_heading.dart` |
+| `AppFieldLabel` | `core/widgets/app_field_label.dart` |
+| `AppActionBar` | `core/widgets/app_action_bar.dart` |
 | `RecipeCard` | `core/recipes/widgets/recipe_card.dart` |
 | `IngredientLineRow` | `core/ingredients/widgets/ingredient_line_row.dart` |
 

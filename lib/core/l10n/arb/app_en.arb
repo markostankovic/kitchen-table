@@ -199,8 +199,8 @@
 
   "importPhotoTitle": "Photograph a page",
   "importPhotoBody": "Fill the frame with the recipe. A whole page is fine -- two columns, a sidebar of ingredients, a photo of the dish. Anything it credits is saved with the recipe.",
-  "takePhotoButton": "Take a photo",
-  "choosePhotoButton": "Choose a photo",
+  "takePhotoButton": "Camera",
+  "choosePhotoButton": "Gallery",
 
   "importUrlTitle": "Import from a link",
   "importUrlBody": "Paste the address of a recipe page. Whatever the page credits as its source is saved with the recipe.",

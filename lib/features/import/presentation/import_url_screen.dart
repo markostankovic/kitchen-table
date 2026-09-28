@@ -5,6 +5,10 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_action_bar.dart';
+import '../../../core/widgets/app_field_label.dart';
 import '../application/import_providers.dart';
 
 /// Paste a link and let the server read the page behind it.
@@ -58,16 +62,21 @@ class _ImportUrlScreenState extends ConsumerState<ImportUrlScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.importUrlTitle)),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: <Widget>[
           Text(
             l10n.importUrlBody,
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
+          AppFieldLabel(text: l10n.linkFieldLabel),
+          const SizedBox(height: AppSpacing.sm),
           TextField(
             controller: _url,
             keyboardType: TextInputType.url,
@@ -76,40 +85,21 @@ class _ImportUrlScreenState extends ConsumerState<ImportUrlScreen> {
             // cover the button the cook is being asked to press.
             autofocus: widget.initialUrl == null,
             onSubmitted: (_) => _submitting ? null : _submit(),
-            decoration: InputDecoration(
-              border: const OutlineInputBorder(),
-              labelText: l10n.linkFieldLabel,
-              hintText: 'https://…',
-            ),
+            style: theme.textTheme.bodyMedium,
+            decoration: const InputDecoration(hintText: 'https://…'),
           ),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              if (_failure != null) ...<Widget>[
-                Text(
-                  _failure!.localized(l10n),
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-                const SizedBox(height: 8),
-              ],
-              FilledButton(
-                onPressed: _submitting ? null : _submit,
-                child: _submitting
-                    ? const SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(l10n.readRecipeButton),
-              ),
-            ],
-          ),
+      bottomNavigationBar: AppActionBar(
+        error: _failure?.localized(l10n),
+        child: FilledButton(
+          onPressed: _submitting ? null : _submit,
+          child: _submitting
+              ? const SizedBox.square(
+                  dimension: AppSizes.iconInMeta,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(l10n.readRecipeButton),
         ),
       ),
     );

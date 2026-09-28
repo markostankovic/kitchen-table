@@ -8,6 +8,10 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/theme/app_radii.dart';
+import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_action_bar.dart';
 import '../application/import_providers.dart';
 
 /// Photograph a cookbook page and let a vision model read it (D15).
@@ -112,30 +116,44 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
     final Uint8List? bytes = _bytes;
+    // Horizontal lg rather than the theme's xl, as on the import review
+    // (D123): each half is about 183dp on the Galaxy and 160dp at 360dp.
+    // Part 7's walk found `Choose a photo` / `Izaberi fotografiju` wrapping
+    // at the default; padding alone fixed the English but not the Serbian,
+    // so the labels became `Camera` / `Gallery`, the editor's own photo
+    // picker's words.
+    final ButtonStyle pickerStyle = OutlinedButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+    );
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.importPhotoTitle)),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: <Widget>[
           Text(
             l10n.importPhotoBody,
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Row(
             children: <Widget>[
               Expanded(
                 child: OutlinedButton.icon(
+                  style: pickerStyle,
                   onPressed: _busy ? null : () => _pick(ImageSource.camera),
                   icon: const Icon(Icons.photo_camera_outlined),
                   label: Text(l10n.takePhotoButton),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: OutlinedButton.icon(
+                  style: pickerStyle,
                   onPressed: _busy ? null : () => _pick(ImageSource.gallery),
                   icon: const Icon(Icons.photo_library_outlined),
                   label: Text(l10n.choosePhotoButton),
@@ -144,42 +162,26 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
             ],
           ),
           if (bytes != null) ...<Widget>[
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             // Shown so the cook can see the page is in frame and legible
             // before paying for a model call on a blurred corner.
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadii.sm),
               child: Image.memory(bytes, fit: BoxFit.contain),
             ),
           ],
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              if (_error != null) ...<Widget>[
-                Text(
-                  _errorText(l10n),
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-                const SizedBox(height: 8),
-              ],
-              FilledButton(
-                onPressed: _busy || bytes == null ? null : _submit,
-                child: _busy
-                    ? const SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(l10n.readRecipeButton),
-              ),
-            ],
-          ),
+      bottomNavigationBar: AppActionBar(
+        error: _error == null ? null : _errorText(l10n),
+        child: FilledButton(
+          onPressed: _busy || bytes == null ? null : _submit,
+          child: _busy
+              ? const SizedBox.square(
+                  dimension: AppSizes.iconInMeta,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(l10n.readRecipeButton),
         ),
       ),
     );

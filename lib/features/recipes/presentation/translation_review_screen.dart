@@ -5,7 +5,11 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/app_locale.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
+import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_action_bar.dart';
 import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/app_field_label.dart';
 import '../application/translation_reviewer.dart';
 import '../domain/recipe_step.dart';
 import '../domain/translation_review_draft.dart';
@@ -101,63 +105,63 @@ class _TranslationReviewScreenState
     final String sourceLanguageName = draft.sourceLocale == 'sr'
         ? l10n.languageSerbian
         : l10n.languageEnglish;
+    final String originalLabel = l10n.originalTextLabel(sourceLanguageName);
+    final TextStyle? fieldStyle = Theme.of(context).textTheme.bodyMedium;
 
     return Form(
       key: _formKey,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.xl,
+        ),
         children: <Widget>[
-          _OriginalText(
-            label: l10n.originalTextLabel(sourceLanguageName),
-            text: draft.sourceTitle,
-          ),
-          const SizedBox(height: 4),
+          // Each pair reads label, then the original, then the field to fix
+          // -- "read the line above, fix the line below it".
+          AppFieldLabel(text: l10n.titleLabel),
+          const SizedBox(height: AppSpacing.sm),
+          _OriginalText(label: originalLabel, text: draft.sourceTitle),
+          const SizedBox(height: AppSpacing.sm),
           TextFormField(
             initialValue: draft.title,
             textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              labelText: l10n.titleLabel,
-              border: const OutlineInputBorder(),
-            ),
+            style: fieldStyle,
             validator: (String? value) =>
                 (value ?? '').trim().isEmpty ? l10n.titleRequiredError : null,
             onChanged: _reviewer.setTitle,
           ),
           if (draft.sourceDescription != null) ...<Widget>[
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
+            AppFieldLabel(text: l10n.descriptionLabel),
+            const SizedBox(height: AppSpacing.sm),
             _OriginalText(
-              label: l10n.originalTextLabel(sourceLanguageName),
+              label: originalLabel,
               text: draft.sourceDescription!,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.sm),
             TextFormField(
               initialValue: draft.description ?? '',
               textCapitalization: TextCapitalization.sentences,
               maxLines: 3,
-              decoration: InputDecoration(
-                labelText: l10n.descriptionLabel,
-                border: const OutlineInputBorder(),
-              ),
+              style: fieldStyle,
               onChanged: _reviewer.setDescription,
             ),
           ],
           for (final (RecipeStep source, RecipeStep translated)
               in draft.pairedSteps) ...<Widget>[
-            const SizedBox(height: 16),
-            _OriginalText(
-              label: l10n.originalTextLabel(sourceLanguageName),
-              text: source.text,
-            ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.lg),
+            AppFieldLabel(text: l10n.stepLabel(translated.position + 1)),
+            const SizedBox(height: AppSpacing.sm),
+            _OriginalText(label: originalLabel, text: source.text),
+            const SizedBox(height: AppSpacing.sm),
             TextFormField(
               key: ValueKey<int>(translated.position),
               initialValue: translated.text,
               textCapitalization: TextCapitalization.sentences,
               maxLines: 3,
-              decoration: InputDecoration(
-                labelText: l10n.stepLabel(translated.position + 1),
-                border: const OutlineInputBorder(),
-              ),
+              style: fieldStyle,
               onChanged: (String value) =>
                   _reviewer.setStepText(translated.position, value),
             ),
@@ -169,31 +173,16 @@ class _TranslationReviewScreenState
 
   Widget _buildSaveBar(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (_failure != null) ...<Widget>[
-              Text(
-                _failure!.localized(l10n),
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-              const SizedBox(height: 8),
-            ],
-            FilledButton(
-              onPressed: _saving ? null : _submit,
-              child: _saving
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text(l10n.saveReviewButton),
-            ),
-          ],
-        ),
+    return AppActionBar(
+      error: _failure?.localized(l10n),
+      child: FilledButton(
+        onPressed: _saving ? null : _submit,
+        child: _saving
+            ? const SizedBox.square(
+                dimension: AppSizes.iconInMeta,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(l10n.saveReviewButton),
       ),
     );
   }
@@ -215,12 +204,13 @@ class _OriginalText extends StatelessWidget {
       children: <Widget>[
         Text(
           label,
-          style: theme.textTheme.labelSmall
+          style: theme.textTheme.labelMedium
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
+        const SizedBox(height: AppSpacing.xs),
         Text(
           text,
-          style: theme.textTheme.bodySmall
+          style: theme.textTheme.bodyMedium
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
       ],

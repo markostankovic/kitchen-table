@@ -13,8 +13,10 @@ import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/kitchen_colors.dart';
+import '../../../core/widgets/app_action_bar.dart';
 import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/app_field_label.dart';
 import '../../../core/widgets/app_section_heading.dart';
 import '../../ingredients/domain/ingredient_line_parser.dart';
 import '../../ingredients/domain/unit_catalog.dart';
@@ -340,7 +342,7 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
           l10n: l10n,
         ),
         const SizedBox(height: AppSpacing.xl),
-        Text(l10n.titleLabel, style: theme.textTheme.titleSmall),
+        AppFieldLabel(text: l10n.titleLabel),
         const SizedBox(height: AppSpacing.sm),
         TextFormField(
           initialValue: draft.title,
@@ -465,72 +467,40 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
     );
   }
 
-  /// On `surface` with a top hairline, not on `surfaceContainer`: that is
-  /// the nav bar's colour, and the two bars would merge into one block.
+  /// The bar itself is [AppActionBar]; only its two buttons are this
+  /// screen's.
   Widget _buildActionBar(AppLocalizations l10n) {
-    final ThemeData theme = Theme.of(context);
     // Horizontal lg rather than the theme's xl: at 360dp each half is about
     // 158dp, and `Odbaci ovaj uvoz` would wrap at the default.
     const EdgeInsets buttonPadding = EdgeInsets.symmetric(
       horizontal: AppSpacing.lg,
     );
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.md,
-            AppSpacing.lg,
-            AppSpacing.md,
+    return AppActionBar(
+      error: _failure?.localized(l10n),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(padding: buttonPadding),
+              onPressed: _busy ? null : _discard,
+              child: Text(l10n.discardImportButton),
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              if (_failure != null) ...<Widget>[
-                Text(
-                  _failure!.localized(l10n),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-              ],
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(padding: buttonPadding),
-                      onPressed: _busy ? null : _discard,
-                      child: Text(l10n.discardImportButton),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(padding: buttonPadding),
-                      onPressed: _busy ? null : _submit,
-                      child: _saving
-                          ? const SizedBox.square(
-                              dimension: AppSizes.iconInMeta,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(l10n.saveRecipeButton),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: FilledButton(
+              style: FilledButton.styleFrom(padding: buttonPadding),
+              onPressed: _busy ? null : _submit,
+              child: _saving
+                  ? const SizedBox.square(
+                      dimension: AppSizes.iconInMeta,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(l10n.saveRecipeButton),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

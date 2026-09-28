@@ -5,6 +5,9 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_field_label.dart';
 import '../application/household_providers.dart';
 
 /// Onboarding: the signed-in user has no household yet.
@@ -57,59 +60,66 @@ class _CreateHouseholdScreenState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.xl),
             child: Form(
               key: _formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  Text(l10n.createHouseholdTitle,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                      textAlign: TextAlign.center),
-                  const SizedBox(height: 8),
+                  Text(
+                    l10n.createHouseholdTitle,
+                    style: theme.textTheme.titleLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     l10n.createHouseholdSubtitle,
                     textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.xl),
+                  // Left-aligned above its field like every other label,
+                  // even though the headings above are centred.
+                  AppFieldLabel(text: l10n.householdNameFieldLabel),
+                  const SizedBox(height: AppSpacing.sm),
                   TextFormField(
                     controller: _name,
                     autofocus: true,
                     textCapitalization: TextCapitalization.words,
-                    decoration: InputDecoration(
-                      labelText: l10n.householdNameFieldLabel,
-                      border: const OutlineInputBorder(),
-                    ),
+                    style: theme.textTheme.bodyMedium,
                     validator: (String? value) => (value ?? '').trim().isEmpty
                         ? l10n.householdNameEmptyError
                         : null,
                     onFieldSubmitted: (_) => _submit(),
                   ),
                   if (_failure != null) ...<Widget>[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     Text(
                       _failure!.localized(l10n),
-                      style: TextStyle(
-                          color: Theme.of(context).colorScheme.error),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
                     ),
                   ],
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   FilledButton(
                     onPressed: _saving ? null : _submit,
                     child: _saving
-                        ? const SizedBox(
-                            height: 16,
-                            width: 16,
-                            child:
-                                CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox.square(
+                            dimension: AppSizes.iconInMeta,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : Text(l10n.createHouseholdButton),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   TextButton(
                     onPressed: _saving
                         ? null

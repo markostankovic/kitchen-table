@@ -117,7 +117,9 @@ void main() {
     await _pump(tester, draft: _draft);
 
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Title').first,
+      // The title's field is the first one: its label sits above it now,
+      // outside the decoration, so it cannot be found by its text.
+      find.byType(TextFormField).first,
       '   ',
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Save and approve'));

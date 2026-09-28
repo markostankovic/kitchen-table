@@ -645,10 +645,10 @@ class AppLocalizationsSr extends AppLocalizations {
       'Uklopite recept u kadar. U redu je i cela stranica -- dve kolone, spisak sastojaka postrani, fotografija jela. Sve što je navedeno kao izvor se čuva uz recept.';
 
   @override
-  String get takePhotoButton => 'Fotografiši';
+  String get takePhotoButton => 'Kamera';
 
   @override
-  String get choosePhotoButton => 'Izaberi fotografiju';
+  String get choosePhotoButton => 'Galerija';
 
   @override
   String get importUrlTitle => 'Uvezi sa linka';

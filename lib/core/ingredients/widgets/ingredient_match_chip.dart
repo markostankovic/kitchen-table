@@ -48,28 +48,32 @@ class IngredientMatchChip extends StatelessWidget {
 
     final ColorScheme colors = Theme.of(context).colorScheme;
     final String amount = _amount();
-    // The recipe's own language, not the reader's chrome locale -- this chip
-    // sits beside catalog names that are never translated per recipe either
-    // (D1), on ingredient_line_field.dart's own hint-text precedent.
-    final AppLocalizations chipL10n = lookupAppLocalizations(Locale(locale));
+    // Two halves, following two different people (D86). The status words --
+    // "No match", the "{name}?" wrapper -- are UI chrome, so they follow the
+    // *reader*. Everything the recipe itself says -- the amount, the unit
+    // names inside it, and the suggested catalog name, which the search
+    // returned in the recipe's locale -- follows the *recipe*.
+    final AppLocalizations l10n = AppLocalizations.of(context);
 
-    final (IconData icon, String name, Color? color) = switch (line) {
+    // The icon is muted in `outline`; the words beside it are text, and
+    // `outline` is never text, so they take `onSurfaceVariant`.
+    final (IconData icon, String name, bool muted) = switch (line) {
       // Quantity and unit are rendered even here: tier 1 parses without a
       // catalog, so a line can be structured and unmatched at the same time.
       final RecipeDraftLine l when l.isMatched => (
           Icons.check_circle_outline,
           l.displayName ?? '',
-          null,
+          false,
         ),
       _ when suggestion != null => (
           Icons.help_outline,
-          chipL10n.ingredientSuggestionLabel(suggestion!.displayName),
-          colors.outline,
+          l10n.ingredientSuggestionLabel(suggestion!.displayName),
+          true,
         ),
       _ => (
           Icons.help_outline,
-          chipL10n.ingredientNoMatchLabel,
-          colors.outline,
+          l10n.ingredientNoMatchLabel,
+          true,
         ),
     };
 
@@ -79,8 +83,13 @@ class IngredientMatchChip extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: ActionChip(
-        avatar: Icon(icon, size: 18, color: color),
-        label: Text(label, style: TextStyle(color: color)),
+        // No size: the chip theme's own icon size (18) is the one that fits
+        // a compact chip.
+        avatar: Icon(icon, color: muted ? colors.outline : null),
+        label: Text(
+          label,
+          style: muted ? TextStyle(color: colors.onSurfaceVariant) : null,
+        ),
         onPressed: onTap,
         visualDensity: VisualDensity.compact,
       ),

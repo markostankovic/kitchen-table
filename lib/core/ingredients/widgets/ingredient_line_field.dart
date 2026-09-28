@@ -7,6 +7,8 @@ import '../../error/app_failure.dart';
 import '../../error/failure_l10n.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../text/text_normalizer.dart';
+import '../../theme/app_sizes.dart';
+import '../../theme/app_spacing.dart';
 import '../../../features/ingredients/domain/ingredient_line_parser.dart';
 import '../../../features/ingredients/domain/ingredient_match.dart';
 import '../../../features/ingredients/domain/parsed_ingredient_line.dart';
@@ -94,7 +96,7 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
     final List<IngredientMatch> found = matches.value ?? const <IngredientMatch>[];
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -103,7 +105,7 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
               ReorderableDragStartListener(
                 index: widget.index,
                 child: const Padding(
-                  padding: EdgeInsets.only(right: 4),
+                  padding: EdgeInsets.only(right: AppSpacing.xs),
                   child: Icon(Icons.drag_handle),
                 ),
               ),
@@ -111,6 +113,7 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
                 child: TextFormField(
                   initialValue: widget.line.rawText,
                   textCapitalization: TextCapitalization.sentences,
+                  style: Theme.of(context).textTheme.bodyMedium,
                   decoration: InputDecoration(
                     // The RECIPE's own language, not the reader's chrome
                     // locale -- an example of what to type in this recipe
@@ -118,8 +121,6 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
                     // in (D86's own reasoning, one screen over).
                     hintText: lookupAppLocalizations(Locale(widget.locale))
                         .ingredientLineHint,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
                   ),
                   onChanged: (String value) => _onTextChanged(value, parser),
                 ),
@@ -132,7 +133,11 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
             ],
           ),
           Padding(
-            padding: const EdgeInsets.only(left: 28, top: 2),
+            // Indented past the drag handle, so the chip sits under the text.
+            padding: const EdgeInsets.only(
+              left: AppSizes.icon + AppSpacing.xs,
+              top: AppSpacing.xs,
+            ),
             child: IngredientMatchChip(
               line: widget.line,
               units: units,

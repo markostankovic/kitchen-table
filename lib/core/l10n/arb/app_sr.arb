@@ -831,11 +831,11 @@
   "@importPhotoBody": {
     "description": "Import-by-photo screen, the instruction line above the camera/gallery buttons."
   },
-  "takePhotoButton": "Fotografiši",
+  "takePhotoButton": "Kamera",
   "@takePhotoButton": {
     "description": "Import-by-photo screen, the camera-source button."
   },
-  "choosePhotoButton": "Izaberi fotografiju",
+  "choosePhotoButton": "Galerija",
   "@choosePhotoButton": {
     "description": "Import-by-photo screen, the gallery-source button."
   },

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
+import 'package:kitchen_table/core/theme/app_theme.dart';
 import 'package:kitchen_table/features/recipes/application/recipe_editor.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_detail.dart';
@@ -56,11 +57,13 @@ Future<void> _pump(
   WidgetTester tester, {
   String? recipeId,
   required RecipeDraft draft,
-}) async {
+  Locale? locale,
   // The form is taller than the default 800x600 test surface, and a ListView
   // does not build what is below the fold. Without this the ingredient and
   // step lists simply are not there to find.
-  tester.view.physicalSize = const Size(1200, 3000);
+  Size surface = const Size(1200, 3000),
+}) async {
+  tester.view.physicalSize = surface;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
@@ -70,6 +73,8 @@ Future<void> _pump(
         recipeEditorProvider(recipeId).overrideWith(() => _StubEditor(draft)),
       ],
       child: MaterialApp(
+        theme: AppTheme.light(),
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: appSupportedLocales,
         home: RecipeEditScreen(recipeId: recipeId),
@@ -263,6 +268,50 @@ void main() {
 
       expect(find.byTooltip('Remove photo'), findsNothing);
       expect(find.byType(Image), findsNothing);
+    });
+  });
+
+  group('form vocabulary', () {
+    testWidgets('fits a 360dp phone in Serbian -- the numbers row and the '
+        'segmented buttons are the risk', (WidgetTester tester) async {
+      await _pump(
+        tester,
+        recipeId: 'r1',
+        draft: RecipeDraft.fromDetail(_detail),
+        locale: srLatn,
+        surface: const Size(360, 780),
+      );
+      expect(tester.takeException(), isNull);
+
+      // All three number fields share one line even if a label wraps.
+      final Finder numbers = find.byWidgetPredicate((Widget w) =>
+          w is TextField && w.keyboardType == TextInputType.number);
+      expect(numbers, findsNWidgets(3));
+      final Set<double> tops = <double>{
+        for (final Element e in numbers.evaluate())
+          tester.getTopLeft(find.byWidget(e.widget)).dy,
+      };
+      expect(tops, hasLength(1));
+    });
+
+    testWidgets('every field types in the sans bodyMedium, never Literata',
+        (WidgetTester tester) async {
+      await _pump(
+        tester,
+        recipeId: 'r1',
+        draft: RecipeDraft.fromDetail(_detail),
+      );
+
+      final ThemeData theme = AppTheme.light();
+      final Iterable<TextField> fields =
+          tester.widgetList<TextField>(find.byType(TextField));
+      // Title, description, three numbers, tags, two lines, one step.
+      expect(fields, hasLength(9));
+      for (final TextField field in fields) {
+        expect(field.style, isNotNull);
+        expect(field.style!.fontFamily, isNot('Literata'));
+        expect(field.style!.fontSize, theme.textTheme.bodyMedium!.fontSize);
+      }
     });
   });
 }

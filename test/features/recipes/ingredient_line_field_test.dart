@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
-import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
+import 'package:kitchen_table/core/l10n/generated/app_localizations_en.dart';
 import 'package:kitchen_table/features/ingredients/domain/ingredient_line_parser.dart';
 import 'package:kitchen_table/features/ingredients/domain/ingredient_match.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
@@ -105,17 +105,19 @@ Future<void> _type(WidgetTester tester, String text) async {
   await tester.pumpAndSettle();
 }
 
-// The widget under test is always given locale: 'sr' (below), and the match
-// chip's own chrome follows the RECIPE's language, not this test host's
-// resolved locale -- read off AppLocalizationsSr() directly rather than a
-// literal, so a wording change in the ARB cannot silently desync this.
-final AppLocalizations sr = AppLocalizationsSr();
+// The widget under test is always given locale: 'sr' (below), while this
+// test host resolves to English. The chip's status words are chrome and
+// follow the READER (this host), while amounts and unit names follow the
+// RECIPE (D86) -- so `200 g · No match`, not `Nema poklapanja`. Read off
+// AppLocalizationsEn() rather than a literal, so a wording change in the ARB
+// cannot silently desync this.
+final AppLocalizations reader = AppLocalizationsEn();
 
 void main() {
   testWidgets('an empty line says nothing at all', (WidgetTester tester) async {
     await _pump(tester, matches: const <String, List<IngredientMatch>>{});
 
-    expect(find.text(sr.ingredientNoMatchLabel), findsNothing);
+    expect(find.text(reader.ingredientNoMatchLabel), findsNothing);
     expect(find.byType(ActionChip), findsNothing);
   });
 
@@ -173,7 +175,7 @@ void main() {
     await _type(tester, 'kesica vanilin šećera');
 
     // Rule 3: not an error, not a blocker. The raw text is what saves.
-    expect(find.text(sr.ingredientNoMatchLabel), findsOneWidget);
+    expect(find.text(reader.ingredientNoMatchLabel), findsOneWidget);
     expect(find.text('kesica vanilin šećera'), findsOneWidget);
   });
 
@@ -221,6 +223,6 @@ void main() {
     await _type(tester, '200 g krompira');
 
     expect(find.byIcon(Icons.check_circle_outline), findsNothing);
-    expect(find.text('200 g · ${sr.ingredientNoMatchLabel}'), findsOneWidget);
+    expect(find.text('200 g · ${reader.ingredientNoMatchLabel}'), findsOneWidget);
   });
 }

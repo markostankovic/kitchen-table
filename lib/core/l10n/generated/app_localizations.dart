@@ -1181,13 +1181,13 @@ abstract class AppLocalizations {
   /// Import-by-photo screen, the camera-source button.
   ///
   /// In sr, this message translates to:
-  /// **'Fotografiši'**
+  /// **'Kamera'**
   String get takePhotoButton;
 
   /// Import-by-photo screen, the gallery-source button.
   ///
   /// In sr, this message translates to:
-  /// **'Izaberi fotografiju'**
+  /// **'Galerija'**
   String get choosePhotoButton;
 
   /// Import-by-link screen's AppBar title.
