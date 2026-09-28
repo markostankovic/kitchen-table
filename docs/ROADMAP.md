@@ -645,6 +645,35 @@ marker-in-dark and part 3's dashed-ring leftovers close with it.
 
 ---
 
+### Part 7 — The form vocabulary
+
+**Status: complete** (`46c6742`). Decisions taken during it: D124. See
+`docs/journal/phase-7.md`.
+
+Slice 6 of `docs/design/MIGRATION_PLAN.md` § 4. The recipe editor,
+translation review, the import paste / URL / photo screens and create / join
+household get:
+
+- labels above every field through a promoted `AppFieldLabel`, with fields
+  from the theme and typed text in `bodyMedium`
+- one bottom bar, `AppActionBar`, lifted from the import review (D123) and
+  shared by every screen with a bottom save button
+- the editor's numbers row labelled in its own bottom-aligned row, so a
+  wrapped label never staggers the fields
+- onboarding titles on `titleLarge`, and the join code in `titleLarge` with
+  tabular figures
+- the match chip's status words following the reader, while amounts, units
+  and hint stay with the recipe (D86)
+
+Walked on the physical Galaxy across `sr`/`en` × light/dark. The walk found
+one defect: the photo import's pickers wrapped in both languages. It was
+fixed with `lg` padding and the editor's `Camera` / `Gallery` words, then
+re-walked. Phase 5 part 6's Translate-from-the-editor loop closes with it.
+The onboarding screens are still unwalked, because they need an account
+with no household.
+
+---
+
 ## Standing rules across phases
 
 - Anything AI-produced is `status = 'draft'` until a human marks it tested.

@@ -763,3 +763,130 @@ signal.
 
 **Closed by it.** Part 2's "3px marker in dark, not verified" and part 3's
 "unmatched ring not exercised" leftovers. No new loop opened.
+
+### Part 7 — The form vocabulary
+
+**Status: complete** (`46c6742`). Decisions taken during it: D124.
+
+Slice 6 of `docs/design/MIGRATION_PLAN.md` § 4. It puts one form vocabulary
+on every form the earlier slices had not reached: the recipe editor,
+translation review, the three import entry screens, and create / join
+household. It is presentation only: no provider, repository, route or
+`supabase/` file changed, and no ARB key was added or removed. Two ARB
+*values* changed on the walk (below). `docs/DESIGN_SYSTEM.md` was updated in
+the code commit this time: § Inputs, a new § Action bar, § Import review,
+§ Ingredient lines, and the shared-widgets table.
+
+Before this slice, each form did its own thing:
+
+- floating `labelText` inside outlined fields (`OutlineInputBorder`,
+  `isDense`) that overrode the theme
+- typed text falling through to the Literata `bodyLarge`
+- the editor's private `_FieldLabel` in `labelLarge`
+- every bottom save button in a bare padded `SafeArea` that merged into the
+  nav bar
+- raw numbers for every gap
+
+The new vocabulary:
+
+- **`AppFieldLabel`** (`core/widgets/`) is `titleSmall` with no padding of
+  its own. Every field has one above it, followed by `sm`, then the field
+  from the theme with `style: bodyMedium`. The exceptions are the paste box
+  and the join code, where the paragraph or title above already says what
+  the field is. Import review's inline label became this widget.
+- **`AppActionBar`** (`core/widgets/`) is import review's bar, lifted whole
+  (D123). It sits under the editor, translation review, and paste / URL /
+  photo, as well as import review, whose rendering did not change. The
+  error line is `bodySmall` `error`, and each busy spinner is
+  `AppSizes.iconInMeta` square.
+- **The editor's numbers row** labels its three columns in a separate row,
+  bottom-aligned, above a row of the fields, so a wrapped `Priprema (min)`
+  never staggers them. `_NumberField` lost its `label`.
+- **Translation review** stacks each pair as label, then `_OriginalText`
+  (caption in `labelMedium`, text in `bodyMedium`, both `onSurfaceVariant`),
+  then the field. It still has no drag handles and no add or remove (D80).
+- **Onboarding** titles moved from `headlineSmall` to `titleLarge`, with
+  subtitles in `onSurfaceVariant`. The join code is `titleLarge` with `sm`
+  letter spacing and tabular figures, replacing `fontSize: 24`.
+- **`IngredientLineField`** lost its border and `isDense`, and its chip
+  indent is now `AppSizes.icon + AppSpacing.xs`.
+- **`IngredientMatchChip`**'s status words now come from
+  `AppLocalizations.of(context)`, so the chip follows the reader. The amount,
+  units and suggested name stay in the recipe's locale (D86), and `chipL10n`
+  is gone. The label text moved from `outline` to `onSurfaceVariant`, and the
+  icon stays `outline`. The icon's raw `size: 18` was dropped rather than
+  raised to 20, because the chip theme's default avatar size is already 18.
+
+**Changed by the walk.** The photo import's outlined pickers wrapped
+(`Choose a photo` / `Izaberi fotografiju`) in both languages and both
+brightnesses. Each half is about 183dp wide on the Galaxy. D123's `lg`
+button padding fixed the English but not the Serbian. The labels became
+`Camera` / `Gallery` and `Kamera` / `Galerija`, which are the editor's own
+photo-picker words. Those are changes to `takePhotoButton` /
+`choosePhotoButton` values only; the keys stayed the same. The `lg` padding
+stays as headroom for 360dp.
+
+**How it was verified.** `dart analyze` was clean. `flutter test` passed
+**664/664**, ten more than before. New tests:
+
+- `AppFieldLabel` renders `titleSmall`.
+- `AppActionBar` has a `surface` fill, a 1dp `outlineVariant` hairline, and
+  its child at full width inside the `lg` gutters. The error line appears
+  only when set, in `bodySmall` `error`, above the child.
+- The match chip reads `No match` under an English app on a Serbian recipe
+  and `Nema poklapanja` under Serbian. A suggestion's label is
+  `onSurfaceVariant` and its icon is `outline`.
+- The editor has a Serbian 360×780 no-overflow test, which also asserts
+  that the three number fields share one top edge.
+- All nine editor fields type in `bodyMedium` and never in Literata.
+
+Three existing tests changed:
+
+- Translation review finds the title field as the first `TextFormField`,
+  because its label is no longer inside the decoration.
+- Two `ingredient_line_field_test` checks expected `Nema poklapanja` under
+  an English host. They now expect `No match`, which is the fix itself, so
+  the plan's "none found by grep" was wrong.
+
+`make test-sql`, the Deno suite and `l10n-check` passed. `make check` is
+otherwise green except the pre-existing `seed-check`. The acceptance grep
+over the touched files was clean, apart from one `0` in import review's
+method card, which this slice was told not to touch.
+
+**Walked on the device.** `/design-walk forms` on the physical Galaxy,
+hosted release build, across `sr`/`en` × light/dark. It covered the editor,
+translation review and the paste / URL / photo screens:
+
+- Every field has its label above it.
+- Typed text is sans in the title, description, a number, an ingredient line
+  and a step.
+- The numbers row fits one line at ~411dp, so the two-row layout never
+  handled a wrapped label on the device. The 360dp test covers that case.
+- The action bar on `surface` reads as separate from the nav bar in both
+  brightnesses.
+- On the same Serbian recipe the chip reads `Nema poklapanja` under Serbian
+  and `No match` under English, and a new line's hint stays `2 šolje glatkog
+  brašna`.
+- In translation review, the original is visibly secondary but legible in
+  both brightnesses.
+
+**Folded in Phase 5 part 6's loop.** Translate in the editor's app bar on
+`Kajgana`, which had no translation, saved, called the Edge Function (one
+hosted AI call), and came back. The action left the app bar (the D85
+guard), the recipe reads `Scrambled Eggs` under a `Machine translation`
+chip in English, and the detail menu offers `Review translation`. The
+snackbar went by unseen while the walk was polling the screen. `Kajgana`
+now has an unreviewed machine English translation on hosted.
+
+Not exercised:
+
+- **Create / join household.** They are reachable only on an account with
+  no household, and the device account has real recipes. Whether the serif
+  join digits read as a code is still unjudged, which is left for slice 7's
+  throwaway household.
+- **A suggestion chip on the device.** No typed line produced a
+  below-auto-accept candidate. Widget tests cover it.
+
+**Closed by it.** Phase 5 part 6's loop, and part 6's "`Nema poklapanja`
+under an English reader" note. **Opened:** part 7's own loop, for the
+onboarding screens only.

@@ -1,51 +1,50 @@
-# State — 2026-09-26
+# State — 2026-09-28
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 6 (`882d77a`), the import review surface.
-`import_review_screen.dart` takes the Garden "Review import" layout. It has:
+**Last shipped:** Phase 7 part 7 (`46c6742`), the form vocabulary. The recipe
+editor, translation review, the import paste / URL / photo screens and
+create / join household now share one form vocabulary:
 
-- a summary card: the matched count in `titleMedium`, a `primary` progress
-  bar, and a 3px `reviewMarker` bar before the attention line, shown only
-  when something is flagged
-- the title field on the theme, with its label above it
-- read-only `IngredientLineRow`s (name from the local parse, falling back to
-  the raw text; `→ <catalog name>` trailer) that open one at a time into the
-  unchanged `IngredientLineField` on tap, with `Done` to close; Add
-  ingredient opens the new line by id; long-press drags
-- Method as a collapsed `ExpansionTile` card that expands in place
-- a bottom action bar on `surface` with a top hairline: outlined Discard,
-  behind a confirm dialog, beside filled Save
-- Failed and AlreadySaved on `AppEmptyState`, the failed icon in `outline`
+- `AppFieldLabel` (new, `core/widgets/`): every label sits above its field
+  in `titleSmall`. Fields come from the theme with no local border, and
+  typed text is `bodyMedium` at every call site.
+- `AppActionBar` (new, `core/widgets/`): the import review's `surface` +
+  hairline bar, now under every bottom save button. The import review
+  renders the same.
+- The editor's numbers row labels its columns in a separate row,
+  bottom-aligned, so a wrapped label never staggers the fields.
+- Onboarding titles are on `titleLarge`, and the join code is in
+  `titleLarge` with tabular figures.
+- `IngredientMatchChip`'s status words (`No match` / `Nema poklapanja`,
+  `{name}?`) follow the reader. Amounts, units, the suggested name and the
+  hint stay with the recipe (D86).
+- The photo import's pickers are `Camera` / `Gallery` (`Kamera` /
+  `Galerija`) with `lg` padding. This was changed on the walk, and only the
+  ARB values changed, not the keys.
 
-`IngredientLineRow`'s flagged state gains a `surfaceContainerLow` tint, and
-its marker moves to a foreground decoration, so the quantity column no longer
-shifts 3px. Flagged still means matched without auto-accept, not unmatched.
-Five ARB key pairs were added. D123 records the vocabulary, and
-`docs/DESIGN_SYSTEM.md` gains `### Import review`.
+D124 records it, and `docs/DESIGN_SYSTEM.md` gains § Action bar plus
+additions to § Inputs, § Ingredient lines and the shared-widgets table.
 
-Verified with `dart analyze` (clean), `flutter test` (**654/654**, including
-tap-to-edit, discard-with-confirm, a flagged/unflagged quantity-alignment
-test and a 360×780 Serbian no-overflow test), `check_layers` (OK),
-`l10n-check` (idempotent), `make test-sql` and Deno (green). `make check` is
-green except the pre-existing `seed-check`.
+Verified with `dart analyze` (clean), `flutter test` (**664/664**, including
+`AppFieldLabel`/`AppActionBar` tests, a reader-locale chip test, a 360×780
+Serbian editor test with the number fields on one line, and a no-Literata
+check on every editor field), `l10n-check`, `make test-sql` and Deno
+(green). `make check` is green except the pre-existing `seed-check`.
 
-**Walked on the physical Galaxy** across `sr`/`en` × light/dark, spending two
-AI parses on hosted. The walk found one defect: a line added with Add
-ingredient collapsed on its first keystroke. It was fixed and re-walked in
-the same sitting. The walk also closed part 2's marker-in-dark leftover and
-part 3's dashed-ring leftover. `AlreadySaved` was not reachable on the
-device: Save navigates with `go`, so Back lands on the list. `Failed` was not
-provoked. A draft `Kajgana` recipe from the walk is on hosted.
+**Walked on the physical Galaxy** across `sr`/`en` × light/dark, spending one
+AI translation on hosted. The walk found one defect: the photo import's
+pickers wrapped in both languages. It was fixed and re-walked. The walk also
+closed Phase 5 part 6's Translate-from-the-editor loop: `Kajgana` now has an
+unreviewed machine English translation on hosted. Create / join household
+were not walked, because they need an account with no household.
 **In flight:** none
 **Next:** first, `/design-walk meal-plan` on the physical Galaxy, to close
-part 4's own loop. It also confirms the meal plan's copy of the saved-copy
-line, which is still unwalked. Then the next per-surface slice of
-`docs/design/MIGRATION_PLAN.md` § 4, planned with `/plan-slice-ui`. Slices 6
-and 7 are left (forms, auth/household). Slice 6 folds in Phase 5 part 6's
-walk, and slice 7 folds in Phase 6 3b/3c's. Noticed on part 6's walk, and
-likely slice 6's: `IngredientLineField`'s match chip reads `Nema poklapanja`
-under an English reader.
-**Latest decision:** D123
+part 4's own loop, which also confirms the meal plan's saved-copy line. Then
+the last per-surface slice of `docs/design/MIGRATION_PLAN.md` § 4: slice 7,
+`phase7-auth-household`, planned with `/plan-slice-ui`. It folds in Phase 6
+3b/3c's walks, and its throwaway household is also how part 7's onboarding
+screens get walked, including whether the serif join digits read as a code.
+**Latest decision:** D124
 
 **Six device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -57,7 +56,10 @@ closed. It found two defects of its own, both fixed and re-walked the same
 evening, so part 5's own loop closed too. Part 6's walk
 (`/design-walk import-review`, 2026-09-26) opened no loop. It found one
 defect, fixed and re-walked in the same sitting, and answered part 2's
-marker-in-dark and part 3's dashed-ring leftovers below. Oldest first:
+marker-in-dark and part 3's dashed-ring leftovers below. Part 7's walk
+(`/design-walk forms`, 2026-09-26, with its defect re-walked 2026-09-28)
+closed Phase 5 part 6. It opened part 7's own loop, which now holds only
+the unwalked onboarding screens. Oldest first:
 
 - **Phase 5 part 5** — copy a generated shopping list, see the SnackBar,
   paste the text somewhere else. **Half confirmed by Phase 7 part 5's walk
@@ -66,8 +68,15 @@ marker-in-dark and part 3's dashed-ring leftovers below. Oldest first:
   the OS, not the app). The paste into another app was not done: it would
   have meant writing a note into one of the user's own apps. Still open for
   the paste — plain lines, no headings, no dashes.
-- **Phase 5 part 6** — Translate from the editor saves, calls the Edge
-  Function, and shows Review instead of Translate afterward. Not confirmed.
+- ~~**Phase 5 part 6**~~ — **closed by Phase 7 part 7's walk (2026-09-26).**
+  On the physical Galaxy, hosted release build, Translate in the editor's app
+  bar on `Kajgana` (no translation) saved, called the Edge Function (one
+  hosted AI call) and came back: the action left the app bar (the D85 guard),
+  the recipe reads `Scrambled Eggs` with a `Machine translation` chip under
+  English, and the detail menu offers `Review translation` instead of
+  Translate. The snackbar was not seen: it went by while the walk was
+  polling the screen. So `Kajgana` now has a machine English translation on
+  hosted, not yet reviewed.
 - ~~**Phase 6 part 1a**~~ — **closed by Phase 7 part 3's walk (2026-09-25).**
   On the physical Galaxy, switching to English relabelled the household's
   `Doručak` tag to `Breakfast` on the list and `Slatko`/`Užina` to
@@ -296,12 +305,38 @@ marker-in-dark and part 3's dashed-ring leftovers below. Oldest first:
   saved-copy line grey in airplane mode beside the calm banner; and an empty
   Today view showing all four `+ Slot` buttons.
 
+- **Phase 7 part 7** — the form vocabulary. Walked on the physical Galaxy
+  (2026-09-26) across `sr`/`en` × light/dark: the recipe editor, translation
+  review, and the import paste / URL / photo screens. All right: labels above
+  every field, sans typed text in title, description, a number, an
+  ingredient line and a step; the numbers row fits one line at this width
+  (`Porcije` / `Priprema (min)` / `Kuvanje (min)`, no wrap, so the two-row
+  layout was not exercised on device; the 360dp test covers it); the action
+  bar on `surface` with its hairline, distinct from the nav bar in both
+  brightnesses; the match chip reads `Nema poklapanja` under Serbian and
+  `No match` under English on the same Serbian recipe, with the new line's
+  hint staying `2 šolje glatkog brašna`; translation review's caption /
+  original / field stacking reads in both, original visibly secondary.
+  **One defect, fixed and re-walked (2026-09-28):** the photo screen's
+  outlined `Izaberi fotografiju` / `Choose a photo` wrapped to two lines in
+  **both** languages and both brightnesses. That's a width problem, not a
+  Serbian one: each half is ~183dp. The import review's `lg` button padding
+  (D123) fixed the English but not the Serbian, so the labels became
+  `Kamera` / `Galerija` and `Camera` / `Gallery` (ARB values only, keys
+  unchanged), the editor's own photo-picker words. Re-walked on the Galaxy in
+  sr/dark and en/light: one line each, with room to spare.
+  **Not walked:** the create / join household screens. They are reachable
+  only on an account with no household, and the device account has real
+  recipes, so the join code's serif digits are still unjudged. Slice 7
+  (`phase7-auth-household`) can walk them with its throwaway household.
+
 All six open ones need `make install-hosted` on the physical Galaxy device — not the
 emulator, not `flutter run`, not the local stack (CLAUDE.md). A future
 session should close as many as it reasonably can in one sitting rather than
 walking one loop at a time; 3b and 3c's second-account/throwaway-household
-setup can close both together. Phase 7 parts 2, 3, 5 and 6 all walked on
-the device (2026-09-25/26) — release build, both languages, both brightnesses —
+setup can close both together, and slice 7's throwaway household can close
+part 7's onboarding loop with them. Phase 7 parts 2, 3, 5, 6 and 7 all
+walked on the device (2026-09-25/28) — release build, both languages, both brightnesses —
 so the older loops are blocked on nothing but someone sitting down with the
 phone. Phase 5 part 5's clipboard loop and Phase 6 1b's tag-minting loop are
 the two that need an action taken rather than a screen read.
