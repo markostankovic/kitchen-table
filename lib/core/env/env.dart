@@ -20,8 +20,8 @@ abstract final class Env {
   static const String supabaseAnonKey =
       String.fromEnvironment('SUPABASE_ANON_KEY');
 
-  /// A throwaway email/password account for emulators, which cannot run the
-  /// Google chooser. Supplied only by `make install-emulator` from the
+  /// A throwaway email/password account for emulators (D125), which cannot
+  /// run the Google chooser. Supplied only by `make install-emulator` from the
   /// gitignored `env/dev_login.json`; every other build leaves both empty, so
   /// the sign-in screen shows Google alone. Anything passed as a dart-define
   /// can be read back out of the APK -- never distribute a build that has it.
