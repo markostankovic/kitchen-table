@@ -54,6 +54,8 @@ enum RecipeStatus { draft, tested }
 /// Pure Dart (rule 7).
 @freezed
 abstract class Recipe with _$Recipe {
+  const Recipe._();
+
   const factory Recipe({
     required String id,
     required String householdId,
@@ -80,6 +82,12 @@ abstract class Recipe with _$Recipe {
     /// signed, which is rule 3's instinct applied to a photo instead of an
     /// ingredient line: a recipe still renders without its picture.
     String? imageUrl,
+
+    /// Each translation's title, keyed by locale, resolved from the cached
+    /// `recipe_translations` embed at read time -- the list's share of what
+    /// `RecipeDetail.translations` carries in full. Empty for a recipe nobody
+    /// has translated, and for a row read without the embed.
+    @Default(<String, String>{}) Map<String, String> titleByLocale,
     @Default(<String>[]) List<String> tags,
 
     /// A household fact, not a personal one (D24): any member's tap changes
@@ -95,4 +103,8 @@ abstract class Recipe with _$Recipe {
   }) = _Recipe;
 
   factory Recipe.fromJson(Map<String, dynamic> json) => _$RecipeFromJson(json);
+
+  /// The title to show a reader of [locale]: its translation when there is
+  /// one, the original otherwise -- `RecipeDetail.displayTitle`'s rule.
+  String displayTitle(String locale) => titleByLocale[locale] ?? title;
 }

@@ -69,7 +69,7 @@ class RecipeCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      recipe.title,
+                      _title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: titleStyle,
@@ -102,6 +102,10 @@ class RecipeCard extends StatelessWidget {
     );
   }
 
+  /// The reader's translation when there is one (the detail screen's rule),
+  /// in the language the app is showing.
+  String get _title => recipe.displayTitle(l10n.localeName);
+
   Widget _leading(BuildContext context) {
     final String? url = recipe.imageUrl;
     if (url == null) return _monogram(context);
@@ -121,7 +125,7 @@ class RecipeCard extends StatelessWidget {
   /// `package:characters` (rule 8): every letter this app renders is Latin,
   /// and no Latin letter is a surrogate pair.
   Widget _monogram(BuildContext context) {
-    final String trimmed = recipe.title.trim();
+    final String trimmed = _title.trim();
     return AppMonogramTile(
       letter: trimmed.isEmpty ? '' : trimmed.substring(0, 1).toUpperCase(),
       size: AppSizes.thumb,

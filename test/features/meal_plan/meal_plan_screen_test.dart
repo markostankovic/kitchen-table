@@ -196,6 +196,14 @@ Future<_Calls> _pump(
 Finder _textButton(String label) =>
     find.ancestor(of: find.text(label), matching: find.bySubtype<TextButton>());
 
+/// The one way into a slot: the day's `+ Add meal`, then the slot chooser.
+Future<void> _addTo(WidgetTester tester, String slot) async {
+  await tester.tap(_textButton('Add meal').first);
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(ListTile, slot));
+  await tester.pumpAndSettle();
+}
+
 Recipe _plannableRecipe({required String id, required String title}) => Recipe(
   id: id,
   householdId: 'h1',
@@ -238,15 +246,9 @@ void main() {
         weekView: true,
       );
 
-      expect(_textButton('Add meal'), findsNWidgets(6));
-      for (final String slot in <String>[
-        'Breakfast',
-        'Lunch',
-        'Dinner',
-        'Snack',
-      ]) {
-        expect(_textButton(slot), findsOneWidget);
-      }
+      // Six collapsed days and today's expanded one, each with one button.
+      expect(_textButton('Add meal'), findsNWidgets(7));
+      expect(find.text('Breakfast'), findsNothing);
     },
   );
 
@@ -258,21 +260,20 @@ void main() {
   });
 
   testWidgets(
-    'Today is the default view: one expanded day, four slot buttons and '
-    'the chooser +, the Today pill, no week chevrons',
+    'Today is the default view: one expanded day with one Add meal button '
+    'and no per-slot buttons, the Today pill, no week chevrons',
     (WidgetTester tester) async {
       await _pump(tester, initial: MealPlanWeek.empty(_week));
 
+      expect(_textButton('Add meal'), findsOneWidget);
       for (final String slot in <String>[
         'Breakfast',
         'Lunch',
         'Dinner',
         'Snack',
       ]) {
-        expect(_textButton(slot), findsOneWidget);
+        expect(find.text(slot), findsNothing);
       }
-      expect(find.byTooltip('Add meal'), findsOneWidget);
-      expect(_textButton('Add meal'), findsNothing);
       // The segmented button's label, and the pill beside today's header.
       expect(find.text('Today'), findsNWidgets(2));
       expect(find.byTooltip('Previous week'), findsNothing);
@@ -397,7 +398,7 @@ void main() {
     );
   });
 
-  testWidgets('tapping + Breakfast, then "Add a note instead" calls addNote', (
+  testWidgets('Add meal, Breakfast, then "Add a note instead" calls addNote', (
     WidgetTester tester,
   ) async {
     final _Calls calls = await _pump(
@@ -405,8 +406,7 @@ void main() {
       initial: MealPlanWeek.empty(_week),
     );
 
-    await tester.tap(_textButton('Breakfast'));
-    await tester.pumpAndSettle();
+    await _addTo(tester, 'Breakfast');
 
     expect(find.text('Add a note instead'), findsOneWidget);
     await tester.tap(find.text('Add a note instead'));
@@ -668,8 +668,7 @@ void main() {
         repeatCount: 2,
       );
 
-      await tester.tap(_textButton('Snack'));
-      await tester.pumpAndSettle();
+      await _addTo(tester, 'Snack');
       await tester.tap(find.text('zzz snack bar'));
       await tester.pumpAndSettle();
 
@@ -697,8 +696,7 @@ void main() {
       repeatCount: 2,
     );
 
-    await tester.tap(_textButton('Snack'));
-    await tester.pumpAndSettle();
+    await _addTo(tester, 'Snack');
     await tester.tap(find.text('zzz snack bar'));
     await tester.pumpAndSettle();
 
@@ -721,8 +719,7 @@ void main() {
         repeatCount: 99,
       );
 
-      await tester.tap(_textButton('Lunch'));
-      await tester.pumpAndSettle();
+      await _addTo(tester, 'Lunch');
       await tester.tap(find.text('zzz lunch dish'));
       await tester.pumpAndSettle();
 
@@ -764,7 +761,7 @@ void main() {
     },
   );
 
-  testWidgets('the trailing + on a day with a filled slot opens the chooser', (
+  testWidgets('Add meal on a day with a filled slot offers all four slots', (
     WidgetTester tester,
   ) async {
     final MealPlanWeek plan = MealPlanWeek(
@@ -784,14 +781,11 @@ void main() {
     );
     await _pump(tester, initial: plan, weekView: true);
 
-    // Monday is expanded: breakfast is filled, so no + Breakfast button.
-    expect(_textButton('Breakfast'), findsNothing);
-    expect(_textButton('Lunch'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Add meal'));
+    // Monday is expanded, and first.
+    await tester.tap(_textButton('Add meal').first);
     await tester.pumpAndSettle();
 
-    // All four slots, the filled one included -- the + is how a second entry
+    // All four slots, the filled one included -- this is how a second entry
     // gets into it.
     for (final String slot in <String>[
       'Breakfast',
@@ -891,16 +885,32 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('onto a + Dinner button moves the entry to that day and slot', (
+    testWidgets("onto a filled slot's entries moves the entry into that slot", (
       WidgetTester tester,
     ) async {
+      final MealPlanWeek one = planWithOne();
       final _Calls calls = await _pump(
         tester,
-        initial: planWithOne(),
+        initial: MealPlanWeek(
+          week: one.week,
+          planId: one.planId,
+          entries: <MealPlanEntry>[
+            ...one.entries,
+            MealPlanEntry(
+              id: 'e2',
+              mealPlanId: 'plan-1',
+              entryDate: _monday,
+              slot: MealSlot.dinner,
+              position: 0,
+              entryKind: MealEntryKind.note,
+              note: 'zzz dinner',
+            ),
+          ],
+        ),
         weekView: true,
       );
 
-      await dragTo(tester, tester.getCenter(_textButton('Dinner')));
+      await dragTo(tester, tester.getCenter(find.text('zzz dinner')));
 
       expect(calls.moved, (id: 'e1', date: _monday, slot: MealSlot.dinner));
     });
@@ -1070,7 +1080,7 @@ void main() {
       // covers the new header path too, not just the week view's.
       expect(find.text(shortDateLabel(DateTime.now(), 'sr')), findsOneWidget);
       // A Serbian string nowhere in the English vocabulary.
-      expect(find.text(AppLocalizationsSr().mealSlotBreakfast), findsOneWidget);
+      expect(find.text(AppLocalizationsSr().addMealButton), findsOneWidget);
 
       // Switch to the week view for the rest of this test's assertions --
       // `_pump`'s `weekView` flag taps the English label, so this test does it

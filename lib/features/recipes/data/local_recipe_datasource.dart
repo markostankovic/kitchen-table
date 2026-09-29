@@ -32,6 +32,7 @@ import '../../../core/db/sync_watermark.dart';
 import '../../../core/text/text_normalizer.dart';
 import '../../ingredients/domain/display_name_chain.dart';
 import '../domain/recipe.dart';
+import '../domain/recipe_translation.dart';
 import 'dto/recipe_dto.dart';
 
 /// The delta-fetch entity name recipes are cached under (D72).
@@ -76,12 +77,16 @@ class LocalRecipeDataSource {
                 (RecipeCache t) => OrderingTerm.desc(t.updatedAt),
               ]))
             .get();
-        return rows
-            .map(
-              (RecipeCacheData row) =>
-                  recipeFromWire(jsonDecode(row.data) as Map<String, dynamic>),
-            )
-            .toList();
+        return rows.map((RecipeCacheData row) {
+          final Map<String, dynamic> wire =
+              jsonDecode(row.data) as Map<String, dynamic>;
+          return recipeFromWire(wire).copyWith(
+            titleByLocale: <String, String>{
+              for (final RecipeTranslation t in recipeTranslationsFromWire(wire))
+                t.locale: t.title,
+            },
+          );
+        }).toList();
       }, const <Recipe>[]);
 
   /// One cached recipe's full wire row (recipe fields plus embedded lines

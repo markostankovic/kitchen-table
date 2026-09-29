@@ -37,14 +37,14 @@ import '../domain/snack_variety.dart';
 /// Phone-first vertical list of day cards -- not a 7-column grid, which would
 /// not fit a phone's width (Phase 7 part 4, the Garden "Plan -- week"
 /// layout). A day with entries, and today always, is an expanded card: its
-/// entries grouped by slot, then a `+ <Slot>` button for each empty slot and a
-/// trailing `+` that opens the slot chooser (the only way a second entry gets
-/// into a filled slot). A week-view day with nothing planned collapses to one
-/// compact `+ Add meal` row. Tapping is the primary, tested way to add or move
+/// entries grouped by slot, then one bottom-right `+ Add meal` that opens the
+/// slot chooser (Phase 7 part 11 dropped the per-slot `+ <Slot>` buttons). A
+/// week-view day with nothing planned collapses to one compact `+ Add meal`
+/// row. Tapping is the primary, tested way to add or move
 /// an entry; long-press-drag is offered alongside it as a shortcut, not as the
 /// only path (D53). The drag carries the entry itself, and it lands on a
-/// filled slot's group, on a `+ <Slot>` button, or on a collapsed day -- which
-/// keeps the entry's own slot, since a collapsed day shows none.
+/// filled slot's group or on a collapsed day -- which keeps the entry's own
+/// slot, since a collapsed day shows none.
 ///
 /// A meal plan is live data, not a snapshot (unlike the shopping list, D13) --
 /// so unlike `ShoppingListScreen`, there is no split locale here. Every date
@@ -225,9 +225,8 @@ void _showFailure(BuildContext context, AppFailure e) {
       .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
 }
 
-/// Pick a recipe (or a note) for [day]/[slot] and write it -- what every
-/// `+ <Slot>` button runs directly, and what the slot chooser runs once a slot
-/// is picked.
+/// Pick a recipe (or a note) for [day]/[slot] and write it -- what the slot
+/// chooser runs once a slot is picked.
 Future<void> _add(
   BuildContext context,
   WidgetRef ref,
@@ -484,21 +483,16 @@ class _DayCard extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.xs,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: <Widget>[
-                for (final MealSlot slot in MealSlot.ordered)
-                  if (bySlot[slot]!.isEmpty)
-                    _SlotAddButton(day: day, slot: slot),
-                IconButton(
-                  tooltip: l10n.addMealButton,
-                  color: theme.colorScheme.primary,
-                  icon: const Icon(Icons.add, size: AppSizes.iconInButton),
-                  onPressed: () => _chooseSlotThenAdd(context, ref, day),
-                ),
-              ],
+            // One way in, bottom-right, the collapsed day's button: the slot
+            // chooser asks which meal, so an empty slot needs no button of
+            // its own.
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                icon: const Icon(Icons.add, size: AppSizes.iconInButton),
+                label: Text(l10n.addMealButton),
+                onPressed: () => _chooseSlotThenAdd(context, ref, day),
+              ),
             ),
           ],
         ),
@@ -581,36 +575,6 @@ class _SlotGroup extends ConsumerWidget {
               ],
             ),
       );
-}
-
-/// `+ <Slot>` for an empty slot: adds straight into it, and takes a drop.
-class _SlotAddButton extends ConsumerWidget {
-  const _SlotAddButton({required this.day, required this.slot});
-
-  final DateTime day;
-  final MealSlot slot;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    return DragTarget<MealPlanEntry>(
-      onAcceptWithDetails: (DragTargetDetails<MealPlanEntry> details) =>
-          _moveHere(context, ref, details.data, day, slot),
-      builder: (BuildContext context, List<MealPlanEntry?> candidate, _) =>
-          TextButton.icon(
-            style: TextButton.styleFrom(
-              foregroundColor: scheme.onSurfaceVariant,
-              backgroundColor: candidate.isEmpty
-                  ? null
-                  : scheme.primaryContainer,
-            ),
-            icon: const Icon(Icons.add, size: AppSizes.iconInButton),
-            label: Text(mealSlotLabel(slot, l10n)),
-            onPressed: () => _add(context, ref, day, slot),
-          ),
-    );
-  }
 }
 
 /// What to show as the card's title: the recipe's title for a recipe entry,
@@ -1045,11 +1009,9 @@ class _MealEntryCard extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     _entryLabel(entry, AppLocalizations.of(context)),
-                    style: entry.entryKind == MealEntryKind.note
-                        ? theme.textTheme.bodyLarge?.copyWith(
-                            color: scheme.onSurface,
-                          )
-                        : theme.extension<KitchenType>()!.recipeTitle,
+                    // A note reads as a meal like any other, so it wears a
+                    // recipe title's face; the meta row says it is a note.
+                    style: theme.extension<KitchenType>()!.recipeTitle,
                   ),
                 ],
               ),

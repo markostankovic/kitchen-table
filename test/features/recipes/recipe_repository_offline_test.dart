@@ -23,6 +23,7 @@ Map<String, dynamic> _row(
   List<Map<String, dynamic>> lines = const <Map<String, dynamic>>[],
   List<String> tags = const <String>[],
   bool isFavorite = false,
+  String? imagePath,
 }) => <String, dynamic>{
   'id': id,
   'household_id': 'h1',
@@ -36,7 +37,7 @@ Map<String, dynamic> _row(
   'source_url': null,
   'source_attribution': null,
   'status': 'draft',
-  'image_path': null,
+  'image_path': imagePath,
   'tags': tags,
   'is_favorite': isFavorite,
   'rating': null,
@@ -93,9 +94,17 @@ class _FakeRemote implements RemoteRecipeDataSource {
     String locale,
   ) async => const <String, String>{};
 
+  Map<String, String> signed = <String, String>{};
+  bool signThrows = false;
+
   @override
-  Future<Map<String, String>> signImageUrls(List<String> paths) async =>
-      const <String, String>{};
+  Future<Map<String, String>> signImageUrls(List<String> paths) async {
+    if (signThrows) throw const NetworkFailure();
+    return <String, String>{
+      for (final String p in paths)
+        if (signed.containsKey(p)) p: signed[p]!,
+    };
+  }
 
   @override
   Future<void> translate(String recipeId, String targetLocale) =>
@@ -235,6 +244,33 @@ void main() {
         expect(emitted.single.map((r) => r.id), <String>['r1']);
       },
     );
+
+    test('only the fresh emission carries signed photo URLs', () async {
+      await LocalRecipeDataSource(db).upsertMany(
+        householdId: 'h1',
+        rows: <Map<String, dynamic>>[_row('r1', imagePath: 'h1/r1.jpg')],
+      );
+      remote.signed = <String, String>{'h1/r1.jpg': 'https://signed/r1'};
+
+      final emitted = await repository.watchList(householdId: 'h1').toList();
+
+      expect(emitted.map((rs) => rs.single.imageUrl).toList(), <String?>[
+        null,
+        'https://signed/r1',
+      ]);
+    });
+
+    test('a signing failure still emits the fresh list, unsigned', () async {
+      remote.changed = <Map<String, dynamic>>[
+        _row('r1', imagePath: 'h1/r1.jpg'),
+      ];
+      remote.signThrows = true;
+
+      final emitted = await repository.watchList(householdId: 'h1').toList();
+
+      expect(emitted.single.single.id, 'r1');
+      expect(emitted.single.single.imageUrl, isNull);
+    });
 
     test('a soft-deleted row in the delta evicts it from the cache', () async {
       await LocalRecipeDataSource(db).upsertMany(

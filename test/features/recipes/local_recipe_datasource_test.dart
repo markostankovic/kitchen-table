@@ -130,6 +130,37 @@ void main() {
       expect(row!.containsKey('recipe_ingredients'), isTrue);
     });
 
+    test('readAll carries each cached translation title by locale', () async {
+      await local.upsertMany(
+        householdId: 'h1',
+        rows: <Map<String, dynamic>>[
+          <String, dynamic>{
+            ..._recipeRow('r1', updatedAt: '2026-01-01T00:00:00Z'),
+            'recipe_translations': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'locale': 'en',
+                'title': 'Pie',
+                'description': null,
+                'steps': <String>[],
+                'is_machine_generated': true,
+                'reviewed_by': null,
+                'reviewed_at': null,
+              },
+            ],
+          },
+          _recipeRow('r2', updatedAt: '2026-01-02T00:00:00Z'),
+        ],
+      );
+
+      final recipes = await local.readAll(householdId: 'h1');
+      final r1 = recipes.firstWhere((r) => r.id == 'r1');
+      final r2 = recipes.firstWhere((r) => r.id == 'r2');
+      expect(r1.titleByLocale, <String, String>{'en': 'Pie'});
+      expect(r1.displayTitle('en'), 'Pie');
+      expect(r1.displayTitle('sr'), 'Pita');
+      expect(r2.titleByLocale, isEmpty);
+    });
+
     test('evict drops exactly the named row', () async {
       await local.upsertMany(
         householdId: 'h1',

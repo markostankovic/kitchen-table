@@ -23,9 +23,9 @@ class AppStatStrip extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final TextStyle? valueStyle = theme.textTheme.bodyLarge;
 
-    // Every value sits in a box one `bodyLarge` line tall and is centred in
-    // it, so a column whose value is five 16dp stars lines up with one whose
-    // value is a 26dp line of text. Without it each column's value hangs from
+    // Every value sits in a box one `bodyLarge` line tall, start-aligned and
+    // vertically centred in it, so a column whose value is five 16dp stars
+    // lines up with one whose value is a 26dp line of text. Without it each column's value hangs from
     // its own top edge and the strip reads as four things at four heights --
     // which is how it rendered on the device before this.
     //
@@ -46,10 +46,10 @@ class AppStatStrip extends StatelessWidget {
               for (final AppStatColumn column in columns)
                 Expanded(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
                         column.label,
-                        textAlign: TextAlign.center,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -57,7 +57,8 @@ class AppStatStrip extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xs),
                       ConstrainedBox(
                         constraints: BoxConstraints(minHeight: valueHeight),
-                        child: Center(
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
                           heightFactor: 1,
                           child: column.value,
                         ),

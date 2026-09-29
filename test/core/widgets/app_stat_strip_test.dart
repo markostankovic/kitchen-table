@@ -65,6 +65,21 @@ void main() {
     );
   });
 
+  // Phase 7 part 11: the mock starts each label and value at its column's
+  // left edge; they used to be centred.
+  testWidgets('label and value start at their column\'s leading edge', (
+    WidgetTester tester,
+  ) async {
+    await _pump(tester, const <AppStatColumn>[
+      AppStatColumn(label: 'Porcije', value: Text('8')),
+      AppStatColumn(label: 'Priprema', value: Text('30 min')),
+    ]);
+
+    final double columnLeft = tester.getTopLeft(find.byType(Expanded).at(1)).dx;
+    expect(tester.getTopLeft(find.text('Priprema')).dx, columnLeft);
+    expect(tester.getTopLeft(find.text('30 min')).dx, columnLeft);
+  });
+
   testWidgets('a value can be any widget, not only text', (
     WidgetTester tester,
   ) async {

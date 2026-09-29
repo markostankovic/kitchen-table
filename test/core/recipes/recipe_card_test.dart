@@ -23,9 +23,11 @@ Future<void> _pump(
   WidgetTester tester,
   Recipe recipe, {
   VoidCallback? onTap,
+  Locale? locale,
 }) => tester.pumpWidget(
   MaterialApp(
     theme: AppTheme.light(),
+    locale: locale,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: appSupportedLocales,
     home: Scaffold(
@@ -48,6 +50,20 @@ void main() {
     expect(find.text('Šargarepa torta'), findsOneWidget);
     await tester.tap(find.byType(RecipeCard));
     expect(tapped, isTrue);
+  });
+
+  testWidgets("the title and monogram follow the reader's translation", (
+    WidgetTester tester,
+  ) async {
+    await _pump(
+      tester,
+      _torta.copyWith(titleByLocale: <String, String>{'en': 'Carrot cake'}),
+      locale: const Locale('en'),
+    );
+
+    expect(find.text('Carrot cake'), findsOneWidget);
+    expect(find.text('Šargarepa torta'), findsNothing);
+    expect(find.text('C'), findsOneWidget);
   });
 
   testWidgets('a recipe with no photo gets a monogram of its first letter', (

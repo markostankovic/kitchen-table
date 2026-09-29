@@ -10,6 +10,7 @@ Recipe _recipe(
   String title = 'Recipe',
   List<String> tags = const <String>[],
   bool isFavorite = false,
+  Map<String, String> titleByLocale = const <String, String>{},
 }) => Recipe(
       id: id,
       householdId: 'h1',
@@ -20,6 +21,7 @@ Recipe _recipe(
       createdBy: 'u1',
       tags: tags,
       isFavorite: isFavorite,
+      titleByLocale: titleByLocale,
     );
 
 void main() {
@@ -28,6 +30,22 @@ void main() {
       final List<Recipe> recipes = <Recipe>[_recipe('r1')];
 
       expect(identical(RecipeFilter.apply(recipes), recipes), isTrue);
+    });
+
+    test('a query substring-matches a translated title', () {
+      final List<Recipe> recipes = <Recipe>[
+        _recipe(
+          'r1',
+          title: 'Punjene paprike',
+          titleByLocale: <String, String>{'en': 'Stuffed peppers'},
+        ),
+        _recipe('r2', title: 'Pasulj'),
+      ];
+
+      expect(
+        RecipeFilter.apply(recipes, query: 'stuffed').map((Recipe r) => r.id),
+        <String>['r1'],
+      );
     });
 
     test('a query substring-matches a tag as typed', () {

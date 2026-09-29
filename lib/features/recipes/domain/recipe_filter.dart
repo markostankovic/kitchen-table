@@ -35,14 +35,20 @@ abstract final class RecipeFilter {
         .toList(growable: false);
   }
 
-  /// A title-or-tag hit for [term]: the title matches, or any of [recipe]'s
-  /// tags matches under its own spelling or any known translated spelling.
+  /// A title-or-tag hit for [term]: the title or any translated title
+  /// matches, or any of [recipe]'s tags matches under its own spelling or
+  /// any known translated spelling.
   static bool _matches(
     Recipe recipe,
     String term,
     Map<String, Set<String>> spellingsByKey,
   ) {
     if (TextNormalizer.normalize(recipe.title).contains(term)) return true;
+    if (recipe.titleByLocale.values.any(
+      (String t) => TextNormalizer.normalize(t).contains(term),
+    )) {
+      return true;
+    }
 
     for (final String t in recipe.tags) {
       final String key = TextNormalizer.normalize(t);

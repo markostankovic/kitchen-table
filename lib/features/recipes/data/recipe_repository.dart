@@ -88,8 +88,9 @@ class RecipeRepository {
       }
 
       onReachable?.call();
-      final List<Recipe> fresh =
-          await _local.readAll(householdId: householdId);
+      final List<Recipe> fresh = await _withImageUrlsOrNot(
+        await _local.readAll(householdId: householdId),
+      );
       yield _filtered(fresh, query, tag, favoritesOnly, spellingsByKey);
     } on NetworkFailure {
       onUnreachable?.call();
@@ -581,9 +582,11 @@ class RecipeRepository {
   }
 
   /// Fills in [Recipe.imageUrl] for every recipe with an [Recipe.imagePath],
-  /// in one round trip. Never called for a recipe served from the cache --
-  /// a cached recipe keeps `imagePath` and a null `imageUrl`, a state the
-  /// UI already renders as a placeholder (signing can fail online too).
+  /// in one round trip. Called on the detail and save paths, and -- through
+  /// [_withImageUrlsOrNot] -- on the list's online emission only: the
+  /// cached/offline emission keeps `imagePath` and a null `imageUrl`, a
+  /// state the UI already renders as a placeholder (signing can fail online
+  /// too).
   Future<List<Recipe>> _withImageUrls(List<Recipe> recipes) async {
     final List<String> paths = recipes
         .map((Recipe r) => r.imagePath)
@@ -598,6 +601,17 @@ class RecipeRepository {
     return recipes
         .map((Recipe r) => r.copyWith(imageUrl: urls[r.imagePath ?? '']))
         .toList(growable: false);
+  }
+
+  /// [_withImageUrls] for the list, where a photo is never worth failing
+  /// the read over: any signing error hands back [recipes] unsigned, and
+  /// each card falls back to its monogram (rule 3's instinct again).
+  Future<List<Recipe>> _withImageUrlsOrNot(List<Recipe> recipes) async {
+    try {
+      return await _withImageUrls(recipes);
+    } on Object {
+      return recipes;
+    }
   }
 
   Map<String, dynamic> _ingredientPayload(RecipeIngredient line) =>

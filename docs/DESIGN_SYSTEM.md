@@ -497,7 +497,8 @@ step, so a single step draws none. The 2 and the 4 are private consts in
 
 The servings / prep / cook /
 rating strip puts labels in `bodySmall` muted above values in `bodyLarge`
-w600 `statValue`.
+w600 `statValue`, both start-aligned in equal-width columns (the mock's
+left edge, not centred).
 
 ### Recipe card
 
@@ -534,9 +535,9 @@ plain `bodySmall` `onSurfaceVariant` text, then a servings item
 (`soup_kitchen_outlined`) for a recipe, a `Napomena`/`Note` item
 (`edit_note_outlined`) for a note, or `od pon 14.`/`from Mon 14`
 (`event_outlined`) for a leftover whose source is in the loaded week. Then,
-`xs` below, a recipe or leftover title in `KitchenType.recipeTitle`, or a
-note's own words in sans `bodyLarge`,
-wrapping rather than truncating. **No thumbnail or monogram** — an entry
+`xs` below, the title in `KitchenType.recipeTitle` — a recipe's or leftover's
+title, or a note's own words, since a note is a meal like any other and the
+meta row already says it is a note — wrapping rather than truncating. **No thumbnail or monogram** — an entry
 carries a recipe's title and servings, not the recipe (D53).
 
 **Leftovers.** The same card with a **dashed 1dp `outline` border** (a private
@@ -545,21 +546,22 @@ carries a recipe's title and servings, not the recipe (D53).
 its own. The source's day is the abbreviated `weekdayAndDay` on purpose: a
 full Serbian weekday would have to be declined after `od`.
 
-**Adding.** Under the entries, a `Wrap(spacing: sm, runSpacing: xs)`: a quiet
-`+ <Slot>` text button (`onSurfaceVariant`) for each **empty** slot — inviting
-without shouting — then a trailing icon-only `+` in `primary` that opens the
-slot chooser (a small bottom sheet of the four slots). The `+` is how a second
-entry gets into a filled slot. **A week-view day with nothing planned, other
+**Adding.** One way in: under the entries, `+ Dodaj obrok`/`+ Add meal` in
+`primary`, aligned to the card's bottom-right, opens the slot chooser (a small
+bottom sheet of all four slots, filled ones included — that is how a second
+entry gets into a slot). There is no per-slot `+ <Slot>` button; four of them
+under every day read as clutter. **A week-view day with nothing planned, other
 than today, collapses** to one compact card on `surface` — lighter than a
 planned day — with the header on the left and `+ Dodaj obrok`/`+ Add meal` in
 `primary` on the right, which opens the same chooser. The Today view never
 collapses.
 
 **Drag.** Long-press lifts the entry card itself at its own width, on
-`Material` elevation 2. Three drop targets, each highlighted in
+`Material` elevation 2. Two drop targets, each highlighted in
 `primaryContainer` while a drag is over it: a filled slot's group of entry
-cards, a `+ <Slot>` button, and a collapsed day — which **keeps the entry's
-own slot**, since it shows none to aim at.
+cards, and a collapsed day — which **keeps the entry's own slot**, since it
+shows none to aim at. An empty slot is reached through the entry's `Move to`
+action instead.
 
 ### Shopping list
 
