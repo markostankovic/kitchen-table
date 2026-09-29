@@ -705,6 +705,57 @@ void main() {
       expect(find.textContaining('1.5'), findsNothing);
     });
 
+    testWidgets('the last ingredient line draws no divider under it',
+        (WidgetTester tester) async {
+      await _pumpDetail(tester, _detail);
+
+      // Three lines, two dividers: `Recipe@1x.png` has none under the last.
+      expect(
+        find.byKey(const Key('ingredientDivider'), skipOffstage: false),
+        findsNWidgets(2),
+      );
+    });
+
+    testWidgets('a connector joins each step to the next',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          steps: const <RecipeStep>[
+            RecipeStep(position: 0, text: 'Zagrej rernu.'),
+            RecipeStep(position: 1, text: 'Umuti jaja.'),
+            RecipeStep(position: 2, text: 'Peci 40 minuta.'),
+          ],
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Peci 40 minuta.'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      // Three steps, two connectors: none above step 1, none below the last.
+      expect(
+        find.byKey(const Key('stepConnector'), skipOffstage: false),
+        findsNWidgets(2),
+      );
+    });
+
+    testWidgets('a single step draws no connector',
+        (WidgetTester tester) async {
+      await _pumpDetail(tester, _detail);
+      await tester.scrollUntilVisible(
+        find.text('Zagrej rernu.'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      expect(find.text('Zagrej rernu.'), findsOneWidget);
+      expect(
+        find.byKey(const Key('stepConnector'), skipOffstage: false),
+        findsNothing,
+      );
+    });
+
     testWidgets('renders the recipe photo when the recipe has one',
         (WidgetTester tester) async {
       await _pumpDetail(

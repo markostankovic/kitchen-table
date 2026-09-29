@@ -12,8 +12,10 @@ the tokens: both `ColorScheme`s, the type scale, `AppRadii`,
 (`docs/design/BRIEF_design_fixes.md`, Claude Design's updated
 `design-system.pdf` and screens) is part of the source too: part 9a (D127)
 moved the type to sans with serif recipe titles only, flipped the ingredient
-row and lightened the steps. It replaces `docs/DESIGN.md`, which is now only a
-pointer at this file.
+row and lightened the steps. The 2026-09-28 steps/dividers round
+(`docs/design/BRIEF_steps_dividers_logo.md`) followed: part 10a turned the
+steps into a timeline and the ingredient hairline into a dashed divider. It
+replaces `docs/DESIGN.md`, which is now only a pointer at this file.
 
 What is *described* here and what is *applied* are two different things. The
 tokens are real everywhere — the palette and typeface repaint every screen at
@@ -293,6 +295,8 @@ in sync — what it adds is a name for what the colour *means here*.
 | `offline` / `onOffline` | `surfaceContainerHighest` / `onSurface` | the offline banner: calm, not red |
 | `docLanguage` | `surfaceContainerLow` with an `outlineVariant` ring | the "SR"/"EN" tag saying which language a generated document is in |
 | `destructive` | `error` | destructive actions, as text only — never a fill |
+| `stepConnector` | `outlineVariant` | the 2dp line joining one step disc to the next |
+| `dividerDash` | `outlineVariant` | the dashed divider under an ingredient row |
 
 Two of these are load-bearing rules rather than preferences:
 
@@ -421,7 +425,15 @@ above the first card.
 
 **Name left, amount right**: a row of `Expanded` name column, a 24dp (`xl`)
 gap, then the amount — grid `1fr | auto`. `bodyLarge` 18/28, min height 48,
-`sm` vertical padding, a hairline between lines.
+`sm` vertical padding, a **dashed divider** between lines: 6dp dashes, 4dp
+gaps, 1dp, butt caps, in `dividerDash` — a small private `CustomPainter`, not
+a package. It takes the 1dp the old solid hairline took, inside the 48, so row
+heights did not change. The same row, and so the same divider, on recipe
+detail, the shopping list and import review.
+
+**The divider is not the unmatched ring.** The ring is small, closed, 1.5dp,
+8 dashes, in `outline`; the divider is long, flat, 1dp, in the lighter
+`outlineVariant`. A row carrying both must never read as one thing twice.
 
 The amount is one `Text.rich` that never wraps: the number in `primary`, w600,
 tabular figures, then the unit in `onSurfaceVariant` beside it (`½ kg`). It
@@ -444,8 +456,9 @@ name only**, with no gap reserved. Under the name, the `trailer` (note,
   as a **foreground** (it takes no layout) on a `surfaceContainerLow` tint.
   A flagged row is always inset (below), so the name clears the marker
 
-**`inset`** pads a row's content `md` in from both edges, while its hairline
-and tint still run the full width. Import review sets it on **every** row, so
+**`inset`** pads a row's content `md` in from both edges, and its dashed
+divider with it, so the dashes start and end at the text. The flagged tint
+and marker still run the full width, down to the divider with no gap. Import review sets it on **every** row, so
 flagged and unflagged names and amounts line up (`Review import@1x.png`). The
 recipe detail and the shopping list sit flush with the gutter
 (`Recipe@1x.png`).
@@ -463,16 +476,26 @@ hint follow the **recipe** (D86). Unmatched and suggested chips set their label
 in `onSurfaceVariant` and their `help_outline` icon in `outline` — `outline`
 is never text.
 
-Rows take `showDivider`: the last row of a card omits its hairline, so the
-card's own edge does the separating. Every other row keeps it, including the
-last of a block followed by a gap: a hairline missing mid-card reads as
+Rows take `showDivider`: the last row of a card omits its divider, so the
+card's own edge does the separating, and the last line of the recipe detail's
+list omits it too (`Recipe@1x.png`). Every other row keeps it, including the
+last of a block followed by a gap: a divider missing mid-card reads as
 uneven spacing, not as a break.
 
 ### Steps and stats
 
 A step number, in `labelLarge` `onPrimaryContainer`, sits in a 28dp
 `todayContainer` disc; `lg` (16) to the step itself in `bodyLarge` (sans
-18/28, w400 — no bold); `xl` (24) between steps. The servings / prep / cook /
+18/28, w400 — no bold); `xl` (24) between steps.
+
+**The steps are a timeline.** A 2dp `stepConnector` line runs down the disc
+column from one disc to the next, stopping 4dp short of both. The 24dp gap
+sits inside the step above, so the line crosses it, and a step whose text
+wraps stretches the line with it. No line above step 1 or below the last
+step, so a single step draws none. The 2 and the 4 are private consts in
+`recipe_detail_screen.dart`, its only user.
+
+The servings / prep / cook /
 rating strip puts labels in `bodySmall` muted above values in `bodyLarge`
 w600 `statValue`.
 
@@ -578,7 +601,7 @@ locales differ: it is calm, and it is what makes D94 legible.
 holding every to-buy item as an `IngredientLineRow`: the first quantity in
 the quantity column with its unit beside the name, any further unit family
 (never merged, D9) and every unmatched raw line in the trailer. Items are
-grouped and ordered by `groupByCategory`, with blocks `md` apart, a hairline
+grouped and ordered by `groupByCategory`, with blocks `md` apart, a dashed divider
 under **every** row but the card's last, and **no category headings** — D105-amended: headings were noise when scanning a list
 in a shop, and the Garden mock that draws them was declined. Omitted when
 nothing is to buy. Long-press toggles a pantry staple (D13: the snapshot is

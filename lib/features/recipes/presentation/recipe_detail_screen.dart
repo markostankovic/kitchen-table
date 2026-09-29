@@ -33,6 +33,12 @@ import '../domain/recipe_step.dart';
 import '../../../core/ingredients/widgets/ingredient_line_row.dart';
 import '../../../core/ingredients/widgets/quantity_format.dart';
 
+/// The step connector's width and how far short of each disc it stops,
+/// named in DESIGN_SYSTEM (`size-connector`, `size-connector-gap`). Private
+/// on `ingredient_line_row.dart`'s `_markerWidth` precedent.
+const double _connectorWidth = 2;
+const double _connectorGap = 4;
+
 /// One recipe, read-only.
 ///
 /// The ingredient list is the part that matters. A matched line renders the
@@ -458,9 +464,12 @@ class _Body extends ConsumerWidget {
                   ),
                 )
               else
-                ...detail.ingredients.map(
-                  (RecipeIngredient line) => _ingredientRow(line, units),
-                ),
+                for (int i = 0; i < detail.ingredients.length; i++)
+                  _ingredientRow(
+                    detail.ingredients[i],
+                    units,
+                    isLast: i == detail.ingredients.length - 1,
+                  ),
               const SizedBox(height: AppSpacing.xl),
               AppSectionHeading(text: l10n.stepsHeading),
               if (detail.displaySteps.isEmpty)
@@ -471,9 +480,11 @@ class _Body extends ConsumerWidget {
                   ),
                 )
               else
-                ...detail.displaySteps.map(
-                  (RecipeStep step) => _StepRow(step: step),
-                ),
+                for (int i = 0; i < detail.displaySteps.length; i++)
+                  _StepRow(
+                    step: detail.displaySteps[i],
+                    isLast: i == detail.displaySteps.length - 1,
+                  ),
               ..._sourceFooter(context),
             ],
           ),
@@ -573,7 +584,13 @@ class _Body extends ConsumerWidget {
   /// The parser moves an optional marker (`po ukusu`, `opciono`) into the
   /// note, so an optional line with a note already says so in the trailer;
   /// the inline `opciono` is only for one without.
-  Widget _ingredientRow(RecipeIngredient line, UnitCatalog units) {
+  ///
+  /// The last line draws no divider under it (`Recipe@1x.png`).
+  Widget _ingredientRow(
+    RecipeIngredient line,
+    UnitCatalog units, {
+    required bool isLast,
+  }) {
     final bool asTyped = line.displayName == null;
     return IngredientLineRow(
       quantity: asTyped || line.quantity == null
@@ -589,6 +606,7 @@ class _Body extends ConsumerWidget {
       trailer: line.note,
       isMatched: line.isMatched,
       unmatchedTooltip: l10n.ingredientNotMatchedTooltip,
+      showDivider: !isLast,
     );
   }
 
@@ -683,38 +701,66 @@ class _PhotoWell extends StatelessWidget {
 ///
 /// The disc is what makes a list of steps countable at a glance while
 /// cooking -- a bare `1.` in the text column reads as part of the sentence.
+/// A 2dp line joins each disc to the next, stopping short of both, so the
+/// steps read as one timeline; it stretches with a step that wraps, and
+/// there is none below the last step.
 class _StepRow extends StatelessWidget {
-  const _StepRow({required this.step});
+  const _StepRow({required this.step, required this.isLast});
 
   final RecipeStep step;
+  final bool isLast;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final KitchenColors kitchen = theme.extension<KitchenColors>()!;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+    // The gap between steps sits inside the row, so the connector runs
+    // through it down to the next disc. The last step keeps it below.
+    return IntrinsicHeight(
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Container(
+          SizedBox(
             width: AppSizes.stepDisc,
-            height: AppSizes.stepDisc,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: kitchen.todayContainer,
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              '${step.position + 1}',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.onPrimaryContainer,
-              ),
+            child: Column(
+              children: <Widget>[
+                Container(
+                  width: AppSizes.stepDisc,
+                  height: AppSizes.stepDisc,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: kitchen.todayContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '${step.position + 1}',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                if (!isLast) ...<Widget>[
+                  const SizedBox(height: _connectorGap),
+                  Expanded(
+                    child: Center(
+                      child: Container(
+                        key: const Key('stepConnector'),
+                        width: _connectorWidth,
+                        color: kitchen.stepConnector,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: _connectorGap),
+                ],
+              ],
             ),
           ),
           const SizedBox(width: AppSpacing.lg),
           Expanded(
-            child: Text(step.text, style: theme.textTheme.bodyLarge),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+              child: Text(step.text, style: theme.textTheme.bodyLarge),
+            ),
           ),
         ],
       ),

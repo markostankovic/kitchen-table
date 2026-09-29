@@ -315,7 +315,7 @@ void main() {
   });
 
   // Import review insets every row, so a flagged name lines up with its
-  // unflagged neighbours; the hairline still runs the full width.
+  // unflagged neighbours.
   testWidgets('inset rows line up with flagged ones, both edges', (
     WidgetTester tester,
   ) async {
@@ -391,20 +391,24 @@ void main() {
     expect(plain, 'komadić rebaraca\u2060\uFFFC');
   });
 
-  testWidgets('showDivider: false drops the bottom hairline; the default '
-      'keeps it', (WidgetTester tester) async {
+  testWidgets('showDivider: false drops the dashed divider; the default '
+      'keeps it, in outlineVariant', (WidgetTester tester) async {
     final ThemeData theme = AppTheme.light();
-    Border border() =>
-        (tester.widget<Container>(find.byType(Container).first).decoration!
-                    as BoxDecoration)
-                .border!
-            as Border;
+    final Finder divider = find.byKey(const Key('ingredientDivider'));
 
     await _pump(
       tester,
       const IngredientLineRow(quantity: '1', unit: null, name: 'jaje'),
     );
-    expect(border().bottom.color, theme.colorScheme.outlineVariant);
+    expect(divider, findsOneWidget);
+    expect(
+      tester.renderObject(divider),
+      paints..line(color: theme.colorScheme.outlineVariant),
+    );
+    // Flush rows run the dashes edge to edge.
+    expect(tester.getTopLeft(divider).dx, 0);
+    expect(tester.getTopRight(divider).dx, 800);
+    expect(tester.getSize(divider).height, 1);
 
     await _pump(
       tester,
@@ -415,6 +419,42 @@ void main() {
         showDivider: false,
       ),
     );
-    expect(border().bottom, BorderSide.none);
+    expect(divider, findsNothing);
+  });
+
+  // `Review import@1x.png`: the dashes start and end at the text, while the
+  // flagged tint still runs the full width.
+  testWidgets('an inset row pads its divider md on both sides', (
+    WidgetTester tester,
+  ) async {
+    await _pump(
+      tester,
+      const IngredientLineRow(
+        quantity: '1',
+        unit: null,
+        name: 'jaje',
+        isFlagged: true,
+        inset: true,
+      ),
+    );
+
+    final Finder divider = find.byKey(const Key('ingredientDivider'));
+    expect(tester.getTopLeft(divider).dx, 12);
+    expect(tester.getTopRight(divider).dx, 800 - 12);
+    expect(tester.getSize(find.byType(IngredientLineRow)).width, 800);
+  });
+
+  // The divider replaced a 1dp border, and must not change row heights.
+  testWidgets('a one-line row is still 48dp, divider included', (
+    WidgetTester tester,
+  ) async {
+    await _pump(
+      tester,
+      const IngredientLineRow(quantity: '1', unit: null, name: 'jaje'),
+    );
+    final Finder row = find.byType(IngredientLineRow);
+    final Finder divider = find.byKey(const Key('ingredientDivider'));
+    expect(tester.getSize(row).height, 48);
+    expect(tester.getBottomLeft(divider).dy, tester.getBottomLeft(row).dy);
   });
 }

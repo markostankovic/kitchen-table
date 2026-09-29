@@ -37,6 +37,8 @@ class KitchenColors extends ThemeExtension<KitchenColors> {
     required this.onOffline,
     required this.docLanguage,
     required this.destructive,
+    required this.stepConnector,
+    required this.dividerDash,
   });
 
   /// Builds the extension from a scheme. The aliasing lives here and only
@@ -55,6 +57,8 @@ class KitchenColors extends ThemeExtension<KitchenColors> {
     onOffline: scheme.onSurface,
     docLanguage: scheme.surfaceContainerLow,
     destructive: scheme.error,
+    stepConnector: scheme.outlineVariant,
+    dividerDash: scheme.outlineVariant,
   );
 
   /// The "Danas"/"Today" pill and the 2dp outline of today's day card.
@@ -101,6 +105,15 @@ class KitchenColors extends ThemeExtension<KitchenColors> {
   /// Destructive actions, as **text only** -- never a fill. Alias of `error`.
   final Color destructive;
 
+  /// The 2dp line joining one step disc to the next. Alias of
+  /// `outlineVariant`.
+  final Color stepConnector;
+
+  /// The dashed line under an ingredient row -- long, flat and lighter than
+  /// the [unmatched] ring, so the two never read as one thing. Alias of
+  /// `outlineVariant`.
+  final Color dividerDash;
+
   @override
   KitchenColors copyWith({
     Color? today,
@@ -115,6 +128,8 @@ class KitchenColors extends ThemeExtension<KitchenColors> {
     Color? onOffline,
     Color? docLanguage,
     Color? destructive,
+    Color? stepConnector,
+    Color? dividerDash,
   }) => KitchenColors(
     today: today ?? this.today,
     todayContainer: todayContainer ?? this.todayContainer,
@@ -128,6 +143,8 @@ class KitchenColors extends ThemeExtension<KitchenColors> {
     onOffline: onOffline ?? this.onOffline,
     docLanguage: docLanguage ?? this.docLanguage,
     destructive: destructive ?? this.destructive,
+    stepConnector: stepConnector ?? this.stepConnector,
+    dividerDash: dividerDash ?? this.dividerDash,
   );
 
   @override
@@ -146,6 +163,8 @@ class KitchenColors extends ThemeExtension<KitchenColors> {
       onOffline: Color.lerp(onOffline, other.onOffline, t)!,
       docLanguage: Color.lerp(docLanguage, other.docLanguage, t)!,
       destructive: Color.lerp(destructive, other.destructive, t)!,
+      stepConnector: Color.lerp(stepConnector, other.stepConnector, t)!,
+      dividerDash: Color.lerp(dividerDash, other.dividerDash, t)!,
     );
   }
 }

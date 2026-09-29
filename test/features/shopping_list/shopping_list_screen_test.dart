@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
 import 'package:kitchen_table/core/ingredients/ingredient_catalog_providers.dart';
+import 'package:kitchen_table/core/ingredients/widgets/ingredient_line_row.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/date_labels.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
@@ -459,9 +460,9 @@ void main() {
   });
 
   testWidgets(
-    'every to-buy row draws its hairline, the last row of a category block '
+    'every to-buy row draws its divider, the last row of a category block '
     'included; only the card\'s last row drops it (Phase 7 part 5\'s walk: '
-    'block-end gaps with no hairline read as uneven spacing, not grouping)',
+    'block-end gaps with no divider read as uneven spacing, not grouping)',
     (tester) async {
       await _pump(
         tester,
@@ -472,21 +473,22 @@ void main() {
         ]),
       );
 
-      Border borderOf(String name) {
-        final Container row = tester.widget<Container>(
-          find
-              .ancestor(of: find.text(name), matching: find.byType(Container))
-              .first,
-        );
-        return (row.decoration! as BoxDecoration).border! as Border;
-      }
+      Finder dividerOf(String name) => find.descendant(
+        of: find
+            .ancestor(
+              of: find.text(name),
+              matching: find.byType(IngredientLineRow),
+            )
+            .first,
+        matching: find.byKey(const Key('ingredientDivider')),
+      );
 
       // Serbian labels sort Ostava before Povrće.
-      expect(borderOf('brašno').bottom, isNot(BorderSide.none));
-      // Last of its block, not of the card: keeps its hairline.
-      expect(borderOf('šećer').bottom, isNot(BorderSide.none));
+      expect(dividerOf('brašno'), findsOneWidget);
+      // Last of its block, not of the card: keeps its divider.
+      expect(dividerOf('šećer'), findsOneWidget);
       // Last row of the card: the card's edge does the separating.
-      expect(borderOf('luk').bottom, BorderSide.none);
+      expect(dividerOf('luk'), findsNothing);
     },
   );
 

@@ -10,8 +10,17 @@ import '../../theme/kitchen_colors.dart';
 /// number is not worth a cross-file constant.
 const double _markerWidth = 3;
 
+/// The divider's dash and the gap after it, named in DESIGN_SYSTEM
+/// (`size-dash`, `size-dash-gap`). Private on `_markerWidth`'s precedent.
+const double _dashLength = 6;
+const double _dashGap = 4;
+
+/// The divider's stroke, and the height it takes out of the row's 48dp.
+const double _dividerHeight = 1;
+
 /// One ingredient line, read-only: the name on the left, the amount on the
-/// right (`docs/DESIGN_SYSTEM.md` § Ingredient lines, D127).
+/// right (`docs/DESIGN_SYSTEM.md` § Ingredient lines, D127), with a dashed
+/// divider under it.
 ///
 /// **It takes primitives, not a model.** The recipe detail screen renders
 /// `RecipeIngredient`s and the import review screen renders
@@ -76,9 +85,10 @@ class IngredientLineRow extends StatelessWidget {
   /// clears the marker.
   final bool isFlagged;
 
-  /// Pads the row's content `md` in from both edges while the hairline and
-  /// the flagged tint still run the full width. Import review sets it on every
-  /// row, so a flagged name lines up with its unflagged neighbours (`Review
+  /// Pads the row's content `md` in from both edges, and the dashed divider
+  /// with it, so the dashes start and end at the text. The flagged tint and
+  /// marker still run the full width. Import review sets it on every row, so
+  /// a flagged name lines up with its unflagged neighbours (`Review
   /// import@1x.png`); the recipe detail and the shopping list sit flush with
   /// the gutter.
   final bool inset;
@@ -86,7 +96,8 @@ class IngredientLineRow extends StatelessWidget {
   /// The localized "not matched to an ingredient" string, shown on the ring.
   final String? unmatchedTooltip;
 
-  /// `false` drops the bottom hairline -- for the last row of a block or card.
+  /// `false` drops the dashed divider under the row -- for the last row of a
+  /// block or card.
   final bool showDivider;
 
   @override
@@ -106,31 +117,19 @@ class IngredientLineRow extends StatelessWidget {
       color: scheme.onSurfaceVariant,
     );
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isFlagged ? scheme.surfaceContainerLow : null,
-        border: Border(
-          bottom: showDivider
-              ? BorderSide(color: scheme.outlineVariant)
-              : BorderSide.none,
-        ),
+    final bool padded = inset || isFlagged;
+
+    final Widget content = Container(
+      // The divider takes the 1dp the old solid border took, so row heights
+      // do not shift.
+      constraints: BoxConstraints(
+        minHeight: AppSizes.target - (showDivider ? _dividerHeight : 0),
       ),
-      foregroundDecoration: isFlagged
-          ? BoxDecoration(
-              border: Border(
-                left: BorderSide(
-                  color: kitchen.reviewMarker,
-                  width: _markerWidth,
-                ),
-              ),
-            )
-          : null,
-      constraints: const BoxConstraints(minHeight: AppSizes.target),
       padding: EdgeInsets.only(
         top: AppSpacing.sm,
         bottom: AppSpacing.sm,
-        left: inset || isFlagged ? AppSpacing.md : 0,
-        right: inset || isFlagged ? AppSpacing.md : 0,
+        left: padded ? AppSpacing.md : 0,
+        right: padded ? AppSpacing.md : 0,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,6 +215,42 @@ class IngredientLineRow extends StatelessWidget {
         ],
       ),
     );
+
+    // The divider sits inside the tinted box, so the flagged tint and marker
+    // run down to the dashes with no gap.
+    return Container(
+      decoration: BoxDecoration(
+        color: isFlagged ? scheme.surfaceContainerLow : null,
+      ),
+      foregroundDecoration: isFlagged
+          ? BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: kitchen.reviewMarker,
+                  width: _markerWidth,
+                ),
+              ),
+            )
+          : null,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          content,
+          if (showDivider)
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: padded ? AppSpacing.md : 0,
+              ),
+              child: CustomPaint(
+                key: const Key('ingredientDivider'),
+                size: const Size.fromHeight(_dividerHeight),
+                painter: _DashedLinePainter(color: kitchen.dividerDash),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -255,5 +290,38 @@ class _DashedRingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DashedRingPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// A 1dp horizontal run of 6dp dashes with 4dp gaps: the divider under a row.
+///
+/// Hand-drawn for the same reason as [_DashedRingPainter] (rule 8). It must
+/// never read as that ring: this is long, flat, 1dp and in the lighter
+/// `outlineVariant`, where the ring is small, closed, 1.5dp and `outline`.
+class _DashedLinePainter extends CustomPainter {
+  const _DashedLinePainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.height
+      ..strokeCap = StrokeCap.butt;
+
+    final double y = size.height / 2;
+    for (double x = 0; x < size.width; x += _dashLength + _dashGap) {
+      canvas.drawLine(
+        Offset(x, y),
+        Offset(math.min(x + _dashLength, size.width), y),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedLinePainter oldDelegate) =>
       oldDelegate.color != color;
 }
