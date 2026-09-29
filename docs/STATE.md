@@ -1,62 +1,44 @@
-# State — 2026-09-28
+# State — 2026-09-29
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 9b (`782ca40`): grouped Settings, in-app
-Light/Dark and clear filters on the recipe list. It is the second half of the
-design fixes round (`docs/design/BRIEF_design_fixes.md` items 4–6), so the
-round is done.
+**Last shipped:** Phase 7 part 10a (`b761527`): a step timeline on recipe
+detail and dashed ingredient dividers. It is items 1 and 2 of Claude
+Design's 2026-09-28 export (`docs/design/BRIEF_steps_dividers_logo.md`).
 
-- **Theme (D128).**
-  - Settings → Izgled picks Light or Dark for this app only. Light is the
-    default, and there is no System option.
-  - The choice is stored on the device in a new Drift `device_preferences`
-    table (schema 8). It survives cache bumps and sign-out, and
-    `main.dart` reads it before the first frame.
-  - The Android launch screen is flat `primary` green in both phone modes,
-    with no icon and no `values-night`.
-- **Settings.**
-  - Grouped cards, with `titleSmall` headers.
-  - The household row shows the name and `2 člana`, from a new
-    `currentHouseholdSummaryProvider` record in `core/household/`.
-  - A neutral outlined Sign out sits under a hairline.
-- **Recipe list.**
-  - A Clear chip and divider start the full-bleed filter row while a tag
-    or Favorites is on. Clear leaves the search text alone.
-  - A `2 recepta` count shows while the list is narrowed.
-  - The filter-aware no-results state has a tonal `Poništi filtere`.
+- **Steps.** A 2dp `stepConnector` line joins each disc to the next, 4dp
+  short of both. It stretches with wrapped text, with none above step 1 or
+  below the last.
+- **Ingredient rows (D129).** The solid hairline is a dashed divider (6 on,
+  4 off, 1dp, `dividerDash`) on recipe detail, the shopping list and import
+  review alike. It is drawn inside the row, so the flagged tint reaches it
+  and a one-line row is still 48dp. Inset rows inset the dashes with the
+  text. The last ingredient on recipe detail draws none.
+- `KitchenColors` gained `stepConnector` and `dividerDash`, both
+  `outlineVariant`. The design export's screens are back under their plain
+  names.
 
-D128 records it, in contrast with D77's locale-on-profile.
 `docs/DESIGN_SYSTEM.md` was updated in the code commit.
 
-Verified with `dart analyze` (clean) and `flutter test` (**704/704**).
-`make check` is green except the pre-existing `seed-check`. Walked on the
-**emulator** (the Galaxy wasn't attached) across `sr`/`en` × light/dark:
-Settings and the recipe list. The walk found one defect: the stock launch
-screen flashed white before a Dark cold start. It was fixed in the slice, and
-the cold start was re-walked in all four phone × app combinations.
+Verified with `dart analyze` (clean) and `flutter test` (**709/709**).
+`make check` is green except the pre-existing `seed-check`. Recipe detail was
+walked on the **emulator** (the Galaxy wasn't attached) across `sr`/`en` ×
+light/dark: clean. One nit, left alone: the dashes end a few dp short of the
+right text edge, because the 10dp pattern restarts from the left.
 
-Noticed along the way, not fixed (not part 9b's):
+Still open from earlier parts, not 10a's: tag chips show raw keys for a
+frame on a cold start; the shopping list prints `1.5 kg` in Serbian; units
+don't inflect (`2 glavica`); the recipe-delete confirm is a filled button.
 
-- on a cold start, tag chips show raw keys (`sweet` in a Serbian row) for a
-  frame before their labels load;
-- Still open from 9a: the shopping list prints `1.5 kg` in Serbian; units
-  don't inflect (`2 glavica`); the recipe-delete confirm is a filled button.
+**In flight:** none. Part 10b is planned in
+`docs/active/phase7-part10b-app-logo.md` but not started. Its logo files
+(`docs/design/app-logo.pdf`, `docs/design/logo/`) are in the tree,
+uncommitted.
+**Next:** `/build-slice phase7-part10b-app-logo`. Walk part 10a's shopping
+list and import review surfaces alongside its device check, then the Galaxy
+sitting below.
+**Latest decision:** D129
 
-**In flight:** none.
-**Next:** the design fixes round is finished, so close walk loops. One
-sitting with the physical Galaxy should cover:
-
-- `/design-walk meal-plan` (part 4), which now also shows serif entry
-  titles;
-- the owner halves of Phase 6 3b and 3c (a second account joined, then a
-  throwaway household);
-- part 7's create / join screens;
-- part 8's owner-side, failure-line and fresh-Google-account checks.
-
-Then pick the next phase from `docs/ROADMAP.md`.
-**Latest decision:** D128
-
-**Seven device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Eight device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -77,7 +59,9 @@ shopping list; 2026-09-28, emulator) found four defects, all fixed and
 re-walked, so part 9a's loop closed. Part 9b's walks (Settings and
 recipes, 2026-09-28, emulator) found one defect, the white native splash on a
 Dark cold start. It was fixed and re-walked the same sitting, so part 9b's
-loop closed. Oldest first:
+loop closed. Part 10a's recipe-detail walk (2026-09-29, emulator) was
+clean; its shopping-list and import-review walks are still open. Oldest
+first:
 
 - **Phase 5 part 5** — copy a generated shopping list, see the SnackBar,
   paste the text somewhere else. **Half confirmed by Phase 7 part 5's walk
@@ -521,8 +505,24 @@ loop closed. Oldest first:
   Google nalogom`. The dev-login account shows the line too, which is only
   true of real (Google-only) accounts.
 
+- **Phase 7 part 10a** — step timeline, dashed ingredient dividers
+  (`phase7-part10a-step-timeline-dashed-dividers`). **Recipe detail is
+  walked**, clean, on the **emulator** (2026-09-29) across `sr`/`en` ×
+  light/dark. The dashes run edge to edge with none under the last
+  ingredient. The step line stops short of each disc, stretches through the
+  8-line Serbian step 5 of Palačinke, and is quiet but visible in dark. A
+  single step (Kajgana) draws none. The unmatched ring reads as a different
+  thing from the divider in both brightnesses. Nit: the dashes end ~3dp
+  short of the right text edge.
+  **Still open:**
+  - `/design-walk shopping-list`: dashes between every to-buy row but the
+    card's last, still reading as block breaks per part 5's fix.
+  - `/design-walk import-review`: the dashes start and end at the text while
+    the flagged tint and marker reach the edge and meet the dashes with no
+    gap. Check the right-edge nit there, where the dashes should end at the
+    text.
 
-All seven open ones need the hosted release build: `make install-hosted` on
+All eight open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind
 sign-in that needs no Google account (`.claude/commands/design-walk.md`
 § 1). Never `flutter run`, never the local stack (CLAUDE.md). A future

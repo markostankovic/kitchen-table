@@ -751,6 +751,31 @@ found one defect: the Android launch screen flashed white before a Dark cold
 start. It is now one brand green in both phone modes, and the cold start was
 re-walked in all four phone × app combinations.
 
+### Part 10a — Step timeline, dashed ingredient dividers
+
+**Status: complete** (`b761527`). Decisions taken during it: D129. See
+`docs/journal/phase-7.md`.
+
+Items 1 and 2 of the 2026-09-28 export
+(`docs/design/BRIEF_steps_dividers_logo.md`):
+
+- **Steps:** a 2dp `stepConnector` line joins each disc to the next, 4dp
+  short of both, and stretches with wrapped text.
+- **Ingredient rows:** the solid hairline is a 6/4 dashed `dividerDash`
+  line on all three surfaces. It is drawn inside the row, so the flagged tint
+  reaches it and rows stay 48dp, and it is inset with the text on import
+  review. The last ingredient on recipe detail has none.
+
+The recipe-detail walk (emulator, `sr`/`en` × light/dark) was clean apart
+from a nit: the dashes end a few dp short of the right edge. The shopping
+list and import review walks are still open.
+
+### Part 10b — The app logo
+
+Item 3 of the same export: the "bowl on the table" logo as the Android and
+iOS launcher icons and a centred mark on the launch screen. Planned in
+`docs/active/phase7-part10b-app-logo.md`, not yet built.
+
 ---
 
 ## Standing rules across phases

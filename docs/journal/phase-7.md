@@ -1269,3 +1269,90 @@ Seen, not part 9b's:
 
 **Closed by it:** its own loop, since both walks and the cold-start re-walk
 ran clean after the fix. **Opened:** nothing.
+
+### Part 10a — Step timeline, dashed ingredient dividers
+
+**Status: complete** (`b761527`). Decisions taken during it: D129.
+
+Items 1 and 2 of Claude Design's 2026-09-28 export
+(`docs/design/BRIEF_steps_dividers_logo.md`). The logo, item 3, is part 10b.
+No Supabase migration, no Edge Function, no new ARB key. `docs/DESIGN_SYSTEM.md`
+was updated in the code commit: § Ingredient lines, § Steps and stats, § The
+semantic layer, § Shopping list and the status paragraph.
+
+- **The export, tidied first.** Claude Design's screens had landed as
+  `<name>@1x (1).png` next to deleted originals. They were moved back to
+  their plain names, which code comments and DESIGN_SYSTEM cite. Four
+  changed (Recipe, Review import, Dark mode, List offline) and six came back
+  byte-identical. `Recipes@1x.png` was restored from git. The new
+  `design-system.pdf`, `key-screens.pdf` and the brief went in with the
+  code. `app-logo.pdf` and `docs/design/logo/` wait for part 10b.
+- **`KitchenColors`** gains `stepConnector` and `dividerDash`, both aliases
+  of `outlineVariant` (D118's rule: names, not a second palette).
+- **The dashed divider (D129).** `IngredientLineRow`'s `Border(bottom: …)` is
+  gone. A private `_DashedLinePainter` (6 on, 4 off, 1dp, butt caps), keyed
+  `ingredientDivider`, draws it, on `_DashedRingPainter`'s precedent.
+  - **Where it sits differs from the plan.** The slice put it in a
+    `Column` below the tinted container. It went *inside* the container
+    instead, with the 48dp minimum moved onto the content as
+    `target - 1`. Below the container, the flagged tint would have stopped
+    1dp short at the edges, and a one-line row's dashes would have sat 3dp
+    above the row's 48dp bottom.
+  - Inset (and flagged) rows pad the dashes `md` on both sides.
+  - The class, `inset` and `showDivider` docs now say "dashed divider".
+- **The step timeline.** `_StepRow` takes `isLast` and is an
+  `IntrinsicHeight` `Row(stretch)`. The left column, 28dp wide, is the disc,
+  then (unless last) a 4dp gap, an `Expanded` centred 2dp `stepConnector`
+  keyed `stepConnector`, and another 4dp gap. The text keeps `xl` padding
+  below it on every step, including the last, so the old trailing gap is
+  unchanged and the line runs through the gap to the next disc. The 2 and
+  the 4 are private consts in `recipe_detail_screen.dart`; the 6 and the 4
+  in `ingredient_line_row.dart`.
+- **The last ingredient on recipe detail** passes `showDivider: false`. Both
+  `map`s became indexed `for` loops.
+- Import review and the shopping list needed no code change; neither draws
+  a divider of its own.
+
+**How it was verified.** `dart analyze` was clean. `flutter test` passed
+**709/709** (704 before). New or rewritten tests:
+
+- `ingredient_line_row_test.dart`: the `showDivider` test finds the painter
+  by key, checks it paints a line in `outlineVariant` and runs edge to edge,
+  1dp tall, and is absent with `showDivider: false`. New: an inset, flagged
+  row's divider is padded 12 on both sides while the row stays full width;
+  a one-line row is 48dp with the divider's bottom on the row's bottom.
+- `recipe_screens_test.dart`: three ingredients draw two dividers; three
+  steps draw two connectors; one step draws none. The last two are separate
+  tests, because a second `_pumpDetail` in one test reuses the first
+  `ProviderScope` and keeps the old detail.
+- `shopping_list_screen_test.dart`: **missed by the plan.** The part 5 test
+  "every to-buy row draws its hairline…" read `Border.bottom` and failed.
+  It now finds the keyed divider per row, with the same three assertions.
+
+`make check` passed lint, tests and Deno tests, then stopped at the
+pre-existing `seed-check`. `make test-sql` and `make l10n-check` pass on
+their own.
+
+**Walked on the emulator** (`/design-walk recipe-detail`, 2026-09-29,
+`make install-emulator`, dev-login account; the Galaxy wasn't attached),
+`sr`/`en` × light/dark with the in-app toggles:
+
+- **Palačinke / Crêpes.** The dashes run edge to edge between ingredients,
+  with none under `voda`. At full resolution the step line stops short of
+  both discs. It stretches through the 4-line step 3 and the 8-line Serbian
+  step 5, and there is none below step 7. The line is quiet but visible in
+  dark (`#494A3F` on `#16160F`). Nothing truncates or overflows in either
+  language.
+- **Kajgana / Scrambled Eggs.** A single step draws no line. The unmatched
+  `malo ljubavi` ring sits one row under a divider and reads as a different
+  thing in both brightnesses: smaller, closed and darker.
+- **Prženice / French Toast.** Light, English: the same.
+
+Seen, a nit, left alone: the dash pattern restarts every 10dp from the
+left, so on a ~379dp row the last dash ends ~3dp short of the right text
+edge while the left end sits on it (the `c2` crop).
+
+**Not walked yet:** `/design-walk shopping-list` and
+`/design-walk import-review`. Import review is where the inset dashes and
+the flagged tint meeting the divider can be seen. **Opened:** part 10a's
+loop, for those two walks.
