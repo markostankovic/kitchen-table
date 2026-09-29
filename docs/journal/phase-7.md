@@ -1433,3 +1433,82 @@ attached), hosted release build:
 
 iOS was not walked (no device). **Opened:** part 10b's loop, for those
 four checks.
+
+### Part 11 — Device-feedback polish
+
+**Status: complete** (`da5e198`). Decisions taken during it: D131, D132,
+D133.
+
+The user brought seven items from using the app, not a roadmap part. It was
+planned in one session with the user (plan mode, not `/plan-slice`), so there
+is no `docs/active/` handoff. One item was dropped at planning: the user
+re-tested pasting the copied shopping list into Google Keep and it works. No
+migration, no ARB key, no new package.
+
+- **Portrait only (D133).** `SystemChrome.setPreferredOrientations` in
+  `main()`, `screenOrientation="portrait"` on `MainActivity`, and iPhone's
+  `UISupportedInterfaceOrientations` cut to Portrait. The `~ipad` list is
+  untouched.
+- **Stat strip.** `AppStatStrip` start-aligns each label and value in its
+  equal-width column (`Align(centerStart)` instead of `Center`), per
+  `Recipe@1x.png`. `DESIGN_SYSTEM.md` § Steps and stats says so.
+- **Recipe list photos and translated titles (D131).**
+  - `watchList`'s online emission is signed through `_withImageUrls`.
+    `_withImageUrlsOrNot` returns the list unsigned on any failure.
+  - `Recipe.titleByLocale` is read from the cached translations embed.
+    `displayTitle(locale)` drives `RecipeCard`'s title and monogram, and
+    `RecipeFilter` matches translated titles.
+- **Meal plan (D132).**
+  - Each expanded day card ends in one bottom-end `+ Dodaj obrok`.
+    `_SlotAddButton` is gone, which also removes the empty-slot drop target.
+  - A note entry uses `KitchenType.recipeTitle`.
+  - `DESIGN_SYSTEM.md` § Meal entries (Adding, Drag, Entry cards) and the
+    screen's doc comments were rewritten.
+
+**Decisions taken with the user at planning.**
+- What was wrong with the note tile: the user chose "style like a recipe".
+- Dropping drag-into-empty-slot rather than showing drop zones only during a
+  drag: the user chose to drop it.
+
+**Tests.**
+- Nine meal-plan screen tests assumed the per-slot buttons. They now go
+  through an `_addTo(tester, slot)` helper (Add meal, then the chooser).
+- The "+ Dinner" drag test is now a drop onto a filled Dinner group.
+- New tests:
+  - the stat strip's leading-edge alignment;
+  - `RecipeCard`'s `en` title and monogram;
+  - `RecipeFilter` matching a translated title;
+  - `readAll`'s `titleByLocale`;
+  - `watchList` signing only the fresh emission;
+  - the signing-failure fallback.
+
+**How it was verified.** `dart analyze` was clean and `flutter test` passed
+**715/715**. `make check` was not run; its `seed-check` is known red on main.
+`make install-emulator` built and installed the hosted release APK.
+
+**Walked on the emulator** (the Galaxy wasn't attached), all four
+combinations, sr/light → sr/dark → en/light → en/dark, signed in through
+Dev login:
+
+- **Recipe list.** Photos show on Palačinke and Prženice, and Kajgana keeps
+  its monogram. In `en` the titles read Scrambled Eggs / Crêpes / French
+  Toast (Prženice), with the monogram S. No Serbian truncation. Dark reads
+  fine.
+- **Recipe detail.** The Porcije / Priprema / Kuvanje / Ocena strip is
+  left-aligned, matching the mock, in both languages and both themes.
+- **Meal plan.** The Today card shows one `+ Dodaj obrok`/`+ Add meal`
+  bottom-right. The breakfast note renders in the serif title face under
+  `Doručak · Napomena`.
+- **Rotation.** With `accelerometer_rotation 0` and `user_rotation 1`, the
+  display stayed at `ROTATION_0`, 1080x2424. Both settings were restored.
+
+The account was put back to Srpski / Svetla. The walk was clean, so no loop
+was opened.
+
+**Seen, not fixed.** Meal-plan recipe entries show the original-language
+title under `en` (`Kajgana`, `Prženice`), because an entry carries its own
+`recipeTitle` embed (D53). This is outside this slice; see D131's
+Consequences.
+
+**Also closed in the same sitting.** Phase 5 part 5's paste half, on the
+user's own Keep test.

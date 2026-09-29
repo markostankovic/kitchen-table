@@ -789,6 +789,22 @@ The label stays "Kitchen Table". On the emulator the icon and the cold-start
 splash were checked. The Samsung mask, themed icons, and the four phone × app
 Light/Dark cold starts are still open.
 
+### Part 11 — Device-feedback polish
+
+**Status: complete** (`da5e198`). Decisions taken during it: D131, D132,
+D133. See `docs/journal/phase-7.md`.
+
+Six fixes from using the app, not a planned part:
+- the app is portrait-only;
+- the recipe detail stat strip is left-aligned, per the mock;
+- recipe list cards show photo thumbnails, and titles in the reader's
+  language (search matches translated titles too);
+- each meal-plan day card has one bottom-right `+ Dodaj obrok` instead of
+  the per-slot buttons;
+- a note entry uses the recipe-title face.
+
+The emulator walk (sr/en × light/dark) was clean.
+
 ---
 
 ## Standing rules across phases

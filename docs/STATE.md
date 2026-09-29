@@ -1,45 +1,44 @@
 # State — 2026-09-29
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 10b (`6747f57`): the app logo. It is item 3
-of Claude Design's 2026-09-28 export
-(`docs/design/BRIEF_steps_dividers_logo.md`), and the last item of that
-export.
+**Last shipped:** Phase 7 part 11 (`da5e198`), device-feedback polish. This
+was a batch of fixes the user found in daily use, not a roadmap part.
 
-- **Launcher icons (D130).** "Bowl on the table" is now the Android
-  adaptive and themed icon, drawn as hand-written VectorDrawables on the
-  shared `splash_background` green. The themed icon cuts the band out of the
-  bowl. It is also the legacy `mipmap-*` PNGs and the iOS `AppIcon` set,
-  which is opaque. The label stays "Kitchen Table".
-- **Launch screens.** Both platforms now show the mark centred on the brand
-  green: Android at 288dp (and as Android 12+'s splash icon), and iOS
-  through `LaunchImage` on a storyboard that is now green. D128's
-  one-colour, no-`values-night` rule stands.
-- **`tool/gen_app_icons.py` (`make icons`)** re-renders the PNGs from
-  `docs/design/logo/` through headless Chrome and PIL. The VectorDrawables
-  are edited by hand.
+- **Portrait only (D133).** Locked through `SystemChrome`, the Android
+  manifest and iPhone's `Info.plist`. The iPad list is unchanged.
+- **Recipe detail stat strip.** Labels and values are start-aligned in
+  equal-width columns, per `Recipe@1x.png`.
+- **Recipe list (D131).** Cards show photo thumbnails, signed on the list's
+  online emission and dropped quietly if signing fails. Titles come in the
+  reader's language (`Recipe.titleByLocale`), and search matches
+  translated titles.
+- **Meal plan (D132).** Each day card has one bottom-right
+  `+ Dodaj obrok`. The per-slot buttons and their empty-slot drop targets
+  are gone. A note entry uses the recipe-title face.
 
-`docs/DESIGN_SYSTEM.md` was updated in the code commit: the launch-screen
-paragraph and a new § Logo.
+`dart analyze` is clean and `flutter test` passes 715/715. `make check`
+wasn't run; its `seed-check` is still the known pre-existing red. The
+emulator walk (sr/en × light/dark, hosted release build) was clean, so no
+loop opened. The Galaxy wasn't attached. The same sitting also closed
+Phase 5 part 5's paste half, on the user's own test pasting into Google
+Keep.
 
-`make check` is green except the pre-existing `seed-check` (709/709 Flutter
-tests). `make install-hosted` builds. On the **emulator** (the Galaxy wasn't
-attached), the icon sits cleanly under the Pixel circle mask, and a cold
-start shows the green splash with the mark, then the recipe list. iOS was
-not walked.
-
-Still open from earlier parts, not 10b's: tag chips show raw keys for a
-frame on a cold start; the shopping list prints `1.5 kg` in Serbian; units
-don't inflect (`2 glavica`); the recipe-delete confirm is a filled button.
+Still open, not part 11's:
+- meal-plan recipe entries show the original-language title under `en`
+  (the entry's own `recipeTitle`, D53);
+- tag chips show raw keys for a frame on a cold start;
+- the shopping list prints `1.5 kg` in Serbian;
+- units don't inflect (`2 glavica`);
+- the recipe-delete confirm is a filled button.
 
 **In flight:** none.
-**Next:** no roadmap part is planned after 10b. Walk the open loops
-below, part 10a's two surfaces and part 10b's Galaxy checks first, in one
-sitting with the Galaxy attached. Then `/plan-slice` whatever comes next.
-"Za stolom" as the launcher label is parked in `docs/IDEAS.md`.
-**Latest decision:** D130
+**Next:** no roadmap part is planned. Walk the open loops below in one
+sitting with the Galaxy attached, part 10a's two surfaces and part 10b's
+Galaxy checks first. Then `/plan-slice` whatever comes next. The
+meal-plan translated-title gap is a small candidate.
+**Latest decision:** D133
 
-**Nine device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Eight device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -64,15 +63,14 @@ loop closed. Part 10a's recipe-detail walk (2026-09-29, emulator) was
 clean; its shopping-list and import-review walks are still open. Part
 10b's emulator check (2026-09-29) covered the Pixel icon mask and one cold
 start. Its Samsung, themed-icon and Light/Dark cold-start checks are still
-open. Oldest first:
+open. Part 11's walk (2026-09-29, emulator, all four combinations) was
+clean, so it opened no loop. In the same sitting the user's own paste into
+Google Keep closed Phase 5 part 5. Oldest first:
 
-- **Phase 5 part 5** — copy a generated shopping list, see the SnackBar,
-  paste the text somewhere else. **Half confirmed by Phase 7 part 5's walk
-  (2026-09-25):** tapping copy on the physical Galaxy shows `Lista
-  kopirana.` (Samsung's own `Copied.` system toast lands on top of it —
-  the OS, not the app). The paste into another app was not done: it would
-  have meant writing a note into one of the user's own apps. Still open for
-  the paste — plain lines, no headings, no dashes.
+- ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
+  (2026-09-25) confirmed the copy and the SnackBar on the physical Galaxy.
+  The paste half was confirmed by the user, who pasted a copied list into
+  Google Keep and reported that it works.
 - ~~**Phase 5 part 6**~~ — **closed by Phase 7 part 7's walk (2026-09-26).**
   On the physical Galaxy, hosted release build, Translate in the editor's app
   bar on `Kajgana` (no translation) saved, called the Edge Function (one
