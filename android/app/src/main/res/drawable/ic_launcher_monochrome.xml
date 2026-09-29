@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The themed (Android 13+) icon: the mark in one colour, of which Android
+     uses only the alpha. The band is cut out of the bowl so it still reads.
+     docs/design/logo/android-monochrome.svg does that with a mask, which
+     VectorDrawable lacks, so the bowl is drawn as a rim and a base either side
+     of the band (y 47.25 to 50.75); the mask's rounded band ends are too small
+     to matter at icon size. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Steam -->
+    <path
+        android:pathData="M48 37c-4.5-3.6 4.5-7.4 0-11.5"
+        android:strokeColor="#000000"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M60 37c-4.5-3.6 4.5-7.4 0-11.5"
+        android:strokeColor="#000000"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round" />
+    <!-- Bowl rim and base, the band left as a gap between them -->
+    <path
+        android:pathData="M36 42H72A18 18 0 0 1 71.217 47.25H36.783A18 18 0 0 1 36 42Z"
+        android:fillColor="#000000" />
+    <path
+        android:pathData="M69.730 50.75A18 18 0 0 1 38.270 50.75Z"
+        android:fillColor="#000000" />
+    <!-- Table top and legs -->
+    <path
+        android:pathData="M30 60H78A4 4 0 0 1 78 68H30A4 4 0 0 1 30 60Z"
+        android:fillColor="#000000" />
+    <path
+        android:pathData="M36 66H37A3 3 0 0 1 40 69V76A3 3 0 0 1 37 79H36A3 3 0 0 1 33 76V69A3 3 0 0 1 36 66Z"
+        android:fillColor="#000000" />
+    <path
+        android:pathData="M71 66H72A3 3 0 0 1 75 69V76A3 3 0 0 1 72 79H71A3 3 0 0 1 68 76V69A3 3 0 0 1 71 66Z"
+        android:fillColor="#000000" />
+</vector>

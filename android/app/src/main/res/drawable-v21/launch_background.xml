@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The launch screen before Android 12: one flat colour, the same whatever
-     the phone's night mode (see values/colors.xml). -->
+<!-- The launch screen before Android 12: the flat brand green, the same
+     whatever the phone's night mode (see values/colors.xml), with the logo
+     mark centred on it (D130). 288dp is Android 12's canvas for a splash icon
+     without a background, so the mark is the same size either side of 12. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/splash_background" />
+    <item
+        android:gravity="center"
+        android:width="288dp"
+        android:height="288dp"
+        android:drawable="@drawable/ic_launcher_foreground" />
 </layer-list>

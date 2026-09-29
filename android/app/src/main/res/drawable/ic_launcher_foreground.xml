@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app's mark, "bowl on the table" (D130): steam, a mustard bowl with a
+     paprika band, a cream table, all inside the 66dp safe zone of Android's
+     108dp adaptive canvas. Hand-written from
+     docs/design/logo/android-adaptive-foreground.svg, which is the source of
+     truth; change that first. Also the launch screen's centred mark
+     (drawable/launch_background.xml, values-v31/styles.xml). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Steam -->
+    <path
+        android:pathData="M48 37c-4.5-3.6 4.5-7.4 0-11.5"
+        android:strokeColor="#FFF7EC"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M60 37c-4.5-3.6 4.5-7.4 0-11.5"
+        android:strokeColor="#FFF7EC"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round" />
+    <!-- Bowl -->
+    <path
+        android:pathData="M36 42H72A18 18 0 0 1 36 42Z"
+        android:fillColor="#FFDEA4" />
+    <!-- Band -->
+    <path
+        android:pathData="M38.5 49H69.5"
+        android:strokeColor="#AC3F25"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+    <!-- Table top and legs -->
+    <path
+        android:pathData="M30 60H78A4 4 0 0 1 78 68H30A4 4 0 0 1 30 60Z"
+        android:fillColor="#FFF7EC" />
+    <path
+        android:pathData="M36 66H37A3 3 0 0 1 40 69V76A3 3 0 0 1 37 79H36A3 3 0 0 1 33 76V69A3 3 0 0 1 36 66Z"
+        android:fillColor="#FFF7EC" />
+    <path
+        android:pathData="M71 66H72A3 3 0 0 1 75 69V76A3 3 0 0 1 72 79H71A3 3 0 0 1 68 76V69A3 3 0 0 1 71 66Z"
+        android:fillColor="#FFF7EC" />
+</vector>

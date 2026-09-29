@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Android 12+ draws its own system splash from these attributes rather
-         than from windowBackground alone. Same colour, no icon; see
-         values/colors.xml and drawable/splash_icon_none.xml. -->
+         than from windowBackground alone. Same colour, with the launcher
+         icon's foreground as the centred mark (D130); see values/colors.xml. -->
     <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">@drawable/launch_background</item>
         <item name="android:windowSplashScreenBackground">@color/splash_background</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon_none</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
     </style>
     <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">@color/splash_background</item>

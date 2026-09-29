@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Android 12+ puts an icon on the system splash, the launcher icon by
-     default, still Flutter's stock logo, which is not this app's mark. The
-     splash is the flat brand colour alone until the app has an icon of its own. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="@android:color/transparent" />
-</shape>

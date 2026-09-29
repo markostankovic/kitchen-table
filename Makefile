@@ -7,7 +7,7 @@ DART_DEFINE := --dart-define-from-file=env/local.json
 .PHONY: help gen watch lint lint-functions test test-functions test-sql seed \
 	seed-check l10n-check db-reset db-start db-stop db-push config-push \
 	types check functions-serve functions-deploy run run-android run-hosted \
-	install-hosted install-emulator
+	install-hosted install-emulator icons
 
 help:
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -62,6 +62,9 @@ seed-check: ## Fail if the seed CSVs changed without a new seed migration
 l10n-check: ## Fail if the ARB files changed without regenerating lib/core/l10n/generated
 	flutter gen-l10n
 	git diff --exit-code -- lib/core/l10n/generated
+
+icons: ## Re-render launcher icons + launch images from docs/design/logo/ (D130)
+	python3 tool/gen_app_icons.py
 
 db-start: ## Start the local Supabase stack
 	supabase start

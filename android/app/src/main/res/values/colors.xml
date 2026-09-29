@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The launch screen's one colour: the brand primary green (Garden's
+    <!-- The launch screen's colour and the adaptive launcher icon's ground
+         (mipmap-anydpi-v26/ic_launcher.xml, D130): the brand primary green (Garden's
          `primary`, lib/core/theme/app_theme.dart). Deliberately NOT split into
          a values-night variant. The app's Light/Dark is its own setting, stored
          in Drift (D128), and Android draws this before any Dart runs, so it

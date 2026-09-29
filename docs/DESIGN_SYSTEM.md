@@ -815,16 +815,52 @@ Light by default, no System option. The choice is device-local, in the Drift
 first frame.
 
 **The Android launch screen is flat `primary` green (`#366A35`) in both of
-the phone's modes**, with no icon. Android draws it before any Dart runs, so
-it can't know the in-app choice. A cream or near-black splash would flash the
-wrong theme for half the cooks, while the brand colour looks intended in front
-of either. It lives in `android/app/src/main/res/values/colors.xml`
-(`splash_background`), used by `launch_background.xml`, `values-v31/styles.xml`
-and `NormalTheme`. There is deliberately no `values-night`. Change the brand
-green, change it there too.
+the phone's modes**, with the logo mark centred on it (§ Logo; D130): the
+adaptive icon's foreground drawn on a 288dp canvas, Android 12's size for a
+splash icon without a background, so it matches either side of 12. Android
+draws it before any Dart runs, so it can't know the in-app choice. A cream or
+near-black splash would flash the wrong theme for half the cooks, while the
+brand colour looks intended in front of either. It lives in
+`android/app/src/main/res/values/colors.xml` (`splash_background`), used by
+`launch_background.xml`, `values-v31/styles.xml`, `NormalTheme` and the
+adaptive icon's ground. There is deliberately no `values-night`. Change the
+brand green, change it there too. iOS's `LaunchScreen.storyboard` is the same
+green with the same mark (`LaunchImage`).
 
 Every colour decision holds in both or it is not a decision. A value tuned in
 one brightness and eyeballed in the other is how a redesign ends up with an
 unreadable dark mode.
 
 Verify both, every time.
+
+## Logo
+
+The mark is "bowl on the table" (D130): two wisps of steam over a bowl with a
+band, on a small table, on the brand green. Four colours, all Garden light
+values:
+
+| Part | Colour | Role |
+|---|---|---|
+| Ground | `#366A35` | `primary` |
+| Table, steam | `#FFF7EC` | `surface` |
+| Bowl | `#FFDEA4` | `secondaryContainer` |
+| Band | `#AC3F25` | `tertiary` |
+
+The sources live in `docs/design/logo/` (and `docs/design/app-logo.pdf`), on
+Android's 108-unit adaptive canvas with the mark inside the 66-unit safe
+zone. `android-adaptive-foreground.svg` is the source of truth for the shapes.
+
+- **Android adaptive and launch mark**: hand-written VectorDrawables,
+  `res/drawable/ic_launcher_foreground.xml` and `ic_launcher_monochrome.xml`,
+  path data copied from the SVGs. No icon package (rule 8).
+- **Themed icon (Android 13+)**: the same shapes in one colour, with the band
+  cut out of the bowl so it still reads. VectorDrawable has no mask, so the
+  bowl is a rim and a base either side of the band, a straight cut.
+- **Raster icons** (Android legacy `mipmap-*`, iOS `AppIcon`, iOS
+  `LaunchImage`): rendered by `tool/gen_app_icons.py` (`make icons`) through
+  headless Chrome and PIL. Re-run it when `docs/design/logo/` changes, and
+  edit the VectorDrawables to match by hand.
+
+The launcher label stays "Kitchen Table" in both locales. The lockups
+(`lockup-*.svg`, mark plus Literata wordmark) and any in-app wordmark are not
+shipped: the sign-in screen has no logo.
