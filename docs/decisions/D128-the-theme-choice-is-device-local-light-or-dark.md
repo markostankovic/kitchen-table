@@ -19,6 +19,8 @@
 5. **The Android launch screen is flat `primary` green (`#366A35`), no icon,
    the same in both phone modes.** There is no `values-night`; a
    `values-v31` sets Android 12+'s system splash to the same colour.
+   *Amended by D130 (Phase 7 part 10b): the launch screen now carries the
+   logo mark, centred. The colour and the no-`values-night` rule stand.*
 
 **Why.**
 - The user decided the choice belongs to the phone: how a screen looks is

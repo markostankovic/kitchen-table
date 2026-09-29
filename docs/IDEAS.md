@@ -19,3 +19,4 @@ decision id). An idea only becomes real work when a human copies it into
 - 2026-09-25 — Shopping list quantities with a Serbian decimal comma (`1,5 kg`, not `1.5 kg`) when the list is in Serbian
 - 2026-09-25 — Shopping list count units read awkwardly (`3 kom jaje`); drop or rephrase `kom` for countable items
 - 2026-09-25 — Genitive ingredient names on the shopping list (`500 g kiselog kupusa`, as the Garden mock shows); needs a genitive form in the ingredient catalog
+- 2026-09-29 — Rename the launcher label to "Za stolom" (proposed alongside the part 10b logo, not adopted; the label stays "Kitchen Table" in both locales, D130).

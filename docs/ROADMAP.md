@@ -772,9 +772,22 @@ list and import review walks are still open.
 
 ### Part 10b — The app logo
 
-Item 3 of the same export: the "bowl on the table" logo as the Android and
-iOS launcher icons and a centred mark on the launch screen. Planned in
-`docs/active/phase7-part10b-app-logo.md`, not yet built.
+**Status: complete** (`6747f57`). Decisions taken during it: D130. See
+`docs/journal/phase-7.md`.
+
+Item 3 of the same export: the "bowl on the table" logo.
+
+- **Android:** an adaptive and themed launcher icon, as hand-written
+  VectorDrawables on the shared `splash_background` green, plus legacy PNGs
+  for API 24–25.
+- **iOS:** an opaque AppIcon set, and a green launch screen.
+- **Both launch screens** show the mark centred.
+- **Rendering:** `tool/gen_app_icons.py` (`make icons`) renders the PNGs
+  without a package.
+
+The label stays "Kitchen Table". On the emulator the icon and the cold-start
+splash were checked. The Samsung mask, themed icons, and the four phone × app
+Light/Dark cold starts are still open.
 
 ---
 

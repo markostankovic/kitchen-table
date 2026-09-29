@@ -1,44 +1,45 @@
 # State — 2026-09-29
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 10a (`b761527`): a step timeline on recipe
-detail and dashed ingredient dividers. It is items 1 and 2 of Claude
-Design's 2026-09-28 export (`docs/design/BRIEF_steps_dividers_logo.md`).
+**Last shipped:** Phase 7 part 10b (`6747f57`): the app logo. It is item 3
+of Claude Design's 2026-09-28 export
+(`docs/design/BRIEF_steps_dividers_logo.md`), and the last item of that
+export.
 
-- **Steps.** A 2dp `stepConnector` line joins each disc to the next, 4dp
-  short of both. It stretches with wrapped text, with none above step 1 or
-  below the last.
-- **Ingredient rows (D129).** The solid hairline is a dashed divider (6 on,
-  4 off, 1dp, `dividerDash`) on recipe detail, the shopping list and import
-  review alike. It is drawn inside the row, so the flagged tint reaches it
-  and a one-line row is still 48dp. Inset rows inset the dashes with the
-  text. The last ingredient on recipe detail draws none.
-- `KitchenColors` gained `stepConnector` and `dividerDash`, both
-  `outlineVariant`. The design export's screens are back under their plain
-  names.
+- **Launcher icons (D130).** "Bowl on the table" is now the Android
+  adaptive and themed icon, drawn as hand-written VectorDrawables on the
+  shared `splash_background` green. The themed icon cuts the band out of the
+  bowl. It is also the legacy `mipmap-*` PNGs and the iOS `AppIcon` set,
+  which is opaque. The label stays "Kitchen Table".
+- **Launch screens.** Both platforms now show the mark centred on the brand
+  green: Android at 288dp (and as Android 12+'s splash icon), and iOS
+  through `LaunchImage` on a storyboard that is now green. D128's
+  one-colour, no-`values-night` rule stands.
+- **`tool/gen_app_icons.py` (`make icons`)** re-renders the PNGs from
+  `docs/design/logo/` through headless Chrome and PIL. The VectorDrawables
+  are edited by hand.
 
-`docs/DESIGN_SYSTEM.md` was updated in the code commit.
+`docs/DESIGN_SYSTEM.md` was updated in the code commit: the launch-screen
+paragraph and a new § Logo.
 
-Verified with `dart analyze` (clean) and `flutter test` (**709/709**).
-`make check` is green except the pre-existing `seed-check`. Recipe detail was
-walked on the **emulator** (the Galaxy wasn't attached) across `sr`/`en` ×
-light/dark: clean. One nit, left alone: the dashes end a few dp short of the
-right text edge, because the 10dp pattern restarts from the left.
+`make check` is green except the pre-existing `seed-check` (709/709 Flutter
+tests). `make install-hosted` builds. On the **emulator** (the Galaxy wasn't
+attached), the icon sits cleanly under the Pixel circle mask, and a cold
+start shows the green splash with the mark, then the recipe list. iOS was
+not walked.
 
-Still open from earlier parts, not 10a's: tag chips show raw keys for a
+Still open from earlier parts, not 10b's: tag chips show raw keys for a
 frame on a cold start; the shopping list prints `1.5 kg` in Serbian; units
 don't inflect (`2 glavica`); the recipe-delete confirm is a filled button.
 
-**In flight:** none. Part 10b is planned in
-`docs/active/phase7-part10b-app-logo.md` but not started. Its logo files
-(`docs/design/app-logo.pdf`, `docs/design/logo/`) are in the tree,
-uncommitted.
-**Next:** `/build-slice phase7-part10b-app-logo`. Walk part 10a's shopping
-list and import review surfaces alongside its device check, then the Galaxy
-sitting below.
-**Latest decision:** D129
+**In flight:** none.
+**Next:** no roadmap part is planned after 10b. Walk the open loops
+below, part 10a's two surfaces and part 10b's Galaxy checks first, in one
+sitting with the Galaxy attached. Then `/plan-slice` whatever comes next.
+"Za stolom" as the launcher label is parked in `docs/IDEAS.md`.
+**Latest decision:** D130
 
-**Eight device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Nine device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -60,8 +61,10 @@ re-walked, so part 9a's loop closed. Part 9b's walks (Settings and
 recipes, 2026-09-28, emulator) found one defect, the white native splash on a
 Dark cold start. It was fixed and re-walked the same sitting, so part 9b's
 loop closed. Part 10a's recipe-detail walk (2026-09-29, emulator) was
-clean; its shopping-list and import-review walks are still open. Oldest
-first:
+clean; its shopping-list and import-review walks are still open. Part
+10b's emulator check (2026-09-29) covered the Pixel icon mask and one cold
+start. Its Samsung, themed-icon and Light/Dark cold-start checks are still
+open. Oldest first:
 
 - **Phase 5 part 5** — copy a generated shopping list, see the SnackBar,
   paste the text somewhere else. **Half confirmed by Phase 7 part 5's walk
@@ -522,7 +525,21 @@ first:
     gap. Check the right-edge nit there, where the dashes should end at the
     text.
 
-All eight open ones need the hosted release build: `make install-hosted` on
+- **Phase 7 part 10b** — the app logo (`phase7-part10b-app-logo`).
+  **Checked on the emulator** (2026-09-29, API 37): the adaptive icon sits
+  under the Pixel circle mask with the steam and legs inside it, and one
+  Light cold start showed the green splash with the centred mark, then the
+  recipe list. **Still open:**
+  - On the **Galaxy**: the icon under Samsung's squircle mask, with nothing
+    clipped.
+  - **Themed icons** on (Android 13+): the monochrome icon shows, and the
+    band reads as a gap in the bowl.
+  - **Cold start** in all four phone × app Light/Dark combinations: no white
+    flash, and no mark jump or flicker into the first Flutter frame. If it
+    flickers, point `NormalTheme` at `@drawable/launch_background`.
+  - iOS: no device.
+
+All nine open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind
 sign-in that needs no Google account (`.claude/commands/design-walk.md`
 § 1). Never `flutter run`, never the local stack (CLAUDE.md). A future

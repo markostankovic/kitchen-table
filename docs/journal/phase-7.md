@@ -1356,3 +1356,80 @@ edge while the left end sits on it (the `c2` crop).
 `/design-walk import-review`. Import review is where the inset dashes and
 the flagged tint meeting the divider can be seen. **Opened:** part 10a's
 loop, for those two walks.
+
+### Part 10b — App logo
+
+**Status: complete** (`6747f57`). Decisions taken during it: D130.
+
+Item 3 of Claude Design's 2026-09-28 export
+(`docs/design/BRIEF_steps_dividers_logo.md`): "bowl on the table", a cream
+table with steam and a mustard bowl with a paprika band, on Garden green. No
+Dart change, no migration, no ARB key. The logo sources
+(`docs/design/logo/`, `docs/design/app-logo.pdf`) went in with the code, as
+did `docs/DESIGN_SYSTEM.md`'s launch-screen paragraph and a new § Logo.
+
+- **Android adaptive and themed icons (D130).** New
+  `drawable/ic_launcher_foreground.xml` and `ic_launcher_monochrome.xml`,
+  108dp on a 108 viewport, with the path data copied from
+  `android-adaptive-foreground.svg`. The rects are rewritten as
+  rounded-rect paths. VectorDrawable has no mask, so the monochrome bowl is
+  a rim (to y 47.25) and a base (from y 50.75), leaving the band as a gap.
+  `mipmap-anydpi-v26/ic_launcher.xml` sets the background to
+  `@color/splash_background`, whose comment now names the icon too.
+- **Launch screen.** Both `launch_background.xml` files add the foreground,
+  centred at 288dp, over the green. `values-v31/styles.xml` points
+  `windowSplashScreenAnimatedIcon` at the foreground, and
+  `splash_icon_none.xml` is deleted. `NormalTheme` stays flat green, and
+  there is still no `values-night`.
+- **Rasters, from `tool/gen_app_icons.py` (`make icons`).** Headless Chrome
+  renders each SVG at 1024 and PIL downsamples it with LANCZOS:
+  - `mipmap-{m,h,xh,xxh,xxxh}dpi/ic_launcher.png` (48–192 px) from
+    `mark-master.svg`, a rounded square with a 24/108 radius and transparent
+    corners;
+  - every `AppIcon.appiconset` file its `Contents.json` lists, from
+    `ios-appicon-1024.svg`, `convert('RGB')`, so `sips` reports `hasAlpha:
+    no` on all 15;
+  - `LaunchImage{,@2x,@3x}.png` at 96/192/288 px, from the foreground
+    cropped to its alpha bounding box.
+- **iOS storyboard.** The view's background goes from white to sRGB
+  `#366A35`.
+
+**Where it differs from the plan.**
+- **Chrome's colour flag.** The slice's `--default-background-color=0` makes
+  Chrome log "Expected a hex RGB or RGBA value" and exit without writing a
+  screenshot. The script uses `00000000`. A trial with `--user-data-dir`
+  also left Chrome running after the screenshot. The script doesn't pass
+  one.
+- **The storyboard's image size.** Its `<image name="LaunchImage">`
+  resource still declared the old placeholder's 168×185. It now says
+  96×96, which the plan didn't mention.
+
+**How it was verified.** `make check` passed all of: `dart analyze`, the
+layer check, `flutter test` (**709/709**), the Deno tests (161), the SQL
+tests and `l10n-check`. The pre-existing `seed-check` failed, as before.
+`xmllint` passed every resource XML and the storyboard.
+`make install-hosted` built the release APK and installed it.
+
+The rendered 1024 app icon, the xxxhdpi PNG and the @3x launch image were
+opened side by side and look right.
+
+**Walked on the emulator** (API 37, Pixel launcher; the Galaxy wasn't
+attached), hosted release build:
+
+- **App drawer.** The icon sits under the circle mask with the steam and
+  both legs inside it, and nothing is clipped. The label reads "Kitchen
+  Table".
+- **Cold start**, after a force-stop, with screencaps taken back to back:
+  the green splash with the centred mark, then the recipe list in Light. No
+  white frame was caught.
+
+**Not walked:**
+- the Samsung squircle (needs the Galaxy);
+- themed icons turned on, to see the band read as a gap;
+- the other three phone × app Light/Dark cold starts;
+- a frame-by-frame look for a mark flicker at the `NormalTheme` hand-off.
+  Screencaps are too far apart to catch one. If it flickers, point
+  `NormalTheme` at `@drawable/launch_background`.
+
+iOS was not walked (no device). **Opened:** part 10b's loop, for those
+four checks.
