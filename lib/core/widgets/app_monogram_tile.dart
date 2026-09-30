@@ -19,7 +19,7 @@ import '../theme/app_radii.dart';
 /// make a list of recipes read as a list of actions.
 ///
 /// [textStyle] is passed in rather than derived from [size]. A 72dp recipe
-/// tile wants `KitchenType.recipeTitleLarge` and a 40dp one wants
+/// tile wants `KitchenType.monogram` and a 40dp one wants
 /// `titleMedium`, and picking that
 /// from a number inside here would be guessing at type from geometry -- the
 /// call site knows which row of § Type it is in.

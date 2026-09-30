@@ -53,7 +53,7 @@ void main() {
       expect(AppTheme.dark().colorScheme.surfaceTint, Colors.transparent);
     });
 
-    test('the type scale is sans, bar the wordmark', () {
+    test('every role is sans', () {
       final TextTheme light = AppTheme.light().textTheme;
       final TextTheme dark = AppTheme.dark().textTheme;
 
@@ -63,27 +63,40 @@ void main() {
       expect(light.bodyLarge?.height, 28 / 18);
       expect(dark.bodyLarge?.fontSize, 18);
 
-      // D127: Literata reaches a screen only through `displaySmall` or
-      // KitchenType. Every other role leaves `fontFamily` null, which the
-      // platform fills in (Roboto under the test VM) -- so what is
-      // assertable is that the serif did not leak onto it.
-      expect(light.displaySmall?.fontFamily, 'Literata');
-      for (final TextStyle? role in <TextStyle?>[
-        light.headlineSmall,
-        light.titleLarge,
-        light.titleMedium,
-        light.titleSmall,
-        light.bodyLarge,
-        light.bodyMedium,
-        light.bodySmall,
-        light.labelLarge,
-        light.labelMedium,
-      ]) {
-        expect(role?.fontFamily, isNot('Literata'));
+      // D134: no serif anywhere, the wordmark included. Every role leaves
+      // `fontFamily` null, which ThemeData fills in from the platform's
+      // typography (Roboto under the test VM) -- so what is assertable on the
+      // built theme is that every role lands on that one face.
+      final String? sans = light.bodyMedium?.fontFamily;
+      expect(sans, isNot('Literata'));
+      for (final TextTheme theme in <TextTheme>[light, dark]) {
+        for (final TextStyle? role in <TextStyle?>[
+          theme.displaySmall,
+          theme.headlineSmall,
+          theme.titleLarge,
+          theme.titleMedium,
+          theme.titleSmall,
+          theme.bodyLarge,
+          theme.bodyMedium,
+          theme.bodySmall,
+          theme.labelLarge,
+          theme.labelMedium,
+        ]) {
+          expect(role?.fontFamily, sans);
+        }
       }
+
+      expect(light.displaySmall?.fontSize, 32);
+      expect(light.displaySmall?.height, 40 / 32);
+      expect(light.displaySmall?.fontWeight, FontWeight.w700);
+      expect(light.displaySmall?.letterSpacing, -0.5);
+      expect(light.headlineSmall?.fontSize, 28);
+      expect(light.headlineSmall?.height, 34 / 28);
+      expect(light.headlineSmall?.fontWeight, FontWeight.w700);
+      expect(light.headlineSmall?.letterSpacing, -0.3);
     });
 
-    test('KitchenType is present: Literata recipe titles in onSurface', () {
+    test('KitchenType is present: sans w700 recipe names in onSurface', () {
       for (final ThemeData theme in <ThemeData>[
         AppTheme.light(),
         AppTheme.dark(),
@@ -92,17 +105,40 @@ void main() {
         expect(type, isNotNull, reason: 'the recipe titles must ride along');
 
         final KitchenType t = type!;
-        expect(t.recipeTitle.fontFamily, 'Literata');
-        expect(t.recipeTitle.fontSize, 18);
-        expect(t.recipeTitle.height, 24 / 18);
-        expect(t.recipeTitle.fontWeight, FontWeight.w600);
+        expect(t.recipeTitle.fontFamily, isNull);
+        expect(t.recipeTitle.fontSize, 17);
+        expect(t.recipeTitle.height, 24 / 17);
+        expect(t.recipeTitle.fontWeight, FontWeight.w700);
+        expect(t.recipeTitle.letterSpacing, -0.1);
         expect(t.recipeTitle.color, theme.colorScheme.onSurface);
 
-        expect(t.recipeTitleLarge.fontFamily, 'Literata');
-        expect(t.recipeTitleLarge.fontSize, 26);
-        expect(t.recipeTitleLarge.height, 32 / 26);
-        expect(t.recipeTitleLarge.fontWeight, FontWeight.w600);
+        expect(t.recipeTitleLarge.fontFamily, isNull);
+        expect(t.recipeTitleLarge.fontSize, 28);
+        expect(t.recipeTitleLarge.height, 34 / 28);
+        expect(t.recipeTitleLarge.fontWeight, FontWeight.w700);
+        expect(t.recipeTitleLarge.letterSpacing, -0.3);
         expect(t.recipeTitleLarge.color, theme.colorScheme.onSurface);
+
+        expect(t.monogram.fontFamily, isNull);
+        expect(t.monogram.fontSize, 30);
+        expect(t.monogram.height, 36 / 30);
+        expect(t.monogram.fontWeight, FontWeight.w700);
+        expect(t.monogram.letterSpacing, 0);
+        expect(t.monogram.color, theme.colorScheme.onSurface);
+      }
+    });
+
+    test('cards have no hairline and a per-brightness fill', () {
+      for (final (ThemeData theme, Color fill) in <(ThemeData, Color)>[
+        (AppTheme.light(), const Color(0xFFF5EBDF)),
+        (AppTheme.dark(), const Color(0xFF292923)),
+      ]) {
+        final ShapeBorder? shape = theme.cardTheme.shape;
+        expect(shape, isA<RoundedRectangleBorder>());
+        expect((shape! as RoundedRectangleBorder).side, BorderSide.none);
+        expect(theme.cardTheme.color, fill);
+        expect(theme.cardTheme.elevation, 0);
+        expect(theme.extension<KitchenColors>()!.card, fill);
       }
     });
 
@@ -146,6 +182,14 @@ void main() {
         expect(c.onOffline, scheme.onSurface);
         expect(c.docLanguage, scheme.surfaceContainerLow);
         expect(c.destructive, scheme.error);
+        expect(c.dragHandle, scheme.outline);
+        expect(c.dropTarget, scheme.primaryContainer);
+        expect(
+          c.card,
+          scheme.brightness == Brightness.light
+              ? scheme.surfaceContainer
+              : scheme.surfaceContainerHigh,
+        );
 
         // Two load-bearing rules, asserted rather than only commented:
         // neither the offline banner nor an unmatched line is an error.

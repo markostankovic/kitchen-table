@@ -129,11 +129,11 @@ class RecipeCard extends StatelessWidget {
     return AppMonogramTile(
       letter: trimmed.isEmpty ? '' : trimmed.substring(0, 1).toUpperCase(),
       size: AppSizes.thumb,
-      // A 72dp tile carries the 26pt serif; the tile's own default
-      // `titleMedium` would leave the letter swimming in it. The letter is
-      // the recipe's name standing in for its photo, so it is a recipe
-      // title's face (D127).
-      textStyle: Theme.of(context).extension<KitchenType>()!.recipeTitleLarge,
+      // A 72dp tile carries a 30pt bold letter; the tile's own default
+      // `titleMedium` would leave it swimming in it. The letter is the
+      // recipe's name standing in for its photo, so it is a recipe-name
+      // style, sized for the tile (D134).
+      textStyle: Theme.of(context).extension<KitchenType>()!.monogram,
     );
   }
 

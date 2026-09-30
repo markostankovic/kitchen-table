@@ -24,11 +24,10 @@ import 'kitchen_type.dart';
 /// has to stay legible at 3px against a dark surface. It is never a surface
 /// something else sits on.
 ///
-/// Type is the platform sans (`fontFamily: null`) for every Material role
-/// but `displaySmall`, the wordmark. Literata (bundled under `assets/fonts/`,
-/// CLAUDE.md rule 8 -- no font package) reaches a screen only through
-/// `displaySmall` or [KitchenType]'s recipe titles (D127, superseding the
-/// Type half of D118): the serif marks a recipe's name, not reading text.
+/// Type is the platform sans (`fontFamily: null`) for every role, the
+/// wordmark included. There is no bundled face: a recipe's name is marked by
+/// weight 700 through [KitchenType], not by a serif (D134, superseding the
+/// type half of D127).
 ///
 /// [KitchenColors] and [KitchenType] ride along on both themes as the app's
 /// semantic layer.
@@ -40,6 +39,7 @@ abstract final class AppTheme {
   static ThemeData _build(Brightness brightness) {
     final ColorScheme scheme = _colorScheme(brightness);
     final TextTheme textTheme = _textTheme(scheme);
+    final KitchenColors kitchen = KitchenColors.of(scheme);
 
     return ThemeData(
       useMaterial3: true,
@@ -47,13 +47,10 @@ abstract final class AppTheme {
       colorScheme: scheme,
       textTheme: textTheme,
       scaffoldBackgroundColor: scheme.surface,
-      extensions: <ThemeExtension<dynamic>>[
-        KitchenColors.of(scheme),
-        KitchenType.of(scheme),
-      ],
+      extensions: <ThemeExtension<dynamic>>[kitchen, KitchenType.of(scheme)],
 
-      // Flat by default: a container-role tone step plus a 1dp hairline does
-      // the separating, not a shadow. `surfaceTint` being transparent in the
+      // Flat by default: a container-role tone step does the separating, not
+      // a hairline and not a shadow. `surfaceTint` being transparent in the
       // scheme kills Material's elevation tint app-wide, so the few themes
       // below that do elevate cast a plain shadow rather than tinting.
       appBarTheme: AppBarThemeData(
@@ -96,14 +93,16 @@ abstract final class AppTheme {
       ),
 
       // `margin: zero` because callers space cards -- Material's default 4dp
-      // margin fights the 12dp gap the design asks for between them.
+      // margin fights the 12dp gap the design asks for between them. No
+      // `side`: the per-brightness `KitchenColors.card` fill alone separates
+      // a card from the ground (D134).
       cardTheme: CardThemeData(
-        color: scheme.surfaceContainerLow,
+        color: kitchen.card,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
-          side: BorderSide(color: scheme.outlineVariant),
         ),
       ),
 
@@ -416,7 +415,7 @@ abstract final class AppTheme {
     shadow: Color(0xFF000000),
   );
 
-  /// The platform sans throughout, except the wordmark's `displaySmall`.
+  /// The platform sans throughout, the wordmark included (D134).
   ///
   /// `fontFamily: null` is not an omission -- it is how a role asks for
   /// Roboto / San Francisco. Line heights are written as the ratio literal
@@ -425,20 +424,20 @@ abstract final class AppTheme {
   /// defaults.
   static TextTheme _textTheme(ColorScheme scheme) {
     const TextTheme base = TextTheme(
-      // The wordmark, and nothing else. The only serif Material role; recipe
-      // titles reach Literata through [KitchenType] instead (D127).
+      // The wordmark, and nothing else. Letter spacing is in logical px.
       displaySmall: TextStyle(
-        fontFamily: 'Literata',
-        fontSize: 36,
-        height: 44 / 36,
-        fontWeight: FontWeight.w600,
+        fontSize: 32,
+        height: 40 / 32,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.5,
       ),
       // The household name. A recipe's detail title is
       // `KitchenType.recipeTitleLarge`, not this.
       headlineSmall: TextStyle(
-        fontSize: 26,
-        height: 32 / 26,
-        fontWeight: FontWeight.w600,
+        fontSize: 28,
+        height: 34 / 28,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.3,
       ),
       // App bar and dialog titles.
       titleLarge: TextStyle(

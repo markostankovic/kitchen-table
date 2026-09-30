@@ -57,4 +57,14 @@ abstract final class AppSizes {
   /// [target]: they are the same number today, but one is a hit area and the
   /// other is a drawing, and they have no reason to move together.
   static const double emptyStateIcon = 48;
+
+  /// The 6-dot drag grip on a meal-plan entry. Its own name rather than
+  /// borrowing [iconInButton]: the same number today, but one is a drawing
+  /// hinting at a gesture and the other sits beside a button's label, and
+  /// they have no reason to move together.
+  static const double grip = 20;
+
+  /// The trailing column a meal-plan entry's [grip] is centred in. Not
+  /// [avatar], though the number matches: that is a person's circle.
+  static const double gripColumn = 40;
 }

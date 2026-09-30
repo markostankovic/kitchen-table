@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' show PathMetric;
 
 import 'package:flutter/material.dart';
@@ -416,30 +417,42 @@ class _DayCard extends ConsumerWidget {
   }
 
   /// A drop here keeps the entry's own slot: a collapsed day shows no slots
-  /// to aim at.
+  /// to aim at. 56dp tall: `xs` above and below the 48dp button.
   Widget _collapsed(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final KitchenColors kitchen = theme.extension<KitchenColors>()!;
     return DragTarget<MealPlanEntry>(
       onAcceptWithDetails: (DragTargetDetails<MealPlanEntry> details) =>
           _moveHere(context, ref, details.data, day, details.data.slot),
       builder: (BuildContext context, List<MealPlanEntry?> candidate, _) =>
-          Card(
-            color: candidate.isEmpty ? scheme.surface : scheme.primaryContainer,
-            child: Padding(
-              padding: const EdgeInsetsDirectional.only(
-                start: AppSpacing.md,
-                end: AppSpacing.xs,
-              ),
-              child: Row(
-                children: <Widget>[
-                  Expanded(child: _header(context, isToday: false)),
-                  TextButton.icon(
-                    icon: const Icon(Icons.add, size: AppSizes.iconInButton),
-                    label: Text(l10n.addMealButton),
-                    onPressed: () => _chooseSlotThenAdd(context, ref, day),
+          CustomPaint(
+            foregroundPainter: candidate.isEmpty
+                ? null
+                : _DashedRoundedRectPainter(
+                    color: theme.colorScheme.primary,
+                    radius: AppRadii.md,
+                    strokeWidth: _MealEntryCard._dropOutlineWidth,
                   ),
-                ],
+            child: Card(
+              color: candidate.isEmpty ? kitchen.card : kitchen.dropTarget,
+              child: Padding(
+                padding: const EdgeInsetsDirectional.only(
+                  start: AppSpacing.md,
+                  end: AppSpacing.xs,
+                  top: AppSpacing.xs,
+                  bottom: AppSpacing.xs,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(child: _header(context, isToday: false)),
+                    TextButton.icon(
+                      icon: const Icon(Icons.add, size: AppSizes.iconInButton),
+                      label: Text(l10n.addMealButton),
+                      onPressed: () => _chooseSlotThenAdd(context, ref, day),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -528,8 +541,9 @@ class _TodayPill extends StatelessWidget {
 }
 
 /// A filled slot's entries, and the drop target for that day/slot. The
-/// highlight goes on the entry cards themselves -- their own fill would
-/// otherwise hide one drawn behind them.
+/// highlight fill goes on the entry cards themselves -- their own fill would
+/// otherwise hide one drawn behind them -- and a dashed `primary` outline
+/// goes around the group.
 class _SlotGroup extends ConsumerWidget {
   const _SlotGroup({
     required this.day,
@@ -559,20 +573,29 @@ class _SlotGroup extends ConsumerWidget {
         onAcceptWithDetails: (DragTargetDetails<MealPlanEntry> details) =>
             _moveHere(context, ref, details.data, day, slot),
         builder: (BuildContext context, List<MealPlanEntry?> candidate, _) =>
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                for (int i = 0; i < entries.length; i++) ...<Widget>[
-                  if (i > 0) const SizedBox(height: AppSpacing.sm),
-                  _MealEntryCard(
-                    entry: entries[i],
-                    index: i,
-                    total: entries.length,
-                    source: _sourceOf(entries[i]),
-                    highlighted: candidate.isNotEmpty,
-                  ),
+            CustomPaint(
+              foregroundPainter: candidate.isEmpty
+                  ? null
+                  : _DashedRoundedRectPainter(
+                      color: Theme.of(context).colorScheme.primary,
+                      radius: AppRadii.md,
+                      strokeWidth: _MealEntryCard._dropOutlineWidth,
+                    ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (int i = 0; i < entries.length; i++) ...<Widget>[
+                    if (i > 0) const SizedBox(height: AppSpacing.sm),
+                    _MealEntryCard(
+                      entry: entries[i],
+                      index: i,
+                      total: entries.length,
+                      source: _sourceOf(entries[i]),
+                      highlighted: candidate.isNotEmpty,
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
       );
 }
@@ -598,9 +621,13 @@ enum _EntryAction { open, servings, leftovers, move, up, down, remove }
 /// One planned meal, nested in its day card. No photo or monogram: an entry
 /// carries a recipe's title and servings, not the recipe (D53).
 ///
-/// A leftover is the same card with a dashed `outline` border and a leading
-/// return icon in `KitchenColors.leftover`, so it never reads as a second
-/// meal cooked from scratch.
+/// A leftover is the same card with a transparent fill, a dashed `outline`
+/// border and a leading return icon in `KitchenColors.leftover`, so it never
+/// reads as a second meal cooked from scratch.
+///
+/// The trailing grip only hints that the card can be dragged: it has no
+/// gesture of its own and no semantics. Tap anywhere opens the actions
+/// sheet; long-press anywhere lifts the card (D134).
 class _MealEntryCard extends ConsumerWidget {
   const _MealEntryCard({
     required this.entry,
@@ -624,6 +651,25 @@ class _MealEntryCard extends ConsumerWidget {
 
   /// Whether a drag is over this card's slot group.
   final bool highlighted;
+
+  /// The lifted card's tilt, -1.5 degrees.
+  static const double _liftTilt = -1.5 * math.pi / 180;
+
+  /// The lifted card's scale, a touch larger than the card it left.
+  static const double _liftScale = 1.02;
+
+  /// The alpha of the `outline` dashes left where a lifted card was.
+  static const double _placeholderAlpha = 0.6;
+
+  /// A leftover's dashed border.
+  static const double _leftoverOutlineWidth = 1;
+
+  /// The dashed placeholder left where a lifted card was.
+  static const double _placeholderOutlineWidth = 1.5;
+
+  /// The dashed `primary` outline around a hovered drop target -- a filled
+  /// slot's group or a collapsed day.
+  static const double _dropOutlineWidth = 2;
 
   Future<void> _openActions(BuildContext context, WidgetRef ref) async {
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -964,34 +1010,67 @@ class _MealEntryCard extends ConsumerWidget {
     builder: (BuildContext context, BoxConstraints constraints) =>
         LongPressDraggable<MealPlanEntry>(
           data: entry,
-          feedback: SizedBox(
-            width: constraints.maxWidth,
-            child: Material(
-              elevation: 2,
-              borderRadius: BorderRadius.circular(AppRadii.md),
-              child: _card(context, null),
+          feedback: Transform.rotate(
+            angle: _liftTilt,
+            child: Transform.scale(
+              scale: _liftScale,
+              child: SizedBox(
+                width: constraints.maxWidth,
+                child: Material(
+                  elevation: 2,
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  child: _card(
+                    context,
+                    null,
+                    fill: Theme.of(context).extension<KitchenColors>()!.card,
+                  ),
+                ),
+              ),
             ),
           ),
-          childWhenDragging: Opacity(opacity: 0.3, child: _card(context, null)),
+          // The card's own footprint, emptied, under dashes: where it came
+          // from stays visible while it is in the air.
+          childWhenDragging: CustomPaint(
+            foregroundPainter: _DashedRoundedRectPainter(
+              color: Theme.of(context).colorScheme.outline
+                  .withValues(alpha: _placeholderAlpha),
+              radius: AppRadii.md,
+              strokeWidth: _placeholderOutlineWidth,
+            ),
+            child: Opacity(opacity: 0, child: _card(context, null)),
+          ),
           child: _card(context, () => _openActions(context, ref)),
         ),
   );
 
-  Widget _card(BuildContext context, VoidCallback? onTap) {
+  /// [fill] overrides the card's own: the lifted copy is drawn in
+  /// `KitchenColors.card`. Otherwise a hovered slot fills `dropTarget`, a
+  /// leftover is transparent so the day card shows through its dashes, and
+  /// everything else sits on `surface`.
+  Widget _card(BuildContext context, VoidCallback? onTap, {Color? fill}) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
     final KitchenColors kitchen = theme.extension<KitchenColors>()!;
-    final Color fill = highlighted
-        ? scheme.primaryContainer
-        : scheme.surfaceContainerLowest;
+    final KitchenType type = theme.extension<KitchenType>()!;
+    final Color cardFill =
+        fill ??
+        (highlighted
+            ? kitchen.dropTarget
+            : entry.isLeftover
+            ? Colors.transparent
+            : scheme.surface);
 
     final Widget body = InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadii.md),
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsetsDirectional.only(
+          start: AppSpacing.md,
+          top: AppSpacing.md,
+          bottom: AppSpacing.md,
+        ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             if (entry.isLeftover) ...<Widget>[
               Icon(
@@ -1009,11 +1088,26 @@ class _MealEntryCard extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     _entryLabel(entry, AppLocalizations.of(context)),
-                    // A note reads as a meal like any other, so it wears a
-                    // recipe title's face; the meta row says it is a note.
-                    style: theme.extension<KitchenType>()!.recipeTitle,
+                    // Bold means a recipe's name, and a note is not one: the
+                    // same metrics at w400 (D134, amending D132). A leftover
+                    // names a recipe, so it stays bold.
+                    style: entry.entryKind == MealEntryKind.note
+                        ? type.recipeTitle.copyWith(fontWeight: FontWeight.w400)
+                        : type.recipeTitle,
                   ),
                 ],
+              ),
+            ),
+            SizedBox(
+              width: AppSizes.gripColumn,
+              child: ExcludeSemantics(
+                child: Center(
+                  child: Icon(
+                    Icons.drag_indicator,
+                    size: AppSizes.grip,
+                    color: kitchen.dragHandle,
+                  ),
+                ),
               ),
             ),
           ],
@@ -1022,20 +1116,15 @@ class _MealEntryCard extends ConsumerWidget {
     );
 
     if (!entry.isLeftover) {
-      return Card(color: fill, child: body);
+      return Card(color: cardFill, child: body);
     }
     return CustomPaint(
       foregroundPainter: _DashedRoundedRectPainter(
         color: scheme.outline,
         radius: AppRadii.md,
+        strokeWidth: _leftoverOutlineWidth,
       ),
-      child: Card(
-        color: fill,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.md),
-        ),
-        child: body,
-      ),
+      child: Card(color: cardFill, child: body),
     );
   }
 
@@ -1076,16 +1165,22 @@ class _MealEntryCard extends ConsumerWidget {
   }
 }
 
-/// A 1dp rounded rectangle drawn as dashes, for a leftover's border.
+/// A rounded rectangle drawn as dashes: a leftover's border, the placeholder
+/// a lifted entry leaves, and the outline of a hovered drop target.
 ///
 /// `_DashedRingPainter`'s approach (`ingredient_line_row.dart`) along an
 /// `RRect` instead of a circle: Flutter has no dashed border, and CLAUDE.md
 /// rule 8 says a package is not the answer to twenty lines of geometry.
 class _DashedRoundedRectPainter extends CustomPainter {
-  const _DashedRoundedRectPainter({required this.color, required this.radius});
+  const _DashedRoundedRectPainter({
+    required this.color,
+    required this.radius,
+    this.strokeWidth = 1,
+  });
 
   final Color color;
   final double radius;
+  final double strokeWidth;
 
   static const double _dash = 4;
   static const double _gap = 3;
@@ -1095,7 +1190,7 @@ class _DashedRoundedRectPainter extends CustomPainter {
     final Paint paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
+      ..strokeWidth = strokeWidth;
 
     final Path border = Path()
       ..addRRect(
@@ -1113,5 +1208,7 @@ class _DashedRoundedRectPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DashedRoundedRectPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.radius != radius;
+      oldDelegate.color != color ||
+      oldDelegate.radius != radius ||
+      oldDelegate.strokeWidth != strokeWidth;
 }

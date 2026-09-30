@@ -104,20 +104,3 @@ flutter:
   # is committed (l10n.yaml sets `synthetic-package: false`), on the same
   # convention CLAUDE.md states for `*.g.dart` / `*.freezed.dart`.
   generate: true
-
-  # Phase 7 part 2 (D118): Literata, bundled rather than pulled from
-  # `google_fonts` -- CLAUDE.md rule 8, and a font the app always has beats
-  # one fetched at runtime. Static instances, not the variable build: a
-  # variable TTF needs `FontVariation` rather than `fontWeight` in Flutter.
-  # `OFL.txt` rides along inside `assets/fonts/` on purpose -- the licence
-  # ships with the font.
-  assets:
-    - assets/fonts/
-
-  fonts:
-    - family: Literata
-      fonts:
-        - asset: assets/fonts/Literata-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Literata-SemiBold.ttf
-          weight: 600

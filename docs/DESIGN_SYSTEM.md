@@ -14,7 +14,11 @@ the tokens: both `ColorScheme`s, the type scale, `AppRadii`,
 moved the type to sans with serif recipe titles only, flipped the ingredient
 row and lightened the steps. The 2026-09-28 steps/dividers round
 (`docs/design/BRIEF_steps_dividers_logo.md`) followed: part 10a turned the
-steps into a timeline and the ingredient hairline into a dashed divider. It
+steps into a timeline and the ingredient hairline into a dashed divider. The
+2026-09-30 round-2 handover followed: part 12 (D134) dropped the serif
+altogether (a recipe's name is sans w700), took the hairline off every card in
+favour of a per-brightness `KitchenColors.card` fill, and gave meal-plan
+entries a drag grip and a new lift / placeholder / drop look. It
 replaces `docs/DESIGN.md`, which is now only a pointer at this file.
 
 What is *described* here and what is *applied* are two different things. The
@@ -120,7 +124,7 @@ and it reads calm (see `offline` in the semantic layer).
 | `onSurface` | `#1F190F` | `#EBEBE4` | primary text |
 | `onSurfaceVariant` | `#484134` | `#CFD0C2` | secondary text, meta, units |
 | `outline` | `#6F6759` | `#96978A` | muted icons, badge edge, the dashed unmatched ring |
-| `outlineVariant` | `#D1C8B8` | `#494A3F` | card hairline, dividers |
+| `outlineVariant` | `#D1C8B8` | `#494A3F` | dividers, the segmented button, the action bar's top hairline — **not** a card edge (D134) |
 
 `outline` is never body text — it is tuned for the low-emphasis role, not for
 reading. Secondary text that sits beside primary text of the same size is
@@ -148,44 +152,48 @@ small golden highlight, paprika only as a signal. A screen that reads as
 
 ## Type
 
-Two faces. **The platform sans** (Roboto on Android, San Francisco on iOS) for
-every Material role but one. **Literata** — bundled, OFL, weights 400 and 600
-under `assets/fonts/` — for recipe titles and the wordmark, nothing else.
+One face: **the platform sans** (Roboto on Android, San Francisco on iOS),
+`fontFamily: null` on every role. No font is bundled (D134, superseding the
+type half of D127). Letter spacing is in logical px; a role with none listed
+has Material's default.
 
 A screen picks a role for what the text *is*, never a raw `fontSize`.
 
-| Role | Size / line | Weight | Face | For |
+| Role | Size / line | Weight | Letter spacing | For |
 |---|---|---|---|---|
-| `displaySmall` | 36 / 44 | 600 | Literata | the wordmark, in `primary`, and nothing else |
-| `headlineSmall` | 26 / 32 | 600 | sans | the household's name (a *recipe's* detail title is `KitchenType.recipeTitleLarge`) |
-| `titleLarge` | 22 / 28 | 600 | sans | app bar, dialog titles |
-| `titleMedium` | 18 / 24 | 600 | sans | section headings, sheet titles, empty-state titles |
-| `titleSmall` | 14 / 20 | 600 | sans | labels, settings group headers |
-| `bodyLarge` | 18 / 28 | 400 | sans | the reading text — recipe steps, ingredient lines |
-| `bodyMedium` | 14 / 20 | 400 | sans | default copy |
-| `bodySmall` | 12 / 16 | 400 | sans | captions, meta |
-| `labelLarge` | 14 / 20 | 600 | sans | buttons, chips, the step number |
-| `labelMedium` | 12 / 16 | 500 | sans | badges, nav labels |
+| `displaySmall` | 32 / 40 | 700 | −0.5 | the wordmark, in `primary`, and nothing else |
+| `headlineSmall` | 28 / 34 | 700 | −0.3 | the household's name (a *recipe's* detail title is `KitchenType.recipeTitleLarge`) |
+| `titleLarge` | 22 / 28 | 600 | — | app bar, dialog titles |
+| `titleMedium` | 18 / 24 | 600 | — | section headings, sheet titles, empty-state titles |
+| `titleSmall` | 14 / 20 | 600 | — | labels, settings group headers |
+| `bodyLarge` | 18 / 28 | 400 | — | the reading text — recipe steps, ingredient lines |
+| `bodyMedium` | 14 / 20 | 400 | — | default copy |
+| `bodySmall` | 12 / 16 | 400 | — | captions, meta |
+| `labelLarge` | 14 / 20 | 600 | — | buttons, chips, the step number |
+| `labelMedium` | 12 / 16 | 500 | — | badges, nav labels |
 
 Roles not listed keep Material 3's defaults; nothing in the app needs them.
 
-### `KitchenType` — the recipe titles
+### `KitchenType` — a recipe's name
 
 A `ThemeExtension` in `lib/core/theme/kitchen_type.dart`, read as
 `Theme.of(context).extension<KitchenType>()!`, built from the scheme like
-`KitchenColors`. Deliberately not a Material role.
+`KitchenColors`. Deliberately not a Material role. Every member is sans, w700,
+`onSurface`.
 
-| Token | Size / line | Weight | Face | For |
+| Token | Size / line | Weight | Letter spacing | For |
 |---|---|---|---|---|
-| `recipeTitle` | 18 / 24 | 600 | Literata, `onSurface` | a recipe's name on a recipe card and on a meal-plan entry |
-| `recipeTitleLarge` | 26 / 32 | 600 | Literata, `onSurface` | a recipe's title on its detail screen, and the monogram letter on a card's 72dp tile |
+| `recipeTitle` | 17 / 24 | 700 | −0.1 | a recipe's name on a recipe card and on a meal-plan entry, and a leftover's title |
+| `recipeTitleLarge` | 28 / 34 | 700 | −0.3 | a recipe's title on its detail screen |
+| `monogram` | 30 / 36 | 700 | 0 | the letter on a recipe card's 72dp monogram tile |
 
-**Literata reaches a screen only through `displaySmall` or `KitchenType`**
-(D127). A serif on screen always means "this is a recipe's name". Screen
-titles, section headings, steps, ingredient lines and the household name are
-sans. The warmth the all-serif scale used to carry now comes from the cream
-ground, the green / mustard / paprika palette, the monogram tiles, and the
-serif recipe names.
+**Weight 700 marks a recipe's name** (D134). Bold in a title position always
+means "this is a recipe". Screen titles, section headings, steps, ingredient
+lines are the Material roles above. **One exception:** a meal-plan note wears
+`recipeTitle`'s metrics at **w400** —
+`recipeTitle.copyWith(fontWeight: FontWeight.w400)` at its one call site —
+because a note is not a recipe (D134, amending D132). The warmth comes from the
+cream ground, the green / mustard / paprika palette and the monogram tiles.
 
 ---
 
@@ -247,11 +255,13 @@ number in the table.
 | `stepDisc` | 28 | the step-number disc on a recipe — one `bodyLarge` line, so it centres on the first line with no offset |
 | `avatar` | 40 | a person's monogram circle — member, profile |
 | `emptyStateIcon` | 48 | `AppEmptyState`'s icon |
+| `grip` | 20 | the drag-indicator glyph on a meal-plan entry |
+| `gripColumn` | 40 | the trailing column that glyph is centred in |
 
 `emptyStateIcon` is its own name rather than a borrowed `target`: they are the
 same number today, but one is a hit area and the other is a drawing, and they
-have no reason to move together. `signInButton` is not `field` for the same
-reason.
+have no reason to move together. `signInButton` is not `field`, `grip` is not
+`iconInButton` and `gripColumn` is not `avatar`, for the same reason.
 
 `AppDurations`: 150 ms for a small state change, 250 ms for a transition,
 emphasized easing. **No decorative animation.** The class exists so later
@@ -266,7 +276,8 @@ from the container roles, not from Material's tint.
 
 | Level | Where | How |
 |---|---|---|
-| 0 | cards, app bar, nav bar, fields | a container-role tone step plus a 1dp `outlineVariant` hairline. No shadow. |
+| 0 | cards | a container-role fill (`KitchenColors.card`), no hairline, no shadow |
+| 0 | app bar, nav bar, fields | a container-role tone step. No shadow. |
 | 2 | menus, snackbar | a soft two-layer shadow (y1 blur2, y2 blur6 spread2) |
 | 3 | dialogs, bottom sheets | the same, heavier; in dark, black at 60% |
 
@@ -280,7 +291,8 @@ Scrim behind dialogs and sheets: `#1F190F` at 32% in light, black at 50% in dark
 
 A `ThemeExtension` read as `Theme.of(context).extension<KitchenColors>()!`.
 Every member is an alias of a role above, so there is no second palette to keep
-in sync — what it adds is a name for what the colour *means here*.
+in sync — what it adds is a name for what the colour *means here*. (`card` is
+the one that aliases a different role per brightness; still an alias.)
 
 | Token | Alias of | Means |
 |---|---|---|
@@ -297,6 +309,9 @@ in sync — what it adds is a name for what the colour *means here*.
 | `destructive` | `error` | destructive actions, as text only — never a fill |
 | `stepConnector` | `outlineVariant` | the 2dp line joining one step disc to the next |
 | `dividerDash` | `outlineVariant` | the dashed divider under an ingredient row |
+| `card` | `surfaceContainer` (light) / `surfaceContainerHigh` (dark) | every themed `Card`'s fill. It picks a role per brightness because dark `surfaceContainer` (`#20201A`, +5 tone from the ground) fades out once there is no border. In light it matches the nav bar's `#F5EBDF` on purpose |
+| `dragHandle` | `outline` | the 6-dot grip on a meal-plan entry, and nothing else |
+| `dropTarget` | `primaryContainer` | the fill of the entries in a hovered slot, and of a hovered collapsed day |
 
 Two of these are load-bearing rules rather than preferences:
 
@@ -354,8 +369,10 @@ then `sm`, then the text-button switcher.
 
 ### Cards
 
-`surfaceContainerLow`, a 1dp `outlineVariant` hairline, radius 12, elevation 0.
-That hairline is what separates a card from the ground — not a shadow.
+`KitchenColors.card`, no hairline, radius 12, elevation 0, no surface tint. The
+fill alone separates a card from the cream ground — not a border, not a shadow
+(D134). Every themed `Card` follows: recipe list, meal plan, settings,
+shopping list, import review, the household invite card.
 
 ### Navigation
 
@@ -503,8 +520,8 @@ left edge, not centred).
 ### Recipe card
 
 A 72dp photo, or — far more often — a monogram tile: the title's first letter
-on `secondaryContainer`, in `KitchenType.recipeTitleLarge`. Then the title in
-`KitchenType.recipeTitle`, then a meta row.
+on `secondaryContainer`, in `KitchenType.monogram`. Then the title in
+`KitchenType.recipeTitle` (sans 700), then a meta row.
 
 **The meta row is a component with a rule**: each item is an icon plus its own
 text, and **an item never splits across lines — a whole item wraps instead**.
@@ -519,8 +536,8 @@ small outlined badge, radius 4, in `labelMedium`.
 All of these are private classes in `meal_plan_screen.dart` — each has one
 consumer, so none of them is in `core/widgets/`.
 
-**The day card.** The theme's `Card` (`surfaceContainerLow`, 1dp
-`outlineVariant`, radius 12), padded `md`, with the day header in
+**The day card.** The theme's `Card` (`KitchenColors.card`, no hairline,
+radius 12), padded `md`, with the day header in
 `titleSmall` `onSurface` — `weekdayAndDay` (`pon 14`) in the week view, where
 the week bar already names the month, and `shortDateLabel` in the Today view.
 Today's card keeps that fill and gets a **2dp border in `today`** plus a
@@ -529,20 +546,29 @@ Today's card keeps that fill and gets a **2dp border in `today`** plus a
 not filled.
 
 **Entry cards.** Nested inside the day card, grouped by slot in
-`MealSlot.ordered` order, `sm` apart: `surfaceContainerLowest` fill, 1dp
-`outlineVariant`, radius 12, padded `md`. On top an `AppMetaRow` — the slot as
+`MealSlot.ordered` order, `sm` apart: `surface` fill (the cream ground, so an
+entry reads as sunk into its day card), no border, radius 12, padded `md` on
+the start, top and bottom, with its content centred vertically. On top an
+`AppMetaRow` — the slot as
 plain `bodySmall` `onSurfaceVariant` text, then a servings item
 (`soup_kitchen_outlined`) for a recipe, a `Napomena`/`Note` item
 (`edit_note_outlined`) for a note, or `od pon 14.`/`from Mon 14`
 (`event_outlined`) for a leftover whose source is in the loaded week. Then,
 `xs` below, the title in `KitchenType.recipeTitle` — a recipe's or leftover's
-title, or a note's own words, since a note is a meal like any other and the
-meta row already says it is a note — wrapping rather than truncating. **No thumbnail or monogram** — an entry
-carries a recipe's title and servings, not the recipe (D53).
+title — wrapping rather than truncating. **A note's own words are the same
+17/24 at w400**: bold means a recipe's name and a note is not one (D134,
+amending D132). **No thumbnail or monogram** — an entry carries a recipe's
+title and servings, not the recipe (D53).
 
-**Leftovers.** The same card with a **dashed 1dp `outline` border** (a private
-`CustomPainter` along the `RRect`, no package) and a leading return icon in
-`leftover`, so it reads as derived from another meal rather than as a meal of
+**The grip.** After the text column, a 40dp (`AppSizes.gripColumn`) trailing
+column with `Icons.drag_indicator` centred in it at `AppSizes.grip` (20) in
+`KitchenColors.dragHandle`. A long Serbian name keeps the full width up to
+that column. The grip is **only a hint**: no gesture of its own, no hit
+target, excluded from semantics.
+
+**Leftovers.** The same card with a **transparent fill**, so the day card
+shows through, a **dashed 1dp `outline` border** (a private `CustomPainter`
+along the `RRect`, no package) and a leading return icon in `leftover`, so it reads as derived from another meal rather than as a meal of
 its own. The source's day is the abbreviated `weekdayAndDay` on purpose: a
 full Serbian weekday would have to be declined after `od`.
 
@@ -551,17 +577,22 @@ full Serbian weekday would have to be declined after `od`.
 bottom sheet of all four slots, filled ones included — that is how a second
 entry gets into a slot). There is no per-slot `+ <Slot>` button; four of them
 under every day read as clutter. **A week-view day with nothing planned, other
-than today, collapses** to one compact card on `surface` — lighter than a
-planned day — with the header on the left and `+ Dodaj obrok`/`+ Add meal` in
-`primary` on the right, which opens the same chooser. The Today view never
+than today, collapses** to one compact 56dp card on `KitchenColors.card` —
+`xs` above and below the 48dp button — with the header on the left and
+`+ Dodaj obrok`/`+ Add meal` in `primary` on the right, which opens the same
+chooser. The Today view never
 collapses.
 
-**Drag.** Long-press lifts the entry card itself at its own width, on
-`Material` elevation 2. Two drop targets, each highlighted in
-`primaryContainer` while a drag is over it: a filled slot's group of entry
-cards, and a collapsed day — which **keeps the entry's own slot**, since it
-shows none to aim at. An empty slot is reached through the entry's `Move to`
-action instead.
+**Drag.** Tap anywhere on an entry opens its actions sheet; long-press anywhere
+lifts it. The lifted card is drawn at its own width in `KitchenColors.card`,
+on `Material` elevation 2, scaled 1.02 and tilted −1.5°. Where it was, its
+footprint stays behind, emptied, under a **1.5dp dashed `outline` at 60%**.
+Two drop targets, each filled `KitchenColors.dropTarget` and outlined in a
+**2dp dashed `primary`** while a drag is over it: a filled slot's group of
+entry cards (the entries take the fill, the group takes the outline), and a
+collapsed day — which **keeps the entry's own slot**, since it shows none to
+aim at. An empty slot is reached through the entry's `Move to` action instead.
+All three dashed outlines are the same private painter, 4 on / 3 off.
 
 ### Shopping list
 

@@ -11,7 +11,8 @@ import 'package:flutter/material.dart';
 /// values in `app_theme.dart`. What this class adds is not colour, it is
 /// vocabulary -- a screen drawing "the thing that means today" reads [today]
 /// rather than `primary`, so that the day the two stop being the same colour,
-/// one line changes instead of eleven call sites.
+/// one line changes instead of eleven call sites. One member, [card], picks
+/// a different role per brightness; it is still an alias, not a colour.
 ///
 /// Two members are load-bearing rules rather than preferences:
 ///
@@ -39,6 +40,9 @@ class KitchenColors extends ThemeExtension<KitchenColors> {
     required this.destructive,
     required this.stepConnector,
     required this.dividerDash,
+    required this.card,
+    required this.dragHandle,
+    required this.dropTarget,
   });
 
   /// Builds the extension from a scheme. The aliasing lives here and only
@@ -59,6 +63,11 @@ class KitchenColors extends ThemeExtension<KitchenColors> {
     destructive: scheme.error,
     stepConnector: scheme.outlineVariant,
     dividerDash: scheme.outlineVariant,
+    card: scheme.brightness == Brightness.light
+        ? scheme.surfaceContainer
+        : scheme.surfaceContainerHigh,
+    dragHandle: scheme.outline,
+    dropTarget: scheme.primaryContainer,
   );
 
   /// The "Danas"/"Today" pill and the 2dp outline of today's day card.
@@ -114,6 +123,23 @@ class KitchenColors extends ThemeExtension<KitchenColors> {
   /// `outlineVariant`.
   final Color dividerDash;
 
+  /// The fill of every themed `Card` -- the one thing that separates a card
+  /// from the cream ground now that cards have no hairline (D134). Alias of
+  /// `surfaceContainer` in light and `surfaceContainerHigh` in dark: the dark
+  /// `surfaceContainer` sits only +5 tone above the ground and fades out once
+  /// there is no border, so dark reaches one step higher. Still an alias per
+  /// brightness, not a second palette. In light it matches the nav bar on
+  /// purpose.
+  final Color card;
+
+  /// The 6-dot grip on a meal-plan entry -- a hint that it can be dragged,
+  /// and nothing else. Alias of `outline`.
+  final Color dragHandle;
+
+  /// The fill of the entries in a hovered meal-plan slot and of a hovered
+  /// collapsed day. Alias of `primaryContainer`.
+  final Color dropTarget;
+
   @override
   KitchenColors copyWith({
     Color? today,
@@ -130,6 +156,9 @@ class KitchenColors extends ThemeExtension<KitchenColors> {
     Color? destructive,
     Color? stepConnector,
     Color? dividerDash,
+    Color? card,
+    Color? dragHandle,
+    Color? dropTarget,
   }) => KitchenColors(
     today: today ?? this.today,
     todayContainer: todayContainer ?? this.todayContainer,
@@ -145,6 +174,9 @@ class KitchenColors extends ThemeExtension<KitchenColors> {
     destructive: destructive ?? this.destructive,
     stepConnector: stepConnector ?? this.stepConnector,
     dividerDash: dividerDash ?? this.dividerDash,
+    card: card ?? this.card,
+    dragHandle: dragHandle ?? this.dragHandle,
+    dropTarget: dropTarget ?? this.dropTarget,
   );
 
   @override
@@ -165,6 +197,9 @@ class KitchenColors extends ThemeExtension<KitchenColors> {
       destructive: Color.lerp(destructive, other.destructive, t)!,
       stepConnector: Color.lerp(stepConnector, other.stepConnector, t)!,
       dividerDash: Color.lerp(dividerDash, other.dividerDash, t)!,
+      card: Color.lerp(card, other.card, t)!,
+      dragHandle: Color.lerp(dragHandle, other.dragHandle, t)!,
+      dropTarget: Color.lerp(dropTarget, other.dropTarget, t)!,
     );
   }
 }
