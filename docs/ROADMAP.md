@@ -805,6 +805,22 @@ Six fixes from using the app, not a planned part:
 
 The emulator walk (sr/en × light/dark) was clean.
 
+### Part 12 — Sans only, borderless cards, a drag grip
+
+**Status: complete** (`0696cfe`). Decisions taken during it: D134. See
+`docs/journal/phase-7.md`.
+
+Claude Design's round-2 handover (2026-09-30):
+- no serif: a recipe's name is the platform sans at w700, and Literata is
+  no longer bundled;
+- cards lose their hairline for a per-brightness `KitchenColors.card` fill;
+- meal-plan entries get a grip that is only a hint, plus a tilt-and-lift,
+  a dashed placeholder and a dashed drop outline;
+- a note entry is w400.
+
+The emulator walk (sr/en × light/dark) was clean. Import review and the
+household invite card were not reached.
+
 ---
 
 ## Standing rules across phases

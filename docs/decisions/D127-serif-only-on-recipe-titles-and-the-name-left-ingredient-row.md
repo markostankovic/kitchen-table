@@ -1,5 +1,5 @@
 # D127 — Serif only on recipe titles and the wordmark, through `displaySmall` and a `KitchenType` extension; ingredient rows go name-left / amount-right
-**Status:** active — supersedes the Type half of D118
+**Status:** active — supersedes the Type half of D118; its own type half (Literata, `KitchenType` in serif) is superseded by D134; the ingredient-row half stands
 **Touches:** lib/core/theme/app_theme.dart, lib/core/theme/kitchen_type.dart, lib/core/theme/app_sizes.dart, lib/core/ingredients/widgets/ingredient_line_row.dart, lib/features/recipes/presentation/recipe_detail_screen.dart, lib/features/import/presentation/import_review_screen.dart, lib/core/recipes/widgets/recipe_card.dart, lib/features/meal_plan/presentation/meal_plan_screen.dart, docs/DESIGN_SYSTEM.md
 
 **Decided.**

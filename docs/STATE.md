@@ -1,44 +1,48 @@
-# State — 2026-09-29
+# State — 2026-09-30
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 11 (`da5e198`), device-feedback polish. This
-was a batch of fixes the user found in daily use, not a roadmap part.
+**Last shipped:** Phase 7 part 12 (`0696cfe`), Claude Design's round-2
+handover: sans only, borderless cards, a drag grip on meal entries (D134).
 
-- **Portrait only (D133).** Locked through `SystemChrome`, the Android
-  manifest and iPhone's `Info.plist`. The iPad list is unchanged.
-- **Recipe detail stat strip.** Labels and values are start-aligned in
-  equal-width columns, per `Recipe@1x.png`.
-- **Recipe list (D131).** Cards show photo thumbnails, signed on the list's
-  online emission and dropped quietly if signing fails. Titles come in the
-  reader's language (`Recipe.titleByLocale`), and search matches
-  translated titles.
-- **Meal plan (D132).** Each day card has one bottom-right
-  `+ Dodaj obrok`. The per-slot buttons and their empty-slot drop targets
-  are gone. A note entry uses the recipe-title face.
+- **No serif.** Literata and `assets/fonts/` are gone. `KitchenType` marks a
+  recipe's name by w700 in the platform sans, and gains a `monogram` member
+  for the 72dp tile. The wordmark and household name are sans w700.
+- **Cards.** No `outlineVariant` hairline. The fill is `KitchenColors.card`:
+  `surfaceContainer` in light, `surfaceContainerHigh` in dark. Every themed
+  `Card` follows.
+- **Meal plan.** Entries sit on `surface`, a leftover is transparent under
+  its dashed border, and a note is w400 (amends D132). A trailing 6-dot grip
+  is only a hint. The drag has a tilt-and-lift, a dashed placeholder, and a
+  `dropTarget` fill with a 2dp dashed `primary` outline. Collapsed days are
+  56dp on the card fill.
 
-`dart analyze` is clean and `flutter test` passes 715/715. `make check`
-wasn't run; its `seed-check` is still the known pre-existing red. The
-emulator walk (sr/en × light/dark, hosted release build) was clean, so no
-loop opened. The Galaxy wasn't attached. The same sitting also closed
-Phase 5 part 5's paste half, on the user's own test pasting into Google
-Keep.
+`dart analyze` is clean and `flutter test` passes 716/716. `make -k check`
+is green apart from the known `seed-check`. The emulator walk (sr/en ×
+light/dark, hosted release build) was clean. Import review and the
+household invite card were not reached, so part 12's loop stays open for
+those two.
 
-Still open, not part 11's:
+Still open, not part 12's:
 - meal-plan recipe entries show the original-language title under `en`
   (the entry's own `recipeTitle`, D53);
+- the signed-out sign-in screen stays Serbian after an in-app switch to
+  English;
 - tag chips show raw keys for a frame on a cold start;
 - the shopping list prints `1.5 kg` in Serbian;
 - units don't inflect (`2 glavica`);
-- the recipe-delete confirm is a filled button.
+- the recipe-delete confirm is a filled button;
+- the `List — offline`, `Review import`, `Household` and `Settings` frames
+  in `docs/design/screens/` still show the old bordered card, until Claude
+  Design updates them.
 
 **In flight:** none.
 **Next:** no roadmap part is planned. Walk the open loops below in one
-sitting with the Galaxy attached, part 10a's two surfaces and part 10b's
-Galaxy checks first. Then `/plan-slice` whatever comes next. The
-meal-plan translated-title gap is a small candidate.
-**Latest decision:** D133
+sitting with the Galaxy attached: part 10a's two surfaces, part 10b's
+Galaxy checks, and part 12's import review. Then `/plan-slice` whatever
+comes next. The meal-plan translated-title gap is a small candidate.
+**Latest decision:** D134
 
-**Eight device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Nine device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -65,7 +69,10 @@ clean; its shopping-list and import-review walks are still open. Part
 start. Its Samsung, themed-icon and Light/Dark cold-start checks are still
 open. Part 11's walk (2026-09-29, emulator, all four combinations) was
 clean, so it opened no loop. In the same sitting the user's own paste into
-Google Keep closed Phase 5 part 5. Oldest first:
+Google Keep closed Phase 5 part 5. Part 12's walk (2026-09-30, emulator,
+all four combinations) was clean, but it opened a loop for the two surfaces
+it didn't reach. It also confirmed most of part 4's meal-plan items. Oldest
+first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
   (2026-09-25) confirmed the copy and the SnackBar on the physical Galaxy.
@@ -316,6 +323,20 @@ Google Keep closed Phase 5 part 5. Oldest first:
   sheet, all three dialogs and the snack-repeat dialog still opening; the
   saved-copy line grey in airplane mode beside the calm banner; and an empty
   Today view showing all four `+ Slot` buttons.
+  **Mostly confirmed by Phase 7 part 12's walk (2026-09-30, emulator,
+  all four combinations).** Today's 2dp outline and `Danas` pill read in
+  dark. The leftover's dashed border reads as dashed in both brightnesses,
+  and the mustard return icon shows in dark. A collapsed `čet 1 … + Dodaj
+  obrok` fits on one line, and so does the Serbian week range
+  (`28. sep – 4. okt 2026.`). Hovering a filled slot's group or a collapsed
+  day highlights it. A drop on a collapsed day kept `Večera`. A tap opens
+  the action sheet. The per-slot add row and the empty Today view's
+  `+ Slot` buttons are gone (D132), so those checks no longer apply.
+  **Still open:**
+  - a long Serbian recipe title wrapping (none in this household);
+  - the three dialogs and the snack-repeat dialog;
+  - the saved-copy line in airplane mode;
+  - the Galaxy's own screen.
 
 - **Phase 7 part 7** — the form vocabulary. Walked on the physical Galaxy
   (2026-09-26) across `sr`/`en` × light/dark: the recipe editor, translation
@@ -537,7 +558,25 @@ Google Keep closed Phase 5 part 5. Oldest first:
     flickers, point `NormalTheme` at `@drawable/launch_background`.
   - iOS: no device.
 
-All nine open ones need the hosted release build: `make install-hosted` on
+- **Phase 7 part 12** — sans only, borderless cards, the meal-plan grip
+  (`phase7-sans-borderless-cards`). **Walked on the emulator** (2026-09-30,
+  hosted release build, Dev login, sr/light → sr/dark → en/light → en/dark).
+  All clean:
+  - recipe list and detail;
+  - meal plan Today and week, including the drag, tap and long-press;
+  - settings, household and shopping list;
+  - sign-in.
+  Cards separate from the ground without a border in both brightnesses.
+  The light recipe cards share the nav bar's colour, but the cream gap keeps
+  them apart. **Still open:**
+  - **Import review.** It needs a hosted AI import, which was skipped on
+    purpose: its cards on `KitchenColors.card` and the flagged rows' tint
+    and dashed dividers on that fill, in both brightnesses.
+  - **The household invite card.** It only shows with an active code, and
+    no code was created on hosted.
+  - The Galaxy's own screen.
+
+All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind
 sign-in that needs no Google account (`.claude/commands/design-walk.md`
 § 1). Never `flutter run`, never the local stack (CLAUDE.md). A future

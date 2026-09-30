@@ -1512,3 +1512,127 @@ Consequences.
 
 **Also closed in the same sitting.** Phase 5 part 5's paste half, on the
 user's own Keep test.
+
+### Part 12 — Sans only, borderless cards, a drag grip
+
+**Status: complete** (`0696cfe`). Decisions taken during it: D134.
+
+This applied Claude Design's round-2 handover (2026-09-30). It went through
+the full `/plan-slice` → `/build-slice` → `/design-walk` → `/close-slice`
+loop from `docs/active/phase7-sans-borderless-cards.md`. No migration, no
+ARB key, and no new package. A package was removed instead: Literata's
+three files and the `fonts:` / `assets:` blocks in `pubspec.yaml`.
+
+- **Type (D134, superseding D127's type half).**
+  - Every role is the platform sans.
+  - `KitchenType` keeps its job, "a recipe's name", now as w700:
+    `recipeTitle` 17/24 −0.1 and `recipeTitleLarge` 28/34 −0.3.
+  - A new `monogram` (30/36) replaces `recipeTitleLarge` on the 72dp tile.
+  - `displaySmall` is 32/40 w700 −0.5 and `headlineSmall` 28/34 w700 −0.3.
+- **Cards.** `CardTheme` loses its `outlineVariant` side and fills with the
+  new `KitchenColors.card`. It is `surfaceContainer` in light and
+  `surfaceContainerHigh` in dark, because dark `surfaceContainer` is
+  +5 tone from the ground and vanishes without a border. `AppTheme._build`
+  builds the extension once and reuses it for the card colour.
+- **Meal plan** (all of it private to `meal_plan_screen.dart`).
+  - `_MealEntryCard._card` takes an optional `fill`. The default is:
+    - `surface`;
+    - `dropTarget` in a hovered slot;
+    - transparent for a leftover.
+  - The padding drops its end, and the row centres its children
+    vertically.
+  - A 40dp trailing column holds `Icons.drag_indicator` at 20 in
+    `dragHandle`, inside `ExcludeSemantics`.
+  - A note's title is `recipeTitle.copyWith(fontWeight: w400)`.
+  - The draggable's feedback is `Transform.rotate(−1.5°)` over
+    `Transform.scale(1.02)` in the card fill.
+  - `childWhenDragging` is an `Opacity(0)` copy under a 1.5dp dashed
+    `outline` at 60% alpha.
+  - `_SlotGroup` and a collapsed day draw a 2dp dashed `primary`
+    foreground while hovered.
+  - Collapsed days gain `xs` vertical padding (56dp) and the card fill.
+  - `_DashedRoundedRectPainter` gains `strokeWidth`. The six new numbers
+    are named `static const`s on `_MealEntryCard`.
+- **New tokens.** `KitchenColors.card` / `dragHandle` / `dropTarget`, and
+  `AppSizes.grip` (20) / `gripColumn` (40).
+- `DESIGN_SYSTEM.md` got these sections:
+  - the header;
+  - § Content and lines;
+  - § Type and its `KitchenType` subsection;
+  - § Size and motion;
+  - § Elevation;
+  - § The semantic layer;
+  - § Cards;
+  - § Recipe card;
+  - § Meal entries, including the Drag paragraph.
+
+  The updated design frames and PDFs went into the same commit.
+
+**Decisions taken with the user at planning.**
+- Tap keeps opening the actions sheet. The handover's "tap opens the
+  recipe" was read as loose wording.
+- A note reads w400.
+- All themed cards follow the new `CardTheme`, including the four whose
+  frames still show the old border.
+
+**Differs from the plan.**
+- The plan asked the theme test to assert `fontFamily == null` on every
+  Material role. On a built `ThemeData`, Flutter's typography fills in the
+  platform family (Roboto under the test VM), so the test asserts instead
+  that every role, `displaySmall` included, shares that one family and that
+  it isn't Literata. `KitchenType`'s styles do assert `null`.
+- `app_section_heading.dart` still mentions D127 and Literata as history in
+  a comment. It was outside the plan's file list.
+
+**Tests.** `app_theme_test.dart`:
+- "every role is sans" replaces "sans, bar the wordmark";
+- `KitchenType` asserts the new metrics and `monogram`;
+- new: cards have no side, with `#F5EBDF` / `#292923` fills;
+- `KitchenColors` asserts `card`, `dragHandle` and `dropTarget`.
+
+No meal-plan widget test depended on `Opacity(0.3)` or a card's side.
+
+**How it was verified.** `dart analyze` was clean and `flutter test` passed
+**716/716**. `make -k check` was green apart from the known `seed-check`,
+including the Deno and SQL suites and the l10n check.
+
+**Walked on the emulator** (the Galaxy wasn't attached). `make
+install-emulator` ran with Dev login, sr/light → sr/dark → en/light →
+en/dark. Every surface was clean in every combination.
+- **Recipe list.** Cards separate from the cream ground without a border
+  in both themes. In light they share the nav bar's `#F5EBDF`, and the cream
+  gap keeps them apart. The `K`/`S` monogram reads in bold sans.
+- **Recipe detail.** The title is bold sans 28.
+- **Meal plan, Today and week.**
+  - Entries sit on the cream ground inside their day card, with the grip
+    centred vertically.
+  - The leftover is transparent and dashed, with its title bold.
+  - The `Ostaci` note reads regular beside bold recipe names.
+  - Collapsed days are 147px (56dp at 2.625), and `+ Dodaj obrok` fits.
+- **Drag.** Driven with `input motionevent` (DOWN, a 1.2s hold, then MOVEs):
+  - the lifted card showed its tilt and lift over a dashed placeholder;
+  - a hovered collapsed day and a hovered filled slot each got the green
+    fill and the dashed `primary` outline, which a full-resolution crop
+    confirmed in dark;
+  - a drop on Thursday landed and kept `Večera`, and a second drag put
+    `Kajgana` back on Wednesday;
+  - a tap opened the actions sheet.
+- **Other surfaces.**
+  - Settings, household (the name at 28 w700) and the shopping list, whose
+    dashed dividers still read on the darker card fill.
+  - Sign-in, where the wordmark is bold sans in `primary` in both themes.
+
+The account was put back to Srpski / Svetla, and the plan was as found.
+**Not reached:**
+- import review (the user chose not to spend a hosted AI call);
+- the household invite card (no active code);
+- the Galaxy.
+
+Part 12's loop in `STATE.md` holds those. The same walk also confirmed most
+of part 4's meal-plan loop, which `STATE.md` records.
+
+**Seen, not fixed.**
+- The signed-out sign-in screen stays Serbian after an in-app switch to
+  English.
+- Meal-plan entries still carry the original-language title under `en`
+  (D53, see part 11).

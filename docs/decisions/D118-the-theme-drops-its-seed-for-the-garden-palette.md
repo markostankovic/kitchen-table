@@ -1,5 +1,5 @@
 # D118 — The theme drops its seed for two explicit `ColorScheme`s, bundles Literata, and gains a semantic layer
-**Status:** active — its Type half (Literata for reading text, `headlineSmall`/`titleLarge`/`titleMedium`/`bodyLarge` serif) is superseded by D127
+**Status:** active — its Type half (Literata for reading text, `headlineSmall`/`titleLarge`/`titleMedium`/`bodyLarge` serif) is superseded by D127, and Literata is no longer bundled (D134)
 **Touches:** lib/core/theme/app_theme.dart, lib/core/theme/kitchen_colors.dart, lib/core/theme/app_radii.dart, lib/core/theme/app_sizes.dart, lib/core/theme/app_durations.dart, assets/fonts/, pubspec.yaml, docs/DESIGN_SYSTEM.md
 
 **Decided.** Phase 7 Part 2 deletes `_seed` and both `ColorScheme.fromSeed`
