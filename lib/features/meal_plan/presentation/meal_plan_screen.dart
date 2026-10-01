@@ -43,9 +43,11 @@ import '../domain/snack_variety.dart';
 /// week-view day with nothing planned collapses to one compact `+ Add meal`
 /// row. Tapping is the primary, tested way to add or move
 /// an entry; long-press-drag is offered alongside it as a shortcut, not as the
-/// only path (D53). The drag carries the entry itself, and it lands on a
-/// filled slot's group or on a collapsed day -- which keeps the entry's own
-/// slot, since a collapsed day shows none.
+/// only path (D53). The drag carries the entry itself and only ever changes
+/// where it sits, never which meal it is (amending D121): dropped on another
+/// entry of the same day and slot it takes that entry's place, and dropped
+/// on another day's card it moves there in its own slot. Changing the slot
+/// is *Move to...*'s job.
 ///
 /// A meal plan is live data, not a snapshot (unlike the shopping list, D13) --
 /// so unlike `ShoppingListScreen`, there is no split locale here. Every date
@@ -289,18 +291,36 @@ Future<bool> _confirmRepeat(BuildContext context, int repeatCount) async {
   return proceed ?? false;
 }
 
-/// A drop, from any of the three drop targets.
+/// A drop on another day's card, collapsed or expanded. The entry keeps its
+/// own slot: a drag moves an entry, it never changes which meal it is.
 Future<void> _moveHere(
   BuildContext context,
   WidgetRef ref,
   MealPlanEntry entry,
   DateTime day,
-  MealSlot slot,
 ) async {
   try {
     await ref
         .read(mealPlanEditorProvider.notifier)
-        .moveEntry(entryId: entry.id, entryDate: day, slot: slot);
+        .moveEntry(entryId: entry.id, entryDate: day, slot: entry.slot);
+  } on AppFailure catch (e) {
+    if (!context.mounted) return;
+    _showFailure(context, e);
+  }
+}
+
+/// A drop on another entry of the same day and slot, and *Move up* / *Move
+/// down*: [entry] takes [newPosition] in its slot's ordered list.
+Future<void> _reorderTo(
+  BuildContext context,
+  WidgetRef ref,
+  MealPlanEntry entry,
+  int newPosition,
+) async {
+  try {
+    await ref
+        .read(mealPlanEditorProvider.notifier)
+        .reorderEntry(entryId: entry.id, newPosition: newPosition);
   } on AppFailure catch (e) {
     if (!context.mounted) return;
     _showFailure(context, e);
@@ -416,15 +436,21 @@ class _DayCard extends ConsumerWidget {
     );
   }
 
-  /// A drop here keeps the entry's own slot: a collapsed day shows no slots
-  /// to aim at. 56dp tall: `xs` above and below the 48dp button.
+  /// Whether a dragged entry would move to this day: one from any other day.
+  /// An entry already on this day only reorders, on its slot's entries.
+  bool _acceptsFromOtherDay(DragTargetDetails<MealPlanEntry> details) =>
+      !isSameDate(details.data.entryDate, day);
+
+  /// A drop here keeps the entry's own slot. 56dp tall: `xs` above and below
+  /// the 48dp button.
   Widget _collapsed(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
     final KitchenColors kitchen = theme.extension<KitchenColors>()!;
     return DragTarget<MealPlanEntry>(
+      onWillAcceptWithDetails: _acceptsFromOtherDay,
       onAcceptWithDetails: (DragTargetDetails<MealPlanEntry> details) =>
-          _moveHere(context, ref, details.data, day, details.data.slot),
+          _moveHere(context, ref, details.data, day),
       builder: (BuildContext context, List<MealPlanEntry?> candidate, _) =>
           CustomPaint(
             foregroundPainter: candidate.isEmpty
@@ -473,43 +499,64 @@ class _DayCard extends ConsumerWidget {
         if (bySlot[slot]!.isNotEmpty) slot,
     ];
 
-    return Card(
-      shape: isToday
-          ? RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadii.md),
-              side: BorderSide(color: kitchen.today, width: 2),
-            )
-          : null,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            _header(context, isToday: isToday),
-            for (final MealSlot slot in filled) ...<Widget>[
-              const SizedBox(height: AppSpacing.sm),
-              _SlotGroup(
-                day: day,
-                slot: slot,
-                entries: bySlot[slot]!,
-                plan: plan,
-              ),
-            ],
-            const SizedBox(height: AppSpacing.sm),
-            // One way in, bottom-right, the collapsed day's button: the slot
-            // chooser asks which meal, so an empty slot needs no button of
-            // its own.
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: TextButton.icon(
-                icon: const Icon(Icons.add, size: AppSizes.iconInButton),
-                label: Text(l10n.addMealButton),
-                onPressed: () => _chooseSlotThenAdd(context, ref, day),
+    // A drop anywhere on the card from another day moves the entry here in
+    // its own slot -- also when this day has nothing in that slot yet.
+    return DragTarget<MealPlanEntry>(
+      onWillAcceptWithDetails: _acceptsFromOtherDay,
+      onAcceptWithDetails: (DragTargetDetails<MealPlanEntry> details) =>
+          _moveHere(context, ref, details.data, day),
+      builder: (BuildContext context, List<MealPlanEntry?> candidate, _) =>
+          CustomPaint(
+            foregroundPainter: candidate.isEmpty
+                ? null
+                : _DashedRoundedRectPainter(
+                    color: theme.colorScheme.primary,
+                    radius: AppRadii.md,
+                    strokeWidth: _MealEntryCard._dropOutlineWidth,
+                  ),
+            child: Card(
+              color: candidate.isEmpty ? null : kitchen.dropTarget,
+              shape: isToday
+                  ? RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      side: BorderSide(color: kitchen.today, width: 2),
+                    )
+                  : null,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    _header(context, isToday: isToday),
+                    for (final MealSlot slot in filled) ...<Widget>[
+                      const SizedBox(height: AppSpacing.sm),
+                      _SlotGroup(
+                        day: day,
+                        slot: slot,
+                        entries: bySlot[slot]!,
+                        plan: plan,
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.sm),
+                    // One way in, bottom-right, the collapsed day's button:
+                    // the slot chooser asks which meal, so an empty slot
+                    // needs no button of its own.
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: TextButton.icon(
+                        icon: const Icon(
+                          Icons.add,
+                          size: AppSizes.iconInButton,
+                        ),
+                        label: Text(l10n.addMealButton),
+                        onPressed: () => _chooseSlotThenAdd(context, ref, day),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 }
@@ -540,10 +587,10 @@ class _TodayPill extends StatelessWidget {
   }
 }
 
-/// A filled slot's entries, and the drop target for that day/slot. The
-/// highlight fill goes on the entry cards themselves -- their own fill would
-/// otherwise hide one drawn behind them -- and a dashed `primary` outline
-/// goes around the group.
+/// A filled slot's entries. Each entry is also a drop target for the others
+/// in the same day and slot: a drop there takes that entry's position. The
+/// highlight fill goes on the hovered entry card itself, under a dashed
+/// `primary` outline.
 class _SlotGroup extends ConsumerWidget {
   const _SlotGroup({
     required this.day,
@@ -567,37 +614,45 @@ class _SlotGroup extends ConsumerWidget {
         .firstOrNull;
   }
 
+  /// Whether a dragged entry would reorder onto [target]: another entry of
+  /// this same day and slot. Anything else is not this group's to take.
+  bool _reordersOnto(MealPlanEntry dragged, MealPlanEntry target) =>
+      dragged.id != target.id &&
+      dragged.slot == slot &&
+      isSameDate(dragged.entryDate, day);
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) =>
-      DragTarget<MealPlanEntry>(
-        onAcceptWithDetails: (DragTargetDetails<MealPlanEntry> details) =>
-            _moveHere(context, ref, details.data, day, slot),
-        builder: (BuildContext context, List<MealPlanEntry?> candidate, _) =>
-            CustomPaint(
-              foregroundPainter: candidate.isEmpty
-                  ? null
-                  : _DashedRoundedRectPainter(
-                      color: Theme.of(context).colorScheme.primary,
-                      radius: AppRadii.md,
-                      strokeWidth: _MealEntryCard._dropOutlineWidth,
-                    ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  for (int i = 0; i < entries.length; i++) ...<Widget>[
-                    if (i > 0) const SizedBox(height: AppSpacing.sm),
-                    _MealEntryCard(
-                      entry: entries[i],
-                      index: i,
-                      total: entries.length,
-                      source: _sourceOf(entries[i]),
-                      highlighted: candidate.isNotEmpty,
-                    ),
-                  ],
-                ],
+  Widget build(BuildContext context, WidgetRef ref) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: <Widget>[
+      for (int i = 0; i < entries.length; i++) ...<Widget>[
+        if (i > 0) const SizedBox(height: AppSpacing.sm),
+        DragTarget<MealPlanEntry>(
+          onWillAcceptWithDetails: (DragTargetDetails<MealPlanEntry> details) =>
+              _reordersOnto(details.data, entries[i]),
+          onAcceptWithDetails: (DragTargetDetails<MealPlanEntry> details) =>
+              _reorderTo(context, ref, details.data, i),
+          builder: (BuildContext context, List<MealPlanEntry?> candidate, _) =>
+              CustomPaint(
+                foregroundPainter: candidate.isEmpty
+                    ? null
+                    : _DashedRoundedRectPainter(
+                        color: Theme.of(context).colorScheme.primary,
+                        radius: AppRadii.md,
+                        strokeWidth: _MealEntryCard._dropOutlineWidth,
+                      ),
+                child: _MealEntryCard(
+                  entry: entries[i],
+                  index: i,
+                  total: entries.length,
+                  source: _sourceOf(entries[i]),
+                  highlighted: candidate.isNotEmpty,
+                ),
               ),
-            ),
-      );
+        ),
+      ],
+    ],
+  );
 }
 
 /// What to show as the card's title: the recipe's title for a recipe entry,
@@ -649,7 +704,7 @@ class _MealEntryCard extends ConsumerWidget {
   /// A leftover's source entry, when it is in the loaded week.
   final MealPlanEntry? source;
 
-  /// Whether a drag is over this card's slot group.
+  /// Whether a drag this card would take is over it.
   final bool highlighted;
 
   /// The lifted card's tilt, -1.5 degrees.
@@ -667,8 +722,8 @@ class _MealEntryCard extends ConsumerWidget {
   /// The dashed placeholder left where a lifted card was.
   static const double _placeholderOutlineWidth = 1.5;
 
-  /// The dashed `primary` outline around a hovered drop target -- a filled
-  /// slot's group or a collapsed day.
+  /// The dashed `primary` outline around a hovered drop target -- an entry
+  /// of the same day and slot, or another day's card.
   static const double _dropOutlineWidth = 2;
 
   Future<void> _openActions(BuildContext context, WidgetRef ref) async {
@@ -740,9 +795,9 @@ class _MealEntryCard extends ConsumerWidget {
       case _EntryAction.move:
         await _showMoveDialog(context, ref);
       case _EntryAction.up:
-        await _reorder(context, ref, index - 1);
+        await _reorderTo(context, ref, entry, index - 1);
       case _EntryAction.down:
-        await _reorder(context, ref, index + 1);
+        await _reorderTo(context, ref, entry, index + 1);
       case _EntryAction.remove:
         await _remove(context, ref);
     }
@@ -975,21 +1030,6 @@ class _MealEntryCard extends ConsumerWidget {
             entryDate: selectedDay,
             slot: selectedSlot,
           );
-    } on AppFailure catch (e) {
-      if (!context.mounted) return;
-      _showFailure(context, e);
-    }
-  }
-
-  Future<void> _reorder(
-    BuildContext context,
-    WidgetRef ref,
-    int newPosition,
-  ) async {
-    try {
-      await ref
-          .read(mealPlanEditorProvider.notifier)
-          .reorderEntry(entryId: entry.id, newPosition: newPosition);
     } on AppFailure catch (e) {
       if (!context.mounted) return;
       _showFailure(context, e);

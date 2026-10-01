@@ -885,35 +885,101 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets("onto a filled slot's entries moves the entry into that slot", (
+    /// [planWithOne]'s Monday breakfast, plus [extra].
+    MealPlanWeek planWith(MealPlanEntry extra) {
+      final MealPlanWeek one = planWithOne();
+      return MealPlanWeek(
+        week: one.week,
+        planId: one.planId,
+        entries: <MealPlanEntry>[...one.entries, extra],
+      );
+    }
+
+    testWidgets("onto another slot's entry on the same day changes nothing", (
       WidgetTester tester,
     ) async {
-      final MealPlanWeek one = planWithOne();
       final _Calls calls = await _pump(
         tester,
-        initial: MealPlanWeek(
-          week: one.week,
-          planId: one.planId,
-          entries: <MealPlanEntry>[
-            ...one.entries,
-            MealPlanEntry(
-              id: 'e2',
-              mealPlanId: 'plan-1',
-              entryDate: _monday,
-              slot: MealSlot.dinner,
-              position: 0,
-              entryKind: MealEntryKind.note,
-              note: 'zzz dinner',
-            ),
-          ],
+        initial: planWith(
+          MealPlanEntry(
+            id: 'e2',
+            mealPlanId: 'plan-1',
+            entryDate: _monday,
+            slot: MealSlot.dinner,
+            position: 0,
+            entryKind: MealEntryKind.note,
+            note: 'zzz dinner',
+          ),
         ),
         weekView: true,
       );
 
       await dragTo(tester, tester.getCenter(find.text('zzz dinner')));
 
-      expect(calls.moved, (id: 'e1', date: _monday, slot: MealSlot.dinner));
+      expect(calls.moved, isNull);
+      expect(calls.reordered, isNull);
     });
+
+    testWidgets("onto an entry of the same day and slot takes its position", (
+      WidgetTester tester,
+    ) async {
+      final _Calls calls = await _pump(
+        tester,
+        initial: planWith(
+          MealPlanEntry(
+            id: 'e2',
+            mealPlanId: 'plan-1',
+            entryDate: _monday,
+            slot: MealSlot.breakfast,
+            position: 1,
+            entryKind: MealEntryKind.note,
+            note: 'zzz second breakfast',
+          ),
+        ),
+        weekView: true,
+      );
+
+      await dragTo(
+        tester,
+        tester.getCenter(find.text('zzz second breakfast')),
+      );
+
+      expect(calls.reordered, (id: 'e1', newPosition: 1));
+      expect(calls.moved, isNull);
+    });
+
+    testWidgets(
+      "onto another day's expanded card keeps the entry's own slot, even "
+      'where that day has none of it',
+      (WidgetTester tester) async {
+        final _Calls calls = await _pump(
+          tester,
+          initial: planWith(
+            MealPlanEntry(
+              id: 'e2',
+              mealPlanId: 'plan-1',
+              entryDate: _tuesday,
+              slot: MealSlot.dinner,
+              position: 0,
+              entryKind: MealEntryKind.note,
+              note: 'zzz tuesday dinner',
+            ),
+          ),
+          weekView: true,
+        );
+
+        await dragTo(
+          tester,
+          tester.getCenter(find.text('zzz tuesday dinner')),
+        );
+
+        expect(
+          calls.moved,
+          (id: 'e1', date: _tuesday, slot: MealSlot.breakfast),
+        );
+        expect(calls.reordered, isNull);
+      },
+    );
 
     testWidgets("onto a collapsed day keeps the entry's own slot", (
       WidgetTester tester,

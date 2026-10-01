@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
@@ -39,6 +40,10 @@ import '../../../core/ingredients/widgets/quantity_format.dart';
 const double _connectorWidth = 2;
 const double _connectorGap = 4;
 
+/// The alpha of the `surface` disc behind each app-bar button, so it reads
+/// over any photo.
+const double _overPhotoAlpha = 0.7;
+
 /// One recipe, read-only.
 ///
 /// The ingredient list is the part that matters. A matched line renders the
@@ -68,6 +73,10 @@ class RecipeDetailScreen extends ConsumerStatefulWidget {
 class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   bool _translating = false;
 
+  /// Whether the photo still shows under the status bar: until the
+  /// `SliverAppBar` has scrolled the well out from under it.
+  bool _photoUnderStatusBar = true;
+
   // Local echo (decision 3): the detail provider is a plain Future, and
   // invalidating it after every tap would flash a spinner over the whole
   // recipe for a value the screen already knows. `_pendingFavorite` and
@@ -92,17 +101,45 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     );
     final Recipe? recipe = detail.value?.recipe;
 
-    return Scaffold(
-      // No title. The recipe's own name is the one thing on this screen that
-      // earns `KitchenType.recipeTitleLarge`, and it says it once -- in the
-      // body, under the photo, where § Type reserves it. An app bar repeating
-      // it in `titleLarge` would be the same words twice in two sizes.
-      //
-      // The bar stays opaque on `surface` rather than floating circular
-      // buttons over the photo the way the mock does: an arbitrary photo in
-      // two brightnesses has no contrast guarantee behind an icon, and the
-      // favourite toggle has to stay reachable at any scroll position.
-      appBar: AppBar(
+    final ThemeData theme = Theme.of(context);
+
+    // No title. The recipe's own name is the one thing on this screen that
+    // earns `KitchenType.recipeTitleLarge`, and it says it once -- in the
+    // body, under the photo, where § Type reserves it. An app bar repeating
+    // it in `titleLarge` would be the same words twice in two sizes.
+    //
+    // The bar sits over the photo and collapses into a pinned `surface` bar
+    // on scroll (amending D119's opaque bar above it). D119's two reasons
+    // still hold: every icon button sits on its own `surface` disc, so an
+    // arbitrary photo in either brightness cannot swallow it, and the pinned
+    // bar keeps the favourite toggle reachable at any scroll position.
+    final double photoHeight = MediaQuery.sizeOf(context).width * 9 / 16;
+
+    final Widget appBar = Theme(
+      data: theme.copyWith(
+        iconButtonTheme: IconButtonThemeData(
+          style: IconButton.styleFrom(
+            backgroundColor: theme.colorScheme.surface.withValues(
+              alpha: _overPhotoAlpha,
+            ),
+          ),
+        ),
+      ),
+      child: SliverAppBar(
+        pinned: true,
+        expandedHeight: photoHeight,
+        // Light status-bar icons while a photo is behind them: the theme's
+        // own dark icons in Light vanish into a dark photo. An empty well is
+        // `surfaceContainerHighest`, so it keeps the theme's icons.
+        systemOverlayStyle:
+            _photoUnderStatusBar && recipe?.imageUrl != null
+                ? SystemUiOverlayStyle.light.copyWith(
+                    statusBarColor: Colors.transparent,
+                  )
+                : null,
+        flexibleSpace: FlexibleSpaceBar(
+          background: _PhotoWell(imageUrl: recipe?.imageUrl),
+        ),
         actions: <Widget>[
           IconButton(
             tooltip: recipe != null && _isFavorite(recipe)
@@ -172,17 +209,43 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           ),
         ],
       ),
-      body: detail.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object e, _) => AppErrorView(
-            message:
-                '${l10n.couldNotLoadRecipe}\n\n${localizedErrorMessage(e, l10n)}'),
-        data: (RecipeDetail d) => _Body(
-          detail: d,
-          l10n: l10n,
-          translating: _translating,
-          rating: _rating(d.recipe),
-          onSetRating: (int star) => _setRating(d.recipe, star, l10n),
+    );
+
+    return Scaffold(
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (ScrollNotification n) {
+          // The well is out from under the status bar once the bar has
+          // collapsed to its toolbar.
+          final bool under = n.metrics.pixels < photoHeight - kToolbarHeight;
+          if (n.depth == 0 && under != _photoUnderStatusBar) {
+            setState(() => _photoUnderStatusBar = under);
+          }
+          return false;
+        },
+        child: CustomScrollView(
+          slivers: <Widget>[
+            appBar,
+            detail.when(
+              loading: () => const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (Object e, _) => SliverFillRemaining(
+                hasScrollBody: false,
+                child: AppErrorView(
+                  message:
+                      '${l10n.couldNotLoadRecipe}\n\n${localizedErrorMessage(e, l10n)}',
+                ),
+              ),
+              data: (RecipeDetail d) => _Body(
+                detail: d,
+                l10n: l10n,
+                translating: _translating,
+                rating: _rating(d.recipe),
+                onSetRating: (int star) => _setRating(d.recipe, star, l10n),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -403,23 +466,21 @@ class _Body extends ConsumerWidget {
 
     final String? description = detail.displayDescription;
 
-    return ListView(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
-      children: <Widget>[
-        // Full-bleed, outside the gutter -- and rendered whether or not there
-        // is a photo. A recipe out of a notebook has no picture and never
-        // will; an omitted hero made the screen start at a different place
-        // for those recipes, which read as something having failed to load.
-        _PhotoWell(imageUrl: recipe.imageUrl),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+    // A sliver under the screen's `SliverAppBar`, which carries the photo.
+    return SliverPadding(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        bottom: AppSpacing.xxl,
+      ),
+      sliver: SliverToBoxAdapter(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               const SizedBox(height: AppSpacing.lg),
               ..._caveats(context),
               // The recipe's own name, said once, here. The app bar carries
-              // no title (see the `AppBar` above).
+              // no title (see the `SliverAppBar` above).
               Text(
                 detail.displayTitle,
                 style: theme.extension<KitchenType>()!.recipeTitleLarge,
@@ -488,8 +549,7 @@ class _Body extends ConsumerWidget {
               ..._sourceFooter(context),
             ],
           ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -651,7 +711,13 @@ class _Body extends ConsumerWidget {
 }
 
 /// The 16:9 well the recipe's photo sits in -- and sits in empty, when there
-/// is none.
+/// is none, or before the recipe has loaded. The `SliverAppBar` sizes it and
+/// lays its buttons over it.
+///
+/// Full-bleed, and rendered whether or not there is a photo. A recipe out of
+/// a notebook has no picture and never will; an omitted hero made the screen
+/// start at a different place for those recipes, which read as something
+/// having failed to load.
 ///
 /// A missing picture is not a failure state (rule 3's spirit), so there is no
 /// broken-image icon: the well shows a quiet `image_outlined` in `outline`,
@@ -666,25 +732,22 @@ class _PhotoWell extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final String? url = imageUrl;
-    return AspectRatio(
-      aspectRatio: 16 / 9,
-      child: ColoredBox(
-        color: theme.colorScheme.surfaceContainerHighest,
-        child: url == null
-            ? _placeholder(theme)
-            : Image.network(
-                url,
-                fit: BoxFit.cover,
-                loadingBuilder: (
-                  BuildContext context,
-                  Widget child,
-                  ImageChunkEvent? progress,
-                ) => progress == null
-                    ? child
-                    : const Center(child: CircularProgressIndicator()),
-                errorBuilder: (_, _, _) => _placeholder(theme),
-              ),
-      ),
+    return ColoredBox(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: url == null
+          ? _placeholder(theme)
+          : Image.network(
+              url,
+              fit: BoxFit.cover,
+              loadingBuilder: (
+                BuildContext context,
+                Widget child,
+                ImageChunkEvent? progress,
+              ) => progress == null
+                  ? child
+                  : const Center(child: CircularProgressIndicator()),
+              errorBuilder: (_, _, _) => _placeholder(theme),
+            ),
     );
   }
 
