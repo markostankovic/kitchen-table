@@ -44,10 +44,10 @@ import '../domain/snack_variety.dart';
 /// row. Tapping is the primary, tested way to add or move
 /// an entry; long-press-drag is offered alongside it as a shortcut, not as the
 /// only path (D53). The drag carries the entry itself and only ever changes
-/// where it sits, never which meal it is (amending D121): dropped on another
-/// entry of the same day and slot it takes that entry's place, and dropped
-/// on another day's card it moves there in its own slot. Changing the slot
-/// is *Move to...*'s job.
+/// where it sits, never which meal it is (D135, amending D121): dropped on
+/// another entry of the same day and slot it takes that entry's place, and
+/// dropped on another day's card it moves there in its own slot. Changing
+/// the slot is *Move to...*'s job.
 ///
 /// A meal plan is live data, not a snapshot (unlike the shopping list, D13) --
 /// so unlike `ShoppingListScreen`, there is no split locale here. Every date

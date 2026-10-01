@@ -1,5 +1,5 @@
 # D119 — The recipes surface's component vocabulary: six shared widgets, a heart for favourite, and a titleless detail app bar
-**Status:** active
+**Status:** active — amended by D135: the detail app bar now sits over the photo (pinned, collapsing, buttons on `surface` discs); point 4's "no title" stands
 **Touches:** lib/core/widgets/app_badge.dart, lib/core/widgets/app_meta_row.dart, lib/core/widgets/app_monogram_tile.dart, lib/core/widgets/app_stat_strip.dart, lib/core/widgets/app_search_field.dart, lib/core/recipes/widgets/recipe_card.dart, lib/core/ingredients/widgets/ingredient_line_row.dart, lib/features/recipes/presentation/, docs/DESIGN_SYSTEM.md, docs/design/MIGRATION_PLAN.md
 
 **Decided.** Phase 7 Part 3 builds the recipes surface out of seven shared

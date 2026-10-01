@@ -1636,3 +1636,99 @@ of part 4's meal-plan loop, which `STATE.md` records.
   English.
 - Meal-plan entries still carry the original-language title under `en`
   (D53, see part 11).
+
+### Part 13 — Header over the photo, a drag that keeps the meal
+
+**Status: complete** (`6f3336b`). Decisions taken during it: D135.
+
+Two fixes from the user's own use of the app. There was no
+`/plan-slice` handoff: the plan was made and approved in one session,
+then built, walked and closed in the same one. No migration, no ARB key,
+no new package, and no data or RPC change. Both changes reuse what was
+already there.
+
+- **Recipe detail: the header sits over the photo** (amends D119).
+  - The `Scaffold.appBar` became a pinned, collapsing `SliverAppBar` at
+    the top of a `CustomScrollView`. Its `expandedHeight` is width × 9/16.
+  - `_PhotoWell` is the `FlexibleSpaceBar` background. It lost its
+    `AspectRatio` and kept the placeholder, loading and error behaviour.
+  - `_Body` went from a `ListView` to a `SliverPadding` +
+    `SliverToBoxAdapter`. Loading and error sit in `SliverFillRemaining`.
+  - A local `Theme` gives every icon button in the bar a `surface` disc at
+    0.7 alpha (`_overPhotoAlpha`). The automatic back button and the
+    `PopupMenuButton` get it without restyling either.
+- **Meal plan: a drag never changes an entry's slot** (amends D121).
+  - Each entry card is now a `DragTarget` for entries of the same day and
+    slot. A drop calls the existing `reorderEntry` with that card's index.
+  - The expanded day card is a new target for entries from any other day.
+    So is the collapsed day, which now refuses same-day drops. Either one
+    calls `moveEntry` with the entry's own slot.
+  - `_SlotGroup` is no longer a target.
+  - `_moveHere` lost its `slot` parameter. `_MealEntryCard._reorder`
+    became a top-level `_reorderTo`, which *Move up/down* share with the
+    drop.
+
+**Decisions taken with the user at planning.**
+- The drag can also move an entry to another day, in its own slot, not
+  only reorder within its slot.
+- A collapsing `SliverAppBar` that pins, rather than an overlay that
+  scrolls away.
+
+**Differs from the plan.**
+- The plan kept `_SlotGroup` as a cross-day target. The build dropped it,
+  because the expanded day card's target already covers it, and also
+  covers a day with none of that slot.
+- The walk found that Light's dark status-bar icons vanish into a dark
+  photo. The fix was added in the same session (D135 point 3): light
+  icons while a photo is under the status bar, the theme's own icons over
+  an empty well or once collapsed.
+
+**Tests.** In `meal_plan_screen_test.dart`'s drag group, "onto a filled
+slot's entries moves the entry into that slot" was replaced with:
+- onto another slot's entry on the same day changes nothing;
+- onto an entry of the same day and slot calls `reorderEntry(e1, 1)`;
+- onto another day's expanded card, which has only a dinner, moves the
+  breakfast there as breakfast.
+
+The collapsed-day test stays. No recipe-detail test needed changing:
+`find.byType(Scrollable).first` holds for a `CustomScrollView`.
+
+**How it was verified.** `dart analyze` was clean and `flutter test`
+passed **718/718**. `make check` was not run.
+
+**Walked on the emulator** (the Galaxy wasn't attached). `make
+install-emulator` ran with Dev login, sr/light → sr/dark → en/light →
+en/dark.
+- **Recipe detail.**
+  - Prženice (photo) and Kajgana (no photo) both open with the discs
+    readable over the photo and over the empty well, in both
+    brightnesses.
+  - Scrolling collapses to the solid bar, where the discs blend in.
+  - `French Toast (Prženice)` under its machine-translation chip fits in
+    English.
+- **Defect found: the status bar.** In Light the status-bar icons stayed
+  dark over the photo, and the clock was barely readable on Prženice's
+  dark corner. After the fix, sr/light and en/light were re-walked:
+  - light icons over the photo;
+  - dark once collapsed;
+  - light again when scrolled back;
+  - dark over Kajgana's empty well.
+
+  Dark was not re-walked, because its icons were already light.
+- **Meal plan.** Driven with `input motionevent` (DOWN, a 1.2s hold,
+  then MOVEs):
+  - Kajgana dropped on the first of today's three dinners took first
+    place. The hovered card showed the green fill and the dashed outline
+    over the placeholder, in light and dark.
+  - Dropped back on its own placeholder, it changed nothing.
+  - In the week view, a drop on Monday's card (the whole card highlights)
+    moved it there as `Večera`. Dragged back to Wednesday, it landed last,
+    and a reorder put it back in the middle.
+
+The account was put back to Srpski / Svetla, and the plan to its original
+order.
+
+**Not reached:**
+- a same-day drop onto a different slot (today held only dinners; the
+  widget test covers it);
+- the Galaxy.

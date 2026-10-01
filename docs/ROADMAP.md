@@ -821,6 +821,21 @@ Claude Design's round-2 handover (2026-09-30):
 The emulator walk (sr/en × light/dark) was clean. Import review and the
 household invite card were not reached.
 
+### Part 13 — Header over the photo, a drag that keeps the meal
+
+**Status: complete** (`6f3336b`). Decisions taken during it: D135. See
+`docs/journal/phase-7.md`.
+
+Device feedback:
+- recipe detail's app bar sits over the photo as a pinned, collapsing
+  `SliverAppBar`, its buttons on `surface` discs, with light status icons
+  over a photo;
+- a meal-plan drag reorders within its day and slot or moves to another
+  day in its own slot, and never changes the meal.
+
+The emulator walk (sr/en × light/dark) found one defect, the Light status
+bar over a photo. It was fixed and re-walked the same session.
+
 ---
 
 ## Standing rules across phases

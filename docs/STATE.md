@@ -1,28 +1,27 @@
-# State — 2026-09-30
+# State — 2026-10-01
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 12 (`0696cfe`), Claude Design's round-2
-handover: sans only, borderless cards, a drag grip on meal entries (D134).
+**Last shipped:** Phase 7 part 13 (`6f3336b`), two fixes from device
+feedback (D135, amending D119 and D121).
 
-- **No serif.** Literata and `assets/fonts/` are gone. `KitchenType` marks a
-  recipe's name by w700 in the platform sans, and gains a `monogram` member
-  for the 72dp tile. The wordmark and household name are sans w700.
-- **Cards.** No `outlineVariant` hairline. The fill is `KitchenColors.card`:
-  `surfaceContainer` in light, `surfaceContainerHigh` in dark. Every themed
-  `Card` follows.
-- **Meal plan.** Entries sit on `surface`, a leftover is transparent under
-  its dashed border, and a note is w400 (amends D132). A trailing 6-dot grip
-  is only a hint. The drag has a tilt-and-lift, a dashed placeholder, and a
-  `dropTarget` fill with a 2dp dashed `primary` outline. Collapsed days are
-  56dp on the card fill.
+- **Recipe detail.** The app bar sits over the 16:9 photo as a pinned,
+  collapsing `SliverAppBar`. Back, heart, edit and the overflow menu sit on
+  `surface` discs at 0.7 alpha. The status-bar icons are light while a
+  photo is behind them. Collapsed, it is the old solid bar.
+- **Meal plan.** A drag never changes an entry's slot. Dropped on an entry
+  of the same day and slot it takes that position (`reorderEntry`).
+  Dropped on another day's card, expanded or collapsed, it moves there in
+  its own slot and lands last. A different slot on the same day takes
+  nothing. Changing the meal is *Move to…*.
 
-`dart analyze` is clean and `flutter test` passes 716/716. `make -k check`
-is green apart from the known `seed-check`. The emulator walk (sr/en ×
-light/dark, hosted release build) was clean. Import review and the
-household invite card were not reached, so part 12's loop stays open for
-those two.
+`dart analyze` is clean and `flutter test` passes 718/718 (`make check`
+was not run). The emulator walk (sr/en × light/dark, hosted release build)
+found one defect, dark status-bar icons over a photo in Light. It was
+fixed and re-walked in sr/light and en/light, so part 13 opened no loop.
+Not reached: a same-day drop onto a different slot (the widget test covers
+it) and the Galaxy.
 
-Still open, not part 12's:
+Still open, not part 13's:
 - meal-plan recipe entries show the original-language title under `en`
   (the entry's own `recipeTitle`, D53);
 - the signed-out sign-in screen stays Serbian after an in-app switch to
@@ -40,7 +39,7 @@ Still open, not part 12's:
 sitting with the Galaxy attached: part 10a's two surfaces, part 10b's
 Galaxy checks, and part 12's import review. Then `/plan-slice` whatever
 comes next. The meal-plan translated-title gap is a small candidate.
-**Latest decision:** D134
+**Latest decision:** D135
 
 **Nine device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -71,7 +70,10 @@ open. Part 11's walk (2026-09-29, emulator, all four combinations) was
 clean, so it opened no loop. In the same sitting the user's own paste into
 Google Keep closed Phase 5 part 5. Part 12's walk (2026-09-30, emulator,
 all four combinations) was clean, but it opened a loop for the two surfaces
-it didn't reach. It also confirmed most of part 4's meal-plan items. Oldest
+it didn't reach. It also confirmed most of part 4's meal-plan items. Part 13's walk
+(2026-09-30, emulator, all four combinations; the fix re-walked 2026-10-01)
+found one defect, fixed and
+re-walked in the same session, so it opened no loop. Oldest
 first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk

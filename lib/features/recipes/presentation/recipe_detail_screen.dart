@@ -109,10 +109,10 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     // it in `titleLarge` would be the same words twice in two sizes.
     //
     // The bar sits over the photo and collapses into a pinned `surface` bar
-    // on scroll (amending D119's opaque bar above it). D119's two reasons
-    // still hold: every icon button sits on its own `surface` disc, so an
-    // arbitrary photo in either brightness cannot swallow it, and the pinned
-    // bar keeps the favourite toggle reachable at any scroll position.
+    // on scroll (D135, amending D119's opaque bar above it). D119's two
+    // reasons still hold: every icon button sits on its own `surface` disc,
+    // so an arbitrary photo in either brightness cannot swallow it, and the
+    // pinned bar keeps the favourite toggle reachable at any scroll position.
     final double photoHeight = MediaQuery.sizeOf(context).width * 9 / 16;
 
     final Widget appBar = Theme(

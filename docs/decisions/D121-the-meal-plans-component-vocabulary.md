@@ -1,5 +1,5 @@
 # D121 — The meal plan's component vocabulary: collapsed empty days, a slot chooser, drag that carries the entry, and today outlined rather than filled
-**Status:** active
+**Status:** active — amended by D135: a drag never changes an entry's slot; it reorders on an entry of the same day and slot, or moves to another day's card in its own slot
 **Touches:** lib/features/meal_plan/presentation/meal_plan_screen.dart, lib/core/theme/kitchen_colors.dart, docs/DESIGN_SYSTEM.md
 
 **Decided.** Phase 7 Part 4 builds the meal plan out of day cards with

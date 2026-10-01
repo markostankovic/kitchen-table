@@ -18,7 +18,9 @@ steps into a timeline and the ingredient hairline into a dashed divider. The
 2026-09-30 round-2 handover followed: part 12 (D134) dropped the serif
 altogether (a recipe's name is sans w700), took the hairline off every card in
 favour of a per-brightness `KitchenColors.card` fill, and gave meal-plan
-entries a drag grip and a new lift / placeholder / drop look. It
+entries a drag grip and a new lift / placeholder / drop look. Part 13
+(D135), from device feedback, put recipe detail's app bar over the photo and
+made a meal-plan drag keep the entry's meal. It
 replaces `docs/DESIGN.md`, which is now only a pointer at this file.
 
 What is *described* here and what is *applied* are two different things. The
@@ -377,7 +379,11 @@ shopping list, import review, the household invite card.
 ### Navigation
 
 App bar 64dp on `surface`, no elevation, title in sans `titleLarge`,
-left-aligned. `NavigationBar` 80dp on `surfaceContainer`; the selected
+left-aligned. The one exception is recipe detail (D135). Its bar has no
+title and sits over the 16:9 photo as a pinned, collapsing `SliverAppBar`.
+Every icon button there sits on a `surface` disc at 0.7 alpha, and the
+status-bar icons are light while a photo is behind them. Collapsed, it is
+the ordinary bar. `NavigationBar` 80dp on `surfaceContainer`; the selected
 destination is a **`primary` pill with an `onPrimary` icon and a `primary`
 label** — not Material's default `secondaryContainer` indicator.
 
@@ -587,12 +593,17 @@ collapses.
 lifts it. The lifted card is drawn at its own width in `KitchenColors.card`,
 on `Material` elevation 2, scaled 1.02 and tilted −1.5°. Where it was, its
 footprint stays behind, emptied, under a **1.5dp dashed `outline` at 60%**.
-Two drop targets, each filled `KitchenColors.dropTarget` and outlined in a
-**2dp dashed `primary`** while a drag is over it: a filled slot's group of
-entry cards (the entries take the fill, the group takes the outline), and a
-collapsed day — which **keeps the entry's own slot**, since it shows none to
-aim at. An empty slot is reached through the entry's `Move to` action instead.
-All three dashed outlines are the same private painter, 4 on / 3 off.
+A drag **never changes an entry's slot** (D135). There are two kinds of drop
+target, each filled `KitchenColors.dropTarget` and outlined in a **2dp dashed
+`primary`** while a drag it would take is over it:
+- **another entry of the same day and slot**, where the dragged entry takes
+  that entry's position;
+- **another day's card**, expanded or collapsed, where the entry moves to
+  that day in **its own slot**, landing last in it.
+
+A different slot on the same day takes nothing. Changing the meal is the
+entry's `Move to` action. All three dashed outlines are the same private
+painter, 4 on / 3 off.
 
 ### Shopping list
 
