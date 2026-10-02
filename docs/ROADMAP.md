@@ -866,6 +866,21 @@ Design round `sync-design-initial`, slice 2 of 11
 The emulator walk (sr/en × light/dark) was clean. It did not reach the
 keyboard-open state or the Google button's busy path.
 
+### Part 16 — Recipe list per the design
+
+**Status: complete** (`3812981`). Decisions taken during it: D138. See
+`docs/journal/phase-7.md`.
+
+Design round `sync-design-initial`, slice 3 of 11
+(`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`):
+- the add menu hangs off a `+` in the app bar, and the FAB is gone
+  (amending D119);
+- the recipe list's empty states sit on a card (`AppEmptyState(card:
+  true)`), and the result count shows above every non-empty list;
+- the bundle's multi-select tags were not adopted (D102 stands).
+
+Not walked on a device yet.
+
 ---
 
 ## Standing rules across phases

@@ -96,11 +96,13 @@ house rules are in `bundle/_ds/…/readme.md` (§ VISUAL FOUNDATIONS and
       mark (`assets/mark-master.svg`) are not fetched yet. Done as
       part 15 (`04b56d0`, D137). `bundle/assets/recipe-card-reference.png`
       was added during planning, cropped from `docs/design/key-screens.pdf`.
-- [ ] `phase7-sync-recipe-list`: recipe list, no-results state, add menu.
+- [x] `phase7-sync-recipe-list`: recipe list, no-results state, add menu.
       Files: `lib/features/recipes/presentation/recipe_list_screen.dart`
       (with its widgets). Bundle: section `Recipes`, frames 04–06;
       components `RecipeCard`, `FilterRow`, `SearchField`, `EmptyState`,
       `Menu`. Diff the filters-active list, the empty filter and the menu.
+      Done as part 16 (`3812981`, D138). The bundle's multi-select tags
+      were seen and not adopted (D102).
 - [ ] `phase7-sync-recipe-detail`: recipe detail. Files:
       `lib/features/recipes/presentation/recipe_detail_screen.dart`.
       Bundle: section `Recipes`, frame 07; `IngredientRow`, `StepList`,
@@ -132,6 +134,7 @@ house rules are in `bundle/_ds/…/readme.md` (§ VISUAL FOUNDATIONS and
       `lib/features/shopping_list/presentation/shopping_list_screen.dart`.
       Bundle: section `List`, frames 18–19; `Banner`, `Card`, `EmptyState`.
       Diff the offline banner, the language tag and the empty state.
+      Opt into `AppEmptyState(card: true)` (frame 19).
 - [ ] `phase7-sync-settings`: settings. Files:
       `lib/features/auth/presentation/settings_screen.dart`. Bundle: section
       `Settings`, frame 20; `ProfileCard`, `SettingsGroup`, `NavRow`,

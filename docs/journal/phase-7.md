@@ -1916,3 +1916,67 @@ create/join item, and opened this slice's own loop.
   stylus toolbar, so the widget test covers it for now;
 - the Google button's busy spinner and a real Google sign-in through it,
   which need the Galaxy.
+
+### Part 16 — Recipe list per the design (round `sync-design-initial`, slice 3)
+
+**Status: complete** (`3812981`). Decisions taken during it: D138.
+
+The third slice of design round `sync-design-initial`
+(`docs/design/handoffs/2026-10-02-sync-design-initial/`), frames 04–06:
+recipes with filters on, no results, and the add menu. The bundle recreates
+`main`, so the search field, the filter row with its Clear chip, the cards
+and the strings already matched. The user settled three calls during
+planning (2026-10-02): the app-bar `+`, the carded empty state, and the
+always-on count. Planned with `/plan-slice-ui`, built in a fresh session.
+No ARB key, no migration, no new package.
+
+- **Add menu** (`recipe_list_screen.dart`). The FAB is gone. `AppBar.actions`
+  holds the `MenuAnchor`, whose builder is an `IconButton` (`Icons.add`,
+  tooltip `Dodaj recept` / `Add a recipe`). The four `MenuItemButton`s moved
+  over unchanged, leading icons included. `floatingActionButtonTheme` stays
+  as a guard.
+- **Spacing.** Search 4 under the app bar, 12 to the chips, 16 to the
+  count, 12 between items, 24 at the bottom. `_FilterRow` lost its own
+  `bottom: sm` padding, and the separator is `md` everywhere (the
+  "narrowed and i == 0" case is gone).
+- **Result count.** It is always item 0 of a non-empty list, in
+  `bodyMedium` / `onSurfaceVariant` (was `bodySmall`, narrowed only).
+- **`AppEmptyState(card: true)`.** The same column on a `KitchenColors.card`
+  `DecoratedBox`, radius 12, inset `lg`, padded `xxl` / `xl`, still inside
+  a `ListView`. The bare and card paths share one `_content` column; the
+  bare path renders as before. Only the recipe list opts in, for both its
+  empty states.
+- **`menuButtonTheme`** (`app_theme.dart`): `bodyMedium` text style only.
+- **`DESIGN_SYSTEM.md`.** Updated § Type (`bodyMedium` row), § Buttons ("No
+  FAB"), § Chips (the count), § Menu, snackbar, banner (item text, the kept
+  icons) and § Empty state (the card variant).
+- **Tests.**
+  - `recipe_screens_test.dart`: the count test now asserts `2 recipes`
+    unfiltered and `1 recipe` on `Posno`. A new test asserts no
+    `FloatingActionButton`, the `Add a recipe` `IconButton` inside the
+    `AppBar`, and the four labels after a tap.
+  - `app_empty_state_test.dart`: a `card: true` case, a `DecoratedBox` in
+    `KitchenColors.card` above the title.
+
+**Seen in the bundle, not adopted.** Frames 04–05 show multi-select tags
+(`Favorites` + `Lenten`, `Cakes` + `Lenten`). That is a change to the
+provider and the repository, so D102's single tag plus a Favorites toggle
+stands (D138).
+
+**Differs from the plan.** Nothing in substance. `dart format` on the
+screen also re-indented two lines unrelated to the slice; they were put
+back. `unnecessary_underscores` flagged `(_, __)` in the separator builder,
+which became `(_, _)`.
+
+**How it was verified.**
+- `dart analyze` was clean, `flutter test` passed **729/729**, and
+  `deno test` passed 161/161. `test-sql` and `l10n-check` passed.
+- `make check` stopped only at `seed-check`, the known red since
+  `c8be2bc`. The targets after it were run by hand.
+
+**Not walked.** `/design-walk recipes` has not run yet, so this slice opens
+its own loop. Still to check on a device: where the menu sits under the `+`
+(the `alignmentOffset` was left at its default), `Fotografiši stranicu` on
+one line, the count's Serbian plural on the real household, the card
+against the ground in light and dark, and the last card's 24 of clearance
+over the nav bar.

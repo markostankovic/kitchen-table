@@ -1,31 +1,28 @@
 # State — 2026-10-02
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 15 (`04b56d0`), slice 2 of design round
-`sync-design-initial`: onboarding per the design (D137, amending D124 #2/#4
-and D126 #1).
+**Last shipped:** Phase 7 part 16 (`3812981`), slice 3 of design round
+`sync-design-initial`: the recipe list per the design (D138, amending
+D119's rejection of the app-bar `+`).
 
-- **Sign-in.** A painted recipe-card illustration (`SignInIllustration`, in
-  theme roles, so it follows dark), the logo lockup as a light/dark PNG, and
-  the tagline. The Google button is outlined and neutral
-  (`surfaceContainerLowest`, `outline` border) with the official G. There is
-  no filled button on the screen.
-- **Create / join household.** Top-aligned: a 56dp mark tile, a
-  `headlineSmall` title, a `bodyLarge` subtitle, the field (join's now
-  labelled `Pozivni kod`), with the buttons pinned to the bottom by
-  `SliverFillRemaining`.
-- **Brand images.** `make icons` now also writes `assets/brand/` (mark,
-  lockups, Google G) at 1x / 2.0x / 3.0x. The lockup needs network access
-  for Literata.
+- **Add menu.** The FAB is gone. A `+` `IconButton` at the end of the app
+  bar opens the same four-item menu (new, link, paste, photo), which is now
+  set in `bodyMedium` through a new `menuButtonTheme`.
+  `floatingActionButtonTheme` stays as a guard.
+- **Result count.** Shows above every non-empty list, narrowed or not, in
+  `bodyMedium` `onSurfaceVariant`.
+- **Empty state.** `AppEmptyState(card: true)` puts the column on a
+  `KitchenColors.card` panel, inset `lg` and top-aligned. The recipe list
+  uses it for both its empty states; the shopping list adopts it in its
+  own sync slice.
+- **Spacing** follows the bundle: 4 / 12 / 16 / 12 / 24.
+- The bundle's multi-select tags were seen and not adopted (D102 stands).
 
-`dart analyze` is clean, `flutter test` passes 727/727, and `make check` is
-green except the known `seed-check` (below). `l10n-check` passes now that
-the regenerated l10n is committed. The emulator walk (`/design-walk
-onboarding`, sr/en × light/dark, hosted release build) was clean. It closed
-part 7's loop and opened part 15's own loop for the keyboard-open state and
-the Google busy path.
+`dart analyze` is clean, `flutter test` passes 729/729, and `make check` is
+green except the known `seed-check` (below); the targets after it pass when
+run by hand. **Not walked on a device yet**, so part 16 opens its own loop.
 
-Still open, not part 15's:
+Still open, not part 16's:
 - meal-plan recipe entries show the original-language title under `en`
   (the entry's own `recipeTitle`, D53);
 - the signed-out sign-in screen stays Serbian after an in-app switch to
@@ -39,14 +36,16 @@ Still open, not part 15's:
   Design updates them.
 
 **In flight:** none.
-**Next:** `phase7-sync-recipe-list`, slice 3 of round `sync-design-initial`
-(recipe list, no-results state, add menu; bundle frames 04–06). Plan it with
-`/plan-slice-ui phase7-sync-recipe-list`. The round's slice list is in
-`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`. The open
-device-walk loops below still want one sitting with the Galaxy attached.
-**Latest decision:** D137
+**Next:** `/design-walk recipes` to close part 16's loop, then
+`phase7-sync-recipe-detail`, slice 4 of round `sync-design-initial`
+(recipe detail; bundle frame 07, diffed against D135's photo header). Plan
+it with `/plan-slice-ui phase7-sync-recipe-detail`. The round's slice list
+is in `docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`. The
+open device-walk loops below still want one sitting with the Galaxy
+attached.
+**Latest decision:** D138
 
-**Nine device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Ten device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -83,7 +82,8 @@ re-walked in the same session, so it opened no loop. Part 14's walk
 loop. The `phase7-sync-onboarding` walk (`/design-walk onboarding`,
 2026-10-02, emulator, all four combinations) was clean and closed part 7's
 onboarding loop. It opened its own loop for the two checks the emulator
-cannot reach. Oldest first:
+cannot reach. Part 16 (`phase7-sync-recipe-list`) has not been walked yet.
+Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
   (2026-09-25) confirmed the copy and the SnackBar on the physical Galaxy.
@@ -613,6 +613,21 @@ cannot reach. Oldest first:
     device check is still open.
   - **The Google button's busy spinner** on the new outlined button, and a
     real Google sign-in through it. Both need the Galaxy.
+- **Phase 7 part 16** (`phase7-sync-recipe-list`) — app-bar add menu,
+  carded empty state, always-on count. Not walked. `/design-walk recipes`,
+  sr/en × light/dark, hosted release build:
+  - no FAB; the `+` at the app bar's end, long-press `Dodaj recept` /
+    `Add a recipe`; the menu opens below it, fully on screen, clear of the
+    right edge and not covering the `+` (`alignmentOffset` is at its
+    default), four rows in regular weight, `Fotografiši stranicu` on one
+    line;
+  - `N recepata` / `N recipes` 16 under the chips with no filter on, the
+    Serbian plural right on the real count;
+  - Favorites + a tag that match nothing: the panel on a card just under
+    the chips, visible against the cream and against `#16160F`, the body
+    wrapping cleanly, `Poništi filtere` clearing the filters; a query alone
+    gives the same panel with no button;
+  - the last card clears the nav bar with 24 to spare.
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind
