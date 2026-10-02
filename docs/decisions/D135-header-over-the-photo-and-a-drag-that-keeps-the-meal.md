@@ -1,5 +1,5 @@
 # D135 — The recipe detail's app bar sits over the photo and collapses; a meal-plan drag moves an entry but never changes its meal
-**Status:** active — amends D119 (the opaque bar above the photo) and D121 / D134 (a drop onto a filled slot's group changed the entry's slot)
+**Status:** active, amended by D139 (point 2's disc is now opaque) — amends D119 (the opaque bar above the photo) and D121 / D134 (a drop onto a filled slot's group changed the entry's slot)
 **Touches:** lib/features/recipes/presentation/recipe_detail_screen.dart, lib/features/meal_plan/presentation/meal_plan_screen.dart, test/features/meal_plan/meal_plan_screen_test.dart, docs/DESIGN_SYSTEM.md
 
 **Decided.**

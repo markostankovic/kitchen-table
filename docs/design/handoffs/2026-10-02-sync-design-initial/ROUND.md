@@ -103,11 +103,13 @@ house rules are in `bundle/_ds/…/readme.md` (§ VISUAL FOUNDATIONS and
       `Menu`. Diff the filters-active list, the empty filter and the menu.
       Done as part 16 (`3812981`, D138). The bundle's multi-select tags
       were seen and not adopted (D102).
-- [ ] `phase7-sync-recipe-detail`: recipe detail. Files:
+- [x] `phase7-sync-recipe-detail`: recipe detail. Files:
       `lib/features/recipes/presentation/recipe_detail_screen.dart`.
       Bundle: section `Recipes`, frame 07; `IngredientRow`, `StepList`,
       `StatRow`. Diff against part 13's photo-header layout (D135). The
       bundle was synced after it shipped.
+      Done as part 17 (`696c887`, D139). The frame's 184dp header, 12dp
+      stat-column gap and spacing variants were seen and not adopted.
 - [ ] `phase7-sync-recipe-edit`: edit recipe, review translation. Files:
       `lib/features/recipes/presentation/recipe_edit_screen.dart`,
       `lib/features/recipes/presentation/translation_review_screen.dart`.

@@ -881,6 +881,23 @@ Design round `sync-design-initial`, slice 3 of 11
 
 Not walked on a device yet.
 
+### Part 17 — Recipe detail per the design
+
+**Status: complete** (`696c887`). Decisions taken during it: D139. See
+`docs/journal/phase-7.md`.
+
+Design round `sync-design-initial`, slice 4 of 11
+(`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`):
+- the photo-bar discs are opaque `surface` with `onSurface` icons
+  (amending D135 point 2);
+- machine translation is a tonal `AppBadge`, the Ingredients heading says
+  `for N servings`, and the stat strip follows the frame's type;
+- the source footer is one line: how it was imported, then the attribution
+  or the host.
+
+The emulator walk (sr/en × light/dark) was clean. It did not reach the OCR
+lead-in or `Mašinski prevod` in the badge.
+
 ---
 
 ## Standing rules across phases

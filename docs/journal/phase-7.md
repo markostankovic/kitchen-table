@@ -1980,3 +1980,108 @@ its own loop. Still to check on a device: where the menu sits under the `+`
 one line, the count's Serbian plural on the real household, the card
 against the ground in light and dark, and the last card's 24 of clearance
 over the nav bar.
+
+### Part 17 — Recipe detail per the design (round `sync-design-initial`, slice 4)
+
+**Status: complete** (`696c887`). Decisions taken during it: D139.
+
+The fourth slice of design round `sync-design-initial`
+(`docs/design/handoffs/2026-10-02-sync-design-initial/`), frame 07. The
+bundle recreates the screen as `main` had it after part 13 (D135), so the
+photo header, title, ingredient rows, step timeline and stars already
+matched. Six things differed and were adopted. The user settled three of
+them during planning (2026-10-02): the servings trailer, the source line and
+the photo-bar discs. Planned with `/plan-slice-ui`, built in a fresh session.
+No migration, no new package.
+
+- **Photo-bar discs** (`recipe_detail_screen.dart`). They are opaque
+  `surface` with `onSurface` icons, where they were `surface` at 0.7 alpha.
+  `_overPhotoAlpha` is gone. No `minimumSize`: the local
+  `IconButtonThemeData` replaces the app's whole style, so each button is
+  M3's 40dp disc in a padded 48dp target, which is the frame's disc. A
+  non-favourite heart inherits `onSurface`.
+- **Tonal `AppBadge`.** `AppBadge` gains `tonal` (a `surfaceContainerHighest`
+  fill, no border) and `leading` (laid out at `iconInMeta`, `xs` before the
+  label). Machine translation is a tonal badge with a `language` icon, not
+  a `Chip`. The translating spinner is the same badge with the spinner as
+  its leading and a new label, `Prevodi se…` / `Translating…`. Draft and
+  `RecipeCard`'s badge render as before.
+- **Stat strip** (`app_stat_strip.dart`). Labels are `bodyMedium`, values
+  `titleMedium` (the call site dropped its explicit w600), the minimum value
+  box is one `titleMedium` line (24), and the padding inside the hairlines
+  is `lg`. The columns still abut.
+- **`AppSectionHeading(trailing:)`.** An optional string at the right, in
+  `bodyMedium` `onSurfaceVariant`, baseline-aligned, with an `sm` gap after
+  the `Expanded` title. Without it the output is the bare `Text` it was. The
+  detail passes `ingredientsForServings` when servings is set: `za 2
+  porcije` (accusative after `za`) / `for 2 servings`.
+- **Source footer.** One `Text`: a lead-in by `source_type` (`Uvezeno sa
+  linka` / `Uvezeno sa fotografije` / `Izvor`), ` · `, then the attribution,
+  or the URL's host with `www.` stripped (`_sourceHost`, raw URL if no
+  host). All muted `bodySmall`, host included. The gap above its divider is
+  `xxl`.
+- **ARB.** Five keys: `translatingBadgeLabel`, `ingredientsForServings`,
+  `sourceImportedFromLink`, `sourceImportedFromPhoto`, `sourceLabel`.
+- **`DESIGN_SYSTEM.md`.** § Steps and stats (the strip), § Type (stat values
+  and labels, the badge), and a paragraph under § The shared widgets on
+  `AppBadge`'s two looks and `AppSectionHeading`'s `trailing`.
+- **Tests** (`recipe_screens_test.dart`): the trailer present at 8 and
+  absent with no servings; `Imported from a link · kuvajmo.rs` as one
+  `Text`; an attribution replacing the host; Machine translation with an
+  `AppBadge` ancestor and no `Chip`. The five-stars-at-360dp test is
+  unchanged and green.
+
+**Seen in the frame, not adopted.**
+- The frame's 184dp header: D135's 16:9 stays.
+- The 32dp `image` placeholder: it stays `image_outlined` at
+  `AppSizes.icon`, since there is no 32 token.
+- A `favorite`-coloured outline heart when not a favourite.
+- 32 above / 16 below the Steps heading, 4 below Ingredients: § Spacing's
+  24 and `AppSectionHeading`'s `sm` stand.
+- The description→stats gap of 20 (not a token); it stays `lg`.
+- `IngredientRow`'s 10dp padding and 16dp name/amount gap:
+  `IngredientLineRow` is shared, and § Ingredient lines stands.
+- The 12dp column gap in the stat strip: at 360dp it would shrink the stars.
+- No tag chips in the frame's recipe: not evidence they should go.
+
+**Differs from the plan.**
+- The plan asked for an `@` description on each new key in both ARBs.
+  `app_en.arb` carries none (Serbian is the template, D77), so the
+  descriptions went into `app_sr.arb` only.
+- The `sm` gap between the heading and its trailer was not in the plan. It
+  keeps a long Serbian heading from touching the trailer.
+
+**How it was verified.**
+- `dart analyze` was clean, `flutter test` passed **734/734**, and
+  `deno test` passed 161/161. `test-sql` passed.
+- `make check` stopped only at `seed-check`, the known red since
+  `c8be2bc`. The targets after it were run by hand.
+- `l10n-check` passed with the regenerated files staged. It compares
+  against git, so it is red until they are committed.
+
+**Walked on the emulator** (`/design-walk recipe-detail`, 2026-10-02, the
+only device attached), on the same code before commit. `make
+install-emulator` ran with Dev login, sr/light → sr/dark → en/dark →
+en/light. Recipes: Losos (photo, URL import, 2 servings), Kajgana (no
+photo, no servings, an unmatched line, a machine English translation), and
+the footers of all five.
+- The opaque discs read over the photo in both brightnesses. When collapsed
+  they blend into the bar, and the status-bar icons flip back.
+- `za 2 porcije` / `for 2 servings` sits on the heading's baseline. Kajgana
+  shows no trailer.
+- `Porcije`, `Kuvanje`, `Ocena` each fit one line. The five stars have
+  separate 42px targets inside the rating column, read off `uiautomator`
+  rather than tapped, to avoid writing a rating on hosted.
+- The tonal `Machine translation` badge is legible in both brightnesses, and
+  its fill shows against `#16160F`.
+- The footer is one line: `Uvezeno sa linka · chatgpt`, `… · Aleksandra,
+  Recepti.com`, `Imported from a link · chatgpt`.
+- With the phone in night mode the app stayed light under `Svetla`.
+
+The account ended on Srpski / Svetla.
+
+**Not reached:** `Uvezeno sa fotografije · …`, because no hosted recipe is
+an OCR import, and `Mašinski prevod` in the badge, because nothing is
+machine-translated *into* Serbian. Part 17's loop holds those two only.
+(Kajgana's note `po ukusu` stays Serbian under English. Notes are not
+translated; this is not new.)
