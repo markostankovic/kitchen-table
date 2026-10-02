@@ -64,5 +64,8 @@ roadmap part (e.g. a bugfix or refactor slice), skip this step.
 
 ## 6. Clean up
 
+If the slice is listed in a `docs/design/handoffs/*/ROUND.md`, tick its box
+there and cite that round folder in the journal entry.
+
 Delete `docs/active/$ARGUMENTS.md`. Report the files you changed and confirm
 `docs/STATE.md` now matches reality.

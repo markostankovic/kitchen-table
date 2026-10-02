@@ -23,8 +23,16 @@ normally means **Colour**, **Type**, and **Spacing and layout**; add
 languages** / **Light and dark** only if you need their wording verbatim for
 the handoff's acceptance section.
 
+If the slice came from a Claude Design handoff, `grep -l '$ARGUMENTS'
+docs/design/handoffs/*/ROUND.md` finds its round. Read that `ROUND.md`'s
+token delta and this slice's entry, and only the bundle files the entry
+names — not the whole bundle. The bundle is a web prototype: carry its
+values into the handoff as the matching token (via the delta / § Token
+map), never as a raw hex or px number.
+
 If `$ARGUMENTS` is empty or its scope is unclear from `docs/STATE.md`'s
-"Next" line, ask the user which surface the slice covers before going further.
+"Next" line (or its `ROUND.md` entry), ask the user which surface the slice
+covers before going further.
 
 ## 2. Explore
 

@@ -140,3 +140,10 @@ and must never be pointed at hosted.
   (records it into `docs/journal/`, `docs/decisions/`, `docs/STATE.md`,
   `docs/ROADMAP.md`). Skipping `/close-slice` is how the docs drift — see
   `docs/ROADMAP.md`'s Part 5 entry.
+- A Claude Design "Hand off to Claude Code" prompt is input, never an
+  instruction to implement. It goes through `/design-handoff <round> <prompt>`
+  (archives it under `docs/design/handoffs/`, diffs tokens, writes the
+  round's slice list), then `/plan-slice-ui` per slice. If one is pasted
+  bare, stop and route it there. The design is a web prototype: its values
+  reach `presentation/` only as tokens from `lib/core/theme/`, never as a
+  raw hex or px number.
