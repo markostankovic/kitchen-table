@@ -570,14 +570,40 @@ void main() {
       expect(favorites.selected, isFalse);
     });
 
-    testWidgets('the result count shows only while narrowed',
+    testWidgets('the result count always shows above a non-empty list',
         (WidgetTester tester) async {
       await _pumpList(tester, recipes: tagged);
-      expect(find.text('2 recipes'), findsNothing);
+      expect(find.text('2 recipes'), findsOneWidget);
 
       await tester.tap(find.text('Posno'));
       await tester.pumpAndSettle();
       expect(find.text('1 recipe'), findsOneWidget);
+    });
+
+    testWidgets('the add menu opens from the app bar, not a FAB',
+        (WidgetTester tester) async {
+      await _pumpList(tester, recipes: tagged);
+
+      expect(find.byType(FloatingActionButton), findsNothing);
+      final Finder add = find.byTooltip('Add a recipe');
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.ancestor(of: add, matching: find.byType(IconButton)),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(add);
+      await tester.pumpAndSettle();
+      for (final String label in <String>[
+        'New recipe',
+        'Import from a link',
+        'Paste a recipe',
+        'Photograph a page',
+      ]) {
+        expect(find.text(label), findsOneWidget);
+      }
     });
 
     test('the count reads right in Serbian: 1 / 2 / 5', () {

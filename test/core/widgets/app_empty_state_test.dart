@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/theme/app_theme.dart';
+import 'package:kitchen_table/core/theme/kitchen_colors.dart';
 import 'package:kitchen_table/core/widgets/app_empty_state.dart';
 
 void main() {
@@ -68,6 +69,39 @@ void main() {
       ),
     );
 
+    expect(find.byType(Scrollable), findsWidgets);
+  });
+
+  testWidgets('card: true sets the state on a KitchenColors.card panel', (
+    WidgetTester tester,
+  ) async {
+    final ThemeData theme = AppTheme.light();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        home: const Scaffold(
+          body: AppEmptyState(
+            icon: Icons.inbox_outlined,
+            title: 'Nothing here yet',
+            card: true,
+          ),
+        ),
+      ),
+    );
+
+    final Color card = theme.extension<KitchenColors>()!.card;
+    expect(
+      find.ancestor(
+        of: find.text('Nothing here yet'),
+        matching: find.byWidgetPredicate(
+          (Widget w) =>
+              w is DecoratedBox &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).color == card,
+        ),
+      ),
+      findsOneWidget,
+    );
     expect(find.byType(Scrollable), findsWidgets);
   });
 }

@@ -171,7 +171,7 @@ A screen picks a role for what the text *is*, never a raw `fontSize`.
 | `titleMedium` | 18 / 24 | 600 | — | section headings, sheet titles, empty-state titles |
 | `titleSmall` | 14 / 20 | 600 | — | labels, settings group headers |
 | `bodyLarge` | 18 / 28 | 400 | — | the reading text — recipe steps, ingredient lines |
-| `bodyMedium` | 14 / 20 | 400 | — | default copy |
+| `bodyMedium` | 14 / 20 | 400 | — | default copy, the result count, menu items |
 | `bodySmall` | 12 / 16 | 400 | — | captions, meta |
 | `labelLarge` | 14 / 20 | 600 | — | buttons, chips, the step number |
 | `labelMedium` | 12 / 16 | 500 | — | badges, nav labels |
@@ -394,12 +394,15 @@ like the household screen, has no filled button (D137).
 `error`, not `primary`: signing out loses nothing, so it is neither destructive
 nor the screen's one action, and it has no confirm dialog.
 
-**The FAB** — the recipe list's is the only one in the app — is `primary` on
-`onPrimary`, radius 16, elevation 0. Not Material's `primaryContainer` default:
-unthemed, it sat at 1.94:1 against the dark surface and was invisible to a
-person while present in the widget tree (Phase 7 part 2's device walk). It is
-the screen's one filled action, and the one filled action is `primary`
-everywhere else here.
+**No FAB.** No screen has one since sync-design-initial's recipe-list slice:
+the recipe list's add entry is a `+` `IconButton` at the end of the app bar
+that opens the four-item add menu (D138, amending D119).
+`floatingActionButtonTheme` — `primary` on `onPrimary`, radius 16, elevation
+0 — stays in the theme as a guard. Not Material's `primaryContainer` default:
+unthemed, the old FAB sat at 1.94:1 against the dark surface and was invisible
+to a person while present in the widget tree (Phase 7 part 2's device walk).
+If a FAB ever comes back, it is the screen's one filled action, and the one
+filled action is `primary` everywhere else here.
 
 ### Action bar
 
@@ -490,9 +493,9 @@ row starts with an `ActionChip` — `close` avatar, `Poništi` / `Clear`,
 `outline` border on a `surface` fill so it reads outlined, not selected — then
 `sm`, a 1dp × 24 `outlineVariant` vertical line, `sm`, and the filter chips.
 It is absent, not disabled, when nothing is selected, and it clears the
-filters only: the search field keeps its text and its own clear button. While
-the list is narrowed and non-empty, a result count (`2 recepta` /
-`2 recipes`, `bodySmall` `onSurfaceVariant`) sits `sm` under the row and `sm`
+filters only: the search field keeps its text and its own clear button. Above
+every non-empty list, narrowed or not, a result count (`2 recepta` /
+`2 recipes`, `bodyMedium` `onSurfaceVariant`) sits `lg` under the row and `md`
 above the first card.
 
 ### Ingredient lines
@@ -799,7 +802,10 @@ header, then the neutral outlined button (§ Buttons).
 
 ### Menu, snackbar, banner
 
-Menus radius 16 at level 2. Snackbars on `inverseSurface` with the action in
+Menus radius 16 at level 2. Menu items — `MenuItemButton` (`menuButtonTheme`)
+and `PopupMenuItem` (`popupMenuTheme`) alike — are `bodyMedium` w400 in
+`onSurface`. The recipe list's add menu keeps its leading `_outlined` icons,
+though the design's menu has no icon slot. Snackbars on `inverseSurface` with the action in
 `inversePrimary`. The offline banner on `offline` / `onOffline` — calm.
 
 ### Dialog
@@ -816,6 +822,13 @@ sentence without scrolling.
 
 A 48dp icon in `outline`, a `titleMedium` title, a `bodyMedium` body, and at
 most one tonal action.
+
+**The card variant** — `AppEmptyState(card: true)` — is the design's shape for
+an empty screen region: the same column on a `KitchenColors.card` panel,
+radius 12, no border or shadow, inset `lg` and aligned to the top, padded
+`xxl` top and bottom and `xl` at the sides. The recipe list uses it for both
+its empty states. The shopping list adopts it in its own sync slice; import
+review stays bare.
 
 The recipe list's no-results state is the example of that one action. While a
 filter is on (Favorites or a tag) it shows `search_off`, `Nema recepata koji se

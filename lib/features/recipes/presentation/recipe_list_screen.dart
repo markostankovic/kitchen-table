@@ -89,38 +89,45 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
       // The title shares its ARB key with the nav label (D77, Phase 3 part 1)
       // so the tab and this AppBar never disagree about the language they are
       // in, even though the rest of this screen's content is still English.
-      appBar: AppBar(title: Text(l10n.navRecipes)),
-      // A menu rather than a single action, because there is now more than one
-      // way to get a recipe in. `import-url` and `import-photo` are the rest
-      // of Phase 1d and hang here beside Paste without another redesign.
-      floatingActionButton: MenuAnchor(
-        builder: (BuildContext context, MenuController controller, Widget? _) =>
-            FloatingActionButton(
-          onPressed: () =>
-              controller.isOpen ? controller.close() : controller.open(),
-          tooltip: l10n.addRecipeTooltip,
-          child: const Icon(Icons.add),
-        ),
-        menuChildren: <Widget>[
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.edit_outlined),
-            onPressed: () => const RecipeNewRoute().go(context),
-            child: Text(l10n.newRecipeMenuItem),
-          ),
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.link_outlined),
-            onPressed: () => const ImportUrlRoute().go(context),
-            child: Text(l10n.importFromLinkMenuItem),
-          ),
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.content_paste_outlined),
-            onPressed: () => const ImportPasteRoute().go(context),
-            child: Text(l10n.pasteRecipeMenuItem),
-          ),
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.photo_camera_outlined),
-            onPressed: () => const ImportPhotoRoute().go(context),
-            child: Text(l10n.photographPageMenuItem),
+      appBar: AppBar(
+        title: Text(l10n.navRecipes),
+        actions: <Widget>[
+          // The app bar's `+` anchors a menu rather than a single action,
+          // because there is more than one way to get a recipe in: write it,
+          // or import it from a link, a paste or a photo. It replaced the FAB
+          // in sync-design-initial (D138, amending D119).
+          MenuAnchor(
+            builder:
+                (BuildContext context, MenuController controller, Widget? _) =>
+                    IconButton(
+                      tooltip: l10n.addRecipeTooltip,
+                      icon: const Icon(Icons.add),
+                      onPressed: () => controller.isOpen
+                          ? controller.close()
+                          : controller.open(),
+                    ),
+            menuChildren: <Widget>[
+              MenuItemButton(
+                leadingIcon: const Icon(Icons.edit_outlined),
+                onPressed: () => const RecipeNewRoute().go(context),
+                child: Text(l10n.newRecipeMenuItem),
+              ),
+              MenuItemButton(
+                leadingIcon: const Icon(Icons.link_outlined),
+                onPressed: () => const ImportUrlRoute().go(context),
+                child: Text(l10n.importFromLinkMenuItem),
+              ),
+              MenuItemButton(
+                leadingIcon: const Icon(Icons.content_paste_outlined),
+                onPressed: () => const ImportPasteRoute().go(context),
+                child: Text(l10n.pasteRecipeMenuItem),
+              ),
+              MenuItemButton(
+                leadingIcon: const Icon(Icons.photo_camera_outlined),
+                onPressed: () => const ImportPhotoRoute().go(context),
+                child: Text(l10n.photographPageMenuItem),
+              ),
+            ],
           ),
         ],
       ),
@@ -129,9 +136,9 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.lg,
-              AppSpacing.md,
+              AppSpacing.xs,
               AppSpacing.lg,
-              AppSpacing.sm,
+              AppSpacing.md,
             ),
             child: AppSearchField(
               controller: _search,
@@ -160,6 +167,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
                 // action. A query alone has the field's own clear button.
                 return items.isEmpty
                     ? AppEmptyState(
+                        card: true,
                         icon: narrowed
                             ? Icons.search_off
                             : Icons.menu_book_outlined,
@@ -185,24 +193,21 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
                         child: ListView.separated(
                           padding: const EdgeInsets.fromLTRB(
                             AppSpacing.lg,
-                            0,
                             AppSpacing.lg,
-                            AppSpacing.xxl,
+                            AppSpacing.lg,
+                            AppSpacing.xl,
                           ),
-                          // The result count rides as item 0 while narrowed,
-                          // so it scrolls away with the list rather than
-                          // pinning a line of chrome above it.
-                          itemCount: items.length + (narrowed ? 1 : 0),
-                          separatorBuilder: (_, int i) => SizedBox(
-                            height: narrowed && i == 0
-                                ? AppSpacing.sm
-                                : AppSpacing.md,
-                          ),
+                          // The result count rides as item 0 of every
+                          // non-empty list, so it scrolls away with the list
+                          // rather than pinning a line of chrome above it.
+                          itemCount: items.length + 1,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: AppSpacing.md),
                           itemBuilder: (BuildContext context, int i) {
-                            if (narrowed && i == 0) {
+                            if (i == 0) {
                               return _ResultCount(count: items.length);
                             }
-                            final Recipe recipe = items[narrowed ? i - 1 : i];
+                            final Recipe recipe = items[i - 1];
                             return RecipeCard(
                               recipe: recipe,
                               l10n: l10n,
@@ -282,59 +287,55 @@ class _FilterRow extends ConsumerWidget {
 
     // Full-bleed: the gutter lives on the scroll view, not around it, so the
     // chips scroll to the screen edge and a cut-off chip signals the scroll.
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        child: Row(
-          children: <Widget>[
-            // First in the row, so it is visible without scrolling while any
-            // filter is on, and gone when none is (Phase 7 part 9b).
-            if (filterActive) ...<Widget>[
-              ActionChip(
-                avatar: const Icon(Icons.close),
-                label: Text(l10n.clearFiltersChip),
-                side: BorderSide(color: scheme.outline),
-                backgroundColor: scheme.surface,
-                onPressed: onClear,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              SizedBox(
-                height: AppSpacing.xl,
-                child: VerticalDivider(
-                  width: 1,
-                  thickness: 1,
-                  color: scheme.outlineVariant,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-            ],
-            // No star avatar. A star means a rating and nothing else after
-            // Phase 7 part 3; selection already reads as `secondaryContainer`
-            // plus a check, so the chip is its label alone, like the tags.
-            FilterChip(
-              label: Text(l10n.favoritesFilterLabel),
-              selected: favoritesOnly,
-              onSelected: (_) => onFavoritesTap(),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Row(
+        children: <Widget>[
+          // First in the row, so it is visible without scrolling while any
+          // filter is on, and gone when none is (Phase 7 part 9b).
+          if (filterActive) ...<Widget>[
+            ActionChip(
+              avatar: const Icon(Icons.close),
+              label: Text(l10n.clearFiltersChip),
+              side: BorderSide(color: scheme.outline),
+              backgroundColor: scheme.surface,
+              onPressed: onClear,
             ),
-            for (final RecipeTag tag in chips) ...<Widget>[
-              const SizedBox(width: AppSpacing.sm),
-              FilterChip(
-                label: Text(tag.label),
-                selected: tag.key == selectedTag,
-                onSelected: (_) => onTagTap(tag.key),
+            const SizedBox(width: AppSpacing.sm),
+            SizedBox(
+              height: AppSpacing.xl,
+              child: VerticalDivider(
+                width: 1,
+                thickness: 1,
+                color: scheme.outlineVariant,
               ),
-            ],
+            ),
+            const SizedBox(width: AppSpacing.sm),
           ],
-        ),
+          // No star avatar. A star means a rating and nothing else after
+          // Phase 7 part 3; selection already reads as `secondaryContainer`
+          // plus a check, so the chip is its label alone, like the tags.
+          FilterChip(
+            label: Text(l10n.favoritesFilterLabel),
+            selected: favoritesOnly,
+            onSelected: (_) => onFavoritesTap(),
+          ),
+          for (final RecipeTag tag in chips) ...<Widget>[
+            const SizedBox(width: AppSpacing.sm),
+            FilterChip(
+              label: Text(tag.label),
+              selected: tag.key == selectedTag,
+              onSelected: (_) => onTagTap(tag.key),
+            ),
+          ],
+        ],
       ),
     );
   }
 }
 
-
-/// `2 recepta` -- how many recipes the narrowed list holds, gutter-aligned by
+/// `2 recepta` -- how many recipes the list holds, gutter-aligned by
 /// the list's own padding.
 class _ResultCount extends StatelessWidget {
   const _ResultCount({required this.count});
@@ -346,7 +347,7 @@ class _ResultCount extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     return Text(
       AppLocalizations.of(context).recipeCount(count),
-      style: theme.textTheme.bodySmall?.copyWith(
+      style: theme.textTheme.bodyMedium?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
       ),
     );

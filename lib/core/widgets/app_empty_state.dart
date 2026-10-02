@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_radii.dart';
 import '../theme/app_sizes.dart';
 import '../theme/app_spacing.dart';
+import '../theme/kitchen_colors.dart';
 
 /// A centered "nothing here" state: icon, title, optional body, optional
 /// action.
@@ -21,12 +23,19 @@ import '../theme/app_spacing.dart';
 /// an invitation, and a full-emphasis button on a screen with nothing on it
 /// shouts. Enforcing that is the callers' business, in the slices that own
 /// those screens, not this widget's.
+///
+/// [card] is the design's shape for an empty *screen region*
+/// (sync-design-initial frames 05 and 19): the same column on a
+/// [KitchenColors.card] panel, aligned to the top. It is opt-in so callers
+/// move one slice at a time (D138); without it the state renders on the bare
+/// ground, as before.
 class AppEmptyState extends StatelessWidget {
   const AppEmptyState({
     required this.icon,
     required this.title,
     this.body,
     this.action,
+    this.card = false,
     super.key,
   });
 
@@ -35,45 +44,73 @@ class AppEmptyState extends StatelessWidget {
   final String? body;
   final Widget? action;
 
+  /// Sets the state on a [KitchenColors.card] panel (radius [AppRadii.md],
+  /// inset `lg`, top-aligned) instead of the bare ground.
+  final bool card;
+
   @override
   Widget build(BuildContext context) {
+    if (!card) {
+      return ListView(
+        children: <Widget>[
+          const SizedBox(height: AppSpacing.xxl),
+          _content(context, bodyInset: AppSpacing.xl),
+        ],
+      );
+    }
+    final KitchenColors kitchen = Theme.of(context).extension<KitchenColors>()!;
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      children: <Widget>[
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: kitchen.card,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.xxl,
+              horizontal: AppSpacing.xl,
+            ),
+            // The card's own padding already insets the body.
+            child: _content(context, bodyInset: 0),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _content(BuildContext context, {required double bodyInset}) {
     final ThemeData theme = Theme.of(context);
     final String? bodyText = body;
     final Widget? actionWidget = action;
-    return ListView(
+    return Column(
       children: <Widget>[
-        const SizedBox(height: AppSpacing.xxl),
-        Center(
-          child: Icon(
-            icon,
-            size: AppSizes.emptyStateIcon,
-            color: theme.colorScheme.outline,
-          ),
+        Icon(
+          icon,
+          size: AppSizes.emptyStateIcon,
+          color: theme.colorScheme.outline,
         ),
         const SizedBox(height: AppSpacing.lg),
-        Center(
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleMedium,
-          ),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.titleMedium,
         ),
         if (bodyText != null) ...<Widget>[
           const SizedBox(height: AppSpacing.sm),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-              child: Text(
-                bodyText,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium,
-              ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: bodyInset),
+            child: Text(
+              bodyText,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
             ),
           ),
         ],
         if (actionWidget != null) ...<Widget>[
           const SizedBox(height: AppSpacing.xl),
-          Center(child: actionWidget),
+          actionWidget,
         ],
       ],
     );

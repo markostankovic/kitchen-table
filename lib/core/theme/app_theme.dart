@@ -279,6 +279,14 @@ abstract final class AppTheme {
         ),
       ),
 
+      // Regular weight, as `popupMenuTheme` already is, so both kinds of menu
+      // read the same. Colours stay at the M3 defaults.
+      menuButtonTheme: MenuButtonThemeData(
+        style: ButtonStyle(
+          textStyle: WidgetStatePropertyAll<TextStyle?>(textTheme.bodyMedium),
+        ),
+      ),
+
       popupMenuTheme: PopupMenuThemeData(
         color: scheme.surfaceContainerHigh,
         elevation: 2,
