@@ -429,7 +429,7 @@ abstract final class AppTheme {
         fontSize: 32,
         height: 40 / 32,
         fontWeight: FontWeight.w700,
-        letterSpacing: -0.5,
+        letterSpacing: 0.5,
       ),
       // The household name. A recipe's detail title is
       // `KitchenType.recipeTitleLarge`, not this.
@@ -437,7 +437,7 @@ abstract final class AppTheme {
         fontSize: 28,
         height: 34 / 28,
         fontWeight: FontWeight.w700,
-        letterSpacing: -0.3,
+        letterSpacing: 0.3,
       ),
       // App bar and dialog titles.
       titleLarge: TextStyle(

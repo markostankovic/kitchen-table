@@ -89,11 +89,11 @@ void main() {
       expect(light.displaySmall?.fontSize, 32);
       expect(light.displaySmall?.height, 40 / 32);
       expect(light.displaySmall?.fontWeight, FontWeight.w700);
-      expect(light.displaySmall?.letterSpacing, -0.5);
+      expect(light.displaySmall?.letterSpacing, 0.5);
       expect(light.headlineSmall?.fontSize, 28);
       expect(light.headlineSmall?.height, 34 / 28);
       expect(light.headlineSmall?.fontWeight, FontWeight.w700);
-      expect(light.headlineSmall?.letterSpacing, -0.3);
+      expect(light.headlineSmall?.letterSpacing, 0.3);
     });
 
     test('KitchenType is present: sans w700 recipe names in onSurface', () {
@@ -109,14 +109,14 @@ void main() {
         expect(t.recipeTitle.fontSize, 17);
         expect(t.recipeTitle.height, 24 / 17);
         expect(t.recipeTitle.fontWeight, FontWeight.w700);
-        expect(t.recipeTitle.letterSpacing, -0.1);
+        expect(t.recipeTitle.letterSpacing, 0.1);
         expect(t.recipeTitle.color, theme.colorScheme.onSurface);
 
         expect(t.recipeTitleLarge.fontFamily, isNull);
         expect(t.recipeTitleLarge.fontSize, 28);
         expect(t.recipeTitleLarge.height, 34 / 28);
         expect(t.recipeTitleLarge.fontWeight, FontWeight.w700);
-        expect(t.recipeTitleLarge.letterSpacing, -0.3);
+        expect(t.recipeTitleLarge.letterSpacing, 0.3);
         expect(t.recipeTitleLarge.color, theme.colorScheme.onSurface);
 
         expect(t.monogram.fontFamily, isNull);

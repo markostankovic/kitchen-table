@@ -53,6 +53,8 @@ A screen never writes a hex, a raw `fontSize`, or a bare `EdgeInsets` number.
 The only place a colour literal is allowed is where a role's value is
 *defined*, in `lib/core/theme/`.
 
+A design round's CSS token names map to these symbols in § Token map.
+
 ---
 
 ## Colour
@@ -163,8 +165,8 @@ A screen picks a role for what the text *is*, never a raw `fontSize`.
 
 | Role | Size / line | Weight | Letter spacing | For |
 |---|---|---|---|---|
-| `displaySmall` | 32 / 40 | 700 | −0.5 | the wordmark, in `primary`, and nothing else |
-| `headlineSmall` | 28 / 34 | 700 | −0.3 | the household's name (a *recipe's* detail title is `KitchenType.recipeTitleLarge`) |
+| `displaySmall` | 32 / 40 | 700 | 0.5 | the wordmark, in `primary`, and nothing else |
+| `headlineSmall` | 28 / 34 | 700 | 0.3 | the household's name (a *recipe's* detail title is `KitchenType.recipeTitleLarge`) |
 | `titleLarge` | 22 / 28 | 600 | — | app bar, dialog titles |
 | `titleMedium` | 18 / 24 | 600 | — | section headings, sheet titles, empty-state titles |
 | `titleSmall` | 14 / 20 | 600 | — | labels, settings group headers |
@@ -185,8 +187,8 @@ A `ThemeExtension` in `lib/core/theme/kitchen_type.dart`, read as
 
 | Token | Size / line | Weight | Letter spacing | For |
 |---|---|---|---|---|
-| `recipeTitle` | 17 / 24 | 700 | −0.1 | a recipe's name on a recipe card and on a meal-plan entry, and a leftover's title |
-| `recipeTitleLarge` | 28 / 34 | 700 | −0.3 | a recipe's title on its detail screen |
+| `recipeTitle` | 17 / 24 | 700 | 0.1 | a recipe's name on a recipe card and on a meal-plan entry, and a leftover's title |
+| `recipeTitleLarge` | 28 / 34 | 700 | 0.3 | a recipe's title on its detail screen |
 | `monogram` | 30 / 36 | 700 | 0 | the letter on a recipe card's 72dp monogram tile |
 
 **Weight 700 marks a recipe's name** (D134). Bold in a title position always
@@ -284,6 +286,41 @@ from the container roles, not from Material's tint.
 | 3 | dialogs, bottom sheets | the same, heavier; in dark, black at 60% |
 
 Scrim behind dialogs and sheets: `#1F190F` at 32% in light, black at 50% in dark.
+
+---
+
+## Token map
+
+Design rounds arrive as a web bundle whose tokens are CSS custom
+properties. This table is how `/design-handoff` matches them to Flutter
+symbols. A bundle token not listed here is new and needs a row added in
+the round's tokens slice. Values are not repeated here. The sections
+above own them.
+
+| Bundle token | Flutter symbol |
+|---|---|
+| `--primary`, `--on-primary`, … `--inverse-primary` (every M3 role, kebab-case) | `ColorScheme.<role>` in camelCase (`--surface-container-high` → `surfaceContainerHigh`) |
+| `--scrim` | `AppTheme`'s dialog barrier (`onSurface` at 32% light, black at 50% dark) |
+| `--today`, `--today-container`, `--review-marker`, `--favorite`, `--rating`, `--stat-value`, `--leftover`, `--unmatched`, `--offline`, `--on-offline`, `--doc-language`, `--destructive`, `--card`, `--step-connector`, `--drag-handle` | `KitchenColors.<camelCase>` |
+| `--doc-language-ring` | `ColorScheme.outlineVariant` (no field of its own) |
+| `--meal-entry` | `ColorScheme.surface` (no field of its own) |
+| (no bundle token) | `KitchenColors.dividerDash`, `KitchenColors.dropTarget` (app-only) |
+| `--type-display-small`, `--type-headline-small`, `--type-title-large/-medium/-small`, `--type-body-large/-medium/-small`, `--type-label-large/-medium` | `TextTheme.<role>` |
+| `--tracking-display-small`, `--tracking-headline-small` | `letterSpacing` on that `TextTheme` role |
+| `--type-recipe-title` + `--tracking-recipe-title` | `KitchenType.recipeTitle` |
+| `--text-recipe-title-large` | `KitchenType.recipeTitleLarge` |
+| `--type-monogram` | `KitchenType.monogram` |
+| `--space-xs`, `-s`, `-m`, `-l`, `-xl`, `-xxl` | `AppSpacing.xs`, `.sm`, `.md`, `.lg`, `.xl`, `.xxl` |
+| `--gutter`, `--section-gap`, `--card-gap` | `AppSpacing.lg`, `.xl`, `.md` |
+| `--radius-xs`, `-sm`, `-md`, `-lg`, `-xl` | `AppRadii.xs`, `.sm`, `.md`, `.lg`, `.xl` |
+| `--radius-full` | `StadiumBorder()` (§ Shape) |
+| `--size-target`, `-button`, `-button-signin`, `-field`, `-chip`, `-app-bar`, `-nav-bar`, `-thumb`, `-step-disc` | `AppSizes.target`, `.button`, `.signInButton`, `.field`, `.chip`, `.appBar`, `.nav`, `.thumb`, `.stepDisc` |
+| `--size-tag` | none: 32, noted on `AppSizes.chip`. No code draws a tag yet |
+| `--icon-action`, `--icon-button`, `--icon-meta` | `AppSizes.icon`, `.iconInButton`, `.iconInMeta` |
+| `--duration-short`, `--duration-medium` | `AppDurations.short`, `.medium` |
+| `--ease-emphasized` (`cubic-bezier(0.2,0,0,1)`, M3's CSS fallback) | `AppDurations.emphasized` (`Curves.easeInOutCubicEmphasized`) |
+| `--elevation-2`, `--elevation-3` | M3 elevation 2 / 3 with `shadowColor: scheme.shadow` (§ Elevation) |
+| (web only, no mapping) | `--font-sans`, `--font-mono`, the `--surface-*` / `--text-*` / `--border-*` aliases (they resolve to roles above), `.kt-state`, `.kt-dash` |
 
 ---
 

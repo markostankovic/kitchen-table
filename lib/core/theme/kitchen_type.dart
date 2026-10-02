@@ -29,14 +29,14 @@ class KitchenType extends ThemeExtension<KitchenType> {
       fontSize: 17,
       height: 24 / 17,
       fontWeight: FontWeight.w700,
-      letterSpacing: -0.1,
+      letterSpacing: 0.1,
       color: scheme.onSurface,
     ),
     recipeTitleLarge: TextStyle(
       fontSize: 28,
       height: 34 / 28,
       fontWeight: FontWeight.w700,
-      letterSpacing: -0.3,
+      letterSpacing: 0.3,
       color: scheme.onSurface,
     ),
     monogram: TextStyle(
