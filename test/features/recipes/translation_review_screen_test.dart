@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/theme/app_theme.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/features/recipes/application/translation_reviewer.dart';
@@ -61,10 +62,11 @@ Future<void> _pump(
         translationReviewerProvider('r1', locale: draft.locale)
             .overrideWith(() => _StubReviewer(draft)),
       ],
-      child: const MaterialApp(
+      child: MaterialApp(
+        theme: AppTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: appSupportedLocales,
-        home: TranslationReviewScreen(recipeId: 'r1'),
+        home: const TranslationReviewScreen(recipeId: 'r1'),
       ),
     ),
   );
@@ -100,6 +102,14 @@ void main() {
     expect(find.byType(TextFormField), findsNWidgets(4));
   });
 
+  testWidgets('opens with the machine-translation badge',
+      (WidgetTester tester) async {
+    await _pump(tester, draft: _draft);
+
+    expect(find.text('Machine translation'), findsOneWidget);
+    expect(find.byIcon(Icons.language), findsOneWidget);
+  });
+
   testWidgets('no add/remove step affordance, no reorder, no ingredients',
       (WidgetTester tester) async {
     await _pump(tester, draft: _draft);
@@ -108,7 +118,7 @@ void main() {
     expect(find.text('Add ingredient'), findsNothing);
     expect(find.byIcon(Icons.add), findsNothing);
     expect(find.byIcon(Icons.close), findsNothing);
-    expect(find.byIcon(Icons.drag_handle), findsNothing);
+    expect(find.byIcon(Icons.drag_indicator), findsNothing);
     expect(find.byType(ReorderableListView), findsNothing);
   });
 

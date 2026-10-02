@@ -58,7 +58,8 @@ abstract final class AppSizes {
   /// other is a drawing, and they have no reason to move together.
   static const double emptyStateIcon = 48;
 
-  /// The 6-dot drag grip on a meal-plan entry. Its own name rather than
+  /// The 6-dot drag grip on every reorderable row: a meal-plan entry, and
+  /// the editor's ingredient and step rows. Its own name rather than
   /// borrowing [iconInButton]: the same number today, but one is a drawing
   /// hinting at a gesture and the other sits beside a button's label, and
   /// they have no reason to move together.

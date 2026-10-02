@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
+import 'package:kitchen_table/core/theme/app_theme.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_en.dart';
 import 'package:kitchen_table/features/ingredients/domain/ingredient_line_parser.dart';
 import 'package:kitchen_table/features/ingredients/domain/ingredient_match.dart';
@@ -87,6 +88,7 @@ Future<void> _pump(
         ),
       ],
       child: MaterialApp(
+        theme: AppTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: appSupportedLocales,
         home: _Harness(

@@ -9,6 +9,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../text/text_normalizer.dart';
 import '../../theme/app_sizes.dart';
 import '../../theme/app_spacing.dart';
+import '../../theme/kitchen_colors.dart';
 import '../../../features/ingredients/domain/ingredient_line_parser.dart';
 import '../../../features/ingredients/domain/ingredient_match.dart';
 import '../../../features/ingredients/domain/parsed_ingredient_line.dart';
@@ -104,9 +105,15 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
             children: <Widget>[
               ReorderableDragStartListener(
                 index: widget.index,
-                child: const Padding(
-                  padding: EdgeInsets.only(right: AppSpacing.xs),
-                  child: Icon(Icons.drag_handle),
+                child: Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.xs),
+                  child: Icon(
+                    Icons.drag_indicator,
+                    size: AppSizes.grip,
+                    color: Theme.of(context)
+                        .extension<KitchenColors>()!
+                        .dragHandle,
+                  ),
                 ),
               ),
               Expanded(
@@ -135,7 +142,7 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
           Padding(
             // Indented past the drag handle, so the chip sits under the text.
             padding: const EdgeInsets.only(
-              left: AppSizes.icon + AppSpacing.xs,
+              left: AppSizes.grip + AppSpacing.xs,
               top: AppSpacing.xs,
             ),
             child: IngredientMatchChip(

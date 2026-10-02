@@ -111,12 +111,12 @@ void main() {
       await _pump(tester, draft: RecipeDraft.empty());
 
       // One ingredient row and one step row to start with.
-      expect(find.byIcon(Icons.drag_handle), findsNWidgets(2));
+      expect(find.byIcon(Icons.drag_indicator), findsNWidgets(2));
 
       await tester.tap(find.widgetWithText(TextButton, 'Add ingredient'));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.drag_handle), findsNWidgets(3));
+      expect(find.byIcon(Icons.drag_indicator), findsNWidgets(3));
     });
 
     testWidgets('shows the Translate action -- there is nothing to conflict '
@@ -222,8 +222,18 @@ void main() {
         (WidgetTester tester) async {
       await _pump(tester, draft: RecipeDraft.empty());
 
-      expect(find.widgetWithText(OutlinedButton, 'Camera'), findsOneWidget);
-      expect(find.widgetWithText(OutlinedButton, 'Gallery'), findsOneWidget);
+      // FilledButton.tonalIcon builds a private subclass, so match by `is`
+      // rather than widgetWithText's runtimeType.
+      for (final String label in <String>['Camera', 'Gallery']) {
+        expect(
+          find.ancestor(
+            of: find.text(label),
+            matching: find.byWidgetPredicate((Widget w) => w is FilledButton),
+          ),
+          findsOneWidget,
+        );
+      }
+      expect(find.byIcon(Icons.image_outlined), findsOneWidget);
       expect(find.byTooltip('Remove photo'), findsNothing);
       expect(find.byType(Image), findsNothing);
     });

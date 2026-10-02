@@ -5,9 +5,12 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/app_locale.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
+import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/kitchen_colors.dart';
 import '../../../core/widgets/app_action_bar.dart';
+import '../../../core/widgets/app_badge.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_field_label.dart';
 import '../application/translation_reviewer.dart';
@@ -118,6 +121,19 @@ class _TranslationReviewScreenState
           AppSpacing.xl,
         ),
         children: <Widget>[
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: AppBadge(
+              tonal: true,
+              leading: Icon(
+                Icons.language,
+                size: AppSizes.iconInMeta,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              label: l10n.machineTranslationChipLabel,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
           // Each pair reads label, then the original, then the field to fix
           // -- "read the line above, fix the line below it".
           AppFieldLabel(text: l10n.titleLabel),
@@ -199,21 +215,36 @@ class _OriginalText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          label,
-          style: theme.textTheme.labelMedium
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          text,
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-        ),
-      ],
+    final KitchenColors kitchen = theme.extension<KitchenColors>()!;
+    // The ring is part of docLanguage's own definition: without it, the dark
+    // fill is invisible against the dark ground.
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: kitchen.docLanguage,
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            label,
+            style: theme.textTheme.labelMedium
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            text,
+            style: theme.textTheme.bodyMedium
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -351,12 +351,12 @@ the one that aliases a different role per brightness; still an alias.)
 | `leftover` | `secondary` | the return icon on a leftover meal entry |
 | `unmatched` | `outline` | the dashed ring on an ingredient that matched nothing — **never `error`** |
 | `offline` / `onOffline` | `surfaceContainerHighest` / `onSurface` | the offline banner: calm, not red |
-| `docLanguage` | `surfaceContainerLow` with an `outlineVariant` ring | the "SR"/"EN" tag saying which language a generated document is in |
+| `docLanguage` | `surfaceContainerLow` with an `outlineVariant` ring | the "SR"/"EN" tag saying which language a generated document is in, and the panel behind a field's original text on the translation review |
 | `destructive` | `error` | destructive actions, as text only — never a fill |
 | `stepConnector` | `outlineVariant` | the 2dp line joining one step disc to the next |
 | `dividerDash` | `outlineVariant` | the dashed divider under an ingredient row |
 | `card` | `surfaceContainer` (light) / `surfaceContainerHigh` (dark) | every themed `Card`'s fill. It picks a role per brightness because dark `surfaceContainer` (`#20201A`, +5 tone from the ground) fades out once there is no border. In light it matches the nav bar's `#F5EBDF` on purpose |
-| `dragHandle` | `outline` | the 6-dot grip on a meal-plan entry, and nothing else |
+| `dragHandle` | `outline` | the 6-dot grip on every reorderable row: a meal-plan entry, and the editor's ingredient and step rows |
 | `dropTarget` | `primaryContainer` | the fill of the entries in a hovered slot, and of a hovered collapsed day |
 
 Two of these are load-bearing rules rather than preferences:
@@ -476,6 +476,23 @@ radius, so it is not in `AppRadii` — and because `InputBorder` takes only a
 `BorderRadius.circular(AppSizes.field / 2)`. It is `AppSearchField`: no resting
 border, `surfaceContainerHighest`, a magnifier in `outline`, and a clear button
 once there is something to clear.
+
+**The photo well** (the recipe editor) is 16:9, `surfaceContainerHighest`,
+radius `md`. Empty, it centres a 32dp `image` icon in `outline`, `md`, then
+tonal Camera / Gallery `sm` apart (a `Wrap`, so a large text scale stacks
+them instead of overflowing). Filled, the photo takes the same 16:9 shape at
+radius `md`, so picking one does not move the form; under it, `sm`, then the
+tonal Camera / Gallery row and the remove button.
+
+**A step field is labelled** `Korak N` / `Step N` with `AppFieldLabel` above
+its row, indented past the grip, not hinted: a hint vanishes once the cook
+types. Steps sit `md` apart.
+
+**The translation review's original text** sits in a panel above its field
+(D84): `docLanguage` with a 1dp `outlineVariant` ring, radius `sm`, padded
+`md`/`sm`. The ring is not optional: dark `docLanguage` on the dark ground is
+invisible without it. Inside, the `Original (…)` label in `labelMedium`, `xs`,
+then the text in `bodyMedium`, both `onSurfaceVariant`.
 
 ### Chips
 
@@ -863,7 +880,8 @@ lives, below.
 `labelMedium` `onSurfaceVariant`:
 
 - **outlined** (the default) — Draft: an `outline` hairline, no fill;
-- **tonal** (`tonal: true`) — Machine translation and Translating…: a
+- **tonal** (`tonal: true`) — Machine translation (the recipe detail and the
+  translation review) and Translating…: a
   `surfaceContainerHighest` fill, no border, an optional 16dp `leading` icon
   and an `xs` gap before the label.
 

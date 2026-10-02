@@ -13,6 +13,7 @@ import '../../../core/router/routes.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/kitchen_colors.dart';
 import '../../../core/widgets/app_action_bar.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_field_label.dart';
@@ -371,7 +372,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
                   key: ValueKey<int>(step.localId),
                   index: index,
                   initialValue: step.text,
-                  hintText: l10n.stepLabel(index + 1),
+                  label: l10n.stepLabel(index + 1),
                   maxLines: 3,
                   onChanged: (String value) =>
                       _editor.setStepText(step.localId, value),
@@ -444,61 +445,102 @@ class _PhotoField extends StatelessWidget {
   final VoidCallback onRemove;
   final AppLocalizations l10n;
 
+  /// The empty well's `image` icon. The frame's value, and the editor is its
+  /// only user, so no token.
+  static const double _wellIcon = 32;
+
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     final Uint8List? bytes = pickedImage?.bytes;
     final bool hasPhoto = bytes != null || existingImageUrl != null;
+
+    final Widget cameraButton = FilledButton.tonalIcon(
+      onPressed: () => onPick(ImageSource.camera),
+      icon: const Icon(Icons.camera_alt_outlined),
+      label: Text(l10n.cameraButton),
+    );
+    final Widget galleryButton = FilledButton.tonalIcon(
+      onPressed: () => onPick(ImageSource.gallery),
+      icon: const Icon(Icons.photo_library_outlined),
+      label: Text(l10n.galleryButton),
+    );
+
+    // One 16:9 shape whether empty or filled, so picking a photo does not
+    // move the form below it.
+    if (!hasPhoto) {
+      return AspectRatio(
+        aspectRatio: 16 / 9,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  Icons.image_outlined,
+                  size: _wellIcon,
+                  color: scheme.outline,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                // A Wrap, not a Row: side by side at any phone width in
+                // either language, but stacked rather than overflowing at a
+                // large text scale.
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: <Widget>[cameraButton, galleryButton],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (hasPhoto)
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadii.sm),
-              child: bytes != null
-                  ? Image.memory(bytes, fit: BoxFit.cover)
-                  : Image.network(
-                      existingImageUrl!,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (BuildContext context, Widget child,
-                              ImageChunkEvent? progress) =>
-                          progress == null
-                              ? child
-                              : const Center(
-                                  child: CircularProgressIndicator()),
-                      errorBuilder: (_, _, _) => const Center(
-                          child: Icon(Icons.broken_image_outlined)),
-                    ),
-            ),
+        AspectRatio(
+          aspectRatio: 16 / 9,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            child: bytes != null
+                ? Image.memory(bytes, fit: BoxFit.cover)
+                : Image.network(
+                    existingImageUrl!,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (BuildContext context, Widget child,
+                            ImageChunkEvent? progress) =>
+                        progress == null
+                            ? child
+                            : const Center(
+                                child: CircularProgressIndicator()),
+                    errorBuilder: (_, _, _) => const Center(
+                        child: Icon(Icons.broken_image_outlined)),
+                  ),
           ),
-        if (hasPhoto) const SizedBox(height: AppSpacing.sm),
+        ),
+        const SizedBox(height: AppSpacing.sm),
         Row(
           children: <Widget>[
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => onPick(ImageSource.camera),
-                icon: const Icon(Icons.camera_alt_outlined),
-                label: Text(l10n.cameraButton),
-              ),
-            ),
+            Expanded(child: cameraButton),
             const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => onPick(ImageSource.gallery),
-                icon: const Icon(Icons.photo_library_outlined),
-                label: Text(l10n.galleryButton),
-              ),
+            Expanded(child: galleryButton),
+            const SizedBox(width: AppSpacing.sm),
+            IconButton(
+              tooltip: l10n.removePhotoTooltip,
+              icon: const Icon(Icons.delete_outline),
+              onPressed: onRemove,
             ),
-            if (hasPhoto) ...<Widget>[
-              const SizedBox(width: AppSpacing.sm),
-              IconButton(
-                tooltip: l10n.removePhotoTooltip,
-                icon: const Icon(Icons.delete_outline),
-                onPressed: onRemove,
-              ),
-            ],
           ],
         ),
       ],
@@ -506,12 +548,12 @@ class _PhotoField extends StatelessWidget {
   }
 }
 
-/// One draggable, removable row of the ingredient or step list.
+/// One labelled, draggable, removable step row.
 class _EditableRow extends StatelessWidget {
   const _EditableRow({
     required this.index,
     required this.initialValue,
-    required this.hintText,
+    required this.label,
     required this.onChanged,
     required this.onRemove,
     required this.removeTooltip,
@@ -521,7 +563,7 @@ class _EditableRow extends StatelessWidget {
 
   final int index;
   final String initialValue;
-  final String hintText;
+  final String label;
   final int maxLines;
   final ValueChanged<String> onChanged;
   final VoidCallback onRemove;
@@ -529,32 +571,50 @@ class _EditableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final KitchenColors kitchen =
+        Theme.of(context).extension<KitchenColors>()!;
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          ReorderableDragStartListener(
-            index: index,
-            child: const Padding(
-              padding: EdgeInsets.only(right: AppSpacing.xs),
-              child: Icon(Icons.drag_handle),
+          Padding(
+            // Indented past the grip, so the label sits over the field.
+            padding: const EdgeInsets.only(
+              left: AppSizes.grip + AppSpacing.xs,
             ),
+            child: AppFieldLabel(text: label),
           ),
-          Expanded(
-            child: TextFormField(
-              initialValue: initialValue,
-              maxLines: maxLines,
-              textCapitalization: TextCapitalization.sentences,
-              style: Theme.of(context).textTheme.bodyMedium,
-              decoration: InputDecoration(hintText: hintText),
-              onChanged: onChanged,
-            ),
-          ),
-          IconButton(
-            tooltip: removeTooltip,
-            icon: const Icon(Icons.close),
-            onPressed: onRemove,
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              ReorderableDragStartListener(
+                index: index,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.xs),
+                  child: Icon(
+                    Icons.drag_indicator,
+                    size: AppSizes.grip,
+                    color: kitchen.dragHandle,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TextFormField(
+                  initialValue: initialValue,
+                  maxLines: maxLines,
+                  textCapitalization: TextCapitalization.sentences,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  onChanged: onChanged,
+                ),
+              ),
+              IconButton(
+                tooltip: removeTooltip,
+                icon: const Icon(Icons.close),
+                onPressed: onRemove,
+              ),
+            ],
           ),
         ],
       ),
