@@ -165,8 +165,8 @@ A screen picks a role for what the text *is*, never a raw `fontSize`.
 
 | Role | Size / line | Weight | Letter spacing | For |
 |---|---|---|---|---|
-| `displaySmall` | 32 / 40 | 700 | 0.5 | the wordmark, in `primary`, and nothing else |
-| `headlineSmall` | 28 / 34 | 700 | 0.3 | the household's name (a *recipe's* detail title is `KitchenType.recipeTitleLarge`) |
+| `displaySmall` | 32 / 40 | 700 | 0.5 | the type wordmark for text contexts; no screen uses it since D137 (sign-in shows the lockup) |
+| `headlineSmall` | 28 / 34 | 700 | 0.3 | the household's name, and the onboarding screens' titles (D137) (a *recipe's* detail title is `KitchenType.recipeTitleLarge`) |
 | `titleLarge` | 22 / 28 | 600 | — | app bar, dialog titles |
 | `titleMedium` | 18 / 24 | 600 | — | section headings, sheet titles, empty-state titles |
 | `titleSmall` | 14 / 20 | 600 | — | labels, settings group headers |
@@ -249,7 +249,7 @@ number in the table.
 |---|---|---|
 | `target` | 48 | minimum hit area, every control |
 | `button` | 48 | all buttons — the sign-in button is `signInButton` |
-| `signInButton` | 52 | the sign-in screen's Google button |
+| `signInButton` | 52 | the sign-in screen's Google button (outlined, neutral) |
 | `field` | 52 | filled text field, search |
 | `chip` | 40 | filter chips — 32 for input tags |
 | `appBar` | 64 | top app bar |
@@ -261,11 +261,15 @@ number in the table.
 | `emptyStateIcon` | 48 | `AppEmptyState`'s icon |
 | `grip` | 20 | the drag-indicator glyph on a meal-plan entry |
 | `gripColumn` | 40 | the trailing column that glyph is centred in |
+| `signInIllustration` | 176 | the sign-in screen's painted recipe card, as a width (176 × 139) |
+| `lockup` | 48 | the sign-in screen's logo lockup, as a height |
+| `onboardingMark` | 56 | the mark tile on create / join household |
 
 `emptyStateIcon` is its own name rather than a borrowed `target`: they are the
 same number today, but one is a hit area and the other is a drawing, and they
 have no reason to move together. `signInButton` is not `field`, `grip` is not
-`iconInButton` and `gripColumn` is not `avatar`, for the same reason.
+`iconInButton`, `gripColumn` is not `avatar` and `onboardingMark` is not
+`thumb` or `field`, for the same reason.
 
 `AppDurations`: 150 ms for a small state change, 250 ms for a transition,
 emphasized easing. **No decorative animation.** The class exists so later
@@ -320,6 +324,9 @@ above own them.
 | `--duration-short`, `--duration-medium` | `AppDurations.short`, `.medium` |
 | `--ease-emphasized` (`cubic-bezier(0.2,0,0,1)`, M3's CSS fallback) | `AppDurations.emphasized` (`Curves.easeInOutCubicEmphasized`) |
 | `--elevation-2`, `--elevation-3` | M3 elevation 2 / 3 with `shadowColor: scheme.shadow` (§ Elevation) |
+| `assets/recipe-card.png` | `SignInIllustration` (a painter in theme roles, D137) |
+| `assets/mark-master.svg` | `assets/brand/mark.png` (`make icons`) |
+| `lockup-en-light.svg`, `lockup-en-dark.svg` | `assets/brand/lockup_light.png`, `lockup_dark.png` (`make icons`) |
 | (web only, no mapping) | `--font-sans`, `--font-mono`, the `--surface-*` / `--text-*` / `--border-*` aliases (they resolve to roles above), `.kt-state`, `.kt-dash` |
 
 ---
@@ -378,7 +385,9 @@ single most important action. Everything else is quieter:
 
 The household screen has no filled button: its invite action is outlined and
 Copy is tonal, because nothing on it is the screen's one action. The sign-in
-button is the 52dp filled `primary`, with no logo.
+button is 52dp, outlined in `outline`, filled `surfaceContainerLowest`, label
+`onSurface`, with the official Google G at `iconInButton`. The sign-in screen,
+like the household screen, has no filled button (D137).
 
 **Sign out** is a full-width `OutlinedButton.icon` with the `logout` icon and
 `foregroundColor: onSurface` — label and icon neutral, border `outline`. Not
@@ -402,9 +411,13 @@ above them. Its child is one filled button, full width, or equal `Expanded`
 halves `md` apart. The busy spinner inside a button is the call site's,
 `AppSizes.iconInMeta` square.
 
-The onboarding screens (create / join household) do **not** use it: they have
-no app bar and centre their form, so the filled button sits in that column,
-then `sm`, then the text-button switcher.
+The onboarding screens (create / join household) do **not** use it: no app
+bar, no hairline, `surface` throughout. They are top-aligned — the 56dp mark,
+the `headlineSmall` title, the `bodyLarge` subtitle, the field — with the
+filled button, then `sm`, then the full-width text-button switcher pinned to
+the bottom by `SliverFillRemaining(hasScrollBody: false)` and a `Spacer`
+(D137). The padding goes inside `SliverFillRemaining`, not in a trailing
+`SliverPadding`, which would push the bottom air below the fold.
 
 ### Cards
 
@@ -441,7 +454,7 @@ exactly the defect part 2's walk found in the search box.
 call site writes the gaps: `sm` from label to field, `lg` from a field to the
 next label, `xl` from the last field of a group to an `AppSectionHeading`. A
 field whose purpose is already said by the paragraph or title above it (the
-paste box, the join code) has no label. `hintText`, `helperText` and
+paste box) has no label. `hintText`, `helperText` and
 `counterText: ''` stay in the decoration; `labelText`, a local
 `OutlineInputBorder` and `isDense` do not appear at all.
 
@@ -451,7 +464,8 @@ fields top-aligned. A label that wraps at 360dp (`Priprema (min)`) pushes all
 the fields down together, so they never stagger. Columns sit `sm` apart.
 
 **A code-entry field** (the join code) is `titleLarge` with `sm` letter
-spacing and tabular figures, centred, no label.
+spacing and tabular figures, centred, under its label (`Pozivni kod` /
+`Invite code`).
 
 **The search field is the stadium exception.** A stadium is a shape, not a
 radius, so it is not in `AppRadii` — and because `InputBorder` takes only a
@@ -942,6 +956,10 @@ zone. `android-adaptive-foreground.svg` is the source of truth for the shapes.
   headless Chrome and PIL. Re-run it when `docs/design/logo/` changes, and
   edit the VectorDrawables to match by hand.
 
-The launcher label stays "Kitchen Table" in both locales. The lockups
-(`lockup-*.svg`, mark plus Literata wordmark) and any in-app wordmark are not
-shipped: the sign-in screen has no logo.
+The launcher label stays "Kitchen Table" in both locales. In the app (D137),
+sign-in shows the lockup (`lockup-en-*.svg`, mark plus Literata wordmark) as a
+raster PNG, light or dark, and create / join show the mark as a 56dp rounded
+PNG tile. Both are written by `make icons` into `assets/brand/` at 1x / 2.0x /
+3.0x. Literata is baked into the PNG and is never UI type. The third output
+there is the Google G for the sign-in button, from `docs/design/google/`
+(Google's own sign-in assets), not recoloured.

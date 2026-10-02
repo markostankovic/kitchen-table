@@ -8,7 +8,9 @@ import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_field_label.dart';
 import '../application/household_providers.dart';
+import 'onboarding_mark.dart';
 
 /// Onboarding: the signed-in user has an invite code for someone else's
 /// household.
@@ -63,77 +65,98 @@ class _JoinHouseholdScreenState extends ConsumerState<JoinHouseholdScreen> {
     final ThemeData theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Text(
-                  l10n.joinHouseholdTitle,
-                  style: theme.textTheme.titleLarge,
-                  textAlign: TextAlign.center,
+        child: CustomScrollView(
+          slivers: <Widget>[
+            // Fills the screen when there is room, so the Spacer pins the
+            // buttons to the bottom; scrolls when the keyboard takes it. The
+            // padding is inside: a trailing SliverPadding sits past the filled
+            // extent, pushing the bottom air off-screen.
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xl,
+                  AppSpacing.xxl + AppSpacing.xl,
+                  AppSpacing.xl,
+                  AppSpacing.xxl,
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  l10n.joinHouseholdSubtitle,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                // No label: the title above is the prompt. A code rather than
-                // prose, so titleLarge, spaced out, with every digit the same
-                // width.
-                TextField(
-                  controller: _code,
-                  autofocus: true,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  maxLength: 6,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    letterSpacing: AppSpacing.sm,
-                    fontFeatures: const <FontFeature>[
-                      FontFeature.tabularFigures(),
-                    ],
-                  ),
-                  inputFormatters: <TextInputFormatter>[
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                  decoration: const InputDecoration(counterText: ''),
-                  onSubmitted: (_) => _submit(),
-                ),
-                if (_failure != null) ...<Widget>[
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    _failure!.localized(l10n),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.error,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    const Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: OnboardingMark(),
                     ),
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.lg),
-                FilledButton(
-                  onPressed: _joining ? null : _submit,
-                  child: _joining
-                      ? const SizedBox.square(
-                          dimension: AppSizes.iconInMeta,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(l10n.joinButton),
+                    const SizedBox(height: AppSpacing.xl),
+                    Text(
+                      l10n.joinHouseholdTitle,
+                      style: theme.textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      l10n.joinHouseholdSubtitle,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    AppFieldLabel(text: l10n.inviteCodeFieldLabel),
+                    const SizedBox(height: AppSpacing.sm),
+                    // A code rather than prose, so titleLarge, spaced out,
+                    // with every digit the same width.
+                    TextField(
+                      controller: _code,
+                      autofocus: true,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      maxLength: 6,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        letterSpacing: AppSpacing.sm,
+                        fontFeatures: const <FontFeature>[
+                          FontFeature.tabularFigures(),
+                        ],
+                      ),
+                      inputFormatters: <TextInputFormatter>[
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      decoration: const InputDecoration(counterText: ''),
+                      onSubmitted: (_) => _submit(),
+                    ),
+                    if (_failure != null) ...<Widget>[
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        _failure!.localized(l10n),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.xl),
+                    const Spacer(),
+                    FilledButton(
+                      onPressed: _joining ? null : _submit,
+                      child: _joining
+                          ? const SizedBox.square(
+                              dimension: AppSizes.iconInMeta,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(l10n.joinButton),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size.fromHeight(AppSizes.button),
+                      ),
+                      onPressed: _joining
+                          ? null
+                          : () => const CreateHouseholdRoute().go(context),
+                      child: Text(l10n.createHouseholdInsteadButton),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                TextButton(
-                  onPressed: _joining
-                      ? null
-                      : () => const CreateHouseholdRoute().go(context),
-                  child: Text(l10n.createHouseholdInsteadButton),
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

@@ -618,6 +618,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Ask someone in the household to generate a code for you.';
 
   @override
+  String get inviteCodeFieldLabel => 'Invite code';
+
+  @override
   String get joinButton => 'Join';
 
   @override

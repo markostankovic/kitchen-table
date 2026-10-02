@@ -803,6 +803,10 @@
   "@joinHouseholdSubtitle": {
     "description": "Join-household screen, the subtitle under the headline."
   },
+  "inviteCodeFieldLabel": "Pozivni kod",
+  "@inviteCodeFieldLabel": {
+    "description": "Join-household screen's code field label, above the six-digit code."
+  },
   "joinButton": "Priključi se",
   "@joinButton": {
     "description": "Join-household screen, the submit button."

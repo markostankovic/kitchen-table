@@ -104,3 +104,8 @@ flutter:
   # is committed (l10n.yaml sets `synthetic-package: false`), on the same
   # convention CLAUDE.md states for `*.g.dart` / `*.freezed.dart`.
   generate: true
+
+  # Brand images (lockup, mark, the Google "G"), written by `make icons`
+  # from docs/design/ -- never by a package (D130, D137).
+  assets:
+    - assets/brand/

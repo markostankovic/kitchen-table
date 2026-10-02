@@ -188,6 +188,7 @@
 
   "joinHouseholdTitle": "Enter your invite code",
   "joinHouseholdSubtitle": "Ask someone in the household to generate a code for you.",
+  "inviteCodeFieldLabel": "Invite code",
   "joinButton": "Join",
   "createHouseholdInsteadButton": "Create a household instead",
 

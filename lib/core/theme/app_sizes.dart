@@ -67,4 +67,17 @@ abstract final class AppSizes {
   /// The trailing column a meal-plan entry's [grip] is centred in. Not
   /// [avatar], though the number matches: that is a person's circle.
   static const double gripColumn = 40;
+
+  /// The sign-in screen's painted recipe-card illustration, as a width. Its
+  /// height follows from the drawing's 176 x 139 aspect ratio.
+  static const double signInIllustration = 176;
+
+  /// The sign-in screen's logo lockup (mark plus "Kitchen Table"), as a
+  /// height. The image's width follows from its own aspect ratio.
+  static const double lockup = 48;
+
+  /// The mark tile at the top of the create/join household screens. Not
+  /// [thumb] (72) or [field] (52), though neither is far off: a drawing and
+  /// a hit area or a photo slot have no reason to move together.
+  static const double onboardingMark = 56;
 }

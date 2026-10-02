@@ -8,6 +8,7 @@ import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../application/auth_providers.dart';
+import 'sign_in_illustration.dart';
 
 /// The way in: Google, the only path (D96).
 ///
@@ -78,10 +79,22 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     final AppLocalizations loc = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
 
+    final ColorScheme scheme = theme.colorScheme;
+    final bool dark = theme.brightness == Brightness.dark;
+    const Widget spinner = SizedBox.square(
+      dimension: AppSizes.iconInMeta,
+      child: CircularProgressIndicator(strokeWidth: 2),
+    );
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            0,
+            AppSpacing.xl,
+            AppSpacing.xxl,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -90,32 +103,36 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   child: SingleChildScrollView(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
+                        const SignInIllustration(),
+                        const SizedBox(height: AppSpacing.xxl + AppSpacing.sm),
                         // The brand name, not chrome -- never localized, the
                         // same way 'Srpski'/'English' are never localized
-                        // either.
-                        Text(
-                          'Kitchen Table',
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                          ),
-                          textAlign: TextAlign.center,
+                        // either. So an English-only lockup is right in `sr`.
+                        Image.asset(
+                          'assets/brand/lockup_${dark ? 'dark' : 'light'}.png',
+                          height: AppSizes.lockup,
+                          semanticLabel: 'Kitchen Table',
                         ),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          loc.signInTagline,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                        const SizedBox(height: AppSpacing.lg),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
                           ),
-                          textAlign: TextAlign.center,
+                          child: Text(
+                            loc.signInTagline,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                         if (_failure != null) ...<Widget>[
                           const SizedBox(height: AppSpacing.lg),
                           Text(
                             _failure!.localized(loc),
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.error,
+                              color: scheme.error,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -125,19 +142,25 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   ),
                 ),
               ),
-              // The screen's one action, so the one filled button -- in
-              // `primary`, with no logo (the repo has no asset for one).
-              FilledButton(
-                style: FilledButton.styleFrom(
+              // Outlined and neutral, with the official G, per Google's own
+              // branding -- so this screen has no filled button, the way the
+              // household screen has none either (D137).
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(AppSizes.signInButton),
+                  backgroundColor: scheme.surfaceContainerLowest,
+                  foregroundColor: scheme.onSurface,
+                  side: BorderSide(color: scheme.outline),
                 ),
                 onPressed: _signingInWithGoogle ? null : _signInWithGoogle,
-                child: _signingInWithGoogle
-                    ? const SizedBox.square(
-                        dimension: AppSizes.iconInMeta,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(loc.signInWithGoogle),
+                icon: _signingInWithGoogle
+                    ? spinner
+                    : Image.asset(
+                        'assets/brand/google_g.png',
+                        width: AppSizes.iconInButton,
+                        height: AppSizes.iconInButton,
+                      ),
+                label: Text(loc.signInWithGoogle),
               ),
               if (Env.hasDevLogin) ...<Widget>[
                 const SizedBox(height: AppSpacing.sm),
@@ -148,7 +171,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   child: Text('Dev login: ${Env.devLoginEmail}'),
                 ),
               ],
-              const SizedBox(height: AppSpacing.xl),
             ],
           ),
         ),

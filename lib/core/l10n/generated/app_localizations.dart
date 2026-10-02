@@ -1124,6 +1124,12 @@ abstract class AppLocalizations {
   /// **'Zamolite nekoga iz domaćinstva da vam napravi kod.'**
   String get joinHouseholdSubtitle;
 
+  /// Join-household screen's code field label, above the six-digit code.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pozivni kod'**
+  String get inviteCodeFieldLabel;
+
   /// Join-household screen, the submit button.
   ///
   /// In sr, this message translates to:

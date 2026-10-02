@@ -627,6 +627,9 @@ class AppLocalizationsSr extends AppLocalizations {
       'Zamolite nekoga iz domaćinstva da vam napravi kod.';
 
   @override
+  String get inviteCodeFieldLabel => 'Pozivni kod';
+
+  @override
   String get joinButton => 'Priključi se';
 
   @override

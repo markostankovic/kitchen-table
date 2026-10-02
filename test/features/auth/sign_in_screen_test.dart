@@ -1,4 +1,5 @@
-// Phase 7 part 8 -- the sign-in screen's Garden layout.
+// Phase 7 part 8 -- the sign-in screen's Garden layout; part 15 (D137) --
+// the lockup and the outlined Google button.
 //
 // Built on household_screen_test.dart's harness: a ProviderScope and a
 // Serbian MaterialApp (D77 -- nobody is signed in, so this screen renders
@@ -17,8 +18,8 @@ import 'package:kitchen_table/features/auth/presentation/sign_in_screen.dart';
 
 final AppLocalizations sr = AppLocalizationsSr();
 
-Future<ThemeData> _pump(WidgetTester tester) async {
-  final ThemeData theme = AppTheme.light();
+Future<ThemeData> _pump(WidgetTester tester, {ThemeData? theme}) async {
+  theme ??= AppTheme.light();
   await tester.pumpWidget(
     ProviderScope(
       child: MaterialApp(
@@ -40,22 +41,50 @@ void main() {
 
     expect(
       tester
-          .getSize(find.widgetWithText(FilledButton, sr.signInWithGoogle))
+          .getSize(find.widgetWithText(OutlinedButton, sr.signInWithGoogle))
           .height,
       AppSizes.signInButton,
     );
   });
 
-  testWidgets('the wordmark is displaySmall in primary', (
+  for (final (String name, ThemeData Function() theme)
+      in <(String, ThemeData Function())>[
+        ('light', AppTheme.light),
+        ('dark', AppTheme.dark),
+      ]) {
+    testWidgets('the lockup is the $name image, labelled "Kitchen Table"', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, theme: theme());
+
+      final Image lockup = tester.widget<Image>(
+        find.byWidgetPredicate(
+          (Widget w) => w is Image && w.semanticLabel == 'Kitchen Table',
+        ),
+      );
+      expect(
+        (lockup.image as AssetImage).assetName,
+        endsWith('lockup_$name.png'),
+      );
+    });
+  }
+
+  testWidgets('the Google button is neutral: lowest fill, outline side', (
     WidgetTester tester,
   ) async {
     final ThemeData theme = await _pump(tester);
 
-    final TextStyle? style = tester
-        .widget<Text>(find.text('Kitchen Table'))
+    final ButtonStyle? style = tester
+        .widget<OutlinedButton>(
+          find.widgetWithText(OutlinedButton, sr.signInWithGoogle),
+        )
         .style;
-    expect(style?.color, theme.colorScheme.primary);
-    expect(style?.fontSize, theme.textTheme.displaySmall?.fontSize);
+    const Set<WidgetState> idle = <WidgetState>{};
+    expect(
+      style?.backgroundColor?.resolve(idle),
+      theme.colorScheme.surfaceContainerLowest,
+    );
+    expect(style?.side?.resolve(idle)?.color, theme.colorScheme.outline);
   });
 
   testWidgets('no dev-login button without its build-time defines', (
@@ -63,7 +92,8 @@ void main() {
   ) async {
     await _pump(tester);
 
-    expect(find.byType(OutlinedButton), findsNothing);
+    // The Google button is the one OutlinedButton now (D137).
     expect(find.textContaining('Dev login'), findsNothing);
+    expect(find.byType(OutlinedButton), findsOneWidget);
   });
 }
