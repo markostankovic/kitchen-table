@@ -187,6 +187,42 @@ void main() {
     expect(find.textContaining('Reading the recipe'), findsOneWidget);
   });
 
+  testWidgets('Discard while waiting dismisses the job without asking and '
+      'leaves', (WidgetTester tester) async {
+    // Nothing has been parsed yet, so, as on a failed job, there is nothing
+    // for a confirm to protect.
+    final _FakeImportRepo repo = _FakeImportRepo();
+    await _pump(
+      tester,
+      _job(ImportJobStatus.processing),
+      settle: false,
+      repo: repo,
+    );
+
+    await tester.tap(find.text('Discard this import'));
+    // The spinner is gone once the route changes, so settling ends.
+    await tester.pumpAndSettle();
+    expect(find.text('Discard this import?'), findsNothing);
+    expect(repo.dismissed, <String>[_jobId]);
+    expect(find.text(_landedOnRecipes), findsOneWidget);
+  });
+
+  testWidgets('Serbian at 360x780 lays out the waiting state without '
+      'overflow', (WidgetTester tester) async {
+    await _pump(
+      tester,
+      _job(ImportJobStatus.processing),
+      settle: false,
+      locale: srLatn,
+      surface: const Size(360, 780),
+    );
+    expect(tester.takeException(), isNull);
+
+    final AppLocalizationsSr sr = AppLocalizationsSr();
+    expect(find.text(sr.readingRecipeEllipsis), findsOneWidget);
+    expect(find.text(sr.discardImportButton), findsOneWidget);
+  });
+
   testWidgets('a failed job shows the server\'s own sentence', (
     WidgetTester tester,
   ) async {

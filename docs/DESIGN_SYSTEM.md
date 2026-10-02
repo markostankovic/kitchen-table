@@ -170,7 +170,7 @@ A screen picks a role for what the text *is*, never a raw `fontSize`.
 | `titleLarge` | 22 / 28 | 600 | — | app bar, dialog titles |
 | `titleMedium` | 18 / 24 | 600 | — | section headings, sheet titles, empty-state titles, stat values |
 | `titleSmall` | 14 / 20 | 600 | — | labels, settings group headers |
-| `bodyLarge` | 18 / 28 | 400 | — | the reading text — recipe steps, ingredient lines |
+| `bodyLarge` | 18 / 28 | 400 | — | the reading text — recipe steps, ingredient lines; the intro paragraph on the import screens |
 | `bodyMedium` | 14 / 20 | 400 | — | default copy, the result count, menu items, stat labels |
 | `bodySmall` | 12 / 16 | 400 | — | captions, meta |
 | `labelLarge` | 14 / 20 | 600 | — | buttons, chips, the step number |
@@ -411,8 +411,14 @@ A screen whose save action sits at the bottom puts it on `AppActionBar`:
 with a 1dp `outlineVariant` top hairline, padded `lg`/`md`, and an optional
 already-localized error line above the buttons in `bodySmall` `error`, `sm`
 above them. Its child is one filled button, full width, or equal `Expanded`
-halves `md` apart. The busy spinner inside a button is the call site's,
-`AppSizes.iconInMeta` square.
+halves `md` apart, or a single full-width **outlined** button — the import
+waiting state's Discard. The busy spinner inside a button is the call
+site's, `AppSizes.iconInMeta` square.
+
+The import entry screens (link, paste, photo) do **not** use it: a pinned
+bar sits under the keyboard. Their filled `Pročitaj ovaj recept` is inline,
+full width, `xl` under the last field (or the photo screen's button row),
+with the error line `sm` above it in `bodySmall` `error`.
 
 The onboarding screens (create / join household) do **not** use it: no app
 bar, no hairline, `surface` throughout. They are top-aligned — the 56dp mark,
@@ -483,6 +489,14 @@ tonal Camera / Gallery `sm` apart (a `Wrap`, so a large text scale stacks
 them instead of overflowing). Filled, the photo takes the same 16:9 shape at
 radius `md`, so picking one does not move the form; under it, `sm`, then the
 tonal Camera / Gallery row and the remove button.
+
+**The import photo well** (import from a photo) is the same vocabulary at
+1:1 — square, not the page's shape, so Read clears the fold at 360×760. Empty,
+a centred 48dp `menu_book_outlined` in `outline`; filled, the page with
+`BoxFit.contain` in the same box, letterboxed on `surfaceContainerHighest`.
+The tonal Camera / Gallery `Wrap` (`sm` apart, centred) sits *below* the well
+in both states, `md` under it; then `xl`, then Read. Private to
+`import_photo_screen.dart`, not shared with the editor's well.
 
 **A step field is labelled** `Korak N` / `Step N` with `AppFieldLabel` above
 its row, indented past the grip, not hinted: a hint vanishes once the cook
@@ -728,6 +742,24 @@ not rewritten; the snackbar says it applies next time).
 an `ExpansionTile`, **collapsed**, with `const Border()` shapes so it draws no
 lines of its own: `Verovatno imate (N)` in `titleSmall`, the staples subtitle
 in `bodySmall` `onSurfaceVariant`, the same `IngredientLineRow`s inside.
+
+### Import capture
+
+The entry screens (link, paste, photo): body padded `lg`, the intro paragraph
+in `bodyLarge` `onSurfaceVariant`, `xl`, then the fields, then the inline Read
+(§ Action bar). The import routes keep the automatic back arrow, not the
+frame's ✕ (D140).
+
+**The waiting state** (the review screen while the job is queued or being
+read) follows `AppEmptyState`'s rhythm with a spinner for its icon: the
+default-size `CircularProgressIndicator` (`primary` on a
+`surfaceContainerHighest` track), `lg`, `Čitanje recepta...` / `U redu
+čekanja...` in `titleMedium`, `sm`, the hint in `bodyMedium`
+`onSurfaceVariant`, all centred and padded `xxl` horizontally. Pinned under it
+on `AppActionBar`, a full-width outlined `Odbaci ovaj uvoz` with **no
+confirm**: nothing has been parsed yet, so, as in the Failed state, nothing is
+lost. The model call already under way still runs and still counts against
+quota.
 
 ### Import review
 

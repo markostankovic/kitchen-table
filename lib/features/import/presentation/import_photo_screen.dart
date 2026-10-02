@@ -11,7 +11,6 @@ import '../../../core/router/routes.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/app_action_bar.dart';
 import '../application/import_providers.dart';
 
 /// Photograph a cookbook page and let a vision model read it (D15).
@@ -47,6 +46,10 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
   /// would be uploaded over somebody's mobile connection first.
   static const double _maxEdge = 1600;
   static const int _quality = 85;
+
+  /// The empty well's book icon. The frame's value, and this screen is its
+  /// only user, so no token.
+  static const double _wellIcon = 48;
 
   Future<void> _pick(ImageSource source) async {
     setState(() {
@@ -117,16 +120,8 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
     final Uint8List? bytes = _bytes;
-    // Horizontal lg rather than the theme's xl, as on the import review
-    // (D123): each half is about 183dp on the Galaxy and 160dp at 360dp.
-    // Part 7's walk found `Choose a photo` / `Izaberi fotografiju` wrapping
-    // at the default; padding alone fixed the English but not the Serbian,
-    // so the labels became `Camera` / `Gallery`, the editor's own photo
-    // picker's words.
-    final ButtonStyle pickerStyle = OutlinedButton.styleFrom(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-    );
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.importPhotoTitle)),
@@ -135,54 +130,76 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
         children: <Widget>[
           Text(
             l10n.importPhotoBody,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: scheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: pickerStyle,
-                  onPressed: _busy ? null : () => _pick(ImageSource.camera),
-                  icon: const Icon(Icons.photo_camera_outlined),
-                  label: Text(l10n.takePhotoButton),
-                ),
+          const SizedBox(height: AppSpacing.xl),
+          // One square whether empty or filled, so picking a page does not
+          // move anything below it. Square rather than the page's own shape:
+          // a taller well pushes Read below the fold at 360x760.
+          AspectRatio(
+            aspectRatio: 1,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              child: DecoratedBox(
+                decoration:
+                    BoxDecoration(color: scheme.surfaceContainerHighest),
+                child: bytes == null
+                    ? Center(
+                        child: Icon(
+                          Icons.menu_book_outlined,
+                          size: _wellIcon,
+                          color: scheme.outline,
+                        ),
+                      )
+                    // Shown so the cook can see the page is in frame and
+                    // legible before paying for a model call on a blurred
+                    // corner. Contained, not cropped: a portrait page
+                    // letterboxes on the well's colour.
+                    : Center(child: Image.memory(bytes, fit: BoxFit.contain)),
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: pickerStyle,
-                  onPressed: _busy ? null : () => _pick(ImageSource.gallery),
-                  icon: const Icon(Icons.photo_library_outlined),
-                  label: Text(l10n.choosePhotoButton),
-                ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // A Wrap, not a Row: side by side at any phone width in either
+          // language, but stacked rather than overflowing at a large text
+          // scale (D140).
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: <Widget>[
+              FilledButton.tonalIcon(
+                onPressed: _busy ? null : () => _pick(ImageSource.camera),
+                icon: const Icon(Icons.camera_alt_outlined),
+                label: Text(l10n.takePhotoButton),
+              ),
+              FilledButton.tonalIcon(
+                onPressed: _busy ? null : () => _pick(ImageSource.gallery),
+                icon: const Icon(Icons.photo_library_outlined),
+                label: Text(l10n.choosePhotoButton),
               ),
             ],
           ),
-          if (bytes != null) ...<Widget>[
-            const SizedBox(height: AppSpacing.lg),
-            // Shown so the cook can see the page is in frame and legible
-            // before paying for a model call on a blurred corner.
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadii.sm),
-              child: Image.memory(bytes, fit: BoxFit.contain),
+          const SizedBox(height: AppSpacing.xl),
+          if (_error != null) ...<Widget>[
+            Text(
+              _errorText(l10n),
+              style: theme.textTheme.bodySmall?.copyWith(color: scheme.error),
             ),
+            const SizedBox(height: AppSpacing.sm),
           ],
+          FilledButton(
+            onPressed: _busy || bytes == null ? null : _submit,
+            child: _busy
+                ? const SizedBox.square(
+                    dimension: AppSizes.iconInMeta,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(l10n.readRecipeButton),
+          ),
         ],
-      ),
-      bottomNavigationBar: AppActionBar(
-        error: _error == null ? null : _errorText(l10n),
-        child: FilledButton(
-          onPressed: _busy || bytes == null ? null : _submit,
-          child: _busy
-              ? const SizedBox.square(
-                  dimension: AppSizes.iconInMeta,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.readRecipeButton),
-        ),
       ),
     );
   }

@@ -7,7 +7,6 @@ import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/app_action_bar.dart';
 import '../../../core/widgets/app_field_label.dart';
 import '../application/import_providers.dart';
 
@@ -81,11 +80,11 @@ class _ImportPasteScreenState extends ConsumerState<ImportPasteScreen> {
         children: <Widget>[
           Text(
             l10n.importPasteBody,
-            style: theme.textTheme.bodyMedium?.copyWith(
+            style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.xl),
           // No label of its own: the paragraph above is its label.
           TextField(
             controller: _text,
@@ -106,19 +105,28 @@ class _ImportPasteScreenState extends ConsumerState<ImportPasteScreen> {
               helperText: l10n.importSourceHelperText,
             ),
           ),
+          const SizedBox(height: AppSpacing.xl),
+          if (_failure != null) ...<Widget>[
+            Text(
+              _failure!.localized(l10n),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          // Inline under the last field rather than on a pinned bar, which
+          // would sit under the keyboard (D137's onboarding shape).
+          FilledButton(
+            onPressed: _submitting ? null : _submit,
+            child: _submitting
+                ? const SizedBox.square(
+                    dimension: AppSizes.iconInMeta,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(l10n.readRecipeButton),
+          ),
         ],
-      ),
-      bottomNavigationBar: AppActionBar(
-        error: _failure?.localized(l10n),
-        child: FilledButton(
-          onPressed: _submitting ? null : _submit,
-          child: _submitting
-              ? const SizedBox.square(
-                  dimension: AppSizes.iconInMeta,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.readRecipeButton),
-        ),
       ),
     );
   }

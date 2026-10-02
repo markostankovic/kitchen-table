@@ -52,7 +52,7 @@ class ImportReviewScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.reviewImportTitle)),
       body: job.when(
-        loading: () => const _Waiting(status: null),
+        loading: () => _Waiting(jobId: jobId, status: null),
         error: (Object e, _) =>
             _Failed(jobId: jobId, message: localizedErrorMessage(e, l10n)),
         data: (ImportJob value) => switch (value.status) {
@@ -67,7 +67,8 @@ class ImportReviewScreen extends ConsumerWidget {
           // A job already saved. Reachable by pressing Back onto a finished
           // review, and better answered than crashed on.
           ImportJobStatus.done => _AlreadySaved(recipeId: value.recipeId),
-          _ when !value.isReviewable => _Waiting(status: value.status),
+          _ when !value.isReviewable =>
+            _Waiting(jobId: jobId, status: value.status),
           _ => _ReviewBody(jobId: jobId),
         },
       ),
@@ -79,40 +80,85 @@ class ImportReviewScreen extends ConsumerWidget {
 /// in `ingredient_line_row.dart`: one number is not worth a shared constant.
 const double _markerWidth = 3;
 
-class _Waiting extends StatelessWidget {
-  const _Waiting({required this.status});
+class _Waiting extends ConsumerStatefulWidget {
+  const _Waiting({required this.jobId, required this.status});
 
+  final String jobId;
   final ImportJobStatus? status;
+
+  @override
+  ConsumerState<_Waiting> createState() => _WaitingState();
+}
+
+class _WaitingState extends ConsumerState<_Waiting> {
+  bool _dismissing = false;
+
+  /// No confirm, as in `_FailedState._dismiss`: nothing has been parsed yet,
+  /// so nothing is lost. The model call already under way still runs and
+  /// still counts against quota; the soft-deleted job is simply never shown.
+  Future<void> _dismiss() async {
+    setState(() => _dismissing = true);
+    try {
+      await ref.read(importRepositoryProvider).dismiss(widget.jobId);
+      if (!mounted) return;
+      const RecipesRoute().go(context);
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      final AppLocalizations l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
+      setState(() => _dismissing = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          const CircularProgressIndicator(),
-          const SizedBox(height: AppSpacing.xl),
-          Text(
-            status == ImportJobStatus.processing
-                ? l10n.readingRecipeEllipsis
-                : l10n.queuedEllipsis,
-            style: theme.textTheme.bodyLarge,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-            child: Text(
-              l10n.importWaitingHint,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+    // AppEmptyState's rhythm, with a spinner where its icon would be.
+    return Column(
+      children: <Widget>[
+        Expanded(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  CircularProgressIndicator(
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    widget.status == ImportJobStatus.processing
+                        ? l10n.readingRecipeEllipsis
+                        : l10n.queuedEllipsis,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    l10n.importWaitingHint,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        AppActionBar(
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _dismissing ? null : _dismiss,
+              child: Text(l10n.discardImportButton),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
