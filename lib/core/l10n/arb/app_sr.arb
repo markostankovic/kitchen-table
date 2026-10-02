@@ -1359,5 +1359,30 @@
         "type": "int"
       }
     }
+  },
+  "translatingBadgeLabel": "Prevodi se…",
+  "@translatingBadgeLabel": {
+    "description": "Recipe detail screen, the tonal badge (beside a small spinner) shown while translate-recipe is running for this recipe (Phase 7 part 17)."
+  },
+  "ingredientsForServings": "{count, plural, one{za {count} porciju} few{za {count} porcije} other{za {count} porcija}}",
+  "@ingredientsForServings": {
+    "description": "Recipe detail screen, the ingredients heading's trailer, at its right. Accusative after 'za' -- recipeServingsCount is the nominative model next door.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sourceImportedFromLink": "Uvezeno sa linka",
+  "@sourceImportedFromLink": {
+    "description": "Recipe detail screen, the source line's lead-in for a recipe imported from a URL; followed by ' · ' and the attribution or the URL's host."
+  },
+  "sourceImportedFromPhoto": "Uvezeno sa fotografije",
+  "@sourceImportedFromPhoto": {
+    "description": "Recipe detail screen, the source line's lead-in for a recipe imported from a photo (OCR); followed by ' · ' and the attribution or the URL's host."
+  },
+  "sourceLabel": "Izvor",
+  "@sourceLabel": {
+    "description": "Recipe detail screen, the source line's lead-in for a manual or AI-generated recipe that still carries a source; followed by ' · ' and the attribution or the URL's host."
   }
 }

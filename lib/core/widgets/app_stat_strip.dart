@@ -13,6 +13,11 @@ import '../theme/app_spacing.dart';
 ///
 /// A caller passes only the columns that have a value: a recipe with no cook
 /// time gets three columns across the full width, not four with a gap.
+///
+/// Each column is a `bodyMedium` `onSurfaceVariant` label over a
+/// `titleMedium` value, with `lg` inside the hairlines. The columns abut with
+/// no gap between them: at 360dp a quarter of the width is just enough for
+/// five 16dp stars, and a gap would make the rating shrink to fit.
 class AppStatStrip extends StatelessWidget {
   const AppStatStrip({required this.columns, super.key});
 
@@ -21,11 +26,11 @@ class AppStatStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final TextStyle? valueStyle = theme.textTheme.bodyLarge;
+    final TextStyle? valueStyle = theme.textTheme.titleMedium;
 
-    // Every value sits in a box one `bodyLarge` line tall, start-aligned and
+    // Every value sits in a box one `titleMedium` line tall, start-aligned and
     // vertically centred in it, so a column whose value is five 16dp stars
-    // lines up with one whose value is a 26dp line of text. Without it each column's value hangs from
+    // lines up with one whose value is a 24dp line of text. Without it each column's value hangs from
     // its own top edge and the strip reads as four things at four heights --
     // which is how it rendered on the device before this.
     //
@@ -39,7 +44,7 @@ class AppStatStrip extends StatelessWidget {
       children: <Widget>[
         const Divider(),
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -50,7 +55,7 @@ class AppStatStrip extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         column.label,
-                        style: theme.textTheme.bodySmall?.copyWith(
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -79,7 +84,7 @@ class AppStatStrip extends StatelessWidget {
 ///
 /// [value] is a `Widget` rather than a `String` because one of the four
 /// columns on a recipe is five stars, and it is an interactive control. A
-/// text value is a `Text` in `bodyLarge` tinted `KitchenColors.statValue`;
+/// text value is a `Text` in `titleMedium` tinted `KitchenColors.statValue`;
 /// the call site builds it, since only the call site knows whether what it is
 /// showing is a number or a rating.
 class AppStatColumn {

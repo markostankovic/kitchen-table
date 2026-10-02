@@ -168,13 +168,13 @@ A screen picks a role for what the text *is*, never a raw `fontSize`.
 | `displaySmall` | 32 / 40 | 700 | 0.5 | the type wordmark for text contexts; no screen uses it since D137 (sign-in shows the lockup) |
 | `headlineSmall` | 28 / 34 | 700 | 0.3 | the household's name, and the onboarding screens' titles (D137) (a *recipe's* detail title is `KitchenType.recipeTitleLarge`) |
 | `titleLarge` | 22 / 28 | 600 | — | app bar, dialog titles |
-| `titleMedium` | 18 / 24 | 600 | — | section headings, sheet titles, empty-state titles |
+| `titleMedium` | 18 / 24 | 600 | — | section headings, sheet titles, empty-state titles, stat values |
 | `titleSmall` | 14 / 20 | 600 | — | labels, settings group headers |
 | `bodyLarge` | 18 / 28 | 400 | — | the reading text — recipe steps, ingredient lines |
-| `bodyMedium` | 14 / 20 | 400 | — | default copy, the result count, menu items |
+| `bodyMedium` | 14 / 20 | 400 | — | default copy, the result count, menu items, stat labels |
 | `bodySmall` | 12 / 16 | 400 | — | captions, meta |
 | `labelLarge` | 14 / 20 | 600 | — | buttons, chips, the step number |
-| `labelMedium` | 12 / 16 | 500 | — | badges, nav labels |
+| `labelMedium` | 12 / 16 | 500 | — | badges (Draft, the machine-translation badge), nav labels |
 
 Roles not listed keep Material 3's defaults; nothing in the app needs them.
 
@@ -573,9 +573,11 @@ step, so a single step draws none. The 2 and the 4 are private consts in
 `recipe_detail_screen.dart`, its only user.
 
 The servings / prep / cook /
-rating strip puts labels in `bodySmall` muted above values in `bodyLarge`
-w600 `statValue`, both start-aligned in equal-width columns (the mock's
-left edge, not centred).
+rating strip puts labels in `bodyMedium` `onSurfaceVariant` above values in
+`titleMedium` (18/24 w600) `statValue`, both start-aligned in equal-width
+columns (the mock's left edge, not centred), with `lg` inside the
+`outlineVariant` hairlines. The columns abut with no gap between them, so five
+16dp stars still fit a quarter of a 360dp screen.
 
 ### Recipe card
 
@@ -856,6 +858,18 @@ lives, below.
 | `AppActionBar` | `core/widgets/app_action_bar.dart` |
 | `RecipeCard` | `core/recipes/widgets/recipe_card.dart` |
 | `IngredientLineRow` | `core/ingredients/widgets/ingredient_line_row.dart` |
+
+`AppBadge` has two looks, both 24 tall, radius `xs`, the label in
+`labelMedium` `onSurfaceVariant`:
+
+- **outlined** (the default) — Draft: an `outline` hairline, no fill;
+- **tonal** (`tonal: true`) — Machine translation and Translating…: a
+  `surfaceContainerHighest` fill, no border, an optional 16dp `leading` icon
+  and an `xs` gap before the label.
+
+`AppSectionHeading` takes an optional `trailing` string, in `bodyMedium`
+`onSurfaceVariant`, baseline-aligned at the right (the recipe detail's
+`for 8 servings` beside Ingredients). Without it the heading is unchanged.
 
 `AppMonogramTile(circular: true)` is a person (member, profile); the square
 is a thing (recipe).

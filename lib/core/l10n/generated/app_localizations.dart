@@ -1813,6 +1813,36 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'{count, plural, one{{count} recept} few{{count} recepta} other{{count} recepata}}'**
   String recipeCount(int count);
+
+  /// Recipe detail screen, the tonal badge (beside a small spinner) shown while translate-recipe is running for this recipe (Phase 7 part 17).
+  ///
+  /// In sr, this message translates to:
+  /// **'Prevodi se…'**
+  String get translatingBadgeLabel;
+
+  /// Recipe detail screen, the ingredients heading's trailer, at its right. Accusative after 'za' -- recipeServingsCount is the nominative model next door.
+  ///
+  /// In sr, this message translates to:
+  /// **'{count, plural, one{za {count} porciju} few{za {count} porcije} other{za {count} porcija}}'**
+  String ingredientsForServings(int count);
+
+  /// Recipe detail screen, the source line's lead-in for a recipe imported from a URL; followed by ' · ' and the attribution or the URL's host.
+  ///
+  /// In sr, this message translates to:
+  /// **'Uvezeno sa linka'**
+  String get sourceImportedFromLink;
+
+  /// Recipe detail screen, the source line's lead-in for a recipe imported from a photo (OCR); followed by ' · ' and the attribution or the URL's host.
+  ///
+  /// In sr, this message translates to:
+  /// **'Uvezeno sa fotografije'**
+  String get sourceImportedFromPhoto;
+
+  /// Recipe detail screen, the source line's lead-in for a manual or AI-generated recipe that still carries a source; followed by ' · ' and the attribution or the URL's host.
+  ///
+  /// In sr, this message translates to:
+  /// **'Izvor'**
+  String get sourceLabel;
 }
 
 class _AppLocalizationsDelegate

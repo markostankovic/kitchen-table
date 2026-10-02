@@ -1022,4 +1022,27 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get translatingBadgeLabel => 'Translating…';
+
+  @override
+  String ingredientsForServings(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'for $count servings',
+      one: 'for $count serving',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sourceImportedFromLink => 'Imported from a link';
+
+  @override
+  String get sourceImportedFromPhoto => 'Imported from a photo';
+
+  @override
+  String get sourceLabel => 'Source';
 }

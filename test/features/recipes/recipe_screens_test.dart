@@ -968,6 +968,72 @@ void main() {
 
       expect(find.text('Brzo'), findsOneWidget);
     });
+
+    // Phase 7 part 17: the frame's servings trailer beside the heading.
+    testWidgets('the Ingredients heading says how many it serves',
+        (WidgetTester tester) async {
+      await _pumpDetail(tester, _detail.copyWith(readingLocale: 'en'));
+
+      expect(find.text('for 8 servings'), findsOneWidget);
+    });
+
+    testWidgets('no servings, no trailer on the Ingredients heading',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          readingLocale: 'en',
+          recipe: _torta.copyWith(servings: null),
+        ),
+      );
+
+      expect(find.textContaining('serving'), findsNothing);
+    });
+
+    testWidgets('a URL import\'s source line is the lead-in and the host, '
+        'on one line', (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          readingLocale: 'en',
+          recipe: _torta.copyWith(
+            sourceType: RecipeSourceType.urlImport,
+            sourceUrl: 'https://www.kuvajmo.rs/punjene-paprike',
+          ),
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.byIcon(Icons.link),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      expect(find.text('Imported from a link · kuvajmo.rs'), findsOneWidget);
+      expect(find.textContaining('https://'), findsNothing);
+    });
+
+    testWidgets('an attribution replaces the host on the source line',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          readingLocale: 'en',
+          recipe: _torta.copyWith(
+            sourceType: RecipeSourceType.urlImport,
+            sourceUrl: 'https://www.kuvajmo.rs/punjene-paprike',
+            sourceAttribution: 'Kuvajmo',
+          ),
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.byIcon(Icons.link),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      expect(find.text('Imported from a link · Kuvajmo'), findsOneWidget);
+      expect(find.textContaining('kuvajmo.rs'), findsNothing);
+    });
   });
 
   // Phase 3, part 3: the overflow menu's Translate/Review entry points and
@@ -1028,6 +1094,30 @@ void main() {
       );
 
       expect(find.text('Machine translation'), findsOneWidget);
+    });
+
+    // Phase 7 part 17: a badge, not a chip -- nothing taps it.
+    testWidgets('the Machine translation caveat is a tonal badge, not a Chip',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          readingLocale: 'en',
+          translations: <RecipeTranslation>[
+            const RecipeTranslation(locale: 'en', title: 'Carrot cake'),
+          ],
+        ),
+      );
+
+      final Finder label = find.text('Machine translation');
+      expect(
+        find.ancestor(of: label, matching: find.byType(Chip)),
+        findsNothing,
+      );
+      expect(
+        find.ancestor(of: label, matching: find.byType(AppBadge)),
+        findsOneWidget,
+      );
     });
 
     testWidgets('the Machine translation chip is absent once reviewed',

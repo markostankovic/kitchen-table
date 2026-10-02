@@ -1034,4 +1034,28 @@ class AppLocalizationsSr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get translatingBadgeLabel => 'Prevodi se…';
+
+  @override
+  String ingredientsForServings(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'za $count porcija',
+      few: 'za $count porcije',
+      one: 'za $count porciju',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sourceImportedFromLink => 'Uvezeno sa linka';
+
+  @override
+  String get sourceImportedFromPhoto => 'Uvezeno sa fotografije';
+
+  @override
+  String get sourceLabel => 'Izvor';
 }

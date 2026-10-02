@@ -309,5 +309,10 @@
   "clearFiltersChip": "Clear",
   "clearFiltersButton": "Clear filters",
   "noRecipesMatchFilterBody": "Try removing a filter to see more recipes.",
-  "recipeCount": "{count, plural, one{{count} recipe} other{{count} recipes}}"
+  "recipeCount": "{count, plural, one{{count} recipe} other{{count} recipes}}",
+  "translatingBadgeLabel": "Translating…",
+  "ingredientsForServings": "{count, plural, one{for {count} serving} other{for {count} servings}}",
+  "sourceImportedFromLink": "Imported from a link",
+  "sourceImportedFromPhoto": "Imported from a photo",
+  "sourceLabel": "Source"
 }

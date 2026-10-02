@@ -16,14 +16,39 @@ import '../theme/app_spacing.dart';
 /// D127; part 2 had briefly made it Literata). The 8dp beneath keeps the
 /// section's content close; more would start to look like a gap rather than
 /// a heading with its section under it.
+///
+/// An optional [trailing] string sits at the right on the heading's
+/// baseline, in `bodyMedium` `onSurfaceVariant` -- a quiet qualifier of the
+/// whole section, such as how many it serves. Without it the heading is the
+/// bare `Text` it always was.
 class AppSectionHeading extends StatelessWidget {
-  const AppSectionHeading({required this.text, super.key});
+  const AppSectionHeading({required this.text, this.trailing, super.key});
 
   final String text;
+  final String? trailing;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-    child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-  );
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Widget title = Text(text, style: theme.textTheme.titleMedium);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: trailing == null
+          ? title
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                Expanded(child: title),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  trailing!,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
 }

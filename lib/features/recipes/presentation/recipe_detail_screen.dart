@@ -40,10 +40,6 @@ import '../../../core/ingredients/widgets/quantity_format.dart';
 const double _connectorWidth = 2;
 const double _connectorGap = 4;
 
-/// The alpha of the `surface` disc behind each app-bar button, so it reads
-/// over any photo.
-const double _overPhotoAlpha = 0.7;
-
 /// One recipe, read-only.
 ///
 /// The ingredient list is the part that matters. A matched line renders the
@@ -113,15 +109,21 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     // reasons still hold: every icon button sits on its own `surface` disc,
     // so an arbitrary photo in either brightness cannot swallow it, and the
     // pinned bar keeps the favourite toggle reachable at any scroll position.
+    // The disc is opaque `surface` with `onSurface` icons (D139, amending
+    // D135's translucent disc), so it reads the same over any photo and
+    // blends into the collapsed `surface` bar.
+    //
+    // No `minimumSize`: this local theme replaces the app's whole icon-button
+    // style, so each button is M3's default 40dp disc in a padded 48dp tap
+    // target -- the frame's 40dp disc.
     final double photoHeight = MediaQuery.sizeOf(context).width * 9 / 16;
 
     final Widget appBar = Theme(
       data: theme.copyWith(
         iconButtonTheme: IconButtonThemeData(
           style: IconButton.styleFrom(
-            backgroundColor: theme.colorScheme.surface.withValues(
-              alpha: _overPhotoAlpha,
-            ),
+            backgroundColor: theme.colorScheme.surface,
+            foregroundColor: theme.colorScheme.onSurface,
           ),
         ),
       ),
@@ -516,7 +518,12 @@ class _Body extends ConsumerWidget {
               // width in Serbian as in English; a joined sentence is not.
               AppStatStrip(columns: _stats(context, kitchen)),
               const SizedBox(height: AppSpacing.xl),
-              AppSectionHeading(text: l10n.ingredientsHeading),
+              AppSectionHeading(
+                text: l10n.ingredientsHeading,
+                trailing: detail.recipe.servings == null
+                    ? null
+                    : l10n.ingredientsForServings(detail.recipe.servings!),
+              ),
               if (detail.ingredients.isEmpty)
                 Text(
                   l10n.noIngredientsYet,
@@ -553,33 +560,43 @@ class _Body extends ConsumerWidget {
     );
   }
 
-  /// The badge and chips that qualify this recipe, and the gap under them.
+  /// The badges that qualify this recipe, and the gap under them.
   ///
   /// All three are caveats, never endorsements: a draft is a recipe nobody
-  /// has vouched for yet, and the machine-translation chip disappears of its
+  /// has vouched for yet, and the machine-translation badge disappears of its
   /// own accord once `review_recipe_translation` sets
   /// `is_machine_generated = false` (Phase 3, part 3). There is no
-  /// "Reviewed" chip and there should not be one -- the disappearance is the
+  /// "Reviewed" badge and there should not be one -- the disappearance is the
   /// signal.
   ///
-  /// `Draft` is an [AppBadge] rather than a `Chip` now: a chip in this app is
-  /// a control, and nothing taps this.
+  /// All three are [AppBadge]s rather than `Chip`s: a chip in this app is a
+  /// control, and nothing taps these. `Draft` is the outlined badge; the
+  /// machine translation and the translation in flight are the tonal one
+  /// with a leading icon (D139).
   List<Widget> _caveats(BuildContext context) {
+    final Color muted = Theme.of(context).colorScheme.onSurfaceVariant;
     final List<Widget> chips = <Widget>[
       if (detail.recipe.status == RecipeStatus.draft)
         AppBadge(label: l10n.draftChipLabel),
       if (detail.isShowingMachineTranslation)
-        Chip(
-          avatar: const Icon(Icons.language, size: AppSizes.iconInMeta),
-          label: Text(l10n.machineTranslationChipLabel),
+        AppBadge(
+          tonal: true,
+          leading: Icon(
+            Icons.language,
+            size: AppSizes.iconInMeta,
+            color: muted,
+          ),
+          label: l10n.machineTranslationChipLabel,
         ),
       if (translating)
-        const Chip(
-          label: SizedBox(
+        AppBadge(
+          tonal: true,
+          leading: const SizedBox(
             width: AppSizes.iconInMeta,
             height: AppSizes.iconInMeta,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
+          label: l10n.translatingBadgeLabel,
         ),
     ];
     if (chips.isEmpty) return const <Widget>[];
@@ -598,9 +615,8 @@ class _Body extends ConsumerWidget {
   /// except the rating, which is a control rather than a fact and is offered
   /// even when unrated.
   List<AppStatColumn> _stats(BuildContext context, KitchenColors kitchen) {
-    final TextStyle? value = Theme.of(context).textTheme.bodyLarge?.copyWith(
+    final TextStyle? value = Theme.of(context).textTheme.titleMedium?.copyWith(
       color: kitchen.statValue,
-      fontWeight: FontWeight.w600,
     );
     final Recipe recipe = detail.recipe;
     return <AppStatColumn>[
@@ -673,14 +689,27 @@ class _Body extends ConsumerWidget {
   /// Where the recipe came from. Stored and displayed for every import
   /// (docs/ROADMAP.md, standing rules). Nothing in 1c sets it, but the
   /// display is the half that must not be forgotten later.
+  ///
+  /// One line: a lead-in by `source_type`, then the attribution if there is
+  /// one, otherwise the URL's host. All of it muted `bodySmall`, the host
+  /// included -- nothing here opens a link (no `url_launcher`), so nothing is
+  /// styled as one (D139).
   List<Widget> _sourceFooter(BuildContext context) {
     final Recipe recipe = detail.recipe;
     if (recipe.sourceAttribution == null && recipe.sourceUrl == null) {
       return const <Widget>[];
     }
     final ThemeData theme = Theme.of(context);
+    final String leadIn = switch (recipe.sourceType) {
+      RecipeSourceType.urlImport => l10n.sourceImportedFromLink,
+      RecipeSourceType.ocr => l10n.sourceImportedFromPhoto,
+      RecipeSourceType.manual ||
+      RecipeSourceType.aiGenerated => l10n.sourceLabel,
+    };
+    final String origin =
+        recipe.sourceAttribution ?? _sourceHost(recipe.sourceUrl!);
     return <Widget>[
-      const SizedBox(height: AppSpacing.xl),
+      const SizedBox(height: AppSpacing.xxl),
       const Divider(),
       const SizedBox(height: AppSpacing.md),
       Row(
@@ -694,11 +723,7 @@ class _Body extends ConsumerWidget {
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
-              <String>[
-                if (recipe.sourceAttribution != null)
-                  recipe.sourceAttribution!,
-                if (recipe.sourceUrl != null) recipe.sourceUrl!,
-              ].join('\n'),
+              '$leadIn · $origin',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -708,6 +733,15 @@ class _Body extends ConsumerWidget {
       ),
     ];
   }
+}
+
+/// The host of [url] without a leading `www.`, for the source line --
+/// `https://www.kuvajmo.rs/punjene-paprike` reads as `kuvajmo.rs`. A URL with
+/// no host to speak of shows as stored.
+String _sourceHost(String url) {
+  final String? host = Uri.tryParse(url)?.host;
+  if (host == null || host.isEmpty) return url;
+  return host.startsWith('www.') ? host.substring(4) : host;
 }
 
 /// The 16:9 well the recipe's photo sits in -- and sits in empty, when there
