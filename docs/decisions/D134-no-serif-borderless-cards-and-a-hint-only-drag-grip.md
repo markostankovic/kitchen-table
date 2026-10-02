@@ -1,5 +1,5 @@
 # D134 — No serif: a recipe's name is sans w700; cards drop their hairline for a per-brightness fill; the meal-plan grip is only a hint
-**Status:** active — supersedes the type half of D127; amends D132's note rule and D118's "bundles Literata"
+**Status:** active — supersedes the type half of D127; amends D132's note rule and D118's "bundles Literata"; its letter-spacing values are amended by D136 (positive)
 **Touches:** lib/core/theme/kitchen_type.dart, lib/core/theme/kitchen_colors.dart, lib/core/theme/app_theme.dart, lib/core/theme/app_sizes.dart, lib/core/recipes/widgets/recipe_card.dart, lib/features/meal_plan/presentation/meal_plan_screen.dart, pubspec.yaml, docs/DESIGN_SYSTEM.md
 
 **Decided.**

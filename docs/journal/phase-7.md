@@ -1732,3 +1732,75 @@ order.
 - a same-day drop onto a different slot (today held only dinners; the
   widget test covers it);
 - the Galaxy.
+
+### Part 14 — Positive tracking, a token map (round `sync-design-initial`, slice 1)
+
+**Status: complete** (`3f33e44`). Decisions taken during it: D136.
+
+The first slice of design round `sync-design-initial`
+(`docs/design/handoffs/2026-10-02-sync-design-initial/`, the first round
+through `/design-handoff`). The round's bundle is a recreation of the app
+as it is on `main`, so its token delta was small. Out of about 100 values,
+only three changed, and each changed only in sign: the w700 roles' letter
+spacing is positive in the bundle and was negative in the app. Planned in
+one session, then built in a fresh one. No migration, no ARB key,
+no new package, and no screen code changed.
+
+- **Tracking flipped** (amends D134's values).
+  - `app_theme.dart` `_textTheme`: `displaySmall` −0.5 → **0.5**, and
+    `headlineSmall` −0.3 → **0.3**.
+  - `kitchen_type.dart`: `recipeTitle` −0.1 → **0.1**, and
+    `recipeTitleLarge` −0.3 → **0.3**. `monogram` stays 0.
+  - The meal-plan note picks up 0.1 through its `copyWith(fontWeight:
+    w400)`. That is intended, because a note has the same metrics as
+    `recipeTitle`.
+  - The four expectations in `app_theme_test.dart` follow.
+- **`DESIGN_SYSTEM.md`.**
+  - § Type's two tables show the new values.
+  - A new **§ Token map** sits between § Elevation and § The semantic
+    layer. It pairs every bundle CSS token with its Flutter symbol, by
+    name only, so `/design-handoff` can diff the next round by name.
+  - § How to read this gains one line pointing at it.
+
+**Decisions taken with the user at planning.**
+- The bundle's positive tracking is intended, not an export error. The
+  round's `ROUND.md` had guessed the export dropped the minus.
+- No `AppSizes.tag`. No code draws a 32dp tag, so `--size-tag` maps to
+  nothing, and the number stays in `AppSizes.chip`'s doc comment.
+
+**Differs from the plan.** One small addition: the pointer line in
+§ How to read this. That section lists three layers and is not a contents
+list, so a one-line pointer was the closest fit to the plan's "add a line
+if it has one".
+
+**How it was verified.**
+- `dart analyze` was clean, `flutter test` passed **718/718**, and
+  `deno test` passed 161/161.
+- `make check` stopped at `seed-check`, the known red on `main` since
+  `c8be2bc`. Its remaining targets, `test-sql` and `l10n-check`, were run
+  by hand and passed.
+- `grep -rn 'letterSpacing: -' lib/core/theme` returns nothing.
+
+**Walked on the emulator** (`/design-walk recipe list`, 2026-10-02, the
+only device attached). `make install-emulator` ran with Dev login,
+sr/light → sr/dark → en/light → en/dark, on the four surfaces the
+tracking reaches:
+- **Recipe list.** *Domaći čorbasti pasulj sa dimljenom slaninom* and
+  *Losos iz rerne — najjednostavnija varijanta* still wrap to two lines on
+  their cards, with nothing ellipsized.
+- **Recipe detail.** The 28 title wraps to two lines under the expanded
+  photo. Collapsed, the bar shows no title, which is D135's design.
+- **Meal plan.** Today's two-line entry title breaks after "dimljenom",
+  as before. The note "Ostaci" is at w400. In the week view the leftover
+  *Ostaci: Palačinke* / *Leftovers: Palačinke* fits on one line.
+- **Household.** *Renamed Household* at 28 fits on one line beside the
+  edit button.
+
+Dark was readable throughout, including `onSurfaceVariant` meta lines and
+the leftover's dashed border. The account was put back to Srpski / Svetla.
+The walk was clean, so the slice opened no loop.
+
+**Not reached:**
+- the wordmark, which is only on the signed-out sign-in screen, and the
+  walk did not sign out;
+- the Galaxy.

@@ -1,0 +1,42 @@
+/* Kitchen Table · Garden — Material 3 colour roles + KitchenColors semantic layer.
+   Light on :root, dark on [data-theme="dark"]. Screens read semantic tokens, never a hex. */
+:root{
+--primary:#366A35;--on-primary:#FFFFFF;--primary-container:#B9F1B3;--on-primary-container:#032B00;
+--secondary:#775A0E;--on-secondary:#FFFFFF;--secondary-container:#FFDEA4;--on-secondary-container:#2F2201;
+--tertiary:#AC3F25;--on-tertiary:#FFFFFF;--tertiary-container:#FFDBD0;--on-tertiary-container:#461200;
+--error:#A50048;--on-error:#FFFFFF;--error-container:#FFDDE2;--on-error-container:#520020;
+--surface:#FFF7EC;--surface-bright:#FFFAF4;--surface-dim:#E5DBD0;
+--surface-container-lowest:#FFFDFA;--surface-container-low:#FAF1E5;--surface-container:#F5EBDF;--surface-container-high:#EFE5DA;--surface-container-highest:#E8DED3;
+--on-surface:#1F190F;--on-surface-variant:#484134;--outline:#6F6759;--outline-variant:#D1C8B8;
+--inverse-surface:#342D24;--on-inverse-surface:#F9EFE3;--inverse-primary:#9ED498;
+--scrim:rgba(31,25,15,.32);
+}
+/* semantic layer is re-declared on every theme scope so var() resolves against that scope */
+:root,[data-theme]{
+/* semantic — ThemeExtension<KitchenColors> */
+--today:var(--primary);--today-container:var(--primary-container);
+--review-marker:var(--tertiary);--favorite:var(--tertiary);--rating:var(--tertiary);--stat-value:var(--tertiary);
+--leftover:var(--secondary);--unmatched:var(--outline);
+--offline:var(--surface-container-highest);--on-offline:var(--on-surface);
+--doc-language:var(--surface-container-low);--doc-language-ring:var(--outline-variant);
+--destructive:var(--error);
+--card:var(--surface-container);--meal-entry:var(--surface);
+--step-connector:var(--outline-variant);--drag-handle:var(--outline);
+/* aliases */
+--surface-page:var(--surface);--surface-card:var(--card);--surface-field:var(--surface-container-highest);--surface-chip:var(--surface-container-highest);
+--surface-menu:var(--surface-container-high);--surface-dialog:var(--surface-container-high);--surface-nav:var(--surface-container);
+--text-primary:var(--on-surface);--text-secondary:var(--on-surface-variant);--text-muted:var(--outline);--text-link:var(--primary);
+--border-hairline:var(--outline-variant);--border-strong:var(--outline);
+}
+[data-theme="dark"]{
+--primary:#9ED498;--on-primary:#013908;--primary-container:#1D511E;--on-primary-container:#BFF6B8;
+--secondary:#E8C174;--on-secondary:#3F2E00;--secondary-container:#5B4300;--on-secondary-container:#FFE5B9;
+--tertiary:#FF9569;--on-tertiary:#461200;--tertiary-container:#881F09;--on-tertiary-container:#FFE2DA;
+--error:#FEB9CB;--on-error:#650030;--error-container:#891446;--on-error-container:#FFE1E8;
+--surface:#16160F;--surface-bright:#373731;--surface-dim:#16160F;
+--surface-container-lowest:#101007;--surface-container-low:#1C1C16;--surface-container:#20201A;--surface-container-high:#292923;--surface-container-highest:#34342E;
+--on-surface:#EBEBE4;--on-surface-variant:#CFD0C2;--outline:#96978A;--outline-variant:#494A3F;
+--inverse-surface:#E3E3DB;--on-inverse-surface:#2E2F29;--inverse-primary:#366A35;
+--scrim:rgba(0,0,0,.5);
+}
+[data-theme="dark"]{--card:var(--surface-container-high)}

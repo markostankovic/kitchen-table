@@ -836,6 +836,20 @@ Device feedback:
 The emulator walk (sr/en × light/dark) found one defect, the Light status
 bar over a photo. It was fixed and re-walked the same session.
 
+### Part 14 — Positive tracking, a token map
+
+**Status: complete** (`3f33e44`). Decisions taken during it: D136. See
+`docs/journal/phase-7.md`.
+
+Design round `sync-design-initial`, slice 1 of 11
+(`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`):
+- the w700 roles track positive at the bundle's values (0.5 / 0.3 / 0.1 /
+  0.3), as the user confirmed;
+- `DESIGN_SYSTEM.md` gains § Token map, the bundle-to-Flutter name table.
+
+The emulator walk (sr/en × light/dark) was clean. The wordmark was not
+reached.
+
 ---
 
 ## Standing rules across phases
