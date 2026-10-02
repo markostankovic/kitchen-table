@@ -118,11 +118,14 @@ house rules are in `bundle/_ds/…/readme.md` (§ VISUAL FOUNDATIONS and
       Done as part 18 (`2245455`, D140). The original below its field, the
       app-bar Save, static ingredient text and the 144dp well were seen and
       not adopted.
-- [ ] `phase7-sync-import-capture`: link, paste, photo, reading. Files:
+- [x] `phase7-sync-import-capture`: link, paste, photo, reading. Files:
       `lib/features/import/presentation/import_url_screen.dart`,
       `import_paste_screen.dart`, `import_photo_screen.dart`, and the
       reading/progress state. Bundle: section `Import`, frames 10–13. Diff
       the three entry screens and the reading state.
+      Done as part 19 (`f41dabd`, D141). The ✕ leading, filled Camera /
+      outlined Gallery, the 3:4-ish well, 4dp top padding, 20px gaps and the
+      44px spinner were seen and not adopted.
 - [ ] `phase7-sync-import-review`: review import. Files:
       `lib/features/import/presentation/import_review_screen.dart`.
       Bundle: section `Import`, frame 14; `IngredientRow` (unmatched ring,

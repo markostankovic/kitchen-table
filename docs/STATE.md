@@ -1,35 +1,36 @@
 # State — 2026-10-02
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 18 (`2245455`), slice 5 of design round
-`sync-design-initial`: the recipe editor and translation review per the
-design (D140, amending D134).
+**Last shipped:** Phase 7 part 19 (`f41dabd`), slice 6 of design round
+`sync-design-initial`: import capture per the design (D141, amending D124
+#2).
 
-- **One grip.** Every reorderable row (meal-plan entries, the editor's
-  ingredient and step rows, the import review's lines) draws
-  `drag_indicator` at `AppSizes.grip` in `KitchenColors.dragHandle`.
-- **Photo well.** Empty, a 16:9 `surfaceContainerHighest` well with an
-  `image` icon over tonal `Kamera` / `Galerija` (a `Wrap`). Filled, the
-  photo in the same 16:9 box at radius `md`, tonal buttons below.
-- **Steps** are labelled `Korak N` / `Step N` above the row, not hinted,
-  `md` apart.
-- **Translation review** opens with the tonal Machine translation badge,
-  and each original is a `docLanguage` panel with an `outlineVariant` ring,
-  still above its field (D84).
-- The frames' original-below-field, app-bar Save with ✕, static ingredient
-  text and 144dp well were seen and not adopted (journal, part 18).
+- **Read is inline.** On link, paste and photo, `Pročitaj ovaj recept` is
+  full width, `xl` under the last field, with the error line `sm` above it.
+  The pinned `AppActionBar` sat under the keyboard. Intro paragraphs are
+  `bodyLarge`.
+- **Photo well.** A 1:1 `surfaceContainerHighest` well with a 48dp
+  `menu_book` in `outline`. The picked page is `contain`ed in the same box.
+  Tonal `Kamera` / `Galerija` (a `Wrap`) sit below it in both states.
+- **Waiting state.** Spinner on a `surfaceContainerHighest` track,
+  `titleMedium`, `bodyMedium` hint, and a pinned outlined `Odbaci ovaj
+  uvoz` with no confirm, the same soft delete as Failed.
+- The frames' ✕ leading, filled Camera / outlined Gallery, 3:4-ish well,
+  4dp top padding, 20px gaps and 44px spinner were seen and not adopted
+  (journal, part 19).
 
-`dart analyze` is clean, `flutter test` passes 735/735, and `make check` is
-green except the known `seed-check` (below); the targets after it pass when
-run by hand. **Walked on the emulator** (`/design-walk recipes`,
-2026-10-02, all four combinations): clean on everything reached. Part 18
-opens a loop for the two checks the walk could not reach. The same walk
-walked part 16 and found the add menu flush against the right edge, so
-part 16's loop stays open with that defect.
+`dart analyze` is clean, `flutter test` passes 738/738, and `make check` is
+green except the known `seed-check` (below); the targets after it pass with
+`make -k check`. **Walked on the emulator** (`/design-walk import`,
+2026-10-02, all four combinations on the entry screens, plus one paste
+import discarded while it read): clean on everything reached. Part 19
+opens a loop for a docked keyboard, 360dp, and the waiting state's pixels.
 
-Still open, not part 18's:
+Still open, not part 19's:
 - the recipe list's add menu touches the screen's right edge (part 16's
   loop, below);
+- a failed link import shows the server's English sentence under `sr`
+  (`That page could not be fetched.`), the stored `error_message`;
 - meal-plan recipe entries show the original-language title under `en`
   (the entry's own `recipeTitle`, D53);
 - the signed-out sign-in screen stays Serbian after an in-app switch to
@@ -44,16 +45,18 @@ Still open, not part 18's:
   Design updates them.
 
 **In flight:** none.
-**Next:** `phase7-sync-import-capture`, slice 6 of round
-`sync-design-initial` (link, paste, photo, reading). Plan it with
-`/plan-slice-ui phase7-sync-import-capture`. The round's slice list is in
-`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`. Part 16's
-menu-edge defect is small enough to fold into a later recipes slice or fix
-on its own. The open device-walk loops below still want one sitting with
-the Galaxy attached.
-**Latest decision:** D140
+**Next:** `phase7-sync-import-review`, slice 7 of round
+`sync-design-initial` (frame 14, review import: the pinned action bar and the
+unmatched lines). Plan it with `/plan-slice-ui phase7-sync-import-review`.
+The round's slice list is in
+`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`. Its walk
+needs a real import, which can also close part 18's import-review grip
+check and part 19's waiting-state pixels. Part 16's menu-edge defect is
+small enough to fold into a later recipes slice or fix on its own. The open
+device-walk loops below still want one sitting with the Galaxy attached.
+**Latest decision:** D141
 
-**Twelve device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Thirteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -97,7 +100,10 @@ Part 17's walk (`/design-walk recipe-detail`, 2026-10-02, emulator, all
 four combinations) was clean on everything it reached, and it opened a loop
 for the two checks no hosted data reached. Part 18's walk (the same
 `/design-walk recipes` sitting) was clean on everything it reached, and it
-opened a loop for the two checks it could not reach.
+opened a loop for the two checks it could not reach. Part 19's walk
+(`/design-walk import`, 2026-10-02, emulator, all four combinations on the
+entry screens) was clean on everything it reached, and it opened a loop for
+the checks the emulator and a one-import quota budget could not reach.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
@@ -673,6 +679,27 @@ Oldest first:
     into Serbian (one hosted AI call);
   - the import review's line editor showing the new grip. It needs a real
     import (one hosted AI parse).
+- **Phase 7 part 19** (`phase7-sync-import-capture`) — inline Read on the
+  import entry screens, the square photo well with the tonal pair, the
+  waiting state's no-confirm Discard. Walked on the **emulator** (2026-10-02,
+  about 411dp wide): link, paste and photo (empty and filled with a portrait
+  page) were clean across sr/en × light/dark. The well's `outline` icon
+  measured about 4.2:1 on `surfaceContainerHighest` in both brightnesses.
+  One paste import (en/dark) was discarded while it read. It landed on the
+  recipe list, and the job had not come back after the read would have
+  finished and the app was restarted. Three checks remain:
+  - **with a docked keyboard**, `Pročitaj ovaj recept` above it or one
+    scroll away on link and paste. The emulator's Gboard only floats over
+    the app and never resizes it, so this needs the Galaxy;
+  - **the photo screen at 360dp**: Read on screen without scrolling after a
+    pick. The emulator is wider, so this also needs the Galaxy;
+  - **the waiting state's pixels**: the spinner's track, the `titleMedium`
+    line and the pinned outlined `Odbaci ovaj uvoz` in sr and in light. The
+    one import's UI dump confirmed the layout (title and hint centred,
+    Discard pinned above the nav bar), but its screenshot caught the busy
+    button a frame early. Link imports never show this state, because the
+    fetch finishes inside the request, so it needs a paste or photo import
+    (one hosted AI call each).
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind

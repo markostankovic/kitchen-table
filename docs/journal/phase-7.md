@@ -2199,3 +2199,106 @@ because reaching it costs a hosted AI parse.
 flush against the screen's right edge in all four combinations (its fill
 reaches x=1079 of 1080), so it is not "clear of the right edge". Part 16's
 loop stays open with that recorded.
+
+### Part 19 — Import capture per the design (round `sync-design-initial`, slice 6)
+
+**Status: complete** (`f41dabd`). Decisions taken during it: D141.
+
+The sixth slice of design round `sync-design-initial`
+(`docs/design/handoffs/2026-10-02-sync-design-initial/`), frames 10–13 (link,
+paste, photo, reading). Planned with `/plan-slice-ui`, built in a fresh
+session. No migration, no new package, no new ARB key: every string already
+existed.
+
+- **Read moves inline** (`import_url_screen.dart`, `import_paste_screen.dart`,
+  `import_photo_screen.dart`). The pinned `AppActionBar` is gone from all
+  three. Scaffold's `bottomNavigationBar` does not rise with the keyboard, so
+  on link and paste Read sat under it. The filled `Pročitaj ovaj recept`
+  now follows the last field, `xl` under it, full width (a `ListView` child
+  is stretched, so no `SizedBox`, as on D137's onboarding). When there is an
+  error, its line sits `sm` above in `bodySmall` `error`. The busy spinner is
+  unchanged.
+- **The intro paragraph** is `bodyLarge` `onSurfaceVariant` (was
+  `bodyMedium`), then `xl` (was `lg`). The link screen's autofocus comment
+  now gives the reason that still holds: a shared link should show the cook
+  the link and the button, not a keyboard.
+- **The photo well.** A 1:1 `surfaceContainerHighest` box at radius `md`.
+  Empty, a 48dp `menu_book_outlined` in `outline` (private `_wellIcon`).
+  Filled, `Image.memory(fit: contain)` centred in the same box. Under it,
+  `md`, then `FilledButton.tonalIcon` `Kamera` / `Galerija` in a centred
+  `Wrap` (`sm`), in both states. `pickerStyle` and its D123 padding comment
+  are deleted. The preview's radius goes from `sm` to `md`.
+- **The waiting state** (`import_review_screen.dart`, `_Waiting` only) is a
+  `ConsumerStatefulWidget` taking `jobId`. A centred column padded `xxl`
+  holds the default `CircularProgressIndicator` on a
+  `surfaceContainerHighest` track, `lg`, `Čitanje recepta...` / `U redu
+  čekanja...` in `titleMedium`, `sm`, then the hint in `bodyMedium`
+  `onSurfaceVariant`. Under it, `AppActionBar` holds a full-width outlined
+  `Odbaci ovaj uvoz`. Its `_dismiss` copies `_FailedState._dismiss`: no
+  confirm, then `dismiss(jobId)` and the recipe list, or a snackbar on
+  `AppFailure`. `dismiss_import_job` soft-deletes whatever the status, and
+  the worker reads `deleted_at is null`, so no migration was needed.
+- **`DESIGN_SYSTEM.md`.** The `bodyLarge` row names the import intro.
+  § Action bar says the entry screens don't use it and that it may hold one
+  outlined button. § Inputs gains the import photo well. A new § Import
+  capture describes the entry screens and the waiting state.
+- **Tests.** In `import_review_screen_test.dart`: Discard while waiting
+  dismisses the job with no dialog and lands on the list, and a 360×780
+  Serbian waiting state doesn't overflow. A new
+  `import_photo_screen_test.dart` pumps the photo screen in Serbian at
+  360×760: no overflow, and the disabled Read is reached by scrolling.
+
+**Seen in the frames, not adopted.** The app-bar ✕ leading (D140). Filled
+Camera / outlined Gallery (one filled button per screen). The 3:4-ish flex
+well, square instead: at 360×760 a 3:4 well put Read below the fold. Also
+the 4dp top padding, the 20px gaps (`xl` instead), the 240px paste box and
+the 44px spinner.
+
+**Differs from the plan.**
+- **The photo test scrolls to Read rather than asserting it is on screen.**
+  Under `flutter_test`'s Ahem font the paragraph runs taller than on a
+  device, so Read falls below the fold at 360×760 and the `ListView` does
+  not build it. The test guards overflow; whether Read clears the fold is
+  the walk's job.
+- No `SizedBox(width: double.infinity)` around the entry screens' Read: a
+  `ListView` already stretches its children. The waiting state's outlined
+  button does have one, as planned.
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **738/738**, `deno test` 161/161.
+- `make -k check` failed only at `seed-check`, the known red since
+  `c8be2bc`. `test-sql` and `l10n-check` ran after it and passed.
+
+**Walked on the emulator** (`/design-walk import`, 2026-10-02, the only
+device attached, about 411dp wide), on the same code before commit, with
+`make install-emulator` and Dev login, sr/light → sr/dark → en/light →
+en/dark.
+- Link, paste and photo were clean in all four. The Serbian paragraphs wrap
+  in three or four lines with nothing clipped, and `Kamera` / `Galerija`
+  sit side by side. Read is on screen on all three without scrolling at the
+  emulator's height.
+- A portrait test page pushed to the gallery and picked: it letterboxes on
+  the well colour inside the same square, nothing below moves, and Read
+  enables in place.
+- The well's `outline` book icon measured about 4.2:1 on
+  `surfaceContainerHighest` in both light and dark, above 3:1 for a
+  non-text graphic.
+- A link import (seriouseats, which refused the fetch) went from the busy
+  button straight to Failed. The link path fetches inside the request, so
+  it never shows the waiting state. Its server sentence (`That page could
+  not be fetched.`) shows in English under `sr`. That is the stored message,
+  older than this slice.
+- **One paste import** (en/dark, one AI call, the budget the user chose).
+  The UI dump caught `Reading the recipe...` and the hint centred, with
+  `Discard this import` pinned above the nav bar. Tapping Discard while it
+  read went to the recipe list with no dialog. After the read would have
+  finished and a cold restart, the list still showed five recipes; the job
+  did not come back.
+
+The account ended on Srpski / Svetla.
+
+**Not reached.** A docked keyboard: the emulator's Gboard only floats and
+never resizes the app. The photo screen at 360dp. The waiting state's
+pixels (the spinner's track, and the state in sr and in light): the
+screenshot caught the busy button a frame before the dump caught the state.
+Part 19's loop holds those three.

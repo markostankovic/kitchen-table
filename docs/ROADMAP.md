@@ -918,6 +918,24 @@ Design round `sync-design-initial`, slice 5 of 11
 The emulator walk (sr/en × light/dark) was clean. It did not reach the review
 in Serbian chrome or the import review's grip.
 
+### Part 19 — Import capture per the design
+
+**Status: complete** (`f41dabd`). Decisions taken during it: D141. See
+`docs/journal/phase-7.md`.
+
+Design round `sync-design-initial`, slice 6 of 11
+(`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`):
+- `Read this recipe` is inline and full width under the last field on link,
+  paste and photo, off the pinned bar the keyboard covered (amending D124);
+- the photo screen has a square well the picked page fills (`contain`),
+  with tonal Camera / Gallery below it;
+- the waiting state follows the empty-state rhythm and pins an outlined
+  Discard with no confirm.
+
+The emulator walk (sr/en × light/dark) was clean on the entry screens. It did
+not reach a docked keyboard, 360dp, or the waiting state's pixels in sr and
+light.
+
 ---
 
 ## Standing rules across phases
