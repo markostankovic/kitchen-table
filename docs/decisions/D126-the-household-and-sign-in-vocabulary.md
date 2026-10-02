@@ -1,5 +1,5 @@
 # D126 — The household and sign-in vocabulary: a filled logo-less 52dp Google button, circular all-mustard avatars, Leave in the bottom destructive slot, text-button destructive confirms, and no colours on the filled-button theme
-**Status:** active
+**Status:** active — #1 (filled logo-less Google button) amended by D137: outlined, neutral, with the official G
 **Touches:** lib/features/auth/presentation/sign_in_screen.dart, lib/features/auth/presentation/settings_screen.dart, lib/features/households/presentation/household_screen.dart, lib/core/widgets/app_monogram_tile.dart, lib/core/theme/app_sizes.dart, lib/core/theme/app_theme.dart, docs/DESIGN_SYSTEM.md
 
 **Decided.** Phase 7 part 8 settles five points where the reference PNGs or

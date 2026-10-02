@@ -850,6 +850,22 @@ Design round `sync-design-initial`, slice 1 of 11
 The emulator walk (sr/en × light/dark) was clean. The wordmark was not
 reached.
 
+### Part 15 — Onboarding per the design
+
+**Status: complete** (`04b56d0`). Decisions taken during it: D137. See
+`docs/journal/phase-7.md`.
+
+Design round `sync-design-initial`, slice 2 of 11
+(`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`):
+- sign-in shows a painted recipe-card illustration and the logo lockup,
+  with an outlined neutral Google button carrying the official G;
+- create / join are top-aligned with a 56dp mark and `headlineSmall`
+  titles, and the buttons are pinned to the bottom;
+- the lockup, mark and G are PNGs that `make icons` writes, with no package.
+
+The emulator walk (sr/en × light/dark) was clean. It did not reach the
+keyboard-open state or the Google button's busy path.
+
 ---
 
 ## Standing rules across phases

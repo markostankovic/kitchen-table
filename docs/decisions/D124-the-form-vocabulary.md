@@ -1,5 +1,5 @@
 # D124 — The form vocabulary: `AppFieldLabel` and `AppActionBar` in `core/widgets/`, a two-row numbers row, onboarding on `titleLarge`, and the match chip's status words following the reader
-**Status:** active
+**Status:** active — #2 (onboarding centres its form) and #4 (onboarding titles on `titleLarge`) amended by D137: top-aligned, `headlineSmall`
 **Touches:** lib/core/widgets/app_field_label.dart, lib/core/widgets/app_action_bar.dart, lib/features/recipes/presentation/recipe_edit_screen.dart, lib/features/recipes/presentation/translation_review_screen.dart, lib/features/import/presentation/, lib/features/households/presentation/create_household_screen.dart, lib/features/households/presentation/join_household_screen.dart, lib/core/ingredients/widgets/ingredient_match_chip.dart, docs/DESIGN_SYSTEM.md
 
 **Decided.** Phase 7 part 7 puts every remaining form on one vocabulary.

@@ -1,25 +1,31 @@
 # State — 2026-10-02
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 14 (`3f33e44`), slice 1 of design round
-`sync-design-initial` (D136, amending D134's tracking).
+**Last shipped:** Phase 7 part 15 (`04b56d0`), slice 2 of design round
+`sync-design-initial`: onboarding per the design (D137, amending D124 #2/#4
+and D126 #1).
 
-- **Tracking.** The w700 roles' letter spacing is now positive, at the
-  design bundle's values, which the user confirmed: `displaySmall` 0.5,
-  `headlineSmall` 0.3, `KitchenType.recipeTitle` 0.1 and
-  `recipeTitleLarge` 0.3. `monogram` stays 0, and the note inherits 0.1.
-- **§ Token map.** `DESIGN_SYSTEM.md` now pairs every design-bundle CSS
-  token with its Flutter symbol, so `/design-handoff` can diff the next
-  round by name. There is no `AppSizes.tag`, because no code draws a tag.
+- **Sign-in.** A painted recipe-card illustration (`SignInIllustration`, in
+  theme roles, so it follows dark), the logo lockup as a light/dark PNG, and
+  the tagline. The Google button is outlined and neutral
+  (`surfaceContainerLowest`, `outline` border) with the official G. There is
+  no filled button on the screen.
+- **Create / join household.** Top-aligned: a 56dp mark tile, a
+  `headlineSmall` title, a `bodyLarge` subtitle, the field (join's now
+  labelled `Pozivni kod`), with the buttons pinned to the bottom by
+  `SliverFillRemaining`.
+- **Brand images.** `make icons` now also writes `assets/brand/` (mark,
+  lockups, Google G) at 1x / 2.0x / 3.0x. The lockup needs network access
+  for Literata.
 
-`dart analyze` is clean, `flutter test` passes 718/718, and `make check` is
-green except the known `seed-check` (below). `test-sql` and `l10n-check`
-were run by hand past it. The emulator walk (`/design-walk recipe list`:
-recipe list, recipe detail, meal plan, household; sr/en × light/dark,
-hosted release build) was clean, so part 14 opened no loop. Not reached:
-the wordmark on the signed-out sign-in screen, and the Galaxy.
+`dart analyze` is clean, `flutter test` passes 727/727, and `make check` is
+green except the known `seed-check` (below). `l10n-check` passes now that
+the regenerated l10n is committed. The emulator walk (`/design-walk
+onboarding`, sr/en × light/dark, hosted release build) was clean. It closed
+part 7's loop and opened part 15's own loop for the keyboard-open state and
+the Google busy path.
 
-Still open, not part 14's:
+Still open, not part 15's:
 - meal-plan recipe entries show the original-language title under `en`
   (the entry's own `recipeTitle`, D53);
 - the signed-out sign-in screen stays Serbian after an in-app switch to
@@ -33,12 +39,12 @@ Still open, not part 14's:
   Design updates them.
 
 **In flight:** none.
-**Next:** `phase7-sync-onboarding`, slice 2 of round `sync-design-initial`
-(sign-in, create and join household; bundle frames 01–03). Plan it with
-`/plan-slice-ui phase7-sync-onboarding`. The round's slice list is in
+**Next:** `phase7-sync-recipe-list`, slice 3 of round `sync-design-initial`
+(recipe list, no-results state, add menu; bundle frames 04–06). Plan it with
+`/plan-slice-ui phase7-sync-recipe-list`. The round's slice list is in
 `docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`. The open
 device-walk loops below still want one sitting with the Galaxy attached.
-**Latest decision:** D136
+**Latest decision:** D137
 
 **Nine device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -74,7 +80,10 @@ it didn't reach. It also confirmed most of part 4's meal-plan items. Part 13's w
 found one defect, fixed and
 re-walked in the same session, so it opened no loop. Part 14's walk
 (2026-10-02, emulator, all four combinations) was clean, so it opened no
-loop. Oldest first:
+loop. The `phase7-sync-onboarding` walk (`/design-walk onboarding`,
+2026-10-02, emulator, all four combinations) was clean and closed part 7's
+onboarding loop. It opened its own loop for the two checks the emulator
+cannot reach. Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
   (2026-09-25) confirmed the copy and the SnackBar on the physical Galaxy.
@@ -340,7 +349,8 @@ loop. Oldest first:
   - the saved-copy line in airplane mode;
   - the Galaxy's own screen.
 
-- **Phase 7 part 7** — the form vocabulary. Walked on the physical Galaxy
+- ~~**Phase 7 part 7**~~ — **closed by the `phase7-sync-onboarding` walk
+  (2026-10-02).** The form vocabulary. Walked on the physical Galaxy
   (2026-09-26) across `sr`/`en` × light/dark: the recipe editor, translation
   review, and the import paste / URL / photo screens. All right: labels above
   every field, sans typed text in title, description, a number, an
@@ -360,10 +370,10 @@ loop. Oldest first:
   `Kamera` / `Galerija` and `Camera` / `Gallery` (ARB values only, keys
   unchanged), the editor's own photo-picker words. Re-walked on the Galaxy in
   sr/dark and en/light: one line each, with room to spare.
-  **Not walked:** the create / join household screens. They are reachable
-  only on an account with no household, and the device account has real
-  recipes, so the join code's serif digits are still unjudged. Slice 7
-  (`phase7-auth-household`) can walk them with its throwaway household.
+  ~~**Not walked:** the create / join household screens.~~ Walked
+  2026-10-02 on the emulator after the `phase7-sync-onboarding` redesign:
+  the join code's digits are sans now (D134), evenly spaced, tabular, and
+  read as a code in light and dark.
 
 - **Phase 7 part 8** — sign-in, settings, household
   (`phase7-auth-household`). Walked on the **emulator** (2026-09-28,
@@ -398,7 +408,6 @@ loop. Oldest first:
   - a long Serbian household name wrapping under the edit icon (the 360dp
     widget test covers the layout, not the device);
   - the sign-in failure line;
-  - part 7's create / join screens;
   - a fresh Google account via `on_auth_user_created`.
 
 - ~~**Phase 7 part 9a**~~ — **closed by its own three walks (2026-09-28,
@@ -577,6 +586,33 @@ loop. Oldest first:
   - **The household invite card.** It only shows with an active code, and
     no code was created on hosted.
   - The Galaxy's own screen.
+- **Phase 7 part 15** (`phase7-sync-onboarding`) — sign-in lockup + illustration, outlined
+  Google button, top-aligned create / join. Walked on the **emulator**
+  (2026-10-02, `make install-emulator`, dev-login account) across `sr`/`en`
+  × light/dark. All right:
+  - **Sign-in:** illustration, lockup and tagline centred; the Serbian
+    tagline wraps evenly over two lines; the G and the lockup are crisp
+    at 1080px. Dark, sampled off the screenshot: surface `#16160F`, no box
+    behind the illustration or lockup, lockup text `#9ED498`, button fill
+    `#101007` with a `#96978A` border, label legible. The signed-out screen
+    stays Serbian after an in-app switch to English (D77), so en = sr there.
+  - **Create / join:** the mark top-left; `Imenujte svoje domaćinstvo` and
+    `Unesite svoj pozivni kod` fit on one line; `Napravi domaćinstvo umesto
+    toga` fits on one line; the buttons are pinned at the bottom; the field
+    label `Pozivni kod` / `Invite code` is there. A wrong code shows `Taj kod
+    nije važeći.` in pink under the field, readable in dark. The real join
+    worked three times (one invite code each, single-use).
+  - Reached by leaving `Renamed Household` as `test-user` (a member) and
+    rejoining by code each cycle; it ended back in, 2 members. The owner's
+    active code `770578` was consumed by the first rejoin.
+
+  **Not reached on the emulator:**
+  - **Keyboard open.** The emulator's Gboard stays in its stylus toolbar
+    and never opens the full keyboard. A widget test now covers it (300px
+    inset, nothing overflows, the buttons scroll into reach), but the
+    device check is still open.
+  - **The Google button's busy spinner** on the new outlined button, and a
+    real Google sign-in through it. Both need the Galaxy.
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind

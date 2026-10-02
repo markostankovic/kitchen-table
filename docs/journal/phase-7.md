@@ -1804,3 +1804,115 @@ The walk was clean, so the slice opened no loop.
 - the wordmark, which is only on the signed-out sign-in screen, and the
   walk did not sign out;
 - the Galaxy.
+
+### Part 15 — Onboarding per the design (round `sync-design-initial`, slice 2)
+
+**Status: complete** (`04b56d0`). Decisions taken during it: D137.
+
+The second slice of design round `sync-design-initial`
+(`docs/design/handoffs/2026-10-02-sync-design-initial/`), frames 01–03:
+sign-in, create household, join household. The user chose "do per
+design" on all three open questions, over the shipped calls in D124 and
+D126. Planned with `/plan-slice-ui`, built in a fresh session, walked in
+the same one. One new ARB key (`inviteCodeFieldLabel`), no migration, no
+new package. One `flutter: assets:` entry was added.
+
+- **Brand images** (`tool/gen_app_icons.py`, `make icons`). Four new
+  outputs go into `assets/brand/` at 1x / 2.0x / 3.0x:
+  - `mark.png`: the Android legacy rounded mask, factored into
+    `rounded_tile()` and shared with `android_legacy`.
+  - `lockup_light.png` and `lockup_dark.png`: the new `render_inline()`
+    puts the SVG into a page that links Literata 600 from Google Fonts.
+    The script drops the opaque background, crops left/right to the
+    content, and scales to 48 tall.
+  - `google_g.png`: from Google's sign-in assets zip. The untouched SVG is
+    committed under `docs/design/google/`. The script removes the tile and
+    sets `viewBox` to the G. It is inlined because the gradient is a
+    `<foreignObject>`.
+
+  The existing Android/iOS outputs came out byte-identical. The script
+  needed `from __future__ import annotations`, because this Mac's Python
+  is 3.9.
+- **Sign-in.**
+  - `SignInIllustration` is a `CustomPainter` in a 176 × 139 unit box,
+    drawn back to front: the back card in `primaryContainer`, the front
+    card in `surfaceContainerLow` with an `outlineVariant` edge, the title
+    bar, rule and lines, a `tertiary` tomato and a `primary` sprig. It was
+    matched by eye against `bundle/assets/recipe-card-reference.png`. That
+    file was added during planning, cropped from `docs/design/key-screens.pdf`.
+  - Then the lockup at `AppSizes.lockup`, and the `bodyLarge` tagline.
+  - The Google button is now an `OutlinedButton.icon`: lowest fill,
+    `outline` side, `onSurface` label, with the G at `iconInButton`.
+  - The dev-login button is unchanged.
+- **Create / join.** Both are top-aligned and start-aligned.
+  - `OnboardingMark` (56dp, in `households/presentation/`), a
+    `headlineSmall` title, a `bodyLarge` subtitle, the field.
+  - The filled button, `sm`, and a full-width `TextButton` are pinned to
+    the bottom by `SliverFillRemaining(hasScrollBody: false)` and a
+    `Spacer`.
+  - The join code gains `AppFieldLabel` (`Pozivni kod` / `Invite code`).
+    Its field behaviour is unchanged.
+- **`AppSizes`.** It gains `signInIllustration` 176, `lockup` 48 and
+  `onboardingMark` 56.
+- **`DESIGN_SYSTEM.md`.** Updated § Type, § Size and motion, § Buttons,
+  § Action bar, § Inputs, § Logo and § Token map.
+- **Tests.**
+  - `sign_in_screen_test.dart`: the lockup asset per brightness, the
+    button's fill and side, and "exactly one `OutlinedButton`" without dev
+    login.
+  - New `onboarding_screens_test.dart`: a `headlineSmall` start-aligned
+    title, the buttons pinned with no scroll at 360 × 760, the keyboard
+    case, and join's label.
+
+**Differs from the plan.**
+- **The skeleton's `SliverPadding` was a bug.** `SliverFillRemaining`
+  fills the remaining viewport and ignores trailing padding, so the
+  bottom `xxl` landed below the fold and the screen scrolled by 32. The
+  padding moved inside `SliverFillRemaining` as a `Padding`.
+- **The plan's pin test couldn't pass.** It asked for the filled button
+  within `xxl` of the bottom, but the text button sits under it. The test
+  now asserts that the text button's bottom is exactly `xxl` above the
+  screen's, that the filled button sits `sm` + 48 above that, and that
+  `maxScrollExtent` is 0. It fails on the plan's skeleton.
+- **A keyboard-open widget test was added** (300px inset, no overflow, the
+  buttons scroll into reach), because the emulator could not open a full
+  keyboard.
+
+**How it was verified.**
+- `dart analyze` was clean, `flutter test` passed **727/727**, and
+  `deno test` passed 161/161. `test-sql` passed.
+- `make check` stopped only at `seed-check`, the known red since
+  `c8be2bc`.
+- `l10n-check` passed once the regenerated files were committed. It
+  compares against git, so it is red until then.
+
+**Walked on the emulator** (`/design-walk onboarding`, 2026-10-02, the
+only device attached). `make install-emulator` ran with Dev login,
+sr/light → sr/dark → en/light → en/dark.
+- **Sign-in** was reached by signing out.
+  - Illustration, lockup and tagline are centred. The Serbian tagline
+    wraps evenly over two lines. The G and the lockup are crisp.
+  - In dark, sampled off the screenshot: surface `#16160F`, button fill
+    `#101007`, border `#96978A`, lockup text `#9ED498`, illustration bar
+    `#CFD0C2`. There is no box behind any image.
+  - It stays Serbian after an in-app switch to English (D77, known).
+- **Create / join** were reached by having `test-user` (a member, not the
+  owner) leave `Renamed Household` and rejoin by invite code, once per
+  combination. That ran the real redeem three times. Codes are
+  single-use, so the owner's active `770578` was consumed.
+  - Every title fits on one line, and `Napravi domaćinstvo umesto toga`
+    fits on one line.
+  - The buttons are pinned, and the mark's transparent corners sit
+    cleanly in dark.
+  - A wrong code shows `Taj kod nije važeći.` in pink under the field.
+
+The account ended back in the household (2 members), on Srpski / Svetla.
+
+The walk was clean. It closed part 7's onboarding loop and part 8's
+create/join item, and opened this slice's own loop.
+
+**Not reached:**
+- the keyboard-open state on a device: the emulator's Gboard stays in its
+  stylus toolbar, so the widget test covers it for now;
+- the Google button's busy spinner and a real Google sign-in through it,
+  which need the Galaxy.

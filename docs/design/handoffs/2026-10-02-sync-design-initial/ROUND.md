@@ -87,13 +87,15 @@ house rules are in `bundle/_ds/…/readme.md` (§ VISUAL FOUNDATIONS and
       `tokens/typography.css`, `tokens/spacing.css`, `tokens/colors.css`.
       Settle the tracking sign with the user, add § Token map, and decide
       on `AppSizes.tag`.
-- [ ] `phase7-sync-onboarding`: sign-in, create and join household. Files:
+- [x] `phase7-sync-onboarding`: sign-in, create and join household. Files:
       `lib/features/auth/presentation/sign_in_screen.dart`,
       `lib/features/households/presentation/create_household_screen.dart`,
       `lib/features/households/presentation/join_household_screen.dart`.
       Bundle: section `Onboarding`, frames 01–03. Diff against the shipped
       screens. The sign-in illustration (`assets/recipe-card.png`) and the
-      mark (`assets/mark-master.svg`) are not fetched yet.
+      mark (`assets/mark-master.svg`) are not fetched yet. Done as
+      part 15 (`04b56d0`, D137). `bundle/assets/recipe-card-reference.png`
+      was added during planning, cropped from `docs/design/key-screens.pdf`.
 - [ ] `phase7-sync-recipe-list`: recipe list, no-results state, add menu.
       Files: `lib/features/recipes/presentation/recipe_list_screen.dart`
       (with its widgets). Bundle: section `Recipes`, frames 04–06;
