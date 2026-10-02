@@ -879,7 +879,9 @@ Design round `sync-design-initial`, slice 3 of 11
   true)`), and the result count shows above every non-empty list;
 - the bundle's multi-select tags were not adopted (D102 stands).
 
-Not walked on a device yet.
+Walked on the emulator (2026-10-02, sr/en × light/dark): clean except the
+add menu sitting flush against the screen's right edge. That loop stays
+open in `docs/STATE.md`.
 
 ### Part 17 — Recipe detail per the design
 
@@ -897,6 +899,24 @@ Design round `sync-design-initial`, slice 4 of 11
 
 The emulator walk (sr/en × light/dark) was clean. It did not reach the OCR
 lead-in or `Mašinski prevod` in the badge.
+
+### Part 18 — Edit recipe and translation review per the design
+
+**Status: complete** (`2245455`). Decisions taken during it: D140. See
+`docs/journal/phase-7.md`.
+
+Design round `sync-design-initial`, slice 5 of 11
+(`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`):
+- one grip (`drag_indicator`, `dragHandle`) on every reorderable row
+  (amending D134);
+- the editor's photo is a 16:9 well the photo fills in the same shape, with
+  tonal Camera / Gallery;
+- steps are labelled `Korak N`, not hinted;
+- the translation review opens with the tonal badge, and each original sits
+  in a ringed `docLanguage` panel above its field (D84).
+
+The emulator walk (sr/en × light/dark) was clean. It did not reach the review
+in Serbian chrome or the import review's grip.
 
 ---
 

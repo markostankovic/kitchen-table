@@ -110,11 +110,14 @@ house rules are in `bundle/_ds/…/readme.md` (§ VISUAL FOUNDATIONS and
       bundle was synced after it shipped.
       Done as part 17 (`696c887`, D139). The frame's 184dp header, 12dp
       stat-column gap and spacing variants were seen and not adopted.
-- [ ] `phase7-sync-recipe-edit`: edit recipe, review translation. Files:
+- [x] `phase7-sync-recipe-edit`: edit recipe, review translation. Files:
       `lib/features/recipes/presentation/recipe_edit_screen.dart`,
       `lib/features/recipes/presentation/translation_review_screen.dart`.
       Bundle: section `Recipes`, frames 08–09; `TextField`, `Tag`. Diff the
       form fields and the machine-translation review.
+      Done as part 18 (`2245455`, D140). The original below its field, the
+      app-bar Save, static ingredient text and the 144dp well were seen and
+      not adopted.
 - [ ] `phase7-sync-import-capture`: link, paste, photo, reading. Files:
       `lib/features/import/presentation/import_url_screen.dart`,
       `import_paste_screen.dart`, `import_photo_screen.dart`, and the

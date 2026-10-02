@@ -1,32 +1,35 @@
 # State — 2026-10-02
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 17 (`696c887`), slice 4 of design round
-`sync-design-initial`: the recipe detail per the design (D139, amending
-D135 point 2).
+**Last shipped:** Phase 7 part 18 (`2245455`), slice 5 of design round
+`sync-design-initial`: the recipe editor and translation review per the
+design (D140, amending D134).
 
-- **Photo-bar discs.** Opaque `surface` with `onSurface` icons, no longer
-  translucent. They are M3's 40dp disc in a 48dp target.
-- **Machine translation** is a tonal `AppBadge` (`surfaceContainerHighest`
-  fill, a `language` icon), not a `Chip`. The translating spinner is the
-  same badge, labelled `Prevodi se…` / `Translating…`.
-- **Ingredients heading** shows `za N porcija` / `for N servings` at its
-  right when servings is set, through `AppSectionHeading(trailing:)`.
-- **Stat strip.** `bodyMedium` labels, `titleMedium` values, `lg` inside
-  the hairlines. The columns still abut, so the stars fit at 360dp.
-- **Source footer.** One line: `Uvezeno sa linka` / `Uvezeno sa
-  fotografije` / `Izvor`, ` · `, then the attribution or the URL's host.
-  It is not styled as a link.
-- The frame's 184dp header, its spacing variants and its 12dp stat gap were
-  seen and not adopted (journal, part 17).
+- **One grip.** Every reorderable row (meal-plan entries, the editor's
+  ingredient and step rows, the import review's lines) draws
+  `drag_indicator` at `AppSizes.grip` in `KitchenColors.dragHandle`.
+- **Photo well.** Empty, a 16:9 `surfaceContainerHighest` well with an
+  `image` icon over tonal `Kamera` / `Galerija` (a `Wrap`). Filled, the
+  photo in the same 16:9 box at radius `md`, tonal buttons below.
+- **Steps** are labelled `Korak N` / `Step N` above the row, not hinted,
+  `md` apart.
+- **Translation review** opens with the tonal Machine translation badge,
+  and each original is a `docLanguage` panel with an `outlineVariant` ring,
+  still above its field (D84).
+- The frames' original-below-field, app-bar Save with ✕, static ingredient
+  text and 144dp well were seen and not adopted (journal, part 18).
 
-`dart analyze` is clean, `flutter test` passes 734/734, and `make check` is
+`dart analyze` is clean, `flutter test` passes 735/735, and `make check` is
 green except the known `seed-check` (below); the targets after it pass when
-run by hand. **Walked on the emulator** (2026-10-02, all four
-combinations): clean on everything reached. Part 17 opens a loop for the
-two Serbian-width checks no hosted data reached.
+run by hand. **Walked on the emulator** (`/design-walk recipes`,
+2026-10-02, all four combinations): clean on everything reached. Part 18
+opens a loop for the two checks the walk could not reach. The same walk
+walked part 16 and found the add menu flush against the right edge, so
+part 16's loop stays open with that defect.
 
-Still open, not part 17's:
+Still open, not part 18's:
+- the recipe list's add menu touches the screen's right edge (part 16's
+  loop, below);
 - meal-plan recipe entries show the original-language title under `en`
   (the entry's own `recipeTitle`, D53);
 - the signed-out sign-in screen stays Serbian after an in-app switch to
@@ -41,15 +44,16 @@ Still open, not part 17's:
   Design updates them.
 
 **In flight:** none.
-**Next:** `phase7-sync-recipe-edit`, slice 5 of round `sync-design-initial`
-(edit recipe and translation review; bundle frames 08–09). Plan it with
-`/plan-slice-ui phase7-sync-recipe-edit`. The round's slice list is in
-`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`.
-`/design-walk recipes` would still close part 16's loop. The open
-device-walk loops below still want one sitting with the Galaxy attached.
-**Latest decision:** D139
+**Next:** `phase7-sync-import-capture`, slice 6 of round
+`sync-design-initial` (link, paste, photo, reading). Plan it with
+`/plan-slice-ui phase7-sync-import-capture`. The round's slice list is in
+`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`. Part 16's
+menu-edge defect is small enough to fold into a later recipes slice or fix
+on its own. The open device-walk loops below still want one sitting with
+the Galaxy attached.
+**Latest decision:** D140
 
-**Eleven device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Twelve device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -86,10 +90,14 @@ re-walked in the same session, so it opened no loop. Part 14's walk
 loop. The `phase7-sync-onboarding` walk (`/design-walk onboarding`,
 2026-10-02, emulator, all four combinations) was clean and closed part 7's
 onboarding loop. It opened its own loop for the two checks the emulator
-cannot reach. Part 16 (`phase7-sync-recipe-list`) has not been walked yet.
+cannot reach. Part 16's walk (`/design-walk recipes`, 2026-10-02, emulator, all four
+combinations) found one defect, the add menu flush against the right edge,
+so its loop stays open with that recorded.
 Part 17's walk (`/design-walk recipe-detail`, 2026-10-02, emulator, all
 four combinations) was clean on everything it reached, and it opened a loop
-for the two checks no hosted data reached.
+for the two checks no hosted data reached. Part 18's walk (the same
+`/design-walk recipes` sitting) was clean on everything it reached, and it
+opened a loop for the two checks it could not reach.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
@@ -621,8 +629,19 @@ Oldest first:
   - **The Google button's busy spinner** on the new outlined button, and a
     real Google sign-in through it. Both need the Galaxy.
 - **Phase 7 part 16** (`phase7-sync-recipe-list`) — app-bar add menu,
-  carded empty state, always-on count. Not walked. `/design-walk recipes`,
-  sr/en × light/dark, hosted release build:
+  carded empty state, always-on count. **Walked on the emulator**
+  (`/design-walk recipes`, 2026-10-02, all four combinations). Everything
+  below held **except one defect**: the add menu is flush against the
+  screen's right edge in every combination. Its fill reaches the last pixel
+  column (x=1079 of 1080), so it is not "clear of the right edge". The fix
+  wants a non-default `alignmentOffset` (or a menu style with an end inset),
+  then a re-walk of just the menu. Clean: the `+` long-press tooltip,
+  `Fotografiši stranicu` on one line, four regular-weight rows, the menu not
+  covering the `+`; `5 recepata` / `5 recipes`; Favorites + `Jednostavno`
+  giving the carded panel with `Poništi filtere` (which cleared both); a
+  query alone (`zzzq`) giving the panel with no button, visible on
+  `#16160F`; the last card clearing the nav bar by exactly 24dp. The
+  original checklist:
   - no FAB; the `+` at the app bar's end, long-press `Dodaj recept` /
     `Add a recipe`; the menu opens below it, fully on screen, clear of the
     right edge and not covering the `+` (`alignmentOffset` is at its
@@ -644,6 +663,16 @@ Oldest first:
     an OCR (photo) import on hosted;
   - `Mašinski prevod` in the tonal badge. It needs a recipe written in
     English and machine-translated into Serbian.
+- **Phase 7 part 18** (`phase7-sync-recipe-edit`) — one grip, the photo
+  well, labelled steps, the ringed original panel. Walked on the
+  **emulator** (2026-10-02) across sr/en × light/dark, and clean on
+  everything reached (journal, part 18). Two checks remain:
+  - the translation review in Serbian chrome: `Mašinski prevod` on one line
+    in its badge and `Original (engleski)` in the panel. Same data gap as
+    part 17: it needs a recipe written in English and machine-translated
+    into Serbian (one hosted AI call);
+  - the import review's line editor showing the new grip. It needs a real
+    import (one hosted AI parse).
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind

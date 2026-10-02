@@ -2085,3 +2085,117 @@ an OCR import, and `Mašinski prevod` in the badge, because nothing is
 machine-translated *into* Serbian. Part 17's loop holds those two only.
 (Kajgana's note `po ukusu` stays Serbian under English. Notes are not
 translated; this is not new.)
+
+### Part 18 — Edit recipe and translation review per the design (round `sync-design-initial`, slice 5)
+
+**Status: complete** (`2245455`). Decisions taken during it: D140.
+
+The fifth slice of design round `sync-design-initial`
+(`docs/design/handoffs/2026-10-02-sync-design-initial/`), frames 08 (`Edit
+recipe`) and 09 (`Review translation`). The bundle recreates `main`, so the
+label-above fields, the three-column numbers row, both segmented buttons,
+the tags helper, `Add ingredient` / `Add step` and the pinned
+`AppActionBar` already matched. Five things changed. Planned with
+`/plan-slice-ui`, built in a fresh session. No migration, no new package, no
+new ARB key.
+
+- **The photo well** (`recipe_edit_screen.dart`, `_PhotoField`). With no
+  photo, a 16:9 `surfaceContainerHighest` well at radius `md`, centring a
+  32dp `image_outlined` in `outline` (a private `_wellIcon`, no token),
+  `md`, then `FilledButton.tonalIcon` `Kamera` / `Galerija` `sm` apart. With
+  a photo, the photo takes the same 16:9 shape at radius `md` (was `sm`);
+  under it, `sm`, then the two `Expanded` buttons, now tonal, and the
+  remove `IconButton`.
+- **One grip.** The editor's step rows and the shared `IngredientLineField`
+  (so also the import review's line editor) swap `Icons.drag_handle` for the
+  meal plan's `drag_indicator` at `AppSizes.grip` in
+  `KitchenColors.dragHandle`. The match chip's indent follows
+  (`AppSizes.grip + xs`). `AppSizes.grip`'s comment now names every
+  reorderable row.
+- **Steps are labelled.** `_EditableRow` (steps only) is a column: an
+  `AppFieldLabel` `Korak N` / `Step N` indented past the grip, `sm`, then
+  the row. `hintText` is gone (the parameter is now `label`); rows sit `md`
+  apart.
+- **The review's badge** (`translation_review_screen.dart`). The list opens
+  with the detail's tonal `AppBadge`: `Mašinski prevod` / `Machine
+  translation`, a 16dp `language` icon in `onSurfaceVariant`, then `lg`.
+- **The original panel.** `_OriginalText` is a full-width `docLanguage`
+  container with a 1dp `outlineVariant` ring, radius `sm`, padded `md`/`sm`.
+  It stays above its field (D84).
+- **`DESIGN_SYSTEM.md`.** `dragHandle` and `docLanguage` rows in
+  § `KitchenColors`; three paragraphs under § Inputs (the photo well, the
+  step label, the original panel); the `AppBadge` tonal bullet names the
+  review.
+- **Tests.** `drag_handle` → `drag_indicator` in the editor and review
+  tests; Camera / Gallery matched as `is FilledButton` (the tonal
+  constructor builds a private subclass); the empty well's
+  `image_outlined`; the review's badge text and icon.
+
+**Seen in the frames, not adopted.**
+- The original *below* its field: D84 keeps it above.
+- Save as a text button in the app bar with a `close` leading icon and no
+  bottom bar (D124): there is no unsaved-changes guard for a ✕ to promise.
+- Ingredient rows as static text with `→ bell peppers` / `No match` beneath
+  and dashed dividers: rule 3 keeps them editable fields with the chip.
+- Steps with no grip and no remove: the editor needs both.
+- A field label that turns `primary` on focus; 16px field text (the DS
+  keeps `bodyMedium`); 40dp segmented buttons (the theme keeps 48);
+  `onSurfaceVariant` `Written in` / `Status` labels.
+- The 144dp well: 16:9 instead, so the photo and the empty well share one
+  shape.
+- 4 top, 20 between review groups and 32 bottom: `lg` / `lg` / `xl` stand,
+  as in parts 16–17.
+
+**Differs from the plan.**
+- **The empty well's buttons are a `Wrap`, not a `Row(mainAxisSize:
+  min)`,** inside `md` horizontal padding. The existing 360dp-Serbian test
+  overflowed by 24px: `flutter_test`'s Ahem font draws every glyph as a
+  square, and two tonal buttons with the theme's `xl` padding came to 352
+  of 328. On a device they fit with ~50px spare, but a large text scale
+  would overflow the same way. The `Wrap` is side by side whenever they fit
+  and stacks inside the well when not; the well is tall enough for both.
+- **Two test harnesses gained `theme: AppTheme.light()`**
+  (`ingredient_line_field_test.dart`, `translation_review_screen_test.dart`).
+  They pumped a bare `MaterialApp`, and the new `KitchenColors` reads (`!`)
+  threw there.
+- **The acceptance line "picking a photo does not move the fields below
+  it" is not literally met.** The well and the photo share one 16:9 shape
+  and position, but the planned button row under the photo (`sm` + 48)
+  pushes `Naslov` down ~55dp. That is the plan's own layout, not a build
+  defect; the wording overreached.
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **735/735**, `deno test` 161/161.
+- `make check` stopped only at `seed-check`, the known red since `c8be2bc`.
+  `test-sql` and `l10n-check` were run by hand after it and passed.
+
+**Walked on the emulator** (`/design-walk recipes`, 2026-10-02, the only
+device attached), on the same code before commit, with `make
+install-emulator` and Dev login, sr/light → sr/dark → en/light → en/dark.
+The same walk covered part 16's recipe list (below and in `STATE.md`).
+- The empty well on `Novi recept` / `New recipe`: `Kamera` / `Galerija` side
+  by side at the emulator's width in both languages. In dark the well is
+  distinct from `#16160F` and the mustard tonal buttons read on it.
+- Steps added up to `Korak 10`, which fits its label line (the draft was
+  discarded unsaved). The grip is visible but quiet in dark, on ingredient
+  and step rows alike.
+- Editing Prženice (photo): the photo sits in the well's exact 16:9 box
+  (same top and height), tonal buttons and the delete icon under it.
+  Nothing saved.
+- Review translation on Kajgana (machine English): the tonal `Machine
+  translation` badge leads; each `Original (Serbian)` panel sits above its
+  field, and its `outlineVariant` ring is clearly visible in dark. Left
+  without saving.
+
+The account ended on Srpski / Svetla.
+
+**Not reached:** the review in Serbian chrome (`Mašinski prevod` in its
+badge, `Original (engleski)` in the panel). The review is offered only in
+the translated language, and nothing on hosted is machine-translated *into*
+Serbian; this is part 17's data gap again. The import review's grip,
+because reaching it costs a hosted AI parse.
+
+**Part 16's walk, same sitting.** Clean except one defect: the add menu is
+flush against the screen's right edge in all four combinations (its fill
+reaches x=1079 of 1080), so it is not "clear of the right edge". Part 16's
+loop stays open with that recorded.
