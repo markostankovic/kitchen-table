@@ -84,7 +84,7 @@ class SettingsScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   loc.themeSubtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -222,7 +222,7 @@ class _SettingsCard extends StatelessWidget {
   );
 }
 
-/// A group header, `sm` above its card.
+/// A group header, `md` above its card.
 class _GroupHeader extends StatelessWidget {
   const _GroupHeader({required this.text});
 
@@ -232,7 +232,7 @@ class _GroupHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Text(
         text,
         style: theme.textTheme.titleSmall?.copyWith(
@@ -266,7 +266,7 @@ class _ProfileRow extends StatelessWidget {
     return Row(
       children: <Widget>[
         leading,
-        const SizedBox(width: AppSpacing.md),
+        const SizedBox(width: AppSpacing.lg),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,7 +282,7 @@ class _ProfileRow extends StatelessWidget {
               for (final String line in lines)
                 Text(
                   line,
-                  style: theme.textTheme.bodySmall?.copyWith(
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -326,7 +326,7 @@ class _HouseholdRow extends StatelessWidget {
                 size: AppSizes.icon,
                 color: theme.colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(width: AppSpacing.md),
+              const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,7 +335,7 @@ class _HouseholdRow extends StatelessWidget {
                     if (count != null)
                       Text(
                         loc.householdMemberCount(count),
-                        style: theme.textTheme.bodySmall?.copyWith(
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),

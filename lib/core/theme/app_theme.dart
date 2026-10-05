@@ -229,13 +229,11 @@ abstract final class AppTheme {
         style: SegmentedButton.styleFrom(
           selectedBackgroundColor: scheme.secondaryContainer,
           selectedForegroundColor: scheme.onSecondaryContainer,
-          foregroundColor: scheme.onSurfaceVariant,
+          foregroundColor: scheme.onSurface,
           minimumSize: const Size(0, AppSizes.button),
-          side: BorderSide(color: scheme.outlineVariant),
+          side: BorderSide(color: scheme.outline),
           textStyle: textTheme.labelLarge,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadii.sm),
-          ),
+          shape: const StadiumBorder(),
         ),
       ),
 

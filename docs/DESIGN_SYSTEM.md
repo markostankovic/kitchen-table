@@ -127,8 +127,8 @@ and it reads calm (see `offline` in the semantic layer).
 |---|---|---|---|
 | `onSurface` | `#1F190F` | `#EBEBE4` | primary text |
 | `onSurfaceVariant` | `#484134` | `#CFD0C2` | secondary text, meta, units |
-| `outline` | `#6F6759` | `#96978A` | muted icons, badge edge, the dashed unmatched ring |
-| `outlineVariant` | `#D1C8B8` | `#494A3F` | dividers, the segmented button, the action bar's top hairline — **not** a card edge (D134) |
+| `outline` | `#6F6759` | `#96978A` | muted icons, badge edge, the dashed unmatched ring, the segmented button's stroke |
+| `outlineVariant` | `#D1C8B8` | `#494A3F` | dividers, the action bar's top hairline — **not** a card edge (D134) |
 
 `outline` is never body text — it is tuned for the low-emphasis role, not for
 reading. Secondary text that sits beside primary text of the same size is
@@ -231,7 +231,7 @@ slice already opens.
 | `md` | 12 | cards, meal entries |
 | `lg` | 16 | menus, FAB |
 | `xl` | 28 | dialogs, the top of a bottom sheet |
-| `full` | stadium | buttons, the search field, the nav indicator |
+| `full` | stadium | buttons, segmented buttons, the search field, the nav indicator |
 
 `full` is **not a member of `AppRadii`**. A stadium is a shape, not a radius:
 it is `const StadiumBorder()` at the call site. Keeping it out of the class is
@@ -851,22 +851,23 @@ unknown — absent, not disabled (D115).
 All private in `settings_screen.dart`; none is in `core/widgets/`.
 
 **Groups.** A `titleSmall` `onSurfaceVariant` header (`Izgled`, `Jezik`,
-`Domaćinstvo`, `Nalog`), `sm`, then a theme `Card` padded `lg`. Groups sit
+`Domaćinstvo`, `Nalog`), `md`, then a theme `Card` padded `lg`. Groups sit
 `xl` (24) apart. The profile card comes first, with no header: the 40dp
-circular monogram, `md`, then the name in `titleMedium`, the email in
-`bodyMedium`, and `Prijavljeni ste Google nalogom` in `bodySmall`, both
-`onSurfaceVariant`. Loading and error keep their text in the same card.
+circular monogram, `lg`, then the name in `titleMedium`, the email and
+`Prijavljeni ste Google nalogom` in `bodyMedium`, both `onSurfaceVariant`. Loading and error keep their text in the same card.
 
 **The two selectors.** Both full-width `SegmentedButton`s. Theme: `Tema` in
-`titleMedium`, `xs`, the "this app only" line in `bodySmall`
+`titleMedium`, `xs`, the "this app only" line in `bodyMedium`
 `onSurfaceVariant`, `md`, then `light_mode_outlined` Svetla /
 `dark_mode_outlined` Tamna with `showSelectedIcon: false` — the sun or moon
 stays on the selected segment, not a check. Language: `Srpski` / `English`,
-never translated, with the check.
+never translated, with the check. The stadium shape, `outline` stroke and
+`onSurface` unselected label come from `segmentedButtonTheme`, shared by
+every `SegmentedButton` in the app.
 
 **The household row.** The whole card is an `InkWell` clipped to its radius:
-`home_outlined` in `onSurfaceVariant`, `md`, the household's name in
-`titleMedium` over `2 člana` in `bodySmall`, and a trailing `chevron_right`.
+`home_outlined` in `onSurfaceVariant`, `lg`, the household's name in
+`titleMedium` over `2 člana` in `bodyMedium`, and a trailing `chevron_right`.
 
 **Sign out** is set apart: `xl`, a full-width hairline, `xl`, the `Nalog`
 header, then the neutral outlined button (§ Buttons).

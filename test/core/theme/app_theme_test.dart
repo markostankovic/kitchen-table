@@ -157,6 +157,26 @@ void main() {
       }
     });
 
+    test('segmented buttons are an outlined stadium, onSurface unselected', () {
+      for (final ThemeData theme in <ThemeData>[
+        AppTheme.light(),
+        AppTheme.dark(),
+      ]) {
+        final ColorScheme scheme = theme.colorScheme;
+        final ButtonStyle style = theme.segmentedButtonTheme.style!;
+        const Set<WidgetState> unselected = <WidgetState>{};
+        const Set<WidgetState> selected = <WidgetState>{WidgetState.selected};
+
+        expect(style.shape!.resolve(unselected), const StadiumBorder());
+        expect(style.side!.resolve(unselected)!.color, scheme.outline);
+        expect(style.foregroundColor!.resolve(unselected), scheme.onSurface);
+        expect(
+          style.foregroundColor!.resolve(selected),
+          scheme.onSecondaryContainer,
+        );
+      }
+    });
+
     test('KitchenColors is present and every member aliases its role', () {
       for (final ThemeData theme in <ThemeData>[
         AppTheme.light(),
