@@ -94,13 +94,13 @@ class ShoppingListScreen extends ConsumerWidget {
                     ref.invalidate(currentShoppingListProvider),
                 child: current == null
                     ? AppEmptyState(
-                        icon: Icons.checklist_outlined,
+                        card: true,
+                        icon: Icons.shopping_basket_outlined,
                         title: l10n.noListYetTitle,
                         body: l10n.noListYetBody,
-                        action: FilledButton.icon(
+                        action: FilledButton.tonal(
                           onPressed: () => _generate(context, ref),
-                          icon: const Icon(Icons.playlist_add_check_outlined),
-                          label: Text(l10n.generateListButton),
+                          child: Text(l10n.generateListButton),
                         ),
                       )
                     : _ListBody(list: current),

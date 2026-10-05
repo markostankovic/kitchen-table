@@ -757,6 +757,12 @@ an `ExpansionTile`, **collapsed**, with `const Border()` shapes so it draws no
 lines of its own: `Verovatno imate (N)` in `titleSmall`, the staples subtitle
 in `bodySmall` `onSurfaceVariant`, the same `IngredientLineRow`s inside.
 
+**The no-list state.** Under the range bar (and its range line), the carded
+`AppEmptyState(card: true)`: `shopping_basket_outlined`, `Još nema liste.`/
+`No list yet.`, the body, and one tonal `Napravi listu`/`Generate list` — no
+leading icon, on the recipe list's precedent. Chrome, so the reader's locale
+(D94). It stays inside the `RefreshIndicator`; pull-to-refresh still works.
+
 ### Import capture
 
 The entry screens (link, paste, photo): body padded `lg`, the intro paragraph
@@ -892,7 +898,8 @@ most one tonal action.
 an empty screen region: the same column on a `KitchenColors.card` panel,
 radius 12, no border or shadow, inset `lg` and aligned to the top, padded
 `xxl` top and bottom and `xl` at the sides. The recipe list uses it for both
-its empty states. The shopping list adopts it in its own sync slice; import
+its empty states. The shopping list's no-list state uses it too, with
+`shopping_basket_outlined` and a tonal `Napravi listu`/`Generate list`; import
 review stays bare.
 
 The recipe list's no-results state is the example of that one action. While a

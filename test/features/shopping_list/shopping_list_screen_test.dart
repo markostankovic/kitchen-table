@@ -12,6 +12,7 @@ import 'package:kitchen_table/core/l10n/generated/app_localizations_en.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
 import 'package:kitchen_table/core/net/network_status.dart';
 import 'package:kitchen_table/core/theme/app_theme.dart';
+import 'package:kitchen_table/core/widgets/app_empty_state.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit_catalog.dart';
 import 'package:kitchen_table/features/shopping_list/application/shopping_list_providers.dart';
@@ -204,6 +205,35 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(calls.generated, 1);
+  });
+
+  testWidgets(
+      'the no-list state is carded, with the basket glyph and one tonal '
+      'action (D138, frame 19)', (tester) async {
+    await _pump(tester);
+
+    expect(
+      tester.widget<AppEmptyState>(find.byType(AppEmptyState)).card,
+      isTrue,
+    );
+    expect(find.byIcon(Icons.shopping_basket_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.playlist_add_check_outlined), findsNothing);
+
+    // The resolved fill, read off the button's own Material: less brittle
+    // than resolving `style ?? filledButtonTheme` by hand, and it proves
+    // the theme's tonal variant rather than how the button was built.
+    final Material fill = tester.widget<Material>(
+      find
+          .descendant(
+            of: find.ancestor(
+              of: find.text('Generate list'),
+              matching: find.byWidgetPredicate((Widget w) => w is FilledButton),
+            ),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+    expect(fill.color, AppTheme.light().colorScheme.secondaryContainer);
   });
 
   testWidgets('a failure to generate is shown, not swallowed', (tester) async {
