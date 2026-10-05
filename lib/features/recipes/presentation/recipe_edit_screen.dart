@@ -9,6 +9,7 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/l10n/language_labels.dart';
+import '../../../core/recipes/widgets/recipe_photo.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_sizes.dart';
@@ -216,6 +217,8 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
         children: <Widget>[
           _PhotoField(
             pickedImage: _pickedImage,
+            existingImagePath:
+                draft.imagePath == null ? null : draft.source?.imagePath,
             existingImageUrl:
                 draft.imagePath == null ? null : draft.source?.imageUrl,
             onPick: _pickImage,
@@ -427,12 +430,16 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
 
 /// The recipe's photo: pick from camera or gallery, preview, remove.
 ///
-/// [pickedImage] takes priority over [existingImageUrl] -- a photo just
+/// [pickedImage] takes priority over the existing photo -- a photo just
 /// picked has not reached the server yet, so there is no signed URL for it,
 /// and showing the in-memory bytes is the only way to preview it at all.
+///
+/// The existing photo is there when [existingImagePath] is, signed URL or
+/// not: offline, [RecipePhoto] still finds it in the disk cache by path.
 class _PhotoField extends StatelessWidget {
   const _PhotoField({
     required this.pickedImage,
+    required this.existingImagePath,
     required this.existingImageUrl,
     required this.onPick,
     required this.onRemove,
@@ -440,6 +447,7 @@ class _PhotoField extends StatelessWidget {
   });
 
   final RecipeImageUpload? pickedImage;
+  final String? existingImagePath;
   final String? existingImageUrl;
   final ValueChanged<ImageSource> onPick;
   final VoidCallback onRemove;
@@ -453,7 +461,7 @@ class _PhotoField extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final Uint8List? bytes = pickedImage?.bytes;
-    final bool hasPhoto = bytes != null || existingImageUrl != null;
+    final bool hasPhoto = bytes != null || existingImagePath != null;
 
     final Widget cameraButton = FilledButton.tonalIcon(
       onPressed: () => onPick(ImageSource.camera),
@@ -515,16 +523,12 @@ class _PhotoField extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadii.md),
             child: bytes != null
                 ? Image.memory(bytes, fit: BoxFit.cover)
-                : Image.network(
-                    existingImageUrl!,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (BuildContext context, Widget child,
-                            ImageChunkEvent? progress) =>
-                        progress == null
-                            ? child
-                            : const Center(
-                                child: CircularProgressIndicator()),
-                    errorBuilder: (_, _, _) => const Center(
+                : RecipePhoto(
+                    path: existingImagePath!,
+                    url: existingImageUrl,
+                    loading: (_) =>
+                        const Center(child: CircularProgressIndicator()),
+                    placeholder: (_) => const Center(
                         child: Icon(Icons.broken_image_outlined)),
                   ),
           ),

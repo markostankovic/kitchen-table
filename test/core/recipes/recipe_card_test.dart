@@ -1,5 +1,9 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/images/recipe_image_cache.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/recipes/widgets/recipe_card.dart';
@@ -8,6 +12,8 @@ import 'package:kitchen_table/core/widgets/app_badge.dart';
 import 'package:kitchen_table/core/widgets/app_meta_row.dart';
 import 'package:kitchen_table/core/widgets/app_monogram_tile.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe.dart';
+
+import '../../helpers/fake_image_cache.dart';
 
 const Recipe _torta = Recipe(
   id: 'r1',
@@ -24,25 +30,102 @@ Future<void> _pump(
   Recipe recipe, {
   VoidCallback? onTap,
   Locale? locale,
+  BaseCacheManager? imageCache,
 }) => tester.pumpWidget(
-  MaterialApp(
-    theme: AppTheme.light(),
-    locale: locale,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: appSupportedLocales,
-    home: Scaffold(
-      body: Builder(
-        builder: (BuildContext context) => RecipeCard(
-          recipe: recipe,
-          l10n: AppLocalizations.of(context),
-          onTap: onTap ?? () {},
+  ProviderScope(
+    overrides: [
+      recipeImageCacheManagerProvider.overrideWithValue(
+        imageCache ?? FakeImageCache(),
+      ),
+    ],
+    child: MaterialApp(
+      theme: AppTheme.light(),
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: appSupportedLocales,
+      home: Scaffold(
+        body: Builder(
+          builder: (BuildContext context) => RecipeCard(
+            recipe: recipe,
+            l10n: AppLocalizations.of(context),
+            onTap: onTap ?? () {},
+          ),
         ),
       ),
     ),
   ),
 );
 
+const String _path = 'h1/1700000000000000.jpg';
+const String _url =
+    'https://example.test/signed/h1/1700000000000000.jpg?token=a';
+
 void main() {
+  testWidgets('a photo with a signed URL is cached under its object path, '
+      'decoded near thumbnail size', (WidgetTester tester) async {
+    await _pump(tester, _torta.copyWith(imagePath: _path, imageUrl: _url));
+
+    final CachedNetworkImage image = tester.widget(
+      find.byType(CachedNetworkImage),
+    );
+    expect(image.imageUrl, _url);
+    expect(image.cacheKey, _path);
+    expect(image.memCacheWidth, isNotNull);
+  });
+
+  testWidgets('offline, a photo the cache has seen shows from disk by path, '
+      'still decoded near thumbnail size', (WidgetTester tester) async {
+    final FileInfo cached = (await tester.runAsync(
+      () => fakeCachedFile(_path),
+    ))!;
+    await _pump(
+      tester,
+      _torta.copyWith(imagePath: _path),
+      imageCache: FakeImageCache(<String, FileInfo>{_path: cached}),
+    );
+    await tester.pump();
+
+    expect(
+      find.byWidgetPredicate(
+        (Widget w) =>
+            w is Image &&
+            w.image is ResizeImage &&
+            (w.image as ResizeImage).imageProvider is FileImage,
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(AppMonogramTile), findsNothing);
+    expect(find.byType(CachedNetworkImage), findsNothing);
+  });
+
+  testWidgets('a refresh that briefly drops the signed URL keeps the photo, '
+      'not a flash of the monogram', (WidgetTester tester) async {
+    await _pump(tester, _torta.copyWith(imagePath: _path, imageUrl: _url));
+    // The pull's cached emission: same path, no URL (D131).
+    await _pump(tester, _torta.copyWith(imagePath: _path));
+    await tester.pump();
+
+    final CachedNetworkImage image = tester.widget(
+      find.byType(CachedNetworkImage),
+    );
+    // Still the network image, on the URL it last had: the provider is
+    // keyed by path, so on a device that is a cache hit. (Here the fake's
+    // fetch fails, so its error widget is the monogram -- not what is under
+    // test.)
+    expect(image.imageUrl, _url);
+    expect(image.cacheKey, _path);
+  });
+
+  testWidgets('offline, a photo the cache has never seen is the monogram', (
+    WidgetTester tester,
+  ) async {
+    await _pump(tester, _torta.copyWith(imagePath: _path));
+    await tester.pump();
+
+    expect(find.byType(AppMonogramTile), findsOneWidget);
+    expect(find.byType(CachedNetworkImage), findsNothing);
+  });
+
   testWidgets('shows the title and opens on tap', (WidgetTester tester) async {
     bool tapped = false;
     await _pump(tester, _torta, onTap: () => tapped = true);

@@ -1,7 +1,9 @@
 import 'package:flutter/gestures.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/images/recipe_image_cache.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
@@ -26,6 +28,8 @@ import 'package:kitchen_table/features/recipes/domain/recipe_step.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_translation.dart';
 import 'package:kitchen_table/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:kitchen_table/features/recipes/presentation/recipe_list_screen.dart';
+
+import '../../helpers/fake_image_cache.dart';
 
 /// Providers are overridden rather than mocked -- Riverpod's own override
 /// mechanism means no mocking package, so CLAUDE.md rule 8 is never triggered.
@@ -141,6 +145,9 @@ Future<void> _pumpList(
     ProviderScope(
       overrides: [
         recipeListProvider.overrideWith2((_) => _StubRecipeList(recipes)),
+        // Phase 8 part 2: a recipe photo goes through the disk cache, and
+        // the real one opens a database through path_provider.
+        recipeImageCacheManagerProvider.overrideWithValue(FakeImageCache()),
         // Pinned rather than left at its own fallback (`_pumpDetail`'s own
         // reasoning): `_FilterRow` now watches this to resolve tag labels
         // (Phase 6, part 1a), and the default reaches the real profile
@@ -231,6 +238,9 @@ Future<void> _pumpDetail(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        // Phase 8 part 2: a recipe photo goes through the disk cache, and
+        // the real one opens a database through path_provider.
+        recipeImageCacheManagerProvider.overrideWithValue(FakeImageCache()),
         // appLocaleProvider is pinned to detail.readingLocale rather than
         // left at its own fallback: the screen derives `readingLocale` from
         // it, and the two must agree or the screen requests a different
@@ -319,17 +329,19 @@ void main() {
 
     testWidgets('a recipe with a photo shows a thumbnail',
         (WidgetTester tester) async {
-      final Recipe withPhoto =
-          _torta.copyWith(imageUrl: 'https://example.test/thumb.jpg');
+      final Recipe withPhoto = _torta.copyWith(
+        imagePath: 'h1/thumb.jpg',
+        imageUrl: 'https://example.test/thumb.jpg',
+      );
       await _pumpList(tester, recipes: <Recipe>[withPhoto, _pita]);
 
-      expect(
-        find.byWidgetPredicate((Widget w) =>
-            w is Image &&
-            w.image is NetworkImage &&
-            (w.image as NetworkImage).url == 'https://example.test/thumb.jpg'),
-        findsOneWidget,
-      );
+      // Cached under the object path, not the signed URL, and decoded near
+      // the tile's size rather than at the full upload.
+      final CachedNetworkImage image =
+          tester.widget(find.byType(CachedNetworkImage));
+      expect(image.imageUrl, 'https://example.test/thumb.jpg');
+      expect(image.cacheKey, 'h1/thumb.jpg');
+      expect(image.memCacheWidth, isNotNull);
     });
 
     testWidgets('a recipe with no photo gets a monogram tile, not a gap',
@@ -787,17 +799,17 @@ void main() {
       await _pumpDetail(
         tester,
         _detail.copyWith(
-          recipe: _torta.copyWith(imageUrl: 'https://example.test/torta.jpg'),
+          recipe: _torta.copyWith(
+            imagePath: 'h1/torta.jpg',
+            imageUrl: 'https://example.test/torta.jpg',
+          ),
         ),
       );
 
-      expect(
-        find.byWidgetPredicate((Widget w) =>
-            w is Image &&
-            w.image is NetworkImage &&
-            (w.image as NetworkImage).url == 'https://example.test/torta.jpg'),
-        findsOneWidget,
-      );
+      final CachedNetworkImage image =
+          tester.widget(find.byType(CachedNetworkImage));
+      expect(image.imageUrl, 'https://example.test/torta.jpg');
+      expect(image.cacheKey, 'h1/torta.jpg');
     });
 
     testWidgets('a recipe with no photo still gets the well, with a '

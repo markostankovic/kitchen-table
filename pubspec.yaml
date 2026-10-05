@@ -69,6 +69,14 @@ dependencies:
   # `signIn()` at all. Contained inside `auth/data/` like `supabase_flutter`
   # (`tool/check_layers.dart`).
   google_sign_in: ^7.2.0
+  # Phase 8 part 2: recipe photos cached on disk, keyed by Storage object
+  # path rather than by signed URL, so a re-signed URL is still a hit. A new
+  # dependency under rule 8, asked for and approved. `flutter_cache_manager`
+  # is `cached_network_image`'s own dependency, taken directly (also asked
+  # for and approved) so the cache is a named instance tests can override.
+  # Neither touches Supabase, so both may live in `core/`.
+  cached_network_image: ^4.0.4
+  flutter_cache_manager: ^3.4.5
 
 dev_dependencies:
   flutter_test:

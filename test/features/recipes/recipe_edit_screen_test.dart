@@ -1,6 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/images/recipe_image_cache.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/theme/app_theme.dart';
@@ -11,6 +13,8 @@ import 'package:kitchen_table/features/recipes/domain/recipe_draft.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_ingredient.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_step.dart';
 import 'package:kitchen_table/features/recipes/presentation/recipe_edit_screen.dart';
+
+import '../../helpers/fake_image_cache.dart';
 
 /// The notifier is overridden, not mocked -- Riverpod's own override
 /// mechanism, so CLAUDE.md rule 8 is never triggered. Only `build` is
@@ -71,6 +75,9 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         recipeEditorProvider(recipeId).overrideWith(() => _StubEditor(draft)),
+        // Phase 8 part 2: a recipe photo goes through the disk cache, and
+        // the real one opens a database through path_provider.
+        recipeImageCacheManagerProvider.overrideWithValue(FakeImageCache()),
       ],
       child: MaterialApp(
         theme: AppTheme.light(),
@@ -251,14 +258,10 @@ void main() {
       );
 
       expect(find.byTooltip('Remove photo'), findsOneWidget);
-      expect(
-        find.byWidgetPredicate((Widget w) =>
-            w is Image &&
-            w.image is NetworkImage &&
-            (w.image as NetworkImage).url ==
-                'https://example.test/existing.jpg'),
-        findsOneWidget,
-      );
+      final CachedNetworkImage image =
+          tester.widget(find.byType(CachedNetworkImage));
+      expect(image.imageUrl, 'https://example.test/existing.jpg');
+      expect(image.cacheKey, 'h1/existing.jpg');
     });
 
     testWidgets('tapping Remove clears the preview and the Remove button',

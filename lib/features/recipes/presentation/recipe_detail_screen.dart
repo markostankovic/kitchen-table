@@ -11,6 +11,7 @@ import '../../../core/l10n/language_labels.dart';
 import '../../../core/l10n/meal_slot_labels.dart';
 import '../../../core/meal_plan/meal_plan_writer.dart';
 import '../../../core/meal_plan/widgets/meal_slot_picker_sheet.dart';
+import '../../../core/recipes/widgets/recipe_photo.dart';
 import '../../../core/refresh/data_revision.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/text/text_normalizer.dart';
@@ -132,7 +133,10 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         expandedHeight: photoHeight,
         // Light status-bar icons while a photo is behind them: the theme's
         // own dark icons in Light vanish into a dark photo. An empty well is
-        // `surfaceContainerHighest`, so it keeps the theme's icons.
+        // `surfaceContainerHighest`, so it keeps the theme's icons. Still
+        // keyed off the signed URL: an offline photo out of the disk cache
+        // is only known after an async lookup inside `RecipePhoto`, so that
+        // case keeps the theme's icons.
         systemOverlayStyle:
             _photoUnderStatusBar && recipe?.imageUrl != null
                 ? SystemUiOverlayStyle.light.copyWith(
@@ -140,7 +144,10 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                   )
                 : null,
         flexibleSpace: FlexibleSpaceBar(
-          background: _PhotoWell(imageUrl: recipe?.imageUrl),
+          background: _PhotoWell(
+            imagePath: recipe?.imagePath,
+            imageUrl: recipe?.imageUrl,
+          ),
         ),
         actions: <Widget>[
           IconButton(
@@ -755,32 +762,28 @@ String _sourceHost(String url) {
 ///
 /// A missing picture is not a failure state (rule 3's spirit), so there is no
 /// broken-image icon: the well shows a quiet `image_outlined` in `outline`,
-/// the same thing it shows when a signed URL has outlived its TTL or the
-/// object behind it was replaced. Either way the recipe still renders.
+/// the same thing it shows when a signed URL has outlived its TTL, the
+/// object behind it was replaced, or there is no URL and the disk cache has
+/// never seen the photo ([RecipePhoto]). Either way the recipe still renders.
 class _PhotoWell extends StatelessWidget {
-  const _PhotoWell({required this.imageUrl});
+  const _PhotoWell({required this.imagePath, required this.imageUrl});
 
+  final String? imagePath;
   final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final String? url = imageUrl;
+    final String? path = imagePath;
     return ColoredBox(
       color: theme.colorScheme.surfaceContainerHighest,
-      child: url == null
+      child: path == null
           ? _placeholder(theme)
-          : Image.network(
-              url,
-              fit: BoxFit.cover,
-              loadingBuilder: (
-                BuildContext context,
-                Widget child,
-                ImageChunkEvent? progress,
-              ) => progress == null
-                  ? child
-                  : const Center(child: CircularProgressIndicator()),
-              errorBuilder: (_, _, _) => _placeholder(theme),
+          : RecipePhoto(
+              path: path,
+              url: imageUrl,
+              loading: (_) => const Center(child: CircularProgressIndicator()),
+              placeholder: (_) => _placeholder(theme),
             ),
     );
   }

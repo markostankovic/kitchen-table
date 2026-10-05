@@ -9,6 +9,7 @@ import '../../theme/kitchen_type.dart';
 import '../../widgets/app_badge.dart';
 import '../../widgets/app_meta_row.dart';
 import '../../widgets/app_monogram_tile.dart';
+import 'recipe_photo.dart';
 import '../../../features/recipes/domain/recipe.dart';
 
 /// One recipe as a card: a 72dp square, the title, and a meta row.
@@ -22,9 +23,9 @@ import '../../../features/recipes/domain/recipe.dart';
 /// pick.
 ///
 /// The square is the photo when there is one and an [AppMonogramTile] when
-/// there is not -- and also when the photo fails, since a signed URL can
-/// outlive its TTL and a recipe missing its picture is not a broken recipe
-/// (rule 3's spirit). Before this card, a photoless recipe showed nothing at
+/// there is not -- and also when the photo fails, or when there is no signed
+/// URL and the disk cache has never seen the photo ([RecipePhoto]), since a
+/// recipe missing its picture is not a broken recipe (rule 3's spirit). Before this card, a photoless recipe showed nothing at
 /// all there, which read as a thumbnail that had not loaded.
 ///
 /// The meta row is an [AppMetaRow] and **not** a ` · `-joined string. That is
@@ -107,19 +108,30 @@ class RecipeCard extends StatelessWidget {
   String get _title => recipe.displayTitle(l10n.localeName);
 
   Widget _leading(BuildContext context) {
-    final String? url = recipe.imageUrl;
-    if (url == null) return _monogram(context);
+    final String? path = recipe.imagePath;
+    if (path == null) return _monogram(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadii.sm),
-      child: Image.network(
-        url,
+      child: SizedBox(
         width: AppSizes.thumb,
         height: AppSizes.thumb,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _monogram(context),
+        child: RecipePhoto(
+          path: path,
+          url: recipe.imageUrl,
+          decodeWidth: _decodeWidth(context),
+          placeholder: _monogram,
+        ),
       ),
     );
   }
+
+  /// Twice the tile's physical width, not once. The tile is `BoxFit.cover`
+  /// and only the width is decoded, so the aspect ratio holds: at 1x a
+  /// landscape photo would decode shorter than the tile and be upscaled to
+  /// fill it, blurry. 2x covers landscape up to 2:1 and still costs about
+  /// 0.5MB a thumbnail against about 4MB for the full 1200px upload.
+  int _decodeWidth(BuildContext context) =>
+      (AppSizes.thumb * MediaQuery.devicePixelRatioOf(context) * 2).round();
 
   /// The title's first letter. `substring(0, 1)` rather than
   /// `package:characters` (rule 8): every letter this app renders is Latin,
