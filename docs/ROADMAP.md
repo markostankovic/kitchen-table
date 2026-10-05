@@ -1017,6 +1017,91 @@ round is complete.
 
 ---
 
+## Phase 8 — Freshness and images
+
+Phase 7 settled how the app looks. This phase is about how current it feels:
+what is on screen should be the household's latest without the cook having
+to ask twice, and recipe photos should not cost a full download every time
+a list is read.
+
+Planned 2026-10-05 from four user requests: optimize images and thumbnails
+with a cache; refresh a screen when the main nav switches to it; make the
+shopping list's pull-to-refresh do what its refresh button does; and make a
+long-press on a shopping-list item take effect immediately.
+
+**What it starts from.**
+- Uploads are already capped at 1200px, quality 85 (`recipe_edit_screen.dart`,
+  `import_photo_screen.dart`). The recipe list's 72dp thumbnail still
+  downloads and decodes that whole image (`recipe_card.dart`, no
+  `cacheWidth`).
+- Every read signs fresh one-hour URLs (`signImageUrls`), and `Image.network`
+  caches by URL, so a refresh re-downloads every photo. There is no disk
+  cache, so a cold start does too.
+- Supabase's server-side image transformations are a paid-plan feature, and
+  the hosted project is free tier. A real thumbnail has to be produced by the
+  client at upload time.
+- `AppShell` keeps each tab's branch alive (`StatefulShellBranch`), so
+  switching tabs re-renders nothing and re-reads nothing.
+- The shopping list's pull-to-refresh re-reads the stored snapshot; its
+  app-bar button regenerates. Long-press sets a pantry preference and
+  deliberately leaves the list on screen alone until the next generation.
+
+**Order.** Parts 1, 2, 3, then 4 only if 2 is not enough. Part 3 waits on
+part 2: refreshing the recipes tab on every switch would otherwise re-sign
+every URL and re-download every photo.
+
+### Part 1 — Shopping list: pull and long-press regenerate
+
+**Status: not started.**
+
+- Pull-to-refresh calls `generate()`, the same as the app-bar button, so
+  the two gestures never disagree. Offline, it fails the way the button
+  does.
+- Long-press saves the pantry preference and then regenerates, so the item
+  moves in or out of "Probably have" at once. **User's call (2026-10-05):
+  reordering the list on screen is wanted.** This replaces the stance in
+  `_togglePantry`'s doc comment — needs a new decision. D13 itself stands:
+  the list is still a generated snapshot with no per-item state.
+- The two confirmation snackbars no longer describe a deferred effect, so
+  their sr/en strings change.
+
+### Part 2 — Image cache and decode size
+
+**Status: not started.**
+
+- `cached_network_image` (**approved 2026-10-05**, rule 8), with the cache
+  key set to the Storage object path rather than the signed URL, so a
+  re-signed URL is still a cache hit, across launches.
+- Thumbnails decode at their display size (`memCacheWidth` /
+  `cacheWidth`, from `AppSizes.thumb` × device pixel ratio).
+- Applies to every `Image.network` of a recipe photo: the recipe card, the
+  detail photo well and the editor's existing-photo preview.
+- Open: how the cache is invalidated when a recipe's photo is replaced (a
+  new `image_path` is a new key; confirm replacement always writes a new
+  path).
+
+### Part 3 — Refresh on tab switch
+
+**Status: not started.** Waits on part 2.
+
+- Selecting a tab re-reads its data. The cached read emits the cache and
+  then the server (D67), so the screen does not blank while it reloads.
+- Open, for `/plan-slice`: whether `AppShell` (`core/router`) may reach
+  feature `application/` providers, or each tab's screen refreshes itself
+  when its branch becomes current (`docs/ARCHITECTURE.md`). Also whether
+  Settings refreshes, and whether re-tapping the current tab, which today
+  pops it to its root, also refreshes.
+
+### Part 4 — Real thumbnails (optional)
+
+**Status: not started.** Only if part 2 is not enough on the device.
+
+- The client uploads a second, ~240px image alongside the 1200px one, at a
+  path derived from the original's, and the list signs that one.
+- Existing recipes need a backfill.
+
+---
+
 ## Standing rules across phases
 
 - Anything AI-produced is `status = 'draft'` until a human marks it tested.

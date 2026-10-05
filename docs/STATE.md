@@ -52,14 +52,17 @@ Still open, not part 24's:
   Design updates them.
 
 **In flight:** none.
-**Next:** nothing is planned on the roadmap after part 24. Round
-`sync-design-initial` is closed. Candidates, smallest first:
+**Next:** Phase 8 — Freshness and images (`docs/ROADMAP.md`), planned
+2026-10-05. Part 1 first: the shopping list's pull-to-refresh and long-press
+both regenerate. Then part 2 (image cache, `cached_network_image` approved),
+part 3 (refresh on tab switch, after part 2), and part 4 only if needed.
+Plan part 1 with `/plan-slice`.
+
+Smaller candidates still open from round `sync-design-initial`:
 - the offline banner gap (`AppShell`, every tab);
 - part 16's add-menu edge, fixed on its own;
 - the recipe-delete confirm, the one filled destructive confirm left
-  (§ Buttons says text in destructive).
-
-Pick one with `/plan-slice`. The open device-walk loops below still want one
+  (§ Buttons says text in destructive). The open device-walk loops below still want one
 sitting with the Galaxy attached.
 **Latest decision:** D146
 
