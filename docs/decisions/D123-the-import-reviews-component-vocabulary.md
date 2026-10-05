@@ -1,5 +1,5 @@
 # D123 — The import review's component vocabulary: read-only rows that open one at a time, a foreground review marker, a confirmed Discard, Method in place, and an action bar on `surface`
-**Status:** active
+**Status:** active — amended by D142: an unmatched line's trailer names its state in words (#3 still holds: not flagged), and the summary and Method secondary lines are `bodyMedium`
 **Touches:** lib/features/import/presentation/import_review_screen.dart, lib/core/ingredients/widgets/ingredient_line_row.dart, docs/DESIGN_SYSTEM.md
 
 **Decided.** Phase 7 Part 6 builds the import review from a summary card,

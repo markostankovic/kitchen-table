@@ -2302,3 +2302,100 @@ never resizes the app. The photo screen at 360dp. The waiting state's
 pixels (the spinner's track, and the state in sr and in light): the
 screenshot caught the busy button a frame before the dump caught the state.
 Part 19's loop holds those three.
+
+### Part 20 — Import review per the design (round `sync-design-initial`, slice 7)
+
+**Status: complete** (`b88f024`). Decisions taken during it: D142.
+
+The seventh slice of design round `sync-design-initial`
+(`docs/design/handoffs/2026-10-02-sync-design-initial/`), frame 14 (review
+import) and the bundle's `IngredientRow`. Planned with `/plan-slice-ui`,
+built in a fresh session. No migration, no new package, no new ARB key. The
+bundle recreates `main`, so the diff was small: three changes, all in
+`import_review_screen.dart`.
+
+- **An unmatched line says so in words.** `_lineRow`'s trailer list gains
+  `if (!line.isMatched) l10n.ingredientNotMatchedTooltip`, between the
+  matched line's `→ <catalog name>` and the note, joined with ` · `. So an
+  unmatched row's second line reads `Nije povezano sa sastojkom` / `Not
+  matched to an ingredient`, and every closed row now says what the matcher
+  made of it. Before this the only explanation was the ring's tooltip, which
+  needs a long-press on a phone. The key is reused and still passed as
+  `unmatchedTooltip`, so the ring keeps its tooltip. The row's muted
+  `bodySmall` is unchanged. The line stays unflagged and untinted (D123 #3).
+  Blank lines render open and never reach `_lineRow`.
+- **The summary's attention line** (`N vredno pažnje pre čuvanja`) and
+  **Method's subtitle** (`N koraka`) go from `bodySmall` to `bodyMedium`,
+  still `onSurfaceVariant`. This is a role swap only, as with D139's
+  stat-strip labels.
+- **The pinned action bar already matched** the frame (`surface`, a 1dp
+  `outlineVariant` hairline, `lg`/`md` padding, equal halves `md` apart) and
+  was left alone.
+- **`DESIGN_SYSTEM.md`.** § Import review's summary card and Method name
+  `bodyMedium`. § Ingredient lines' import-review paragraph describes the
+  unmatched trailer.
+- **Tests** (`import_review_screen_test.dart`). `Not matched to an
+  ingredient` is found exactly once, on the `za posluživanje` line. The
+  unmatched row's `trailer` starts with it while `isFlagged` stays false. A
+  new test checks that the attention line and `1 step` have `bodyMedium`'s
+  font size.
+
+**Seen in the frame, not adopted.**
+- The ✕ leading (D123): the route nests under the recipes tab, and Back is
+  correct.
+- `Vegeta` flagged (D123 #3): unmatched is not flagged.
+- The flag *reason* (`unit "handful" not recognised`). There is no data for
+  it, since `needsAttention` is a bare `Set<int>`.
+- The floating in-field `Title` label: `AppFieldLabel` above stands.
+- The 4dp top padding and 16px gaps: `lg` top and `xl` between groups stand
+  (D141, part 18).
+- The row's 10dp padding, 16dp gap, `bodyMedium` trailer and 12px / 1px
+  ring. `IngredientLineRow` is shared with recipe detail and the shopping
+  list (part 17), and `DESIGN_SYSTEM.md` documents the 16dp ring.
+- The summary bar's 1px radius: no token.
+- The Method chevron (D123 #5).
+- The action bar's 16dp bottom padding: `AppActionBar` is shared, and `md`
+  stands.
+- An `sm` gap above Add ingredient: the recipe editor has none, and the two
+  stay consistent.
+
+**Differs from the plan.** Nothing in the code. `dart format` on the touched
+file also rewrapped an unrelated `switch` arm (the repo isn't format-clean),
+and that was put back.
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **739/739**.
+- `make -k check` failed only at `seed-check`, the known red since
+  `c8be2bc`. `test-sql` and `l10n-check` ran after it and passed.
+
+**Walked on the emulator** (`/design-walk import-review`, 2026-10-05, the
+only device attached), on the same code before commit, with
+`make install-emulator` and Dev login, sr/light → sr/dark → en/light →
+en/dark.
+- **One paste import** (one hosted AI parse), a short soup recipe typed with
+  `adb input text`. The waiting state was caught in sr/light: the spinner's
+  arc on its `surfaceContainerHighest` track, `U redu čekanja...` in
+  `titleMedium` with the hint under it, and the outlined `Odbaci ovaj uvoz`
+  pinned above the nav bar under the hairline. That closes part 19's
+  waiting-state check.
+- The parse matched all five lines, Vegeta included (it is in the catalog),
+  and flagged three. To get an unmatched row without a second AI call, `1
+  prstohvat Zlatno Zrno mesavine` was added with Dodaj sastojak. It goes
+  through the same `_lineRow`. The summary went to `5 od 6`.
+- The unmatched row read `Nije povezano sa sastojkom` / `Not matched to an
+  ingredient` in muted `bodySmall` under the name, with the ring on the name
+  line, and no tint and no marker. The flagged rows kept both. Nothing
+  wrapped or clipped in Serbian.
+- The attention line and `3 koraka` / `3 steps` at 14sp read well in all
+  four. In dark the attention line measured `#CFD0C2` on `#292923`, about
+  11:1.
+- The open line shows the `drag_indicator` grip, which closes part 18's
+  import-review check.
+- Part 10a's import-review dash check: the dashes run x 73–1005 against the
+  amount's right edge at 1003 (1080px wide), so they end at the text here.
+- The import was discarded through the confirm dialog afterwards. The
+  account ended on Srpski / Svetla.
+
+**Noticed, not this slice's.** The matcher flagged `pilecih krilca`
+(wings) → `pileća prsa` (breast). Being flagged, it would be caught at
+review, but the match is wrong.

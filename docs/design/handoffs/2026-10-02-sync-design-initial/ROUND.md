@@ -126,10 +126,13 @@ house rules are in `bundle/_ds/…/readme.md` (§ VISUAL FOUNDATIONS and
       Done as part 19 (`f41dabd`, D141). The ✕ leading, filled Camera /
       outlined Gallery, the 3:4-ish well, 4dp top padding, 20px gaps and the
       44px spinner were seen and not adopted.
-- [ ] `phase7-sync-import-review`: review import. Files:
+- [x] `phase7-sync-import-review`: review import. Files:
       `lib/features/import/presentation/import_review_screen.dart`.
       Bundle: section `Import`, frame 14; `IngredientRow` (unmatched ring,
       review marker). Diff the pinned action bar and the unmatched lines.
+      Done as part 20 (`b88f024`, D142). The ✕ leading, flagged `Vegeta`,
+      the flag reason, the row's metrics, 4dp top padding, 16px gaps and the
+      Method chevron were seen and not adopted.
 - [ ] `phase7-sync-meal-plan`: week, today, add-meal sheet. Files:
       `lib/features/meal_plan/presentation/meal_plan_screen.dart`,
       `lib/core/meal_plan/widgets/meal_slot_picker_sheet.dart`,

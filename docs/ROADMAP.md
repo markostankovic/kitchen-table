@@ -936,6 +936,21 @@ The emulator walk (sr/en × light/dark) was clean on the entry screens. It did
 not reach a docked keyboard, 360dp, or the waiting state's pixels in sr and
 light.
 
+### Part 20 — Import review per the design
+
+**Status: complete** (`b88f024`). Decisions taken during it: D142. See
+`docs/journal/phase-7.md`.
+
+Design round `sync-design-initial`, slice 7 of 11
+(`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`):
+- an unmatched line's trailer says `Nije povezano sa sastojkom`, reusing the
+  ring's string, and it stays unflagged (amending D123);
+- the summary's attention line and Method's step count are `bodyMedium`;
+- the pinned action bar already matched the frame.
+
+The emulator walk (sr/en × light/dark) was clean. It also closed part 18's
+grip check and part 19's waiting-state check.
+
 ---
 
 ## Standing rules across phases
