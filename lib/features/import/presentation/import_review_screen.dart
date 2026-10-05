@@ -493,6 +493,8 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
 
     final String trailer = <String>[
       if (line.isMatched && line.displayName != null) '→ ${line.displayName}',
+      // The ring's tooltip string doubles as the unmatched line's trailer.
+      if (!line.isMatched) l10n.ingredientNotMatchedTooltip,
       if (line.note != null) line.note!,
     ].join(' · ');
 
@@ -614,7 +616,7 @@ class _Summary extends StatelessWidget {
                   Expanded(
                     child: Text(
                       l10n.importWorthALook(attention),
-                      style: theme.textTheme.bodySmall?.copyWith(
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -669,7 +671,7 @@ class _MethodCard extends StatelessWidget {
         title: Text(l10n.methodHeading, style: theme.textTheme.titleMedium),
         subtitle: Text(
           l10n.importStepsCount(steps.length),
-          style: theme.textTheme.bodySmall?.copyWith(
+          style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),

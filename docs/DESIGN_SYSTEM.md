@@ -574,7 +574,10 @@ recipe detail and the shopping list sit flush with the gutter
 On import review the name is the local parse of the raw text, falling back to
 the whole raw text when there is no usable parse, and a matched line's trailer
 leads with `→ <catalog name>` (in the recipe's language), joined to the note
-with ` · `.
+with ` · `. An unmatched line's trailer leads with `Nije povezano sa sastojkom` /
+`Not matched to an ingredient` — the ring's tooltip string — joined to the note
+the same way, in the row's muted `bodySmall`. It stays unflagged and is never
+red: an unmatched line is a supported outcome (rule 3).
 
 **The match chip under a field being typed** (`IngredientMatchChip`) follows
 two people. Its **status words** — `No match` / `Nema poklapanja`, and the
@@ -771,7 +774,7 @@ reading, not editing, is the workflow.
 `titleMedium`, `md` below a 4dp `LinearProgressIndicator` (`primary` on
 `surfaceContainerHighest`, radius `xs`), and — only when something is flagged
 — `md` below a 3px × 16dp `reviewMarker` bar, `sm`, then `N vredno pažnje pre
-čuvanja` in `bodySmall` `onSurfaceVariant`. Paprika is the bar, never the
+čuvanja` in `bodyMedium` `onSurfaceVariant`. Paprika is the bar, never the
 text.
 
 **The title field.** Its label above it in `titleSmall`, `sm` gap, the field
@@ -786,7 +789,7 @@ unmatched line is **not** flagged, it gets the dashed ring.
 
 **Method.** A theme `Card` holding a collapsed `ExpansionTile` (`const
 Border()` shapes, `expand_more` in `outline`): `Postupak` in `titleMedium`,
-`N koraka` in `bodySmall` `onSurfaceVariant`. It expands **in place** to the
+`N koraka` in `bodyMedium` `onSurfaceVariant`. It expands **in place** to the
 step fields and Add step. No route, so no chevron.
 
 **The action bar.** `AppActionBar` (§ Action bar), pinned under the list —

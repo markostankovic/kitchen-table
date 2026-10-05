@@ -280,6 +280,9 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('→ šargarepa'), findsOneWidget);
+    // The unmatched line names its state in words, not only in the ring's
+    // tooltip (which is not in the tree until shown).
+    expect(find.text('Not matched to an ingredient'), findsOneWidget);
     expect(find.text('Save recipe'), findsOneWidget);
   });
 
@@ -292,6 +295,26 @@ void main() {
     // because part 2 never auto-accepts an LLM answer.
     expect(find.text('2 of 3 ingredients matched'), findsOneWidget);
     expect(find.text('1 worth a look before saving'), findsOneWidget);
+  });
+
+  testWidgets('the attention line and the step count are bodyMedium', (
+    WidgetTester tester,
+  ) async {
+    await _pump(tester, _job(ImportJobStatus.needsReview, result: _parsed()));
+
+    final BuildContext context = tester.element(find.byType(Scaffold).first);
+    final double? bodyMedium = Theme.of(context).textTheme.bodyMedium!.fontSize;
+    expect(
+      tester
+          .widget<Text>(find.text('1 worth a look before saving'))
+          .style!
+          .fontSize,
+      bodyMedium,
+    );
+    expect(
+      tester.widget<Text>(find.text('1 step')).style!.fontSize,
+      bodyMedium,
+    );
   });
 
   testWidgets('a job already saved offers the recipe instead of the form', (
@@ -315,6 +338,9 @@ void main() {
     final IngredientLineRow unmatched = _rowNamed(tester, 'za posluživanje');
     expect(unmatched.isMatched, isFalse);
     expect(unmatched.isFlagged, isFalse);
+    // D123 #3 holds with the new words: the trailer names the state, but the
+    // line is still not flagged.
+    expect(unmatched.trailer, startsWith('Not matched to an ingredient'));
     expect(find.byKey(const Key('unmatchedMarker')), findsOneWidget);
   });
 
