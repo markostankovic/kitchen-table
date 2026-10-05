@@ -1068,7 +1068,8 @@ every URL and re-download every photo.
 
 ### Part 2 — Image cache and decode size
 
-**Status: not started.**
+**Status: complete** (`6d789bd`). Decisions taken during it: D148. See
+`docs/journal/phase-8.md`.
 
 - `cached_network_image` (**approved 2026-10-05**, rule 8), with the cache
   key set to the Storage object path rather than the signed URL, so a

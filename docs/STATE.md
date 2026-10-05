@@ -1,31 +1,36 @@
 # State — 2026-10-05
 
 **Branch:** `main`
-**Last shipped:** Phase 8 part 1 (`28514bb`), the first part of Phase 8 —
-Freshness and images: the shopping list's pull and pantry long-press both
-regenerate (D147).
+**Last shipped:** Phase 8 part 2 (`6d789bd`), the second part of Phase 8 —
+Freshness and images: recipe photos are cached on disk, keyed by Storage
+object path (D148).
 
-- **Pull means generate**, the app-bar button's `generate()` and failure
-  snackbar: the range bar's dates, the reader's locale. On the empty
-  no-list state too.
-- **A long-press saves the pantry preference, then regenerates the list on
-  screen** with its own dates and language (`regenerateCurrent()`), so the
-  item moves in or out of `Verovatno imate` at once and the week and the
-  document's language never change under the cook. The snackbars now say
-  what happened (`… premešteno u Verovatno imate.`, `… je ponovo na
-  listi.`). D13 stands: each is a new snapshot.
-- **The list stays up while it reloads** (`skipLoadingOnReload`), so a
-  long-press keeps the scroll position and the expanded staples. The walk
-  found the blank-and-jump-to-top, and it was fixed and re-walked before
-  the commit.
+- **One widget for every recipe photo**, `RecipePhoto` (`core/recipes/
+  widgets/`), on `cached_network_image` with a named `flutter_cache_manager`
+  instance (both approved under rule 8). The card thumbnail, the detail well
+  and the editor preview all go through it. The key is the object path, so a
+  re-signed URL is a hit across pulls and launches, and a replaced photo is
+  a new key (no eviction).
+- **Offline photos show.** With a path and no signed URL (D131's cached
+  emission), the disk cache is read by path, and the placeholder shows only
+  on a miss. A URL that drops out for the same path is remembered, so a
+  pull no longer flashes every thumbnail to its monogram. The walk found
+  that flash, and it was fixed and re-walked before the commit.
+- **Thumbnails decode at 2 × thumb × dpr** wide (about 0.5MB instead of
+  about 4MB), so a landscape photo stays sharp in the `cover` tile.
 
-`dart analyze` is clean, `flutter test` passes 750/750, and `make check` is
+`dart analyze` is clean, `flutter test` passes 754/754, and `make check` is
 green except the known `seed-check` (below); the targets after it pass with
-`make -k check`. **Walked on the emulator** (`/design-walk shopping-list`,
-2026-10-05, all four combinations, online and offline). It left one loop
-open: the empty state's pull on a device (Phase 8 part 1, below).
+`make -k check`. **Walked on the emulator** (`/design-walk recipes`,
+2026-10-05, all four combinations, pull / cold relaunch / airplane mode /
+replace). It opened no loop.
 
-Still open, not part 1's:
+Still open, not part 2's:
+- right after a recipe save, the detail's well shows the placeholder (or
+  the previous photo) for about 8–15 s, until the signed detail arrives. The
+  new path has never been cached and the first emission is unsigned. It was
+  the same before part 2. Seeding the cache with the uploaded bytes on save
+  would close it (D148 Consequences);
 - while the offline banner shows, about 200px of empty space sits between
   it and the tab's app bar, in both brightnesses. The banner's `SafeArea`
   probably takes the status-bar inset while the `AppBar` below still pads
@@ -33,7 +38,7 @@ Still open, not part 1's:
 - in dark, the add-meal sheet's `RecipeCard`s take the sheet's own fill and
   lose their edge (the old picker did the same);
 - the recipe list's add menu touches the screen's right edge (part 16's
-  loop, below);
+  loop, below; re-checked 2026-10-05, still flush);
 - a failed link import shows the server's English sentence under `sr`
   (`That page could not be fetched.`), the stored `error_message`;
 - the matcher matched `pilecih krilca` (wings) to `pileća prsa` (breast) on
@@ -43,7 +48,8 @@ Still open, not part 1's:
   (the entry's own `recipeTitle`, D53);
 - the signed-out sign-in screen stays Serbian after an in-app switch to
   English;
-- tag chips show raw keys for a frame on a cold start;
+- tag chips show raw keys for a frame on a cold start, and **for the whole
+  session offline** (`doručak`, `sweet`): the tag labels are not cached;
 - the shopping list prints `1.5 kg` in Serbian;
 - units don't inflect (`2 glavica`), and the long-press snackbar's
   `premešteno` doesn't agree with the noun's gender (`hleb premešteno`);
@@ -56,19 +62,22 @@ Still open, not part 1's:
   Design updates them.
 
 **In flight:** none.
-**Next:** Phase 8 part 2 — image cache and decode size
-(`docs/ROADMAP.md`): `cached_network_image` (approved 2026-10-05) keyed by
-the Storage object path, so a re-signed URL is still a hit, and thumbnails
-decoded at display size. Then part 3 (refresh on tab switch, which waits on
-part 2), and part 4 only if needed. Plan part 2 with `/plan-slice`.
+**Next:** Phase 8 part 3 — refresh on tab switch (`docs/ROADMAP.md`).
+Selecting a tab re-reads its data, and the cached read emits the cache and
+then the server (D67), so nothing blanks. Part 2 was its prerequisite, since
+re-signing every URL is now a cache hit. Open for `/plan-slice`: whether
+`AppShell` may reach feature providers or each screen refreshes itself, and
+what Settings and re-tapping the current tab do. Part 4 (real thumbnails)
+stays "only if needed": the 2× decode read sharp on the emulator, and the
+Galaxy has not judged it yet.
 
 Smaller candidates still open from round `sync-design-initial`:
 - the offline banner gap (`AppShell`, every tab);
 - part 16's add-menu edge, fixed on its own;
 - the recipe-delete confirm, the one filled destructive confirm left
-  (§ Buttons says text in destructive). The open device-walk loops below still want one
-sitting with the Galaxy attached.
-**Latest decision:** D147
+  (§ Buttons says text in destructive). The open device-walk loops below
+  still want one sitting with the Galaxy attached.
+**Latest decision:** D148
 
 **Fourteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -133,7 +142,11 @@ in the app) was clean and opened no loop. The `phase7-sync-household` walk
 (`/design-walk household`, 2026-10-05, emulator, all four combinations,
 adult account, one invite code minted and revoked) was clean and opened no
 loop. The owner's Delete is covered by the widget test, as the slice
-planned. No hosted member has a long enough name to test wrapping.
+planned. No hosted member has a long enough name to test wrapping. Phase 8 part
+2's walk (`/design-walk recipes`, 2026-10-05, emulator, all four
+combinations, online, offline and a photo replaced) found one defect, the
+pull's thumbnail flash, which was fixed and re-walked the same sitting, so
+it opened no loop. It re-checked part 16's add menu (still flush).
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
@@ -675,7 +688,9 @@ Oldest first:
   screen's right edge in every combination. Its fill reaches the last pixel
   column (x=1079 of 1080), so it is not "clear of the right edge". The fix
   wants a non-default `alignmentOffset` (or a menu style with an end inset),
-  then a re-walk of just the menu. Clean: the `+` long-press tooltip,
+  then a re-walk of just the menu. **Re-checked 2026-10-05** (emulator,
+  sr/light, the Phase 8 part 2 `/design-walk recipes` sitting): still flush,
+  fill to x=1079, so the loop stays open. Clean: the `+` long-press tooltip,
   `Fotografiši stranicu` on one line, four regular-weight rows, the menu not
   covering the `+`; `5 recepata` / `5 recipes`; Favorites + `Jednostavno`
   giving the carded panel with `Poništi filtere` (which cleared both); a

@@ -108,3 +108,113 @@ only device attached), with `make install-emulator` and Dev login: sr/light
   Sep 28 – Oct 4 (it was an English one). Toggling and toggling back left
   explicit `alwaysHave` rows on hleb, bread, jaje and voda that render the
   same as their defaults. The account ended on Srpski / Svetla.
+
+### Part 2 — Image cache and decode size
+
+**Status: complete** (`6d789bd`). Decisions taken during it: D148.
+
+Planned with `/plan-slice` on 2026-10-05 and built in a fresh session. No
+migration, no new ARB key. Two new packages, both approved under rule 8
+during planning: `cached_network_image`, and `flutter_cache_manager` (its
+own dependency) taken directly so the cache is a named instance that tests
+can override.
+
+- **Cache** (`lib/core/images/recipe_image_cache.dart`, new).
+  `recipeImageCacheManagerProvider` is a keep-alive provider, on
+  `network_status.dart`'s shape, with a `CacheManager` named `recipeImages`
+  (60-day stale period, 500 objects). Its doc comment explains why nothing
+  evicts: `uploadImage` never reuses a path (D148 #2).
+- **`RecipePhoto`** (`lib/core/recipes/widgets/recipe_photo.dart`, new), a
+  `ConsumerStatefulWidget`. With a URL it builds a `CachedNetworkImage` with
+  `cacheKey: path`, `memCacheWidth: decodeWidth` and
+  `useOldImageOnUrlChange`. With no URL it looks the path up once per path
+  (`getFileFromCache`, memoised in state) and shows `Image.file(cacheWidth:)`
+  or the placeholder. It never fetches the bare path (D48).
+- **Card.** The photo shows whenever `imagePath` is set, not only when
+  `imageUrl` is. It sits in the existing `ClipRRect` at `AppSizes.thumb`,
+  with the monogram as placeholder and error widget. `decodeWidth` is `2 ×
+  thumb × dpr` (D148 #4).
+- **Detail.** `_PhotoWell` takes `imagePath` as well and keeps its spinner
+  and the quiet `image_outlined` placeholder (D135/D139). The status-bar
+  check stays on `imageUrl`. "Has a photo to show" offline is only known
+  after an async lookup, so it was not trivially available, as the plan
+  allowed; a code comment says so.
+- **Editor.** `_PhotoField` decides "has an existing photo" from
+  `existingImagePath`. The old `existingImageUrl!` force-unwrap is gone, so
+  an offline draft with a path and no URL no longer throws. Spinner and
+  broken-image fallback kept (D140).
+- **Tests.** There was no shared-fakes folder, so
+  `test/helpers/fake_image_cache.dart` is new: `FakeImageCache` (a `Fake`
+  over `BaseCacheManager`) and `fakeCachedFile()`. Every pump that can show
+  a photo overrides the provider. The `NetworkImage` assertions in the
+  screen and editor tests now check `CachedNetworkImage`'s `imageUrl` and
+  `cacheKey`. Four new card tests:
+  - path + URL: cached under the path, with `memCacheWidth` set;
+  - offline hit: an `Image.file` behind a `ResizeImage`;
+  - offline miss: the monogram;
+  - a refresh that drops the URL for the same path: still the network
+    image, on its old URL.
+
+**Differs from the plan.**
+- **The remembered URL (D148 #3) came from the walk.** The plan's no-URL
+  branch went straight to the disk lookup. On a pull, the cached list comes
+  first and unsigned (D131), so every thumbnail flashed to its monogram
+  until the signed list arrived. Fixed in the same commit, with a test, and
+  re-walked.
+- **The cache-hit fake.** `FileInfo` wants a `package:file` `File`, and
+  `file` is only a transitive dependency, so importing it would trip
+  `depend_on_referenced_packages`. `fakeCachedFile()` makes the file through
+  the cache's own `IOFileSystem`, with `path_provider`'s channel mocked to a
+  temp dir.
+- **The fake's network fetch fails at once** (a `SocketException` stream).
+  With a stream that never answered, the detail spinner kept
+  `pumpAndSettle` from settling. Failing at once is what a test's
+  `Image.network` always did (HTTP 400).
+- **An unrelated stale hash.** `build_runner` also rewrote the hash in
+  `shopping_list_providers.g.dart`, which was already stale from part 1. It
+  was reverted to keep the diff to this part.
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **754/754** (750 + 4).
+- `grep -rn "Image.network" lib` returns nothing.
+- `make -k check` failed only at `seed-check`, the known red since
+  `c8be2bc`.
+
+**Walked on the emulator** (`/design-walk recipes`, 2026-10-05, the only
+device attached), with `make install-emulator` and Dev login. Pixel samples
+were taken off rapid `screencap`s for the timing checks.
+- **Pull to refresh.** It found the flash above. After the fix, six frames
+  across the pull all show the photos.
+- **Cold relaunch** (`force-stop`, start, ten rapid frames). Splash, the
+  cream background, then the photos, with no monogram frame and no visible
+  download.
+- **Airplane mode, relaunch.** The list's four photos come from disk, and so
+  does the detail's full-size photo. The editor preview reads the same
+  path.
+- **Replace.** `Kajgana` (no photo) was given a blue test image, then a
+  pink one. The list showed pink at once. The detail showed the previous
+  photo for a moment, then pink. After the first save the well showed the
+  placeholder for about 8–15 s, until the signed detail arrived (D148
+  Consequences). It is not a regression: `Image.network` with a null URL
+  did the same.
+- **sr/light → sr/dark → en/light → en/dark** on the list, a photo detail
+  and its editor, plus `Kajgana`'s photoless detail and editor in sr/dark.
+  All clean. The thumbnails are sharp at the 2× decode, the status-bar
+  icons are light over the photo, and the `outline` placeholder icon reads
+  on the dark well.
+- **Phone dark + app `Svetla`** stays light; `uimode` reset to `no`.
+- **Not reached on a device.** A recipe never seen, offline: all four
+  photos had been seen, and a release build's cache can't be cleared
+  without clearing the session. The offline-miss card test covers it.
+- **Seen, not this part's.** Part 16's add menu is still flush against the
+  right edge (fill to x=1079); STATE's bullet was updated. Offline, the tag
+  chips show their raw keys (`doručak`, `sweet`) for the whole session, not
+  just a frame.
+- **Cleanup.** The test photo was removed from `Kajgana`, so it has none
+  again, but it now sorts first because it was just edited. The pushed
+  test images were deleted from the emulator. The account ended on Srpski /
+  Svetla, with airplane mode off.
+
+Part 4 (real thumbnails) stays "only if needed". The 2× decode reads sharp
+and the list scrolled without a visible load on the emulator. The Galaxy
+has not judged it yet.
