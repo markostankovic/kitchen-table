@@ -981,6 +981,22 @@ The emulator walk (sr/en × light/dark, online and offline) was clean on the
 list and closed part 10a. It could not reach the no-list state, which only
 a household with no list ever generated shows.
 
+### Part 23 — Settings per the design
+
+**Status: complete** (`25c6ead`). Decisions taken during it: D145. See
+`docs/journal/phase-7.md`.
+
+Design round `sync-design-initial`, slice 10 of 11
+(`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`):
+- `segmentedButtonTheme` is a stadium with an `outline` stroke and an
+  `onSurface` unselected label, app-wide (all six toggles);
+- Settings' group headers sit `md` above their cards, the row icons `lg`
+  from their text, and the secondary lines are `bodyMedium`;
+- the 56dp green profile avatar was seen and not adopted (D126 #2).
+
+The emulator walk (sr/en × light/dark) was clean on settings and on the
+range bar, the meal-plan toggle and the editor's toggles.
+
 ---
 
 ## Standing rules across phases

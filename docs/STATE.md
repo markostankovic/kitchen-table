@@ -1,27 +1,27 @@
 # State — 2026-10-05
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 22 (`fdc457c`), slice 9 of design round
-`sync-design-initial`: the shopping list per the design (D144).
+**Last shipped:** Phase 7 part 23 (`25c6ead`), slice 10 of design round
+`sync-design-initial`: settings per the design (D145).
 
-- **The no-list state is carded.** `AppEmptyState(card: true)` (D138) with
-  `shopping_basket_outlined` and one text-only tonal `Napravi listu` /
-  `Generate list` (was a full-emphasis `FilledButton.icon`), in the reader's
-  locale, still inside the `RefreshIndicator`.
-- Nothing else in frames 18–19 was adopted: aisle headings (D105), the
-  in-body offline banner and its merged sentence (D76), `bodyMedium`
-  captions, the tag's bold code (D134), the staples card's 15px title, the
-  app-bar order and glyphs, the 12px gap and the card's `4 / 16 / 8`
-  padding (journal, part 22; D144).
+- **Segmented buttons, app-wide.** `segmentedButtonTheme` is a
+  `StadiumBorder` with an `outline` stroke and an `onSurface` unselected
+  label. All six toggles share it: settings ×2, the meal-plan view, the
+  editor ×2 and the shopping list's range bar.
+- **Settings.** Group headers sit `md` above their cards, the profile and
+  household rows put `lg` after the avatar / home icon, and the theme
+  subtitle, `Prijavljeni ste Google nalogom` and `2 člana` are `bodyMedium`.
+- Nothing else in frame 20 was adopted: the 56dp green avatar (D126 #2),
+  the 16/24 subtitle size, filled theme glyphs, the `login` glyph, the −8
+  pull-up, the 2px gap and 4 / 24 list padding (journal, part 23; D145).
 
-`dart analyze` is clean, `flutter test` passes 741/741, and `make check` is
+`dart analyze` is clean, `flutter test` passes 742/742, and `make check` is
 green except the known `seed-check` (below); the targets after it pass with
-`make -k check`. **Walked on the emulator** (`/design-walk shopping-list`,
-2026-10-05, all four combinations, online and offline): the list is clean,
-and the walk closed part 10a. The no-list state was **not reached**: only a
-household that has never generated a list shows it (part 22's loop, below).
+`make -k check`. **Walked on the emulator** (`/design-walk settings`,
+2026-10-05, all four combinations): clean on settings and on every other
+segmented button. It opened no loop.
 
-Still open, not part 22's:
+Still open, not part 23's:
 - while the offline banner shows, about 200px of empty space sits between
   it and the tab's app bar, in both brightnesses. The banner's `SafeArea`
   probably takes the status-bar inset while the `AppBar` below still pads
@@ -49,16 +49,15 @@ Still open, not part 22's:
   Design updates them.
 
 **In flight:** none.
-**Next:** `phase7-sync-settings`, slice 10 of round `sync-design-initial`
-(settings, frame 20). Plan it with `/plan-slice-ui phase7-sync-settings`.
-Part 21's note applies there: the segmented button's stadium shape is a
-`segmentedButtonTheme` question that settings shares. The round's slice list
-is in `docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`. The
-offline banner gap is `AppShell`'s, small enough to fix on its own. Part
-16's menu-edge defect can fold into a later recipes slice or be fixed on its
+**Next:** `phase7-sync-household`, slice 11 and the last of round
+`sync-design-initial` (household and the leave dialog, frames 21–22). Plan
+it with `/plan-slice-ui phase7-sync-household`. The round's slice list is in
+`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`. The offline
+banner gap is `AppShell`'s, small enough to fix on its own. Part 16's
+menu-edge defect can fold into a later recipes slice or be fixed on its
 own. The open device-walk loops below still want one sitting with the
 Galaxy attached.
-**Latest decision:** D144
+**Latest decision:** D145
 
 **Thirteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -117,7 +116,9 @@ walk (`/design-walk shopping-list`, 2026-10-05, emulator, all four
 combinations, online and offline) was clean on what it reached and closed
 part 10a. It opened part 22's loop for the no-list state, which it could not
 reach: the screen shows the household's latest list whatever range is
-selected, and this household has one.
+selected, and this household has one. Part 23's walk (`/design-walk settings`,
+2026-10-05, emulator, all four combinations, with every segmented button
+in the app) was clean and opened no loop.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk

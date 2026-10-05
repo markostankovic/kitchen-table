@@ -2453,7 +2453,8 @@ package, no new ARB key. One real change and four small visual fixes.
 - The segmented button's stadium shape, `outline` stroke and `onSurface`
   unselected label. `segmentedButtonTheme` is shared with settings, the
   shopping list and the editor, so it is not a meal-plan slice's change.
-  `phase7-sync-settings` is where it can be raised.
+  `phase7-sync-settings` is where it can be raised. **Taken up in part
+  23 (D145)**, app-wide.
 - "Already planned recently" (D121 #5): there is no data for it.
 - The frame's ` · `-joined `bodyMedium` meta (D119): `AppMetaRow` stands.
 - Entry padding of 10/16 and the 2px meta gap, which are off-scale.
@@ -2583,3 +2584,73 @@ of empty space sits between it and the tab's app bar, in both brightnesses.
 The banner's `SafeArea` probably takes the status-bar inset, and the
 `AppBar` below still pads for it. It is `AppShell` code, so every tab has
 it. No earlier walk recorded it.
+
+### Part 23 — Settings per the design (round `sync-design-initial`, slice 10)
+
+**Status: complete** (`25c6ead`). Decisions taken during it: D145.
+
+The tenth slice of design round `sync-design-initial`
+(`docs/design/handoffs/2026-10-02-sync-design-initial/`), frame 20
+(`Settings`). It was planned with `/plan-slice-ui` and built in a fresh
+session. No migration, no new package, no new ARB key. The bundle recreates
+`main`, so the delta was small: one app-wide theme change and three
+settings-only tweaks, all chosen by the user on 2026-10-05.
+
+- **`segmentedButtonTheme` (D145 #1).** `const StadiumBorder()` (was
+  `AppRadii.sm`), `outline` stroke (was `outlineVariant`) and an
+  `onSurface` unselected label (was `onSurfaceVariant`). The selected
+  colours, `AppSizes.button` and `labelLarge` stay. It reaches all six
+  `SegmentedButton`s: settings ×2, the meal-plan view toggle, the editor ×2
+  and the shopping list's range bar. This closes part 21's note.
+- **Settings** (`settings_screen.dart`, D145 #2–4):
+  - `_GroupHeader` pads `md` below (was `sm`), and its doc comment says so;
+  - `_ProfileRow` and `_HouseholdRow` put `lg` after the avatar / home icon
+    (was `md`);
+  - the theme's "this app only" line, the profile card's `lines` (`Prijavljeni
+    ste Google nalogom`, and the loading and error lines on the same path)
+    and the member count move from `bodySmall` to `bodyMedium`, still
+    `onSurfaceVariant`.
+- **`DESIGN_SYSTEM.md`**: the `outline` and `outlineVariant` rows in
+  § Content and lines, the `full` row in § Shape, and § Settings' groups,
+  selectors and household row.
+- **Tests** (`app_theme_test.dart`). A new test resolves the theme's style
+  in both brightnesses: the shape is a `StadiumBorder`, the side is
+  `outline`, the unselected foreground (empty state set) is `onSurface` and
+  the selected one is still `onSecondaryContainer`. The 360dp layout tests
+  for settings, the range bar and the editor's toggles passed unchanged.
+
+**Seen in the frame, not adopted** (D145 lists the reasons):
+- the 56dp `primaryContainer` profile avatar (D126 #2);
+- the 16/24 email and subtitle size (not a role);
+- filled `light_mode` / `dark_mode` glyphs (the icon set is out of scope);
+- the `login` glyph on Sign out (`logout` is the right meaning);
+- the account group's −8 pull-up under the hairline;
+- the 2px title → description gap;
+- list padding of 4 / 24.
+
+**Differs from the plan.** Nothing.
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **742/742**.
+- `make -k check` failed only at `seed-check`, the known red since
+  `c8be2bc`.
+
+**Walked on the emulator** (`/design-walk settings`, 2026-10-05, the only
+device attached), on the same code before commit, with
+`make install-emulator` and Dev login, sr/light → sr/dark → en/dark →
+en/light. Because the theme is app-wide, each combination also covered the
+shopping list's range bar, the meal plan's view toggle and the new-recipe
+editor's two toggles.
+- **Serbian.** `Važi samo za ovu aplikaciju, bez obzira na podešavanje
+  telefona.` wraps cleanly to two lines at `bodyMedium` (one in English).
+  Nothing truncates or overflows. `Ova nedelja` fits its range-bar segment,
+  and nothing clips at the stadium ends.
+- **Dark.** The `outline` stroke (`#96978A`) reads on the dark card,
+  confirmed on a full-resolution crop of the `Tamna` segment's end.
+  Unselected `Svetla`, `Tamna`, `English`, `Sledeća`, `Ova nedelja` and
+  `Isprobano` are full-strength `onSurface`.
+- **Theme independence.** With the phone's night mode on and the app on
+  `Svetla`, the app stayed light.
+- **Cleanup.** The empty new-recipe editor was opened four times and left
+  without saving, so nothing was written to hosted. The account ended on
+  Srpski / Svetla, and the phone's night mode is back to `no`.

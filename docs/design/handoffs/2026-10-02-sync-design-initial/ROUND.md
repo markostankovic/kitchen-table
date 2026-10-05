@@ -154,10 +154,15 @@ house rules are in `bundle/_ds/…/readme.md` (§ VISUAL FOUNDATIONS and
       and its merged sentence, `bodyMedium` captions, the tag's bold code,
       the staples card's 15px title, the app-bar order and glyphs, the 12px
       gap and the card's `4 / 16 / 8` padding were seen and not adopted.
-- [ ] `phase7-sync-settings`: settings. Files:
+- [x] `phase7-sync-settings`: settings. Files:
       `lib/features/auth/presentation/settings_screen.dart`. Bundle: section
       `Settings`, frame 20; `ProfileCard`, `SettingsGroup`, `NavRow`,
       `ListRow`. Diff the groups and rows.
+      Done as part 23 (`25c6ead`, D145). `segmentedButtonTheme` took the
+      stadium, `outline` stroke and `onSurface` label app-wide. The 56dp
+      green avatar, the 16/24 subtitle size, filled theme glyphs, the
+      `login` glyph, the −8 pull-up, the 2px gap and 4 / 24 list padding
+      were seen and not adopted.
 - [ ] `phase7-sync-household`: household and the leave dialog. Files:
       `lib/features/households/presentation/household_screen.dart`. Bundle:
       section `Settings`, frames 21–22; `Monogram`, `Dialog`. Diff the
