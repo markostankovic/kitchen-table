@@ -1,28 +1,34 @@
 # State — 2026-10-05
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 20 (`b88f024`), slice 7 of design round
-`sync-design-initial`: import review per the design (D142, amending D123).
+**Last shipped:** Phase 7 part 21 (`1be6fdf`), slice 8 of design round
+`sync-design-initial`: the meal plan per the design (D143, amending D121
+and D132).
 
-- **An unmatched line says so.** Its trailer leads with `Nije povezano sa
-  sastojkom` / `Not matched to an ingredient`, the ring's tooltip string,
-  joined to the note with ` · `, in the row's muted `bodySmall`. It is
-  still unflagged: no marker, no tint (D123 #3).
-- **Secondary lines are `bodyMedium`.** The summary's `N vredno pažnje pre
-  čuvanja` and Method's `N koraka`, still `onSurfaceVariant`.
-- The pinned action bar already matched the frame. The ✕ leading, flagged
-  `Vegeta`, a flag reason, the shared row's metrics, the 4dp top padding,
-  16px gaps and the Method chevron were seen and not adopted (journal,
-  part 20).
+- **Adding a meal is one sheet.** A day's `+ Dodaj obrok` opens
+  `showRecipePicker(day:)`. It shows the title with the day's
+  `shortDateLabel`, the four slots as `ChoiceChip`s in a `Wrap` (Dinner
+  preselected, exactly one always selected), the search field (not
+  autofocused), `RecipeCard` results and `Add a note instead`. It returns
+  the slot with the pick. The slot chooser is gone, and the snack-repeat
+  advisory runs on the returned slot.
+- **Day and entry cards.** Day headers are `onSurfaceVariant`. The expanded
+  card is padded `xs` at the bottom. The `Danas` pill is 24 tall. A
+  leftover leads with `Icons.undo` at 24, `md` before the text.
+- The recipe detail's `Add to meal plan` sheet got a token clean-up only.
+  The `This week | Today` order, the segmented button's shape, "Already
+  planned recently", the ` · ` meta, the elevation-3 lift, monogram rows,
+  the scrolling chip row and the `Added to …` snackbar were seen and not
+  adopted (journal, part 21).
 
-`dart analyze` is clean, `flutter test` passes 739/739, and `make check` is
+`dart analyze` is clean, `flutter test` passes 740/740, and `make check` is
 green except the known `seed-check` (below); the targets after it pass with
-`make -k check`. **Walked on the emulator** (`/design-walk import-review`,
-2026-10-05, all four combinations, one paste import): clean. It also closed
-part 18's grip check, part 19's waiting-state check, and part 10a's
-import-review dash check.
+`make -k check`. **Walked on the emulator** (`/design-walk meal-plan`,
+2026-10-05, all four combinations): clean.
 
-Still open, not part 20's:
+Still open, not part 21's:
+- in dark, the add-meal sheet's `RecipeCard`s take the sheet's own fill and
+  lose their edge (the old picker did the same);
 - the recipe list's add menu touches the screen's right edge (part 16's
   loop, below);
 - a failed link import shows the server's English sentence under `sr`
@@ -44,15 +50,15 @@ Still open, not part 20's:
   Design updates them.
 
 **In flight:** none.
-**Next:** `phase7-sync-meal-plan`, slice 8 of round `sync-design-initial`
-(frames 15–17: week, today, the add-meal sheet; diff against parts 12–13's
-grip and drag rules). Plan it with `/plan-slice-ui phase7-sync-meal-plan`.
+**Next:** `phase7-sync-shopping-list`, slice 9 of round
+`sync-design-initial` (the list, offline and in Serbian, and the no-list
+state). Plan it with `/plan-slice-ui phase7-sync-shopping-list`.
 The round's slice list is in
 `docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`. Part 16's
 menu-edge defect is small enough to fold into a later recipes slice or fix
 on its own. The open device-walk loops below still want one sitting with the
 Galaxy attached.
-**Latest decision:** D142
+**Latest decision:** D143
 
 **Thirteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -105,7 +111,8 @@ the checks the emulator and a one-import quota budget could not reach.
 Part 20's walk (`/design-walk import-review`, 2026-10-05, emulator, all four
 combinations, one paste import) was clean and opened no loop. It closed
 part 18's grip check, part 19's waiting-state check and part 10a's
-import-review dash check, though each of those loops keeps other items.
+import-review dash check, though each of those loops keeps other items. Part 21's walk (`/design-walk meal-plan`, 2026-10-05, emulator, all four
+combinations) was clean and opened no loop.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk

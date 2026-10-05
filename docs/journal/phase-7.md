@@ -2399,3 +2399,107 @@ en/dark.
 **Noticed, not this slice's.** The matcher flagged `pilecih krilca`
 (wings) → `pileća prsa` (breast). Being flagged, it would be caught at
 review, but the match is wrong.
+
+### Part 21 — Meal plan per the design (round `sync-design-initial`, slice 8)
+
+**Status: complete** (`1be6fdf`). Decisions taken during it: D143.
+
+The eighth slice of design round `sync-design-initial`
+(`docs/design/handoffs/2026-10-02-sync-design-initial/`), frames 15–17
+(`Plan`: week, today, the add-meal sheet). It was planned with
+`/plan-slice-ui` and built in a fresh session. No migration, no new
+package, no new ARB key. One real change and four small visual fixes.
+
+- **Adding a meal is one sheet (D143).** `showRecipePicker` now takes
+  `day:` and `initialSlot:` (dinner) and returns `({MealSlot slot,
+  RecipePick pick})?`. Under the theme's drag handle:
+  - `Dodaj obrok` in `titleMedium` with the day's `shortDateLabel` directly
+    under it in `bodyMedium` `onSurfaceVariant`;
+  - the four slots as `ChoiceChip`s in a `Wrap` (`sm` / `sm`), copied from
+    `meal_slot_picker_sheet.dart`'s state and widget;
+  - the search field, no longer autofocused;
+  - the results, the divider and `Add a note instead`, all unchanged.
+
+  `meal_plan_screen.dart` loses `_showSlotChooser` and
+  `_chooseSlotThenAdd`. `_add(context, ref, day)` destructures the record,
+  and both `+ Dodaj obrok` buttons call it. The snack-repeat advisory (D58)
+  runs on the returned slot. The sheet stays in `core/recipes/`, and its
+  `RecipeCard` rows keep D53 true. The user chose this on 2026-10-05.
+- **Day header** in `onSurfaceVariant` (was `onSurface`), as the frame's
+  `DayCard` header.
+- **The expanded card** is padded `md` with `xs` at the bottom, where the
+  add button's 48dp target makes the space, as on the collapsed card.
+- **`_TodayPill`** gains `xs` vertical padding, so it is 24 tall, the
+  frame's `Tag` height and `AppBadge`'s arithmetic.
+- **A leftover** leads with `Icons.undo` at `AppSizes.icon` (was
+  `replay_outlined` at 20), with `md` before the text. The bundle's
+  key-glyph table reads "`undo` leftover".
+- **`meal_slot_picker_sheet.dart`** (the recipe detail's `Add to meal plan`)
+  had a literal clean-up only. Its raw `16` / `8` became `AppSpacing.lg` /
+  `sm`, and the `Wrap` gained `runSpacing: sm`.
+- **`DESIGN_SYSTEM.md`** § Meal entries: the day card, the leftover icon and
+  the add-meal sheet.
+- **Tests** (`meal_plan_screen_test.dart`).
+  - `_addTo` taps a `ChoiceChip`, and the sheet stays open.
+  - The collapsed-day test now checks one tap, the date, four chips with
+    Dinner selected, the search field, no `ListTile` slot rows, and that
+    Lunch writes to lunch.
+  - The filled-slot test counts four chips.
+  - A new test checks that the default is dinner.
+  - The snack-repeat tests pass through the new sheet unchanged.
+
+**Seen in the frame, not adopted.**
+- The `This week | Today` toggle order (D121): Phase 5 opens on Today.
+- The segmented button's stadium shape, `outline` stroke and `onSurface`
+  unselected label. `segmentedButtonTheme` is shared with settings, the
+  shopping list and the editor, so it is not a meal-plan slice's change.
+  `phase7-sync-settings` is where it can be raised.
+- "Already planned recently" (D121 #5): there is no data for it.
+- The frame's ` · `-joined `bodyMedium` meta (D119): `AppMetaRow` stands.
+- Entry padding of 10/16 and the 2px meta gap, which are off-scale.
+- The elevation-3 lift (D134): it stays 2.
+- Month-bearing week-view headers: `weekdayAndDay` is deliberate.
+- The pill's w600: `labelMedium` w500 stands.
+- The sheet title in `titleLarge`: `titleMedium` is the sheet-title row.
+- The scrolling chip row: a `Wrap` never hides a Serbian label.
+- 48dp monogram rows (the user's choice, D53).
+- The `Added to …` snackbar with Undo (the user's choice; a later slice).
+- The frame has no app-bar "this week" action. The action is kept.
+
+**Differs from the plan.** Nothing in the code. The plan's
+`DESIGN_SYSTEM.md` edits went in with the build commit.
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **740/740**, and
+  `meal_slot_picker_sheet_test.dart` green untouched.
+- `make -k check` failed only at `seed-check`, the known red since
+  `c8be2bc`.
+
+**Walked on the emulator** (`/design-walk meal-plan`, 2026-10-05, the only
+device attached), on the same code before commit, with
+`make install-emulator` and Dev login, sr/light → sr/dark → en/light →
+en/dark.
+- **Serbian.** `Doručak` `Ručak` `Večera` `Užina` sit on one row with the
+  check on `Večera`. In English, `Snack` wraps cleanly to a second row. The
+  date line read `pon 5. okt` / `sre 7. okt` / `Mon, Oct 5`.
+- **The add flow on hosted.** Prženice was added to Monday with the default
+  slot and landed in Večera. Tapping `Ručak` on Wednesday, then `Dodaj
+  napomenu umesto recepta`, wrote `jedemo napolju` under Ručak. One tap
+  opened the sheet each time, with no intermediate list.
+- **Leftover.** `Isplaniraj ostatke...` put `Ostaci: Prženice` on Tuesday.
+  The `undo` glyph reads as "derived" in `secondary` in both brightnesses.
+- **The 24dp `Danas` pill** sits centred on the header line. The expanded
+  cards' `+ Dodaj obrok` isn't cramped at the bottom.
+- **Dark.** The muted day headers (`#CFD0C2` on `#292923`) read well, and so
+  does the sheet's date line.
+- **The recipe detail's `Add to meal plan` sheet** (en/dark) looks the same.
+  The only difference is the 8dp run gap above the wrapped `Snack` row.
+- **Not reached:** the snack-repeat dialog on the device, which needs a
+  snack history on hosted. The widget tests cover it.
+- **Cleanup.** The four walk entries were removed, one of them added by a
+  stray tap. The account ended on Srpski / Svetla on the Today view, and
+  the phone's night mode stayed `no`.
+
+**Noticed, not this slice's.** In dark, the sheet's `RecipeCard`s take the
+sheet's own fill and lose their edge. They stand out in light. The old
+picker sheet had the same problem.

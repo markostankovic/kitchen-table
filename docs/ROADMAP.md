@@ -951,6 +951,21 @@ Design round `sync-design-initial`, slice 7 of 11
 The emulator walk (sr/en × light/dark) was clean. It also closed part 18's
 grip check and part 19's waiting-state check.
 
+### Part 21 — Meal plan per the design
+
+**Status: complete** (`1be6fdf`). Decisions taken during it: D143. See
+`docs/journal/phase-7.md`.
+
+Design round `sync-design-initial`, slice 8 of 11
+(`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`):
+- adding a meal is one sheet: the day's date, the four slots as chips with
+  Dinner preselected, then a recipe or a note (amending D121 and D132);
+- day headers are muted, the `Danas` pill is 24 tall, and a leftover leads
+  with `undo` at 24;
+- the recipe detail's `Add to meal plan` sheet got a token clean-up only.
+
+The emulator walk (sr/en × light/dark) was clean.
+
 ---
 
 ## Standing rules across phases

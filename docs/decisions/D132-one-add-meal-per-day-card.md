@@ -1,5 +1,5 @@
 # D132 — One `+ Dodaj obrok` per day card, no per-slot add buttons, and a note wears a recipe title's face
-**Status:** active — amended by D134: a note's text is `recipeTitle` at w400, not the full-weight recipe face
+**Status:** active — amended by D134: a note's text is `recipeTitle` at w400, not the full-weight recipe face; amended by D143: `+ Dodaj obrok` opens the one add-meal sheet, not the slot chooser
 **Touches:** lib/features/meal_plan/presentation/meal_plan_screen.dart, docs/DESIGN_SYSTEM.md
 
 **Decided.**

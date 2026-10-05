@@ -133,13 +133,17 @@ house rules are in `bundle/_ds/…/readme.md` (§ VISUAL FOUNDATIONS and
       Done as part 20 (`b88f024`, D142). The ✕ leading, flagged `Vegeta`,
       the flag reason, the row's metrics, 4dp top padding, 16px gaps and the
       Method chevron were seen and not adopted.
-- [ ] `phase7-sync-meal-plan`: week, today, add-meal sheet. Files:
+- [x] `phase7-sync-meal-plan`: week, today, add-meal sheet. Files:
       `lib/features/meal_plan/presentation/meal_plan_screen.dart`,
       `lib/core/meal_plan/widgets/meal_slot_picker_sheet.dart`,
       `lib/core/recipes/widgets/recipe_picker_sheet.dart`. Bundle: section
       `Plan`, frames 15–17; `DayCard`, `MealEntry`, `SegmentedButton`.
       Diff against parts 12–13 (grip, drag rules). The readme says the
       4-slot add-meal sheet exists only as a spec.
+      Done as part 21 (`1be6fdf`, D143). The `This week | Today` order, the
+      segmented button's shape, "Already planned recently", the ` · ` meta,
+      the elevation-3 lift, 48dp monogram rows, the scrolling chip row and
+      the `Added to …` snackbar were seen and not adopted.
 - [ ] `phase7-sync-shopping-list`: list, offline and in Serbian, and the
       no-list state. Files:
       `lib/features/shopping_list/presentation/shopping_list_screen.dart`.
