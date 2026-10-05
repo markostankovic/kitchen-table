@@ -966,6 +966,21 @@ Design round `sync-design-initial`, slice 8 of 11
 
 The emulator walk (sr/en × light/dark) was clean.
 
+### Part 22 — Shopping list per the design
+
+**Status: complete** (`fdc457c`). Decisions taken during it: D144. See
+`docs/journal/phase-7.md`.
+
+Design round `sync-design-initial`, slice 9 of 11
+(`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`):
+- the no-list state is carded (`AppEmptyState(card: true)`), with the basket
+  glyph and one tonal `Napravi listu`;
+- the rest of frames 18–19 was seen and not adopted (D76, D105, D134).
+
+The emulator walk (sr/en × light/dark, online and offline) was clean on the
+list and closed part 10a. It could not reach the no-list state, which only
+a household with no list ever generated shows.
+
 ---
 
 ## Standing rules across phases

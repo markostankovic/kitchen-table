@@ -2503,3 +2503,83 @@ en/dark.
 **Noticed, not this slice's.** In dark, the sheet's `RecipeCard`s take the
 sheet's own fill and lose their edge. They stand out in light. The old
 picker sheet had the same problem.
+
+### Part 22 — Shopping list per the design (round `sync-design-initial`, slice 9)
+
+**Status: complete** (`fdc457c`). Decisions taken during it: D144.
+
+The ninth slice of design round `sync-design-initial`
+(`docs/design/handoffs/2026-10-02-sync-design-initial/`), frames 18–19
+(`List · offline, in Serbian` and `List · no list yet`). It was planned with
+`/plan-slice-ui` and built in a fresh session. No migration, no new package,
+no new ARB key. The bundle is a recreation of `main`, so planning's diff
+found one change.
+
+- **The no-list state is carded (D144).** `ShoppingListScreen`'s
+  `current == null` branch:
+  - `AppEmptyState(card: true)` (D138, which built the variant for this
+    slice);
+  - `Icons.shopping_basket_outlined` for the frame's `shopping_basket` (was
+    `checklist_outlined`, the glyph D118 took off the nav tab);
+  - a text-only `FilledButton.tonal` `Napravi listu` / `Generate list` (was
+    a full-emphasis `FilledButton.icon` with `playlist_add_check_outlined`),
+    on the recipe list's precedent.
+
+  It stays inside the `RefreshIndicator`, and it is chrome in the reader's
+  locale (D94). The strings already matched the frame word for word.
+- **`DESIGN_SYSTEM.md`**: § Empty state's card paragraph names the shopping
+  list's no-list state, and § Shopping list gains a paragraph on it.
+- **Tests** (`shopping_list_screen_test.dart`). A new test checks
+  `AppEmptyState.card`, the basket glyph and the absence of the old one, and
+  that the button is tonal. It reads the fill off the button's own
+  `Material`, on `app_theme_test.dart`'s precedent, and compares it with
+  `secondaryContainer`. The existing `Generate list` tap tests pass
+  unchanged.
+
+**Seen in the frames, not adopted** (D144 lists the reasons):
+- aisle headings in the to-buy card (D105-amended);
+- the offline banner inside the scroll body at 16/24 with a 24dp icon (D76:
+  it lives in `AppShell` for every tab);
+- the banner's merged sentence replacing the saved-copy line (D76);
+- `bodyMedium` for the generated-at and `Next list:` lines;
+- the doc-language tag's bold code (D134), 28dp height and 6px gap;
+- the staples card's 15px title and `bodyMedium` subtitle;
+- the app-bar action order and its `refresh` / `content_copy` glyphs;
+- the frame's 12px above the empty card (the card variant's `lg` inset plus
+  the range bar's `sm` give 24);
+- the to-buy card's `4 / 16 / 8` padding.
+
+**Differs from the plan.** Nothing in the code. The walk could not reach the
+no-list state the plan asked for (below).
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **741/741**.
+- `make -k check` failed only at `seed-check`, the known red since
+  `c8be2bc`.
+
+**Walked on the emulator** (`/design-walk shopping-list`, 2026-10-05, the
+only device attached), on the same code before commit, with
+`make install-emulator` and Dev login, sr/light → sr/dark → en/dark →
+en/light, online and in airplane mode.
+- **The list.** A dash under every to-buy row but the card's last
+  (`fileta lososa`), with the `md` block gaps still reading as breaks, quiet
+  but visible in dark. That closed part 10a's last open item. Long Serbian
+  unmatched lines (`1 manji koren peršuna ili komadić celera …`) wrap
+  cleanly beside their amount.
+- **Offline**, in sr/light and sr/dark: the calm grey banner, the grey
+  `Prikazana je sačuvana kopija — nema veze.` line and the `EN` tag,
+  unchanged from part 5.
+- **Not reached: the no-list state itself.** The screen shows the
+  household's *latest* list (`fetchLatest`, by `generated_at`) whatever range
+  is selected, so picking a `Datumi` range with no list does not empty it.
+  Only a household that has never generated a list sees the state, and the
+  dev account belongs to the real household. The card in dark, the tonal
+  pill's fill and the 24dp gap above the panel (item 8 of the not-adopted
+  list) stay open.
+- **Cleanup.** The account ended on Srpski / Svetla, with airplane mode off.
+
+**Noticed, not this slice's.** While the offline banner shows, about 200px
+of empty space sits between it and the tab's app bar, in both brightnesses.
+The banner's `SafeArea` probably takes the status-bar inset, and the
+`AppBar` below still pads for it. It is `AppShell` code, so every tab has
+it. No earlier walk recorded it.

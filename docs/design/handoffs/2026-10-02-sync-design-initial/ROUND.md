@@ -144,12 +144,16 @@ house rules are in `bundle/_ds/…/readme.md` (§ VISUAL FOUNDATIONS and
       segmented button's shape, "Already planned recently", the ` · ` meta,
       the elevation-3 lift, 48dp monogram rows, the scrolling chip row and
       the `Added to …` snackbar were seen and not adopted.
-- [ ] `phase7-sync-shopping-list`: list, offline and in Serbian, and the
+- [x] `phase7-sync-shopping-list`: list, offline and in Serbian, and the
       no-list state. Files:
       `lib/features/shopping_list/presentation/shopping_list_screen.dart`.
       Bundle: section `List`, frames 18–19; `Banner`, `Card`, `EmptyState`.
       Diff the offline banner, the language tag and the empty state.
       Opt into `AppEmptyState(card: true)` (frame 19).
+      Done as part 22 (`fdc457c`, D144). Aisle headings, the in-body banner
+      and its merged sentence, `bodyMedium` captions, the tag's bold code,
+      the staples card's 15px title, the app-bar order and glyphs, the 12px
+      gap and the card's `4 / 16 / 8` padding were seen and not adopted.
 - [ ] `phase7-sync-settings`: settings. Files:
       `lib/features/auth/presentation/settings_screen.dart`. Bundle: section
       `Settings`, frame 20; `ProfileCard`, `SettingsGroup`, `NavRow`,

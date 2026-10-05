@@ -1,32 +1,31 @@
 # State — 2026-10-05
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 21 (`1be6fdf`), slice 8 of design round
-`sync-design-initial`: the meal plan per the design (D143, amending D121
-and D132).
+**Last shipped:** Phase 7 part 22 (`fdc457c`), slice 9 of design round
+`sync-design-initial`: the shopping list per the design (D144).
 
-- **Adding a meal is one sheet.** A day's `+ Dodaj obrok` opens
-  `showRecipePicker(day:)`. It shows the title with the day's
-  `shortDateLabel`, the four slots as `ChoiceChip`s in a `Wrap` (Dinner
-  preselected, exactly one always selected), the search field (not
-  autofocused), `RecipeCard` results and `Add a note instead`. It returns
-  the slot with the pick. The slot chooser is gone, and the snack-repeat
-  advisory runs on the returned slot.
-- **Day and entry cards.** Day headers are `onSurfaceVariant`. The expanded
-  card is padded `xs` at the bottom. The `Danas` pill is 24 tall. A
-  leftover leads with `Icons.undo` at 24, `md` before the text.
-- The recipe detail's `Add to meal plan` sheet got a token clean-up only.
-  The `This week | Today` order, the segmented button's shape, "Already
-  planned recently", the ` · ` meta, the elevation-3 lift, monogram rows,
-  the scrolling chip row and the `Added to …` snackbar were seen and not
-  adopted (journal, part 21).
+- **The no-list state is carded.** `AppEmptyState(card: true)` (D138) with
+  `shopping_basket_outlined` and one text-only tonal `Napravi listu` /
+  `Generate list` (was a full-emphasis `FilledButton.icon`), in the reader's
+  locale, still inside the `RefreshIndicator`.
+- Nothing else in frames 18–19 was adopted: aisle headings (D105), the
+  in-body offline banner and its merged sentence (D76), `bodyMedium`
+  captions, the tag's bold code (D134), the staples card's 15px title, the
+  app-bar order and glyphs, the 12px gap and the card's `4 / 16 / 8`
+  padding (journal, part 22; D144).
 
-`dart analyze` is clean, `flutter test` passes 740/740, and `make check` is
+`dart analyze` is clean, `flutter test` passes 741/741, and `make check` is
 green except the known `seed-check` (below); the targets after it pass with
-`make -k check`. **Walked on the emulator** (`/design-walk meal-plan`,
-2026-10-05, all four combinations): clean.
+`make -k check`. **Walked on the emulator** (`/design-walk shopping-list`,
+2026-10-05, all four combinations, online and offline): the list is clean,
+and the walk closed part 10a. The no-list state was **not reached**: only a
+household that has never generated a list shows it (part 22's loop, below).
 
-Still open, not part 21's:
+Still open, not part 22's:
+- while the offline banner shows, about 200px of empty space sits between
+  it and the tab's app bar, in both brightnesses. The banner's `SafeArea`
+  probably takes the status-bar inset while the `AppBar` below still pads
+  for it. It is `AppShell` code, so every tab has it;
 - in dark, the add-meal sheet's `RecipeCard`s take the sheet's own fill and
   lose their edge (the old picker did the same);
 - the recipe list's add menu touches the screen's right edge (part 16's
@@ -50,15 +49,16 @@ Still open, not part 21's:
   Design updates them.
 
 **In flight:** none.
-**Next:** `phase7-sync-shopping-list`, slice 9 of round
-`sync-design-initial` (the list, offline and in Serbian, and the no-list
-state). Plan it with `/plan-slice-ui phase7-sync-shopping-list`.
-The round's slice list is in
-`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`. Part 16's
-menu-edge defect is small enough to fold into a later recipes slice or fix
-on its own. The open device-walk loops below still want one sitting with the
+**Next:** `phase7-sync-settings`, slice 10 of round `sync-design-initial`
+(settings, frame 20). Plan it with `/plan-slice-ui phase7-sync-settings`.
+Part 21's note applies there: the segmented button's stadium shape is a
+`segmentedButtonTheme` question that settings shares. The round's slice list
+is in `docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`. The
+offline banner gap is `AppShell`'s, small enough to fix on its own. Part
+16's menu-edge defect can fold into a later recipes slice or be fixed on its
+own. The open device-walk loops below still want one sitting with the
 Galaxy attached.
-**Latest decision:** D143
+**Latest decision:** D144
 
 **Thirteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -112,7 +112,12 @@ Part 20's walk (`/design-walk import-review`, 2026-10-05, emulator, all four
 combinations, one paste import) was clean and opened no loop. It closed
 part 18's grip check, part 19's waiting-state check and part 10a's
 import-review dash check, though each of those loops keeps other items. Part 21's walk (`/design-walk meal-plan`, 2026-10-05, emulator, all four
-combinations) was clean and opened no loop.
+combinations) was clean and opened no loop. The `phase7-sync-shopping-list`
+walk (`/design-walk shopping-list`, 2026-10-05, emulator, all four
+combinations, online and offline) was clean on what it reached and closed
+part 10a. It opened part 22's loop for the no-list state, which it could not
+reach: the screen shows the household's latest list whatever range is
+selected, and this household has one.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
@@ -568,7 +573,8 @@ Oldest first:
   Google nalogom`. The dev-login account shows the line too, which is only
   true of real (Google-only) accounts.
 
-- **Phase 7 part 10a** — step timeline, dashed ingredient dividers
+- ~~**Phase 7 part 10a**~~ — **closed by the `phase7-sync-shopping-list`
+  walk (2026-10-05).** Step timeline, dashed ingredient dividers
   (`phase7-part10a-step-timeline-dashed-dividers`). **Recipe detail is
   walked**, clean, on the **emulator** (2026-09-29) across `sr`/`en` ×
   light/dark. The dashes run edge to edge with none under the last
@@ -578,8 +584,10 @@ Oldest first:
   thing from the divider in both brightnesses. Nit: the dashes end ~3dp
   short of the right text edge.
   **Still open:**
-  - `/design-walk shopping-list`: dashes between every to-buy row but the
-    card's last, still reading as block breaks per part 5's fix.
+  - ~~`/design-walk shopping-list`~~ — **confirmed 2026-10-05** (emulator,
+    all four combinations): a dash under every to-buy row but the card's
+    last (`fileta lososa`), and the `md` block gaps still read as breaks in
+    one rhythm, quiet but visible in dark.
   - ~~`/design-walk import-review`~~ — **confirmed 2026-10-05** (emulator,
     the `phase7-sync-import-review` walk): the dashes start and end at the
     text (x 73–1005 against the amount's right edge at 1003, 1080px wide),
@@ -709,6 +717,16 @@ Oldest first:
     walk): the spinner's arc on its `surfaceContainerHighest` track, `U redu
     čekanja...` in `titleMedium` with the `bodyMedium` hint, and the outlined
     `Odbaci ovaj uvoz` pinned above the nav bar under a hairline.
+- **Phase 7 part 22** (`phase7-sync-shopping-list`) — the carded no-list
+  state. The list itself walked clean on the **emulator** (2026-10-05, all
+  four combinations, online and offline). **Still open:** the no-list state
+  on a device, which only a household that has never generated a list
+  shows (the screen shows the latest list whatever range is selected). Check
+  that the panel reads as a region in both brightnesses (in dark, `#292923`
+  on `#16160F`), that `Još nema liste.` and its body wrap cleanly, that
+  `Napravi listu` is a mustard-cream tonal pill, not a green one, and
+  whether the 24dp gap above the panel looks off next to the 16dp above a
+  real list. The throwaway household that 3c needs can close this too.
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind
@@ -717,7 +735,7 @@ sign-in that needs no Google account (`.claude/commands/design-walk.md`
 session should close as many as it reasonably can in one sitting rather than
 walking one loop at a time; 3b and 3c's second-account/throwaway-household
 setup can close both together. The same throwaway household can close part
-7's onboarding loop and part 8's owner side with them. Phase 7 parts 2, 3, 5, 6 and 7 all
+7's onboarding loop, part 8's owner side and part 22's no-list state with them. Phase 7 parts 2, 3, 5, 6 and 7 all
 walked on the device (2026-09-25/28) — release build, both languages, both brightnesses —
 so the older loops are blocked on nothing but someone sitting down with the
 phone. Phase 5 part 5's clipboard loop and Phase 6 1b's tag-minting loop are
