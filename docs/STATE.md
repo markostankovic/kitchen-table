@@ -1,30 +1,31 @@
 # State — 2026-10-05
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 24 (`d613bf4`), slice 11 and the last of
-design round `sync-design-initial`: household and the leave dialog per the
-design (D146). **The round is complete**: all eleven slices shipped, as
-parts 14–24.
+**Last shipped:** Phase 8 part 1 (`28514bb`), the first part of Phase 8 —
+Freshness and images: the shopping list's pull and pantry long-press both
+regenerate (D147).
 
-- **The destructive slot.** The household screen's bottom Leave/Delete is
-  a left-aligned destructive `TextButton.icon` under the hairline, not a
-  `ListTile`. The gating is unchanged (D115): Leave for an adult, Delete
-  for the owner, nothing while the role is unknown.
-- **Member rows and secondary lines.** Names are `titleMedium` and roles
-  `bodyMedium` `onSurfaceVariant`, set per tile. The member count and the
-  invite expiry are `bodyMedium`, and the header sits `sm` under the app
-  bar, as on Settings.
-- Frame 22's leave dialog already matched. Not adopted: the monospace
-  invite code, the off-scale gaps, the 48dp green owner avatar and a `⋮` on
-  your own row (journal, part 24; D146).
+- **Pull means generate**, the app-bar button's `generate()` and failure
+  snackbar: the range bar's dates, the reader's locale. On the empty
+  no-list state too.
+- **A long-press saves the pantry preference, then regenerates the list on
+  screen** with its own dates and language (`regenerateCurrent()`), so the
+  item moves in or out of `Verovatno imate` at once and the week and the
+  document's language never change under the cook. The snackbars now say
+  what happened (`… premešteno u Verovatno imate.`, `… je ponovo na
+  listi.`). D13 stands: each is a new snapshot.
+- **The list stays up while it reloads** (`skipLoadingOnReload`), so a
+  long-press keeps the scroll position and the expanded staples. The walk
+  found the blank-and-jump-to-top, and it was fixed and re-walked before
+  the commit.
 
-`dart analyze` is clean, `flutter test` passes 745/745, and `make check` is
+`dart analyze` is clean, `flutter test` passes 750/750, and `make check` is
 green except the known `seed-check` (below); the targets after it pass with
-`make -k check`. **Walked on the emulator** (`/design-walk household`,
-2026-10-05, all four combinations, the adult's side): clean, and it opened
-no loop.
+`make -k check`. **Walked on the emulator** (`/design-walk shopping-list`,
+2026-10-05, all four combinations, online and offline). It left one loop
+open: the empty state's pull on a device (Phase 8 part 1, below).
 
-Still open, not part 24's:
+Still open, not part 1's:
 - while the offline banner shows, about 200px of empty space sits between
   it and the tab's app bar, in both brightnesses. The banner's `SafeArea`
   probably takes the status-bar inset while the `AppBar` below still pads
@@ -44,7 +45,10 @@ Still open, not part 24's:
   English;
 - tag chips show raw keys for a frame on a cold start;
 - the shopping list prints `1.5 kg` in Serbian;
-- units don't inflect (`2 glavica`);
+- units don't inflect (`2 glavica`), and the long-press snackbar's
+  `premešteno` doesn't agree with the noun's gender (`hleb premešteno`);
+- the Serbian date-range picker header reads `28. sep to 4. okt`, with
+  Material's English `to`;
 - ingredient notes are not translated (`po ukusu` under English);
 - the recipe-delete confirm is a filled button;
 - the `List — offline`, `Review import`, `Household` and `Settings` frames
@@ -52,11 +56,11 @@ Still open, not part 24's:
   Design updates them.
 
 **In flight:** none.
-**Next:** Phase 8 — Freshness and images (`docs/ROADMAP.md`), planned
-2026-10-05. Part 1 first: the shopping list's pull-to-refresh and long-press
-both regenerate. Then part 2 (image cache, `cached_network_image` approved),
-part 3 (refresh on tab switch, after part 2), and part 4 only if needed.
-Plan part 1 with `/plan-slice`.
+**Next:** Phase 8 part 2 — image cache and decode size
+(`docs/ROADMAP.md`): `cached_network_image` (approved 2026-10-05) keyed by
+the Storage object path, so a re-signed URL is still a hit, and thumbnails
+decoded at display size. Then part 3 (refresh on tab switch, which waits on
+part 2), and part 4 only if needed. Plan part 2 with `/plan-slice`.
 
 Smaller candidates still open from round `sync-design-initial`:
 - the offline banner gap (`AppShell`, every tab);
@@ -64,9 +68,9 @@ Smaller candidates still open from round `sync-design-initial`:
 - the recipe-delete confirm, the one filled destructive confirm left
   (§ Buttons says text in destructive). The open device-walk loops below still want one
 sitting with the Galaxy attached.
-**Latest decision:** D146
+**Latest decision:** D147
 
-**Thirteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Fourteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -739,6 +743,36 @@ Oldest first:
   `Napravi listu` is a mustard-cream tonal pill, not a green one, and
   whether the 24dp gap above the panel looks off next to the 16dp above a
   real list. The throwaway household that 3c needs can close this too.
+- **Phase 8 part 1** (`phase8-part1`) — pull and long-press regenerate.
+  Walked on the **emulator** (`/design-walk shopping-list`, 2026-10-05, all
+  four combinations, online and offline). Everything the slice asked for
+  holds: a pull regenerates (`Generisano …` updates), a pull with `Sledeća`
+  makes next week's list, a pull on the nothing-to-buy body works, a
+  long-press moves an item into `Verovatno imate` and back with the new
+  snackbars, a long-press keeps the list's own week and language in both
+  directions (Serbian list under English chrome with `Next` selected;
+  English list under Serbian chrome with `Ova nedelja` selected), and
+  offline a pull (~5 s) and a long-press (at once) each show `No
+  connection.` with the saved list left on screen. Phone dark + app
+  `Svetla` stays light. **Defect found and fixed the same sitting:** a
+  long-press blanked the list for a moment (the bump reloads
+  `currentShoppingListProvider`, and `loading:` rendered
+  `SizedBox.shrink()`), and it came back scrolled to the top, so a
+  long-press in `Verovatno imate` lost the cook's place. Fixed with
+  `skipLoadingOnReload: true` on the screen's `when` (the list stays up,
+  the progress bar shows the work), pinned by a widget test that fails
+  without it. Re-walked on the emulator (sr/light): a long-press inside
+  the expanded staples and one mid-way down the to-buy card each kept the
+  scroll position and the expanded section, with no blank frame in ~16
+  samples. **Still open, the one thing not reached:** the
+  empty no-list state's pull on a device (this household always has a
+  list; part 22's throwaway household can close it). Side notes, not this
+  slice's: `hleb premešteno` / `jaje premešteno` uses a neuter participle
+  whatever the noun's gender (the old `označeno` string did the same); the
+  Serbian date-range picker header reads `28. sep to 4. okt` with an
+  English `to` (Material's own localization). The walk left `alwaysHave`
+  overrides on hleb, bread, jaje and voda in the walk household, which
+  render the same as their defaults.
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind

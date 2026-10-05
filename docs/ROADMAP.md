@@ -1052,7 +1052,8 @@ every URL and re-download every photo.
 
 ### Part 1 — Shopping list: pull and long-press regenerate
 
-**Status: not started.**
+**Status: complete** (`28514bb`). Decisions taken during it: D147. See
+`docs/journal/phase-8.md`.
 
 - Pull-to-refresh calls `generate()`, the same as the app-bar button, so
   the two gestures never disagree. Offline, it fails the way the button
