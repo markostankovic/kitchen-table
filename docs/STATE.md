@@ -1,27 +1,30 @@
 # State — 2026-10-05
 
 **Branch:** `main`
-**Last shipped:** Phase 7 part 23 (`25c6ead`), slice 10 of design round
-`sync-design-initial`: settings per the design (D145).
+**Last shipped:** Phase 7 part 24 (`d613bf4`), slice 11 and the last of
+design round `sync-design-initial`: household and the leave dialog per the
+design (D146). **The round is complete**: all eleven slices shipped, as
+parts 14–24.
 
-- **Segmented buttons, app-wide.** `segmentedButtonTheme` is a
-  `StadiumBorder` with an `outline` stroke and an `onSurface` unselected
-  label. All six toggles share it: settings ×2, the meal-plan view, the
-  editor ×2 and the shopping list's range bar.
-- **Settings.** Group headers sit `md` above their cards, the profile and
-  household rows put `lg` after the avatar / home icon, and the theme
-  subtitle, `Prijavljeni ste Google nalogom` and `2 člana` are `bodyMedium`.
-- Nothing else in frame 20 was adopted: the 56dp green avatar (D126 #2),
-  the 16/24 subtitle size, filled theme glyphs, the `login` glyph, the −8
-  pull-up, the 2px gap and 4 / 24 list padding (journal, part 23; D145).
+- **The destructive slot.** The household screen's bottom Leave/Delete is
+  a left-aligned destructive `TextButton.icon` under the hairline, not a
+  `ListTile`. The gating is unchanged (D115): Leave for an adult, Delete
+  for the owner, nothing while the role is unknown.
+- **Member rows and secondary lines.** Names are `titleMedium` and roles
+  `bodyMedium` `onSurfaceVariant`, set per tile. The member count and the
+  invite expiry are `bodyMedium`, and the header sits `sm` under the app
+  bar, as on Settings.
+- Frame 22's leave dialog already matched. Not adopted: the monospace
+  invite code, the off-scale gaps, the 48dp green owner avatar and a `⋮` on
+  your own row (journal, part 24; D146).
 
-`dart analyze` is clean, `flutter test` passes 742/742, and `make check` is
+`dart analyze` is clean, `flutter test` passes 745/745, and `make check` is
 green except the known `seed-check` (below); the targets after it pass with
-`make -k check`. **Walked on the emulator** (`/design-walk settings`,
-2026-10-05, all four combinations): clean on settings and on every other
-segmented button. It opened no loop.
+`make -k check`. **Walked on the emulator** (`/design-walk household`,
+2026-10-05, all four combinations, the adult's side): clean, and it opened
+no loop.
 
-Still open, not part 23's:
+Still open, not part 24's:
 - while the offline banner shows, about 200px of empty space sits between
   it and the tab's app bar, in both brightnesses. The banner's `SafeArea`
   probably takes the status-bar inset while the `AppBar` below still pads
@@ -49,15 +52,16 @@ Still open, not part 23's:
   Design updates them.
 
 **In flight:** none.
-**Next:** `phase7-sync-household`, slice 11 and the last of round
-`sync-design-initial` (household and the leave dialog, frames 21–22). Plan
-it with `/plan-slice-ui phase7-sync-household`. The round's slice list is in
-`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`. The offline
-banner gap is `AppShell`'s, small enough to fix on its own. Part 16's
-menu-edge defect can fold into a later recipes slice or be fixed on its
-own. The open device-walk loops below still want one sitting with the
-Galaxy attached.
-**Latest decision:** D145
+**Next:** nothing is planned on the roadmap after part 24. Round
+`sync-design-initial` is closed. Candidates, smallest first:
+- the offline banner gap (`AppShell`, every tab);
+- part 16's add-menu edge, fixed on its own;
+- the recipe-delete confirm, the one filled destructive confirm left
+  (§ Buttons says text in destructive).
+
+Pick one with `/plan-slice`. The open device-walk loops below still want one
+sitting with the Galaxy attached.
+**Latest decision:** D146
 
 **Thirteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -118,7 +122,11 @@ part 10a. It opened part 22's loop for the no-list state, which it could not
 reach: the screen shows the household's latest list whatever range is
 selected, and this household has one. Part 23's walk (`/design-walk settings`,
 2026-10-05, emulator, all four combinations, with every segmented button
-in the app) was clean and opened no loop.
+in the app) was clean and opened no loop. The `phase7-sync-household` walk
+(`/design-walk household`, 2026-10-05, emulator, all four combinations,
+adult account, one invite code minted and revoked) was clean and opened no
+loop. The owner's Delete is covered by the widget test, as the slice
+planned. No hosted member has a long enough name to test wrapping.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk

@@ -163,10 +163,18 @@ house rules are in `bundle/_ds/…/readme.md` (§ VISUAL FOUNDATIONS and
       green avatar, the 16/24 subtitle size, filled theme glyphs, the
       `login` glyph, the −8 pull-up, the 2px gap and 4 / 24 list padding
       were seen and not adopted.
-- [ ] `phase7-sync-household`: household and the leave dialog. Files:
+- [x] `phase7-sync-household`: household and the leave dialog. Files:
       `lib/features/households/presentation/household_screen.dart`. Bundle:
       section `Settings`, frames 21–22; `Monogram`, `Dialog`. Diff the
       members, the invite code card and the destructive dialog.
+      Done as part 24 (`d613bf4`, D146). The Leave/Delete slot became a
+      destructive `TextButton.icon`, and member rows and secondary lines
+      took Settings' pair. The monospace code, the off-scale gaps, the
+      48dp green owner avatar and a `⋮` on your own row were seen and not
+      adopted. Frame 22's dialog already matched.
+
+**Round complete (2026-10-05).** All eleven slices shipped, as Phase 7
+parts 14–24.
 
 ## Out of scope
 

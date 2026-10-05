@@ -997,6 +997,24 @@ Design round `sync-design-initial`, slice 10 of 11
 The emulator walk (sr/en × light/dark) was clean on settings and on the
 range bar, the meal-plan toggle and the editor's toggles.
 
+### Part 24 — Household and the leave dialog per the design
+
+**Status: complete** (`d613bf4`). Decisions taken during it: D146. See
+`docs/journal/phase-7.md`.
+
+Design round `sync-design-initial`, slice 11 of 11, the last
+(`docs/design/handoffs/2026-10-02-sync-design-initial/ROUND.md`):
+- the bottom Leave/Delete slot is a destructive `TextButton.icon` under the
+  hairline, with the gating unchanged (D115);
+- member rows are a `titleMedium` name over a `bodyMedium` role, and the
+  member count and invite expiry are `bodyMedium`, as on Settings;
+- the monospace invite code, the 48dp green owner avatar and a `⋮` on your
+  own row were seen and not adopted;
+- frame 22's leave dialog already matched.
+
+The emulator walk (sr/en × light/dark, the adult's side) was clean. The
+round is complete.
+
 ---
 
 ## Standing rules across phases

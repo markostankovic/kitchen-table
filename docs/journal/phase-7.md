@@ -2654,3 +2654,83 @@ editor's two toggles.
 - **Cleanup.** The empty new-recipe editor was opened four times and left
   without saving, so nothing was written to hosted. The account ended on
   Srpski / Svetla, and the phone's night mode is back to `no`.
+
+### Part 24 — Household and the leave dialog per the design (round `sync-design-initial`, slice 11)
+
+**Status: complete** (`d613bf4`). Decisions taken during it: D146.
+
+The eleventh and last slice of design round `sync-design-initial`
+(`docs/design/handoffs/2026-10-02-sync-design-initial/`), frames 21
+(`Household`) and 22 (`Leave household`). It was planned with
+`/plan-slice-ui` and built in a fresh session. No migration, no new package,
+no new ARB key. The user chose both changes during planning on 2026-10-05.
+Frame 22's dialog already matched the app, including the en copy, so it
+needed no code change. With this slice the round is complete.
+
+- **The destructive slot (D146 #1).** `_destructiveRow` now builds `xl`,
+  a `Divider()`, `sm`, then a left-aligned `TextButton.icon` with
+  `foregroundColor: destructive` behind an `xs` start inset. The inset
+  plus the theme's `lg` button padding puts the icon at 20dp, where the
+  frame draws it. Leave (`Icons.logout`) for an adult and Delete
+  (`Icons.delete_forever_outlined`) for the owner. The role gate is
+  unchanged: only one renders, and neither while the role is unknown
+  (D115).
+- **Member rows (D146 #2).** Each `ListTile` sets `titleTextStyle`
+  (`titleMedium` `onSurface`) and `subtitleTextStyle` (`bodyMedium`
+  `onSurfaceVariant`) itself, not through `listTileTheme`, which other
+  screens share. That is Settings' profile/household pair. The avatar,
+  dividers and `⋮` gating are unchanged.
+- **Secondary lines (D146 #3).** The member count and the invite expiry
+  move from `bodySmall` to `bodyMedium`, still `onSurfaceVariant`, as D145
+  #4 did on Settings. The header's top inset is `sm` (was `lg`), matching
+  Settings' list padding. Only `_failure` stays on `bodySmall`.
+- **`DESIGN_SYSTEM.md` § Household**: the header, member rows and invite
+  cards are updated, and "The destructive row" became "The destructive
+  button". § Buttons already listed Leave household as a destructive text
+  button, so it needed no change.
+- **Tests** (`household_screen_test.dart`).
+  `_expectDestructiveTextButton` now finds its button by
+  `find.ancestor(…, find.bySubtype<TextButton>())`, because
+  `TextButton.icon` builds a private subclass that `widgetWithText`'s exact
+  type match misses. The dialog tests use the same helper. New tests:
+  - the adult's Leave is a destructive text button and not a `ListTile`;
+  - the owner's Delete is the same;
+  - a member tile's two text styles.
+
+**Seen in the frame, not adopted** (D146 lists the reasons):
+- the invite code in a 28/36 w500 monospace with 4px tracking (the code
+  keeps the join field's style; a monospace face would be a new font);
+- the 2px code → expiry gap, the card's 12 bottom padding, the 28px gap
+  above section headings and the 12px under the Invite heading;
+- the 16/24 secondary-line size (not a role, as in D145);
+- the 48dp avatar and the green owner avatar (D126 #2);
+- a `⋮` on the caller's own row (D115 / D126 #3).
+
+**Differs from the plan.** The plan suggested one test that pumped as both
+roles. Re-pumping the same `ProviderScope` kept the first user id, so it is
+two tests.
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **745/745** (742 + 3).
+- `make -k check` failed only at `seed-check`, the known red since
+  `c8be2bc`.
+
+**Walked on the emulator** (`/design-walk household`, 2026-10-05, the only
+device attached), on the same code before commit, with
+`make install-emulator` and Dev login (an adult in the household):
+sr/light → sr/dark → en/light → en/dark, on the screen and on the Leave
+dialog.
+- **Serbian.** `Napusti domaćinstvo` fits on one line with its icon, under
+  the hairline. `2 člana`, `Član · vi`, `Vlasnik` and `Ističe za 7 dana`
+  are at `bodyMedium`, and the no-codes line wraps cleanly to two lines.
+  Copy and Revoke share one row on the 1080px screen. The dialog shows the
+  title, a two-line body, `Otkaži` and a destructive `Napusti`.
+- **Dark.** The destructive pink on the button, Revoke and `Napusti`, the
+  `onSurfaceVariant` subtitles and expiry, and the hairlines all read
+  clearly on the dark surface and card.
+- **Not reached.** The owner's Delete (the account is an adult; the widget
+  test covers it), and a long member name wrapping beside the avatar (no
+  hosted member has one). Neither opened a loop.
+- **Cleanup.** One invite code (`613963`) was minted to see the card and
+  then revoked. The Leave dialog was cancelled every time. The account
+  ended on Srpski / Svetla.
