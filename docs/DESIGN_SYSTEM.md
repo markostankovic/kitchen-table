@@ -633,12 +633,14 @@ All of these are private classes in `meal_plan_screen.dart` — each has one
 consumer, so none of them is in `core/widgets/`.
 
 **The day card.** The theme's `Card` (`KitchenColors.card`, no hairline,
-radius 12), padded `md`, with the day header in
-`titleSmall` `onSurface` — `weekdayAndDay` (`pon 14`) in the week view, where
+radius 12), padded `md` — except `xs` at the bottom, where the add button's
+own 48dp target makes the space — with the day header in
+`titleSmall` `onSurfaceVariant` — `weekdayAndDay` (`pon 14`) in the week view, where
 the week bar already names the month, and `shortDateLabel` in the Today view.
 Today's card keeps that fill and gets a **2dp border in `today`** plus a
 `Danas`/`Today` pill beside the header: `today` fill, `onPrimary` text in
-`labelMedium`, `StadiumBorder`, `sm` horizontal padding. Today is outlined,
+`labelMedium`, `StadiumBorder`, `sm` horizontal and `xs` vertical padding,
+so it is **24 tall**. Today is outlined,
 not filled.
 
 **Entry cards.** Nested inside the day card, grouped by slot in
@@ -664,19 +666,28 @@ target, excluded from semantics.
 
 **Leftovers.** The same card with a **transparent fill**, so the day card
 shows through, a **dashed 1dp `outline` border** (a private `CustomPainter`
-along the `RRect`, no package) and a leading return icon in `leftover`, so it reads as derived from another meal rather than as a meal of
+along the `RRect`, no package) and a leading `Icons.undo` at 24 (`AppSizes.icon`) in `leftover`, `md`
+before the text, so it reads as derived from another meal rather than as a meal of
 its own. The source's day is the abbreviated `weekdayAndDay` on purpose: a
 full Serbian weekday would have to be declined after `od`.
 
 **Adding.** One way in: under the entries, `+ Dodaj obrok`/`+ Add meal` in
-`primary`, aligned to the card's bottom-right, opens the slot chooser (a small
-bottom sheet of all four slots, filled ones included — that is how a second
-entry gets into a slot). There is no per-slot `+ <Slot>` button; four of them
+`primary`, aligned to the card's bottom-right, opens **the add-meal sheet**
+(`showRecipePicker`, D143):
+- the title `Dodaj obrok` in `titleMedium`, with the day's `shortDateLabel`
+  directly under it in `bodyMedium` `onSurfaceVariant`;
+- the four slots as `ChoiceChip`s in a `Wrap` (never a scrolling row), Dinner
+  preselected and always exactly one selected, every slot offered, filled ones
+  included — that is how a second entry gets into a slot;
+- then the search field (not autofocused), `RecipeCard` results and
+  `Add a note instead`.
+
+There is no per-slot `+ <Slot>` button; four of them
 under every day read as clutter. **A week-view day with nothing planned, other
 than today, collapses** to one compact 56dp card on `KitchenColors.card` —
 `xs` above and below the 48dp button — with the header on the left and
 `+ Dodaj obrok`/`+ Add meal` in `primary` on the right, which opens the same
-chooser. The Today view never
+sheet. The Today view never
 collapses.
 
 **Drag.** Tap anywhere on an entry opens its actions sheet; long-press anywhere

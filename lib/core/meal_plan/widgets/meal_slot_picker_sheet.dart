@@ -4,6 +4,7 @@ import '../../../features/meal_plan/domain/meal_slot.dart';
 import '../../l10n/date_labels.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/meal_slot_labels.dart';
+import '../../theme/app_spacing.dart';
 
 /// What the cook decided when adding a recipe to the plan from its own
 /// detail screen: a day and a slot.
@@ -62,16 +63,22 @@ class _MealSlotPickerSheetState extends State<_MealSlotPickerSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.sm,
+              ),
               child: Text(
                 l10n.addToPlanSheetTitle,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Wrap(
-                spacing: 8,
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
                 children: <Widget>[
                   for (final MealSlot slot in MealSlot.ordered)
                     ChoiceChip(
@@ -82,7 +89,7 @@ class _MealSlotPickerSheetState extends State<_MealSlotPickerSheet> {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             const Divider(height: 1),
             Flexible(
               child: ListView(

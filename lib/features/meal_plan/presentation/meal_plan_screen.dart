@@ -39,7 +39,7 @@ import '../domain/snack_variety.dart';
 /// not fit a phone's width (Phase 7 part 4, the Garden "Plan -- week"
 /// layout). A day with entries, and today always, is an expanded card: its
 /// entries grouped by slot, then one bottom-right `+ Add meal` that opens the
-/// slot chooser (Phase 7 part 11 dropped the per-slot `+ <Slot>` buttons). A
+/// add-meal sheet (Phase 7 part 11 dropped the per-slot `+ <Slot>` buttons). A
 /// week-view day with nothing planned collapses to one compact `+ Add meal`
 /// row. Tapping is the primary, tested way to add or move
 /// an entry; long-press-drag is offered alongside it as a shortcut, not as the
@@ -228,16 +228,13 @@ void _showFailure(BuildContext context, AppFailure e) {
       .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
 }
 
-/// Pick a recipe (or a note) for [day]/[slot] and write it -- what the slot
-/// chooser runs once a slot is picked.
-Future<void> _add(
-  BuildContext context,
-  WidgetRef ref,
-  DateTime day,
-  MealSlot slot,
-) async {
-  final RecipePick? pick = await showRecipePicker(context);
-  if (pick == null || !context.mounted) return;
+/// Ask which meal and what goes in it for [day], then write it -- what a
+/// day's `+ Add meal` runs.
+Future<void> _add(BuildContext context, WidgetRef ref, DateTime day) async {
+  final ({MealSlot slot, RecipePick pick})? chosen =
+      await showRecipePicker(context, day: day);
+  if (chosen == null || !context.mounted) return;
+  final (:MealSlot slot, :RecipePick pick) = chosen;
 
   try {
     final MealPlanEditor editor = ref.read(mealPlanEditorProvider.notifier);
@@ -327,51 +324,6 @@ Future<void> _reorderTo(
   }
 }
 
-/// Which slot to add into, when the tap did not already say: a collapsed
-/// day's `+ Add meal`, and an expanded day's trailing `+`.
-Future<MealSlot?> _showSlotChooser(BuildContext context) {
-  final AppLocalizations l10n = AppLocalizations.of(context);
-  return showModalBottomSheet<MealSlot>(
-    context: context,
-    showDragHandle: true,
-    builder: (BuildContext context) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              0,
-              AppSpacing.lg,
-              AppSpacing.sm,
-            ),
-            child: Text(
-              l10n.addMealButton,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-          for (final MealSlot slot in MealSlot.ordered)
-            ListTile(
-              title: Text(mealSlotLabel(slot, l10n)),
-              onTap: () => Navigator.of(context).pop(slot),
-            ),
-        ],
-      ),
-    ),
-  );
-}
-
-Future<void> _chooseSlotThenAdd(
-  BuildContext context,
-  WidgetRef ref,
-  DateTime day,
-) async {
-  final MealSlot? slot = await _showSlotChooser(context);
-  if (slot == null || !context.mounted) return;
-  await _add(context, ref, day, slot);
-}
-
 /// One day. Expanded -- entries by slot, then the add row -- when it has
 /// anything planned, when it is today, or when the caller forces it (the
 /// Today view); otherwise one compact row with `+ Add meal`.
@@ -424,7 +376,7 @@ class _DayCard extends ConsumerWidget {
                 ? shortDateLabel(day, l10n.localeName)
                 : weekdayAndDay(day, l10n.localeName),
             style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.onSurface,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -475,7 +427,7 @@ class _DayCard extends ConsumerWidget {
                     TextButton.icon(
                       icon: const Icon(Icons.add, size: AppSizes.iconInButton),
                       label: Text(l10n.addMealButton),
-                      onPressed: () => _chooseSlotThenAdd(context, ref, day),
+                      onPressed: () => _add(context, ref, day),
                     ),
                   ],
                 ),
@@ -523,7 +475,12 @@ class _DayCard extends ConsumerWidget {
                     )
                   : null,
               child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
+                padding: const EdgeInsetsDirectional.only(
+                  start: AppSpacing.md,
+                  end: AppSpacing.md,
+                  top: AppSpacing.md,
+                  bottom: AppSpacing.xs,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
@@ -539,7 +496,7 @@ class _DayCard extends ConsumerWidget {
                     ],
                     const SizedBox(height: AppSpacing.sm),
                     // One way in, bottom-right, the collapsed day's button:
-                    // the slot chooser asks which meal, so an empty slot
+                    // the add-meal sheet asks which meal, so an empty slot
                     // needs no button of its own.
                     Align(
                       alignment: AlignmentDirectional.centerEnd,
@@ -549,7 +506,7 @@ class _DayCard extends ConsumerWidget {
                           size: AppSizes.iconInButton,
                         ),
                         label: Text(l10n.addMealButton),
-                        onPressed: () => _chooseSlotThenAdd(context, ref, day),
+                        onPressed: () => _add(context, ref, day),
                       ),
                     ),
                   ],
@@ -575,7 +532,10 @@ class _TodayPill extends StatelessWidget {
         shape: const StadiumBorder(),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
         child: Text(
           AppLocalizations.of(context).todayViewLabel,
           style: theme.textTheme.labelMedium?.copyWith(
@@ -1113,12 +1073,8 @@ class _MealEntryCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             if (entry.isLeftover) ...<Widget>[
-              Icon(
-                Icons.replay_outlined,
-                size: AppSizes.iconInButton,
-                color: kitchen.leftover,
-              ),
-              const SizedBox(width: AppSpacing.sm),
+              Icon(Icons.undo, size: AppSizes.icon, color: kitchen.leftover),
+              const SizedBox(width: AppSpacing.md),
             ],
             Expanded(
               child: Column(

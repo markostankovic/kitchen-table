@@ -196,13 +196,18 @@ Future<_Calls> _pump(
 Finder _textButton(String label) =>
     find.ancestor(of: find.text(label), matching: find.bySubtype<TextButton>());
 
-/// The one way into a slot: the day's `+ Add meal`, then the slot chooser.
+/// The one way into a slot: the day's `+ Add meal`, then the add-meal
+/// sheet's slot chip. The sheet stays open on the recipe results.
 Future<void> _addTo(WidgetTester tester, String slot) async {
   await tester.tap(_textButton('Add meal').first);
   await tester.pumpAndSettle();
-  await tester.tap(find.widgetWithText(ListTile, slot));
+  await tester.tap(find.widgetWithText(ChoiceChip, slot));
   await tester.pumpAndSettle();
 }
+
+/// Whether the add-meal sheet's chip for [slot] is the selected one.
+bool _chipSelected(WidgetTester tester, String slot) =>
+    tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, slot)).selected;
 
 Recipe _plannableRecipe({required String id, required String title}) => Recipe(
   id: id,
@@ -731,8 +736,9 @@ void main() {
   );
 
   testWidgets(
-    "a collapsed day's Add meal opens the slot chooser, and picking Dinner "
-    'reaches the recipe picker for that day and slot',
+    "one tap on a collapsed day's Add meal opens the add-meal sheet -- date, "
+    'four chips with Dinner selected, the search field -- and picking Lunch '
+    'writes there',
     (WidgetTester tester) async {
       final _Calls calls = await _pump(
         tester,
@@ -743,9 +749,18 @@ void main() {
       await tester.tap(_textButton('Add meal').first); // Monday
       await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(ListTile, 'Breakfast'), findsOneWidget);
-      await tester.tap(find.widgetWithText(ListTile, 'Dinner'));
+      expect(find.text(shortDateLabel(_monday, 'en')), findsOneWidget);
+      expect(find.byType(ChoiceChip), findsNWidgets(4));
+      expect(_chipSelected(tester, 'Dinner'), isTrue);
+      expect(_chipSelected(tester, 'Lunch'), isFalse);
+      expect(find.text('Search recipes'), findsOneWidget);
+      // No intermediate slot list.
+      expect(find.widgetWithText(ListTile, 'Dinner'), findsNothing);
+
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Lunch'));
       await tester.pumpAndSettle();
+      expect(_chipSelected(tester, 'Lunch'), isTrue);
+      expect(_chipSelected(tester, 'Dinner'), isFalse);
 
       await tester.tap(find.text('Add a note instead'));
       await tester.pumpAndSettle();
@@ -755,11 +770,35 @@ void main() {
 
       expect(calls.addedNote, (
         date: _monday,
-        slot: MealSlot.dinner,
+        slot: MealSlot.lunch,
         note: 'zzz out',
       ));
     },
   );
+
+  testWidgets('the add-meal sheet defaults to Dinner', (
+    WidgetTester tester,
+  ) async {
+    final _Calls calls = await _pump(
+      tester,
+      initial: MealPlanWeek.empty(_week),
+      weekView: true,
+    );
+
+    await tester.tap(_textButton('Add meal').first); // Monday
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add a note instead'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'zzz default');
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+    await tester.pumpAndSettle();
+
+    expect(calls.addedNote, (
+      date: _monday,
+      slot: MealSlot.dinner,
+      note: 'zzz default',
+    ));
+  });
 
   testWidgets('Add meal on a day with a filled slot offers all four slots', (
     WidgetTester tester,
@@ -793,8 +832,9 @@ void main() {
       'Dinner',
       'Snack',
     ]) {
-      expect(find.widgetWithText(ListTile, slot), findsOneWidget);
+      expect(find.widgetWithText(ChoiceChip, slot), findsOneWidget);
     }
+    expect(find.byType(ChoiceChip), findsNWidgets(4));
   });
 
   testWidgets(
