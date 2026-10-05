@@ -179,10 +179,15 @@ Future<void> _tapBottomRow(WidgetTester tester, String label) async {
   await tester.pumpAndSettle();
 }
 
-/// A destructive confirm is a text button in `KitchenColors.destructive`,
-/// never a fill.
+/// A destructive confirm -- and the bottom Leave/Delete button -- is a text
+/// button in `KitchenColors.destructive`, never a fill. Matched by subtype:
+/// `TextButton.icon` builds a private `TextButton` subclass, which
+/// `widgetWithText`'s exact type match would miss.
 void _expectDestructiveTextButton(WidgetTester tester, String label) {
-  final Finder button = find.widgetWithText(TextButton, label);
+  final Finder button = find.ancestor(
+    of: find.text(label),
+    matching: find.bySubtype<TextButton>(),
+  );
   expect(button, findsOneWidget);
   final BuildContext context = tester.element(button);
   final Color destructive = Theme.of(context)
@@ -608,6 +613,59 @@ void main() {
       await _pump(tester, repo: repo, readName: () => 'H', userId: 'u1');
 
       expect(find.text('2 člana'), findsOneWidget);
+    });
+
+    testWidgets("an adult's Leave is a destructive text button, not a row", (
+      WidgetTester tester,
+    ) async {
+      final _FakeRepo repo = _FakeRepo()..members = _ownerAndAdult;
+      await _pump(tester, repo: repo, readName: () => 'H', userId: 'u2');
+      await tester.ensureVisible(find.text(sr.leaveHouseholdButton));
+      await tester.pumpAndSettle();
+
+      _expectDestructiveTextButton(tester, sr.leaveHouseholdButton);
+      expect(
+        find.widgetWithText(ListTile, sr.leaveHouseholdButton),
+        findsNothing,
+      );
+    });
+
+    testWidgets("the owner's Delete is a destructive text button, not a row", (
+      WidgetTester tester,
+    ) async {
+      final _FakeRepo repo = _FakeRepo()..members = _ownerAndAdult;
+      await _pump(tester, repo: repo, readName: () => 'H', userId: 'u1');
+      await tester.ensureVisible(find.text(sr.deleteHouseholdButton));
+      await tester.pumpAndSettle();
+
+      _expectDestructiveTextButton(tester, sr.deleteHouseholdButton);
+      expect(
+        find.widgetWithText(ListTile, sr.deleteHouseholdButton),
+        findsNothing,
+      );
+    });
+
+    testWidgets('a member row is a titleMedium name over a bodyMedium role', (
+      WidgetTester tester,
+    ) async {
+      final _FakeRepo repo = _FakeRepo()..members = _ownerAndAdult;
+      await _pump(tester, repo: repo, readName: () => 'H', userId: 'u1');
+
+      final Finder tile = find.widgetWithText(ListTile, 'Owner');
+      final ThemeData theme = Theme.of(tester.element(tile));
+      final ListTile t = tester.widget<ListTile>(tile);
+      expect(
+        t.titleTextStyle,
+        theme.textTheme.titleMedium?.copyWith(
+          color: theme.colorScheme.onSurface,
+        ),
+      );
+      expect(
+        t.subtitleTextStyle,
+        theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
     });
 
     testWidgets('the caller\'s own row says vi, and members are circles', (

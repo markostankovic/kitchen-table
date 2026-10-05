@@ -289,7 +289,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
                       AppSpacing.lg,
-                      AppSpacing.lg,
+                      AppSpacing.sm,
                       AppSpacing.lg,
                       0,
                     ),
@@ -308,7 +308,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
                                 const SizedBox(height: AppSpacing.xs),
                                 Text(
                                   l10n.householdMemberCount(members.length),
-                                  style: theme.textTheme.bodySmall?.copyWith(
+                                  style: theme.textTheme.bodyMedium?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
@@ -399,7 +399,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
     return null;
   }
 
-  /// The one destructive slot at the bottom of the screen: Delete for the
+  /// The one destructive button at the bottom of the screen: Delete for the
   /// owner, Leave for an adult, nothing while the role is unknown. Only one
   /// ever renders; the other is absent, not disabled (D115).
   List<Widget> _destructiveRow(Household h, AppLocalizations l10n) {
@@ -423,12 +423,20 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
     return <Widget>[
       const SizedBox(height: AppSpacing.xl),
       const Divider(),
-      ListTile(
-        iconColor: destructive,
-        textColor: destructive,
-        leading: Icon(icon),
-        title: Text(label),
-        onTap: onTap,
+      const SizedBox(height: AppSpacing.sm),
+      // The xs inset plus the theme's lg button padding puts the icon at
+      // 20dp, where the frame draws it (D146).
+      Padding(
+        padding: const EdgeInsetsDirectional.only(start: AppSpacing.xs),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: TextButton.icon(
+            style: TextButton.styleFrom(foregroundColor: destructive),
+            onPressed: onTap,
+            icon: Icon(icon),
+            label: Text(label),
+          ),
+        ),
       ),
     ];
   }
@@ -464,7 +472,16 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
     final String name = m.displayName ?? l10n.unknownDisplayName;
     final String trimmed = name.trim();
     final String role = _roleLabel(m.role, l10n);
+    final ThemeData theme = Theme.of(context);
+    // Settings' name/role pair (D146), set per tile -- `listTileTheme` is
+    // shared with other screens.
     return ListTile(
+      titleTextStyle: theme.textTheme.titleMedium?.copyWith(
+        color: theme.colorScheme.onSurface,
+      ),
+      subtitleTextStyle: theme.textTheme.bodyMedium?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
       leading: AppMonogramTile(
         letter: trimmed.isEmpty ? '' : trimmed.substring(0, 1).toUpperCase(),
         size: AppSizes.avatar,
@@ -574,7 +591,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
             const SizedBox(height: AppSpacing.xs),
             Text(
               _expiry(invite.expiresAt, l10n),
-              style: theme.textTheme.bodySmall?.copyWith(
+              style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),

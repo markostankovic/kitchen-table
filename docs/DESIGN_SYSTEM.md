@@ -822,28 +822,33 @@ no confirm: a failed parse has nothing to lose.
 All of these are private in `household_screen.dart`; none is in
 `core/widgets/` (one consumer each).
 
-**The header.** The household's name in `headlineSmall`, wrapping with no
-`maxLines`, and under it `xs` then the member count (`2 člana` / `2 members`)
-in `bodySmall` `onSurfaceVariant`, once the members have loaded. The edit
+**The header.** `sm` below the app bar (Settings' top inset), the
+household's name in `headlineSmall`, wrapping with no `maxLines`, and under
+it `xs` then the member count (`2 člana` / `2 members`) in `bodyMedium`
+`onSurfaceVariant`, once the members have loaded. The edit
 icon sits top-right beside it and opens the rename dialog.
 
 **Member rows.** `ListTile`s: a 40dp (`avatar`) mustard
-`AppMonogramTile(circular: true)`, the name, and the role as subtitle —
-`Član · vi` / `Member · you` on the caller's own row. The role is in the
+`AppMonogramTile(circular: true)`, the name in `titleMedium` `onSurface`,
+and the role as subtitle in `bodyMedium` `onSurfaceVariant` — `Član · vi` /
+`Member · you` on the caller's own row. That is Settings' name/role pair
+(D146), set on each tile, not in `listTileTheme`, which other screens share. The role is in the
 text, so the avatar is never colour-coded by it. A `⋮` overflow with one
 `destructive` item, Remove member, appears **only** on another member's row
 when the caller is the owner. A full-width hairline under every row.
 
 **Invite cards.** A theme `Card` padded `lg`, `md` apart: the code in
 `titleLarge` with `sm` letter spacing and tabular figures (the join field's
-exact style), `xs`, the expiry in `bodySmall` `onSurfaceVariant`, `md`, then a
+exact style), `xs`, the expiry in `bodyMedium` `onSurfaceVariant`, `md`, then a
 `Wrap` of a tonal Copy code and a `destructive` text Revoke — a narrow card
 wraps by whole button. No codes is one `bodyMedium` `onSurfaceVariant` line,
 not `AppEmptyState`. Create invite code is an outlined button, left-aligned.
 
-**The destructive row.** One slot at the bottom, under a hairline: Delete
-household for the owner, Leave household for an adult, text and icon in
-`destructive`. Only one ever renders, and neither while the caller's role is
+**The destructive button.** One slot at the bottom: `xl`, a hairline, `sm`,
+then a left-aligned `TextButton.icon` in `destructive` — Delete household
+(`delete_forever_outlined`) for the owner, Leave household (`logout`) for an
+adult. An `xs` start inset plus the theme's `lg` button padding puts the icon
+at 20dp (D146). Only one ever renders, and neither while the caller's role is
 unknown — absent, not disabled (D115).
 
 ### Settings
