@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/households/application/household_providers.dart';
+import '../../features/meal_plan/application/meal_plan_providers.dart';
+import '../../features/recipes/application/recipe_providers.dart';
+import '../../features/shopping_list/application/shopping_list_providers.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../net/offline_banner.dart';
 
@@ -24,6 +28,13 @@ import '../net/offline_banner.dart';
 /// a write while offline (Phase 2 part 6b, D76). A `ConsumerWidget` rather
 /// than `StatelessWidget`, the one change this class needed to watch
 /// [NetworkStatus].
+///
+/// Switching to a different tab re-reads that tab's data (D149), so a change
+/// another household member made on their phone shows up without a pull.
+/// [_refreshBranch] invalidates the selected branch's top-level providers
+/// before `goBranch`; each is a cached read (D67), so the screen keeps its
+/// content and updates in place. Re-tapping the current tab only pops it to
+/// its root -- pull already refreshes in place.
 class AppShell extends ConsumerWidget {
   const AppShell({required this.navigationShell, super.key});
 
@@ -71,13 +82,46 @@ class AppShell extends ConsumerWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         destinations: _destinations(loc),
-        onDestinationSelected: (int index) => navigationShell.goBranch(
-          index,
-          // Tapping the active tab returns it to its root, the platform
-          // convention on both iOS and Android.
-          initialLocation: index == navigationShell.currentIndex,
-        ),
+        onDestinationSelected: (int index) {
+          final bool reTap = index == navigationShell.currentIndex;
+          if (!reTap) _refreshBranch(ref, index);
+          navigationShell.goBranch(
+            index,
+            // Tapping the active tab returns it to its root, the platform
+            // convention on both iOS and Android.
+            initialLocation: reTap,
+          );
+        },
       ),
     );
+  }
+
+  /// Re-reads the top-level data of the branch at [index] (D149).
+  ///
+  /// `ref.invalidate`, never a `core/refresh/` revision `.bump()`: a bump
+  /// means "a write happened" and fans out to other tabs, and a tab switch
+  /// is not a write.
+  ///
+  /// - Recipes: the whole [recipeListProvider] family, since the shell does
+  ///   not know the screen's query, tag or favourites filter. Not
+  ///   `tagLabelsProvider` -- it is network-only, so re-reading it offline
+  ///   would lose the labels.
+  /// - Plan: [mealPlanEditorProvider], the visible week only.
+  /// - List: [currentShoppingListProvider], a re-read only. A pull there
+  ///   means *generate* (D147), which is a write; a tab switch never is.
+  /// - Settings: [householdMembersProvider], which feeds the member count.
+  ///   Not `currentHouseholdProvider` -- it is keepAlive and the root of
+  ///   every tab's household id.
+  static void _refreshBranch(WidgetRef ref, int index) {
+    switch (index) {
+      case 0:
+        ref.invalidate(recipeListProvider);
+      case 1:
+        ref.invalidate(mealPlanEditorProvider);
+      case 2:
+        ref.invalidate(currentShoppingListProvider);
+      case 3:
+        ref.invalidate(householdMembersProvider);
+    }
   }
 }

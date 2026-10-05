@@ -25,6 +25,11 @@ import 'package:kitchen_table/features/households/application/household_provider
 import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/features/households/domain/household_invite.dart';
 import 'package:kitchen_table/features/households/domain/household_member.dart';
+import 'package:kitchen_table/features/meal_plan/application/meal_plan_providers.dart';
+import 'package:kitchen_table/features/meal_plan/domain/meal_plan_week.dart';
+import 'package:kitchen_table/features/meal_plan/domain/plan_week.dart';
+import 'package:kitchen_table/features/shopping_list/application/shopping_list_providers.dart';
+import 'package:kitchen_table/features/shopping_list/domain/shopping_list.dart';
 import 'package:kitchen_table/main.dart';
 
 // Read off the generated classes directly rather than hardcoding literals,
@@ -81,6 +86,8 @@ Future<void> pumpApp(
   Profile profile = _profile,
   Reachability? networkStatus,
   AppDatabase? db,
+  MealPlanEditor Function()? mealPlanEditor,
+  CurrentShoppingList Function()? shoppingList,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -97,10 +104,64 @@ Future<void> pumpApp(
         if (networkStatus != null)
           networkStatusProvider.overrideWithValue(networkStatus),
         if (db != null) appDatabaseProvider.overrideWithValue(db),
+        if (mealPlanEditor != null)
+          mealPlanEditorProvider.overrideWith(mealPlanEditor),
+        if (shoppingList != null)
+          currentShoppingListProvider.overrideWith(shoppingList),
       ],
       child: const KitchenTableApp(),
     ),
   );
+  await tester.pumpAndSettle();
+}
+
+/// Captured calls, kept off the notifiers: `riverpod_lint`'s
+/// `avoid_public_notifier_properties` forbids public fields on a `Notifier`
+/// subclass (the arrangement `shopping_list_screen_test.dart` uses).
+class _Counts {
+  int planBuilds = 0;
+  int listBuilds = 0;
+  int generates = 0;
+}
+
+/// Each `build()` is one re-read of the Plan tab.
+class _CountingMealPlanEditor extends MealPlanEditor {
+  _CountingMealPlanEditor(this.counts);
+
+  final _Counts counts;
+
+  @override
+  Stream<MealPlanWeek> build() async* {
+    counts.planBuilds++;
+    yield MealPlanWeek.empty(PlanWeek.of(DateTime(2026, 10, 5)));
+  }
+}
+
+/// Each `build()` is one re-read of the List tab; a tab switch must never
+/// reach `generate()` or `regenerateCurrent()` (D147, D149).
+class _CountingShoppingList extends CurrentShoppingList {
+  _CountingShoppingList(this.counts);
+
+  final _Counts counts;
+
+  @override
+  Stream<ShoppingList?> build() async* {
+    counts.listBuilds++;
+    yield null;
+  }
+
+  @override
+  Future<void> generate() async => counts.generates++;
+
+  @override
+  Future<void> regenerateCurrent() async => counts.generates++;
+}
+
+Future<void> _tapTab(WidgetTester tester, String label) async {
+  await tester.tap(find.descendant(
+    of: find.byType(NavigationBar),
+    matching: find.text(label),
+  ));
   await tester.pumpAndSettle();
 }
 
@@ -244,6 +305,59 @@ void main() {
         <String>[en.navRecipes, en.navPlan, en.navList, en.navSettings],
       );
       expect(find.widgetWithText(AppBar, en.navRecipes), findsOneWidget);
+    });
+  });
+
+  // Phase 8 part 3 (D149): switching to a tab re-reads it; re-tapping the
+  // current tab does not.
+  group('refresh on tab switch', () {
+    testWidgets('switching onto Plan rebuilds its provider once per switch',
+        (WidgetTester tester) async {
+      final _Counts counts = _Counts();
+      await pumpApp(tester,
+          mealPlanEditor: () => _CountingMealPlanEditor(counts));
+
+      await _tapTab(tester, sr.navPlan);
+      expect(counts.planBuilds, 1);
+
+      await _tapTab(tester, sr.navRecipes);
+      expect(counts.planBuilds, 1, reason: 'leaving Plan does not re-read it');
+
+      await _tapTab(tester, sr.navPlan);
+      expect(counts.planBuilds, 2);
+    });
+
+    testWidgets('switching onto List rebuilds it and never generates',
+        (WidgetTester tester) async {
+      final _Counts counts = _Counts();
+      await pumpApp(tester, shoppingList: () => _CountingShoppingList(counts));
+
+      await _tapTab(tester, sr.navList);
+      expect(counts.listBuilds, 1);
+
+      await _tapTab(tester, sr.navRecipes);
+      await _tapTab(tester, sr.navList);
+      expect(counts.listBuilds, 2);
+      expect(counts.generates, 0);
+    });
+
+    testWidgets('re-tapping the current tab does not rebuild its provider',
+        (WidgetTester tester) async {
+      final _Counts counts = _Counts();
+      await pumpApp(
+        tester,
+        mealPlanEditor: () => _CountingMealPlanEditor(counts),
+        shoppingList: () => _CountingShoppingList(counts),
+      );
+
+      await _tapTab(tester, sr.navPlan);
+      await _tapTab(tester, sr.navPlan);
+      expect(counts.planBuilds, 1);
+
+      await _tapTab(tester, sr.navList);
+      await _tapTab(tester, sr.navList);
+      expect(counts.listBuilds, 1);
+      expect(counts.generates, 0);
     });
   });
 
