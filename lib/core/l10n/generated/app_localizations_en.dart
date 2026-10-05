@@ -894,12 +894,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String markedAsStapleSnackbar(String name) {
-    return '$name marked as always in the cupboard. Takes effect next time you generate.';
+    return '$name moved to Probably have.';
   }
 
   @override
   String willBeOnListSnackbar(String name) {
-    return '$name will be on the list from now on.';
+    return '$name is back on the list.';
   }
 
   @override

@@ -85,13 +85,20 @@ class ShoppingListScreen extends ConsumerWidget {
           const _RangeBar(),
           if (list.isLoading) const LinearProgressIndicator(minHeight: 2),
           Expanded(
+            // A regeneration bumps the revision, which reloads this
+            // provider. Without `skipLoadingOnReload` the list blanked for
+            // a moment and came back scrolled to the top -- a long-press in
+            // "Probably have" lost the cook's place every time (Phase 8
+            // part 1's walk). The progress bar above still shows the work.
             child: list.when(
+              skipLoadingOnReload: true,
               loading: () => const SizedBox.shrink(),
               error: (Object e, _) =>
                   AppErrorView(message: localizedErrorMessage(e, l10n)),
               data: (ShoppingList? current) => RefreshIndicator(
-                onRefresh: () async =>
-                    ref.invalidate(currentShoppingListProvider),
+                // Pull means generate, like the app-bar button (D147) -- on
+                // the empty state too, where it does what its own button does.
+                onRefresh: () => _generate(context, ref),
                 child: current == null
                     ? AppEmptyState(
                         card: true,
@@ -620,34 +627,39 @@ class _ItemRow extends ConsumerWidget {
 
   /// Long-press moves an item in or out of "Probably have" for good.
   ///
-  /// Deliberately does not rewrite the list on screen: the snapshot is what it
-  /// was when it was generated (D13). The override lands on the next
-  /// generation, and the confirmation says so rather than silently
-  /// rearranging a document the cook is reading in a shop.
+  /// Records the preference, then regenerates the same list at once -- its
+  /// own range and language, not the range bar's or the reader's (D147,
+  /// replacing the old "the snapshot is not rearranged" stance). The result
+  /// is a new snapshot, not an edit to this one, so D13 stands. If the
+  /// preference saved but the regeneration failed, the failure snackbar is
+  /// enough: the preference applies on the next generation anyway.
   ///
   /// The confirmation is chrome -- the reader's locale -- even though
   /// `item.displayName` inside it is snapshot data, the same composition
   /// shape `MealPlanScreen`'s `leftoverEntryLabel` uses for a recipe title.
   Future<void> _togglePantry(BuildContext context, WidgetRef ref) async {
     final bool nowStaple = !item.isPantryStaple;
+    // Taken before the awaits: the regeneration can move this row, or drop
+    // it, before the method resumes, and a `context.mounted` check on the
+    // row would then swallow the snackbar. The messenger and the reader's
+    // locale belong to the screen, not the row.
+    final CurrentShoppingList notifier = ref.read(
+      currentShoppingListProvider.notifier,
+    );
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final AppLocalizations l10n = AppLocalizations.of(context);
     try {
-      await ref
-          .read(currentShoppingListProvider.notifier)
-          .setPantryPref(
-            ingredientId: item.ingredientId!,
-            alwaysHave: nowStaple,
-          );
+      await notifier.setPantryPref(
+        ingredientId: item.ingredientId!,
+        alwaysHave: nowStaple,
+      );
+      await notifier.regenerateCurrent();
     } on AppFailure catch (e) {
-      if (!context.mounted) return;
-      final AppLocalizations l10n = AppLocalizations.of(context);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
+      messenger.showSnackBar(SnackBar(content: Text(e.localized(l10n))));
       return;
     }
 
-    if (!context.mounted) return;
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       SnackBar(
         content: Text(
           nowStaple

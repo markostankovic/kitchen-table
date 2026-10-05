@@ -104,10 +104,69 @@ class CurrentShoppingList extends _$CurrentShoppingList {
 
   /// Generates a list for the current range, retiring whatever it replaces.
   ///
-  /// The order matters: aggregate first, save second, retire third. A failure
-  /// anywhere in the first two leaves the cook with the list they already had,
-  /// which is strictly better than leaving them with none.
+  /// The range is the range bar's (`shoppingRangeProvider`) and the language
+  /// the reader's own (D81), not a hardcoded 'sr': shopping_lists.locale
+  /// exists precisely so a list generated in one language does not render
+  /// half-translated after a Phase 3 locale switch (migration 16's own
+  /// comment) -- this is the write this app made that promise for.
   Future<void> generate() async {
+    final String householdId = await _requireHouseholdId();
+    await _generateFor(
+      householdId: householdId,
+      range: ref.read(shoppingRangeProvider),
+      locale: ref.read(appLocaleProvider).languageCode,
+    );
+  }
+
+  /// Re-makes the list on screen with its own range and its own language.
+  ///
+  /// What a pantry long-press calls (D147): the cook asked to move one item,
+  /// so the week must not swap to whatever the range bar now shows, and the
+  /// document must not be translated into the reader's locale (D94). Does
+  /// nothing when there is no list on screen.
+  Future<void> regenerateCurrent() async {
+    final ShoppingList? current = state.value;
+    if (current == null) return;
+    final String householdId = await _requireHouseholdId();
+    await _generateFor(
+      householdId: householdId,
+      range: (from: current.dateFrom, to: current.dateTo),
+      locale: current.locale,
+    );
+  }
+
+  /// Retires the current list without generating another.
+  Future<void> discard() async {
+    final ShoppingList? current = state.value;
+    if (current == null) return;
+    await ref.read(shoppingListRepositoryProvider).softDelete(current.id);
+    ref.read(shoppingListRevisionProvider.notifier).bump();
+  }
+
+  /// Records or clears "we always have this" for one ingredient.
+  ///
+  /// Records the preference only. The screen regenerates afterwards
+  /// ([regenerateCurrent], D147), so the item moves in or out of "Probably
+  /// have" at once; that is a new snapshot, not an edit to this one (D13).
+  Future<void> setPantryPref({
+    required String ingredientId,
+    required bool? alwaysHave,
+  }) async {
+    final String householdId = await _requireHouseholdId();
+    await ref
+        .read(shoppingListRepositoryProvider)
+        .setPantryPref(
+          householdId: householdId,
+          ingredientId: ingredientId,
+          alwaysHave: alwaysHave,
+        );
+  }
+
+  // ---------------------------------------------------------------------
+  // Internals
+  // ---------------------------------------------------------------------
+
+  Future<String> _requireHouseholdId() async {
     final String? householdId = await ref.read(
       currentHouseholdIdProvider.future,
     );
@@ -117,12 +176,21 @@ class CurrentShoppingList extends _$CurrentShoppingList {
         code: FailureCode.noHousehold,
       );
     }
+    return householdId;
+  }
 
+  /// Generates a list for [range] in [locale], retiring whatever it replaces.
+  ///
+  /// The order matters: aggregate first, save second, retire third. A failure
+  /// anywhere in the first two leaves the cook with the list they already had,
+  /// which is strictly better than leaving them with none.
+  Future<void> _generateFor({
+    required String householdId,
+    required ({DateTime from, DateTime to}) range,
+    required String locale,
+  }) async {
     final ShoppingListRepository repository = ref.read(
       shoppingListRepositoryProvider,
-    );
-    final ({DateTime from, DateTime to}) range = ref.read(
-      shoppingRangeProvider,
     );
 
     final List<MealPlanEntry> entries = await repository.fetchEntriesInRange(
@@ -130,12 +198,6 @@ class CurrentShoppingList extends _$CurrentShoppingList {
       from: range.from,
       to: range.to,
     );
-
-    // The reader's own locale (D81), not a hardcoded 'sr': shopping_lists.locale
-    // exists precisely so a list generated in one language does not render
-    // half-translated after a Phase 3 locale switch (migration 16's own
-    // comment) -- this is the write this app made that promise for.
-    final String locale = ref.read(appLocaleProvider).languageCode;
 
     final List<ShoppingItem> items = await _aggregate(
       entries,
@@ -165,46 +227,6 @@ class CurrentShoppingList extends _$CurrentShoppingList {
 
     ref.read(shoppingListRevisionProvider.notifier).bump();
   }
-
-  /// Retires the current list without generating another.
-  Future<void> discard() async {
-    final ShoppingList? current = state.value;
-    if (current == null) return;
-    await ref.read(shoppingListRepositoryProvider).softDelete(current.id);
-    ref.read(shoppingListRevisionProvider.notifier).bump();
-  }
-
-  /// Records or clears "we always have this" for one ingredient.
-  ///
-  /// Does NOT rewrite the list on screen. The snapshot is what it was when it
-  /// was generated (D13); the override takes effect on the next generation,
-  /// and the screen says so rather than silently rearranging a document the
-  /// cook is reading in a shop.
-  Future<void> setPantryPref({
-    required String ingredientId,
-    required bool? alwaysHave,
-  }) async {
-    final String? householdId = await ref.read(
-      currentHouseholdIdProvider.future,
-    );
-    if (householdId == null) {
-      throw const NotFoundFailure(
-        message: 'You are not in a household yet.',
-        code: FailureCode.noHousehold,
-      );
-    }
-    await ref
-        .read(shoppingListRepositoryProvider)
-        .setPantryPref(
-          householdId: householdId,
-          ingredientId: ingredientId,
-          alwaysHave: alwaysHave,
-        );
-  }
-
-  // ---------------------------------------------------------------------
-  // Internals
-  // ---------------------------------------------------------------------
 
   /// Pulls together everything the pure aggregator needs, then runs it.
   ///

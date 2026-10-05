@@ -1622,16 +1622,16 @@ abstract class AppLocalizations {
   /// **'Ostalo'**
   String get categoryOther;
 
-  /// Shopping list screen (part 6), the long-press confirmation when an item is marked always-have. Renders in the reader's locale (chrome) even though {name} itself (item.displayName) is snapshot data -- the same composition shape as leftoverEntryLabel.
+  /// Shopping list screen (part 6; Phase 8 part 1, D147), the long-press confirmation when an item is marked always-have and the list has been regenerated with it under Probably have -- the wording must match probablyHaveHeading. Renders in the reader's locale (chrome) even though {name} itself (item.displayName) is snapshot data -- the same composition shape as leftoverEntryLabel.
   ///
   /// In sr, this message translates to:
-  /// **'{name} označeno kao stalna namirnica iz ostave. Važi od sledeće liste.'**
+  /// **'{name} premešteno u Verovatno imate.'**
   String markedAsStapleSnackbar(String name);
 
-  /// Shopping list screen (part 6), the long-press confirmation when an item's always-have override is cleared.
+  /// Shopping list screen (part 6; Phase 8 part 1, D147), the long-press confirmation when an item's always-have override is cleared and the list has been regenerated with it back among the items to buy.
   ///
   /// In sr, this message translates to:
-  /// **'{name} će od sada biti na listi.'**
+  /// **'{name} je ponovo na listi.'**
   String willBeOnListSnackbar(String name);
 
   /// Recipe detail screen (Phase 5, part 1), the AppBar star's tooltip when the recipe is not yet a favorite.

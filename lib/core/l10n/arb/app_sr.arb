@@ -1190,18 +1190,18 @@
   "@categoryOther": {
     "description": "Shopping list screen (part 6), the uncategorised bucket (a null ingredients.category) -- no longer keyed by the literal string 'Other', which was both a display string and a map key before this part. An unrecognised code (neither this nor any of the ten known categories) falls through to itself rather than landing here."
   },
-  "markedAsStapleSnackbar": "{name} označeno kao stalna namirnica iz ostave. Važi od sledeće liste.",
+  "markedAsStapleSnackbar": "{name} premešteno u Verovatno imate.",
   "@markedAsStapleSnackbar": {
-    "description": "Shopping list screen (part 6), the long-press confirmation when an item is marked always-have. Renders in the reader's locale (chrome) even though {name} itself (item.displayName) is snapshot data -- the same composition shape as leftoverEntryLabel.",
+    "description": "Shopping list screen (part 6; Phase 8 part 1, D147), the long-press confirmation when an item is marked always-have and the list has been regenerated with it under Probably have -- the wording must match probablyHaveHeading. Renders in the reader's locale (chrome) even though {name} itself (item.displayName) is snapshot data -- the same composition shape as leftoverEntryLabel.",
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "willBeOnListSnackbar": "{name} će od sada biti na listi.",
+  "willBeOnListSnackbar": "{name} je ponovo na listi.",
   "@willBeOnListSnackbar": {
-    "description": "Shopping list screen (part 6), the long-press confirmation when an item's always-have override is cleared.",
+    "description": "Shopping list screen (part 6; Phase 8 part 1, D147), the long-press confirmation when an item's always-have override is cleared and the list has been regenerated with it back among the items to buy.",
     "placeholders": {
       "name": {
         "type": "String"

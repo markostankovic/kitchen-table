@@ -903,12 +903,12 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String markedAsStapleSnackbar(String name) {
-    return '$name označeno kao stalna namirnica iz ostave. Važi od sledeće liste.';
+    return '$name premešteno u Verovatno imate.';
   }
 
   @override
   String willBeOnListSnackbar(String name) {
-    return '$name će od sada biti na listi.';
+    return '$name je ponovo na listi.';
   }
 
   @override

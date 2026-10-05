@@ -11,6 +11,7 @@ import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_en.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
 import 'package:kitchen_table/core/net/network_status.dart';
+import 'package:kitchen_table/core/refresh/data_revision.dart';
 import 'package:kitchen_table/core/theme/app_theme.dart';
 import 'package:kitchen_table/core/widgets/app_empty_state.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
@@ -27,6 +28,7 @@ import 'package:kitchen_table/features/shopping_list/presentation/shopping_list_
 /// `meal_plan_screen_test.dart` uses).
 class _Calls {
   int generated = 0;
+  int regenerated = 0;
   ({String ingredientId, bool? alwaysHave})? pantryPref;
 }
 
@@ -35,14 +37,33 @@ class _Calls {
 /// would reach `currentHouseholdIdProvider` and on to
 /// `Supabase.instance.client`, which this suite deliberately never provides.
 class _StubList extends CurrentShoppingList {
-  _StubList(this.initial, this.calls, {this.failure});
+  _StubList(
+    this.initial,
+    this.calls, {
+    this.failure,
+    this.regenerateFailure,
+    this.reloadOnRegenerate = false,
+  });
 
   final ShoppingList? initial;
   final _Calls calls;
   final AppFailure? failure;
 
+  /// Fails `regenerateCurrent()` alone, so a long-press whose preference
+  /// saved but whose regeneration did not can be told apart.
+  final AppFailure? regenerateFailure;
+
+  /// Makes `regenerateCurrent()` bump the revision the way the real one
+  /// does, so `build()` re-runs as a reload and takes a second to answer --
+  /// longer than `tester.longPress`'s own pump, which would otherwise finish
+  /// the reload before the test can look at it.
+  final bool reloadOnRegenerate;
+
   @override
   Stream<ShoppingList?> build() async* {
+    if (reloadOnRegenerate && ref.watch(shoppingListRevisionProvider) > 0) {
+      await Future<void>.delayed(const Duration(seconds: 1));
+    }
     yield initial;
   }
 
@@ -51,6 +72,16 @@ class _StubList extends CurrentShoppingList {
     calls.generated++;
     final AppFailure? f = failure;
     if (f != null) throw f;
+  }
+
+  @override
+  Future<void> regenerateCurrent() async {
+    calls.regenerated++;
+    final AppFailure? f = regenerateFailure ?? failure;
+    if (f != null) throw f;
+    if (reloadOnRegenerate) {
+      ref.read(shoppingListRevisionProvider.notifier).bump();
+    }
   }
 
   @override
@@ -124,10 +155,14 @@ ShoppingList _list(List<ShoppingItem> items, {String locale = 'sr'}) =>
       items: items,
     );
 
+const Size _phone = Size(800, 600);
+
 Future<_Calls> _pump(
   WidgetTester tester, {
   ShoppingList? initial,
   AppFailure? failure,
+  AppFailure? regenerateFailure,
+  bool reloadOnRegenerate = false,
   Locale? locale,
   Reachability? networkStatus,
   Size surface = const Size(1200, 3000),
@@ -145,7 +180,13 @@ Future<_Calls> _pump(
     ProviderScope(
       overrides: [
         currentShoppingListProvider
-            .overrideWith(() => _StubList(initial, calls, failure: failure)),
+            .overrideWith(() => _StubList(
+              initial,
+              calls,
+              failure: failure,
+              regenerateFailure: regenerateFailure,
+              reloadOnRegenerate: reloadOnRegenerate,
+            )),
         if (pinRange) shoppingRangeProvider.overrideWith(() => _PinnedRange()),
         unitCatalogProvider.overrideWith((Ref ref) async => _units),
         if (networkStatus != null)
@@ -246,6 +287,49 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(AppLocalizationsEn().failureOffline), findsOneWidget);
+  });
+
+  // Pull means generate, like the app-bar button (D147). These pump a
+  // phone-sized surface: RefreshIndicator arms at a quarter of the
+  // viewport's height, which a 300px fling never reaches on the suite's
+  // default 3000px-tall surface.
+  testWidgets('pulling down on a list generates', (tester) async {
+    final _Calls calls = await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[_item('brašno')]),
+      surface: _phone,
+    );
+
+    await tester.fling(find.text('brašno'), const Offset(0, 300), 1000);
+    await tester.pumpAndSettle();
+
+    expect(calls.generated, 1);
+  });
+
+  testWidgets('pulling down on the empty state generates', (tester) async {
+    final _Calls calls = await _pump(tester, surface: _phone);
+
+    await tester.fling(find.text('No list yet.'), const Offset(0, 300), 1000);
+    await tester.pumpAndSettle();
+
+    expect(calls.generated, 1);
+  });
+
+  testWidgets('a pull whose generation fails shows the failure',
+      (tester) async {
+    await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[_item('brašno')]),
+      failure: const NetworkFailure(),
+      surface: _phone,
+    );
+
+    await tester.fling(find.text('brašno'), const Offset(0, 300), 1000);
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppLocalizationsEn().failureOffline), findsOneWidget);
+    // The saved list stays on screen.
+    expect(find.text('brašno'), findsOneWidget);
   });
 
   testWidgets('renders an item with its summed quantity', (tester) async {
@@ -408,8 +492,63 @@ void main() {
 
     expect(calls.pantryPref?.ingredientId, 'i-brasno');
     expect(calls.pantryPref?.alwaysHave, isTrue);
-    // The snapshot is not rearranged under the cook -- it says so instead.
-    expect(find.textContaining('next time you generate'), findsOneWidget);
+    // The same list is regenerated at once, so the item moves now (D147).
+    expect(calls.regenerated, 1);
+    expect(find.text('brašno moved to Probably have.'), findsOneWidget);
+  });
+
+  testWidgets(
+      'a long-press keeps the list on screen and its scroll position while '
+      'the list reloads (Phase 8 part 1\'s walk: it blanked and jumped to '
+      'the top)', (tester) async {
+    await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[
+        for (int i = 0; i < 20; i++) _item('item $i', id: 'i-$i'),
+      ]),
+      reloadOnRegenerate: true,
+      surface: _phone,
+    );
+
+    final Finder scrollable = find
+        .descendant(
+          of: find.byType(RefreshIndicator),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    await tester.drag(scrollable, const Offset(0, -3000));
+    await tester.pumpAndSettle();
+    final double offset =
+        tester.state<ScrollableState>(scrollable).position.pixels;
+    expect(offset, greaterThan(0));
+
+    await tester.longPress(find.text('item 19'));
+    await tester.pump(const Duration(milliseconds: 10));
+
+    // Mid-reload: the provider is loading again, the list is still there.
+    expect(find.text('item 19'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+    await tester.pumpAndSettle();
+    expect(tester.state<ScrollableState>(scrollable).position.pixels, offset);
+    expect(find.text('item 19 moved to Probably have.'), findsOneWidget);
+  });
+
+  testWidgets('a long-press whose regeneration fails shows the failure only',
+      (tester) async {
+    final _Calls calls = await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[_item('brašno', id: 'i-brasno')]),
+      regenerateFailure: const NetworkFailure(),
+    );
+
+    await tester.longPress(find.text('brašno'));
+    await tester.pumpAndSettle();
+
+    expect(calls.pantryPref?.ingredientId, 'i-brasno');
+    expect(calls.regenerated, 1);
+    expect(find.text(AppLocalizationsEn().failureOffline), findsOneWidget);
+    expect(find.textContaining('moved to Probably have'), findsNothing);
   });
 
   testWidgets('an unmatched item cannot be given a pantry override',
@@ -424,6 +563,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(calls.pantryPref, isNull);
+    expect(calls.regenerated, 0);
   });
 
   testWidgets('regenerating is not offered before a list exists',
