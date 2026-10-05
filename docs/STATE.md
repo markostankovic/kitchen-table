@@ -1,31 +1,26 @@
 # State — 2026-10-05
 
 **Branch:** `main`
-**Last shipped:** Phase 8 part 2 (`6d789bd`), the second part of Phase 8 —
-Freshness and images: recipe photos are cached on disk, keyed by Storage
-object path (D148).
+**Last shipped:** Phase 8 part 3 (`67640c6`), the third part of Phase 8 —
+Freshness and images: switching to a different tab re-reads it (D149).
 
-- **One widget for every recipe photo**, `RecipePhoto` (`core/recipes/
-  widgets/`), on `cached_network_image` with a named `flutter_cache_manager`
-  instance (both approved under rule 8). The card thumbnail, the detail well
-  and the editor preview all go through it. The key is the object path, so a
-  re-signed URL is a hit across pulls and launches, and a replaced photo is
-  a new key (no eviction).
-- **Offline photos show.** With a path and no signed URL (D131's cached
-  emission), the disk cache is read by path, and the placeholder shows only
-  on a miss. A URL that drops out for the same path is remembered, so a
-  pull no longer flashes every thumbnail to its monogram. The walk found
-  that flash, and it was fixed and re-walked before the commit.
-- **Thumbnails decode at 2 × thumb × dpr** wide (about 0.5MB instead of
-  about 4MB), so a landscape photo stays sharp in the `cover` tile.
+- **`AppShell` refreshes the branch you switch to.** `_refreshBranch`
+  `ref.invalidate`s the whole `recipeListProvider` family on Recipes,
+  `mealPlanEditorProvider` on Plan, `currentShoppingListProvider` on List (a
+  re-read, never generate) and `householdMembersProvider` on Settings. Each
+  is a cached read (D67), so the screen keeps its content and updates in
+  place.
+- **Re-tapping the current tab still only pops to its root**, and no
+  revision is ever bumped: a tab switch is not a write.
+- Part 2 (`6d789bd`, D148) is what makes the recipe re-read cheap: photos
+  are cached by object path, so re-signed URLs are hits.
 
-`dart analyze` is clean, `flutter test` passes 754/754, and `make check` is
+`dart analyze` is clean, `flutter test` passes 757/757, and `make check` is
 green except the known `seed-check` (below); the targets after it pass with
-`make -k check`. **Walked on the emulator** (`/design-walk recipes`,
-2026-10-05, all four combinations, pull / cold relaunch / airplane mode /
-replace). It opened no loop.
+`make -k check`. **Not walked yet.** Its device check is a new open loop
+below.
 
-Still open, not part 2's:
+Still open, not part 3's:
 - right after a recipe save, the detail's well shows the placeholder (or
   the previous photo) for about 8–15 s, until the signed detail arrives. The
   new path has never been cached and the first emission is unsigned. It was
@@ -62,14 +57,11 @@ Still open, not part 2's:
   Design updates them.
 
 **In flight:** none.
-**Next:** Phase 8 part 3 — refresh on tab switch (`docs/ROADMAP.md`).
-Selecting a tab re-reads its data, and the cached read emits the cache and
-then the server (D67), so nothing blanks. Part 2 was its prerequisite, since
-re-signing every URL is now a cache hit. Open for `/plan-slice`: whether
-`AppShell` may reach feature providers or each screen refreshes itself, and
-what Settings and re-tapping the current tab do. Part 4 (real thumbnails)
-stays "only if needed": the 2× decode read sharp on the emulator, and the
-Galaxy has not judged it yet.
+**Next:** Phase 8's must-do parts are done. Part 4 (real thumbnails) is
+optional, "only if part 2 is not enough on the device". The 2× decode read
+sharp on the emulator, and the Galaxy has not judged it yet. Otherwise, one
+of the smaller candidates below. Walking part 3 (its loop below) is cheap,
+and it can share a sitting with any Galaxy walk.
 
 Smaller candidates still open from round `sync-design-initial`:
 - the offline banner gap (`AppShell`, every tab);
@@ -77,9 +69,9 @@ Smaller candidates still open from round `sync-design-initial`:
 - the recipe-delete confirm, the one filled destructive confirm left
   (§ Buttons says text in destructive). The open device-walk loops below
   still want one sitting with the Galaxy attached.
-**Latest decision:** D148
+**Latest decision:** D149
 
-**Fourteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Fifteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -788,6 +780,13 @@ Oldest first:
   English `to` (Material's own localization). The walk left `alwaysHave`
   overrides on hleb, bread, jaje and voda in the walk household, which
   render the same as their defaults.
+- **Phase 8 part 3** (`phase8-part3`) — refresh on tab switch. Not walked.
+  On a release build against hosted (`make install-hosted`): edit a recipe
+  or a plan entry from a second account or the Supabase dashboard, switch
+  away and back, and confirm the change shows with no blank or spinner
+  (List's 2px progress bar flashing is expected, D149). In airplane mode,
+  switching tabs keeps the cached content and the offline banner. Re-tapping
+  a tab pops it to its root and does nothing else.
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind

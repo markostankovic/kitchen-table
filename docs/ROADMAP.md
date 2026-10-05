@@ -1084,7 +1084,8 @@ every URL and re-download every photo.
 
 ### Part 3 — Refresh on tab switch
 
-**Status: not started.** Waits on part 2.
+**Status: complete** (`67640c6`). Decisions taken during it: D149. See
+`docs/journal/phase-8.md`.
 
 - Selecting a tab re-reads its data. The cached read emits the cache and
   then the server (D67), so the screen does not blank while it reloads.

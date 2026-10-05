@@ -218,3 +218,53 @@ were taken off rapid `screencap`s for the timing checks.
 Part 4 (real thumbnails) stays "only if needed". The 2× decode reads sharp
 and the list scrolled without a visible load on the emulator. The Galaxy
 has not judged it yet.
+
+### Part 3 — Refresh on tab switch
+
+**Status: complete** (`67640c6`). Decisions taken during it: D149.
+
+Planned with `/plan-slice` on 2026-10-05 and built in a fresh session. No
+migration, no new ARB key, no new package, no codegen. Part 2 was its
+prerequisite: a recipe-list re-read re-signs every URL, and those are now
+cache hits.
+
+- **`AppShell`** (`lib/core/router/app_shell.dart`). `onDestinationSelected`
+  calls a new `_refreshBranch(ref, index)` when `index !=
+  navigationShell.currentIndex`, then `goBranch`. The helper is a `switch`
+  that `ref.invalidate`s the selected branch's top-level provider:
+  - Recipes: the whole `recipeListProvider` family. The shell doesn't know
+    the screen's query, tag or favourites filter. `tagLabelsProvider` is
+    left alone because it is network-only, so re-reading it offline would
+    lose the labels.
+  - Plan: `mealPlanEditorProvider`, for the visible week.
+  - List: `currentShoppingListProvider`, a re-read only. It never calls
+    `generate()`, which a pull there means (D147).
+  - Settings: `householdMembersProvider`, which feeds the member count.
+    `currentHouseholdProvider` is left alone because it is keepAlive and
+    the root of every tab's household id.
+
+  It never `.bump()`s a `core/refresh/` revision: a tab switch is not a
+  write. A re-tap keeps `initialLocation: true` (pop to root) and refreshes
+  nothing. The class doc comment gained a paragraph citing D149.
+- **Tests** (`test/core/router/app_shell_test.dart`, a new `refresh on tab
+  switch` group). Counting `MealPlanEditor` and `CurrentShoppingList`
+  subclasses, with the counts on a separate `_Counts` spy:
+  - Recipes → Plan → Recipes → Plan builds the plan twice, once per
+    arrival, and not on leaving;
+  - List → Recipes → List builds the list twice and never generates;
+  - re-tapping Plan or List builds nothing more.
+
+**Differs from the plan.** `pumpApp` gained two optional notifier factories,
+`mealPlanEditor:` and `shoppingList:`, instead of a general override list.
+`Override` lives in `flutter_riverpod/misc.dart`, an import the repo uses
+nowhere else.
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **757/757** (754 + 3).
+- `make -k check` failed only at `seed-check`, the known red since
+  `c8be2bc`. Every SQL suite and the Deno tests passed.
+- **Not walked.** The slice's device check (a release build against hosted;
+  a change from a second account or the dashboard seen after a switch
+  away and back, with no blank or spinner; airplane mode keeping the cached
+  content and the banner; a re-tap only popping to root) was not run. It
+  stays open in `docs/STATE.md`.
