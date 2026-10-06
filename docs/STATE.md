@@ -1,31 +1,28 @@
 # State — 2026-10-06
 
 **Branch:** `main`
-**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 2 —
-`phase8-shopping-row-markers` (`124d814`): the shopping row's markers
-(D151).
+**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 3 —
+`phase8-shopping-long-press-menu` (`a2a278d`): the shopping long-press
+menu with Undo (D152).
 
-- **Stacked amounts:** a second unit family sits under the first in the
-  amount column (`500 g` / `+ 25 ml`), with a muted `+`. This is
-  `IngredientLineRow`'s new `extraAmounts`; recipe detail and import review
-  pass none.
-- **Staple pin:** every Probably-have row carries a 16dp `push_pin_outlined`
-  in `outline` (tooltip `Uvek u Verovatno imate`). It goes through the row's
-  generic `nameMarker` slot and is drawn from `isPantryStaple`.
-- **`Nije sabrano` / `Not added up`** sits under an unmatched item with no
-  amount, in the reader's locale.
-- **The Probably-have subline** teaches the long-press: `…premestite ovde.`
-  collapsed, `…vratite na listu.` expanded, in the reader's locale.
-- **Markers travel with the last word:** the row measures the name's last
-  line and moves the last word down when the ring or pin won't fit after it.
-  The word joiner alone let Flutter strand the ring (found on the walk).
+- **A long-press opens a one-item menu at the finger**: `Uvek u Verovatno
+  imate` / `Always in Probably have` on a to-buy row, `Uvek na listi` /
+  `Always on the list` on a Probably-have row. Text-only, chrome. The
+  pressed row holds a `surfaceContainerHighest` fill while it is open.
+- **Picking does what the long-press used to** (D147: set the preference,
+  regenerate the same list, scroll kept).
+- **The snackbar carries `Poništi` / `Undo`**, which writes the opposite
+  preference and regenerates again, with no second snackbar.
+- **No one-off "Move to Probably have"**: Marko declined it in planning,
+  since it would be per-item state on a snapshot (D13). The pin now simply
+  marks a staple.
 
-`dart analyze` is clean, `flutter test` passes 777/777, and `make check` is
-green except the known `seed-check` (below); `make test-sql` and
-`make l10n-check` pass on their own. **Walked** on the emulator
-(`/design-walk shopping-list`, 2026-10-06, all four combinations). It found
-two defects, both fixed and re-walked the same sitting. It left a loop open
-for the pin's tooltip and import review on a device (the list below).
+`dart analyze` is clean, `flutter test` passes 782/782, and `make check` is
+green except the known `seed-check` (below); `make l10n-check` passes.
+**Walked** on the emulator (`/design-walk shopping-list`, 2026-10-06, all
+four combinations, online and offline). Everything in scope held. It left a
+loop open for two findings: the menu is flush with the right edge near it,
+and in dark the menu has almost no edge over a card (the list below).
 
 Still open, not this slice's:
 - right after a recipe save, the detail's well shows the placeholder (or
@@ -40,7 +37,12 @@ Still open, not this slice's:
 - in dark, the add-meal sheet's `RecipeCard`s take the sheet's own fill and
   lose their edge (the old picker did the same);
 - the recipe list's add menu touches the screen's right edge (part 16's
-  loop, below; re-checked 2026-10-05, still flush);
+  loop, below; re-checked 2026-10-05, still flush). The shopping
+  long-press menu does the same near the edge;
+- in dark, a menu over a card has almost no edge: `menuTheme`'s
+  `surfaceContainerHigh` (`#292923`) equals the card fill and the shadow
+  barely reads. Seen on the shopping long-press menu; a theme-level fix
+  touches every menu;
 - a failed link import shows the server's English sentence under `sr`
   (`That page could not be fetched.`), the stored `error_message`;
 - the matcher matched `pilecih krilca` (wings) to `pileća prsa` (breast) on
@@ -64,16 +66,10 @@ Still open, not this slice's:
   Design updates them.
 
 **In flight:** none.
-**Next:** the round's slice 3, `phase8-shopping-long-press-menu`
-(`/plan-slice-ui`, or `/plan-slice` if a one-off move needs a column). For
-its planner:
-- Long-press always sets the permanent pantry preference today (D147), and
-  the list is a snapshot (D13). Open both before deciding whether
-  `Move to Probably have` (one-off) needs storage, or whether only `Always
-  put here` is wanted.
-- **The pin distinguishes nothing yet.** Every Probably-have row is a
-  staple, so every row carries it. It is drawn from `isPantryStaple`, not
-  the card (D151), so a one-off move would render without it for free.
+**Next:** the round's slice 4, `phase8-recipe-structure-data`
+(**/plan-slice**): `recipe_steps.kind`, `recipes.notes` /
+`recipe_translations.notes`, through the save RPC, DTOs, models,
+translate-recipe and the import schemas. No screens.
 
 The round's slices and their order are in
 `docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`. Two of
@@ -83,13 +79,15 @@ the device".
 
 Smaller candidates still open from round `sync-design-initial`:
 - the offline banner gap (`AppShell`, every tab);
-- part 16's add-menu edge, fixed on its own;
+- part 16's add-menu edge, fixed on its own (the shopping long-press
+  menu's edge with it);
+- the dark menu-over-card edge (theme-level, wants a decision);
 - the recipe-delete confirm, the one filled destructive confirm left
   (§ Buttons says text in destructive). The open device-walk loops below
   still want one sitting with the Galaxy attached.
-**Latest decision:** D151
+**Latest decision:** D152
 
-**Sixteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Seventeen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -160,7 +158,9 @@ it opened no loop. It re-checked part 16's add menu (still flush). The
 `phase8-shopping-row-markers` walk (`/design-walk shopping-list`,
 2026-10-06, emulator, all four combinations) found two defects, both fixed
 and re-walked the same sitting. It opened a loop for the two checks it could
-not reach.
+not reach; the `phase8-shopping-long-press-menu` walk (the same day,
+emulator, all four combinations) closed that loop's tooltip half and
+opened its own for two findings it did not fix.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
@@ -863,11 +863,47 @@ Oldest first:
     (`1.67 kom`). The trailer now shows only when the item has no amount.
     Re-walked: the item shows `1.67 kom` and the ring, with no trailer.
 
-  **Still open:** the pin's `Uvek u Verovatno imate` tooltip (a long-press
-  on the row would toggle the real pantry preference, so it needs a
-  throwaway item or an outside reset), and import review, which renders
-  the same row and so the new last-word measurement. Widget tests cover
-  the row there; it has not been seen on a device.
+  **Tooltip confirmed** by the `phase8-shopping-long-press-menu` walk
+  (2026-10-06, emulator, sr/light only): a long-press on the pin itself shows
+  `Uvek u Verovatno imate` and opens no menu (the tooltip wins the gesture).
+  **Still open:** import review, which renders the same row and so the new
+  last-word measurement. Widget tests cover the row there; it has not been
+  seen on a device.
+- **Phase 8 round 2 slice 3** (`phase8-shopping-long-press-menu`) — the
+  long-press "Always" menu with Undo. Walked on the **emulator**
+  (`/design-walk shopping-list`, 2026-10-06, all four combinations, on the
+  walk household's `sr` list for 5–11 Oct, moving `mleko` back and forth).
+  **Clean:**
+  - a long-press on a to-buy row opens `Uvek u Verovatno imate` / `Always in
+    Probably have` at the finger; on a Probably-have row (card expanded)
+    `Uvek na listi` / `Always on the list`. Near the bottom it opens
+    upward. Each item is one line in Serbian;
+  - the pressed row takes the fill, light `#E8DED3` / dark `#34342E`
+    (measured), reaching 12dp past the text on each side, radius 8; rows do
+    not shift. A tap outside closes the menu, clears the fill, and does not
+    reach the row underneath;
+  - picking moves the row (D147). The snackbar keeps its text and carries
+    `Poništi` / `Undo` in `inversePrimary` (light green on the dark bar in
+    light, dark green on the light bar in dark). Undo moves it back with no
+    second snackbar, in all four combinations, and the expanded card stays
+    expanded;
+  - offline (sr/dark): `Nema veze sa internetom.`, nothing moved, no Undo.
+
+  **Still open (two findings, not fixed):**
+  - *The menu is flush with the screen's right edge* when the press is
+    near it (bounds end at x=1080). It is the same thing as part 16's add
+    menu; the slice said to note it, not to widen scope.
+  - *In dark, the menu has no visible edge over a card.* `menuTheme`'s
+    `surfaceContainerHigh` is `#292923`, the same as the card fill, and a
+    level-2 shadow barely reads on a dark surface, so only the dashed
+    dividers it covers show where it ends. Legible, but weak. In light the
+    two are close too (`#EFE5DA` on `#F5EBDF`) but the shadow carries it.
+    A fix is theme-level (the menu's fill or an outline), so it touches
+    every menu; it wants a decision, not a call-site style.
+
+  `mleko` ended on the to-buy list as it began, but now with a household
+  `always_have = false` override where it may have had none (D152's Undo
+  semantics; no difference to the list).
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind

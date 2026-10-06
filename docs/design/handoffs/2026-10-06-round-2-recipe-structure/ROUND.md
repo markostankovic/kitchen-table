@@ -76,7 +76,7 @@ The rest are UI (`/plan-slice-ui`).
         recipe on a shopping item, which the domain doesn't carry today. The
         planner checks whether the list snapshot has it. If not, this slice
         drops the `from …` half and keeps `Not added up`.
-- [ ] `phase8-shopping-long-press-menu`: Shopping list. Files:
+- [x] `phase8-shopping-long-press-menu`: Shopping list. Files:
       `shopping_list_screen.dart`, possibly
       `lib/features/shopping_list/application/`. Bundle: canvas § B (B·2).
       Long-press opens a two-item menu, `Move to Probably have` and
@@ -193,7 +193,8 @@ The rest are UI (`/plan-slice-ui`).
 - **`Not added up · from <recipe>` (B)**, if the shopping item has no
   source-recipe data. Adding it would be a list-generation change, not a
   UI slice.
-- **One-off "Move to Probably have" (B·2)**, if it needs storage. See that
-  slice.
+- **One-off "Move to Probably have" (B·2)** — **declined** (D152), not
+  deferred. It would need per-item state on a snapshot list (D13); Marko
+  kept only the `Always` item, 2026-10-06.
 - The canvas's status bars, the `System keyboard` placeholder and the Tweaks
   panel are web-only frame chrome.

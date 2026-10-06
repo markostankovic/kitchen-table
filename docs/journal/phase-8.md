@@ -423,3 +423,86 @@ package, no token change. Four ARB keys added, one removed.
   - **Not reached:** the pin's tooltip (a long-press on the row would toggle
     the real pantry preference) and import review on a device. Both stay
     open in `docs/STATE.md`.
+
+### Round 2026-10-06, slice 3 — Shopping long-press menu with Undo
+
+**Status: complete** (`a2a278d`). Decisions taken during it: D152.
+
+The third slice of round `2026-10-06-round-2-recipe-structure`
+(`docs/design/handoffs/2026-10-06-round-2-recipe-structure/`), canvas § B,
+frame B·2, **minus the one-off move**. Planned with `/plan-slice-ui` on
+2026-10-06 and built in a fresh session. In planning Marko declined the
+canvas's `Move to Probably have` item: it would need per-item state on a
+snapshot list (D13). No migration, no provider or domain change, no new
+package, no token change. Three ARB keys added.
+
+- **`shopping_list_screen.dart`.**
+  - `_ItemRow` became a `ConsumerStatefulWidget` holding a
+    `MenuController`, the last pointer-down position (a `Listener`, since
+    `InkWell.onLongPress` carries none) and an open flag.
+  - A matched row sits in a `MenuAnchor` (`consumeOutsideTap: true`) with one
+    text-only `MenuItemButton`: `alwaysInProbablyHaveMenuItem` or
+    `alwaysOnListMenuItem` by `item.isPantryStaple`. `onLongPress` calls
+    `controller.open(position: …)`. `onOpen` / `onClose` toggle a
+    `Key('pressedRowFill')` `DecoratedBox` in `surfaceContainerHighest`,
+    `Positioned` `md` past the row each side in a `Clip.none` `Stack`, radius
+    `AppRadii.sm`. Unmatched rows return the bare row, so no menu.
+  - `_togglePantry` became `_setStaple`, which captures the notifier,
+    messenger and `l10n` and hands them to a top-level `_writeStaple`. Undo's
+    closure calls `_writeStaple` again with `!alwaysHave` and no
+    confirmation, so it never touches the row it may have outlived.
+  - The success snackbar gained `SnackBarAction(undoSnackbarAction)`.
+  - Doc comments now say: menu, Undo, no one-off move, and the pin marks a
+    staple (every Probably-have row is one).
+- **ARB.** Added `alwaysInProbablyHaveMenuItem`, `alwaysOnListMenuItem`,
+  `undoSnackbarAction` (`Poništi`, its own key, not `clearFiltersChip`).
+  Regenerated.
+- **Tests.** The four long-press tests now pick from the menu; the unmatched
+  one asserts no menu. Five added: which item each card offers (and the fill
+  colour), dismissing records nothing, Undo writes the opposite and
+  regenerates twice with no second snackbar, a failed Undo shows the
+  failure, and the Serbian menu and `Poništi`. `_Calls.pantryPref` became a
+  `pantryPrefs` list (with a `pantryPref` last-call getter), and the stub
+  gained a `pantryPrefFailure` that fails every write after the first.
+- **`docs/DESIGN_SYSTEM.md`** § Shopping list (document-card and staples-card
+  sentences) and § Menu, snackbar, banner (the Undo sentence).
+
+**Differs from the plan.**
+- **`persist: false` is needed.** This SDK's `SnackBar` has `persist`,
+  defaulting to `action != null`; without it the Undo snackbar would stay
+  up.
+- The press position comes from a `Listener.onPointerDown`, not
+  `InkWell.onTapDown`, so the row does not gain a tap gesture.
+- The shared helper is split in two (`_setStaple` on the state, the
+  top-level `_writeStaple`) so Undo needs nothing from the row.
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **782/782**.
+- `make check` passed lint, the function tests and `make test-sql`, and
+  failed only at `seed-check`, the known red since `c8be2bc`.
+  `make l10n-check` passed once the generated files were committed.
+- **Walked** (`/design-walk shopping-list`, 2026-10-06, **emulator**, hosted
+  release build, Dev login, all four combinations), on the household's `sr`
+  list for 5–11 Oct, moving `mleko` back and forth.
+  - The menu opened at the finger (bounds from `(300,930)` for a press at
+    `(300,909)`), and upward near the bottom. `Uvek na listi` showed on a
+    Probably-have row, and every item fit on one line in Serbian.
+  - Measured fill: `#E8DED3` light, `#34342E` dark, 12dp past the text on
+    each side; no row shifted. A tap outside closed the menu, cleared the
+    fill and did not press the row underneath.
+  - Picking moved the row; the snackbar read `mleko premešteno u Verovatno
+    imate.` / `mleko is back on the list.` with `Poništi` / `Undo` in
+    `inversePrimary`. Undo moved it back with no second snackbar in all four
+    combinations; the expanded card stayed expanded. The first two Undo
+    taps missed: hosted regeneration took longer than the sleep before the
+    tap, and the 4 s window had passed. A screen-polling script that taps
+    as soon as the snackbar appears got it every time after.
+  - Offline (sr/dark): `Nema veze sa internetom.`, nothing moved, no Undo.
+  - A long-press on the pin itself shows its tooltip, not the menu, which
+    closes the tooltip half of slice 2's loop (sr/light).
+  - **Two findings, not fixed:** the menu is flush with the right edge when
+    the press is near it (as part 16's add menu); and in dark the menu's
+    `surfaceContainerHigh` is `#292923`, the same as the card, so over a card
+    only the dividers it covers show its edge. Both are in `docs/STATE.md`.
+  - `mleko` ended on the to-buy list, now with an explicit override. Srpski /
+    Svetla were restored.
