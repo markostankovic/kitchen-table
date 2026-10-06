@@ -402,6 +402,31 @@ void main() {
     expect(find.text('Zagrejati rernu.'), findsOneWidget);
   });
 
+  testWidgets('the Method subline counts steps only, and headings and notes '
+      'carry their icon (D153)', (WidgetTester tester) async {
+    await _pump(
+      tester,
+      _job(
+        ImportJobStatus.needsReview,
+        result: _parsed().copyWith(
+          steps: const <ParsedStep>[
+            ParsedStep(text: 'Za testo', kind: ParsedStepKind.HEADING),
+            ParsedStep(text: 'Zagrejati rernu.'),
+            ParsedStep(text: 'Može i dan ranije.', kind: ParsedStepKind.NOTE),
+            ParsedStep(text: 'Peći 40 minuta.', kind: ParsedStepKind.STEP),
+          ],
+        ),
+      ),
+    );
+
+    expect(find.text('2 steps'), findsOneWidget);
+
+    await tester.tap(find.text('Method'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.title), findsOneWidget);
+    expect(find.byIcon(Icons.sticky_note_2_outlined), findsOneWidget);
+  });
+
   testWidgets('Discard on a review asks first; Cancel keeps the job, '
       'Discard dismisses it and leaves', (WidgetTester tester) async {
     final _FakeImportRepo repo = _FakeImportRepo();

@@ -134,6 +134,106 @@ void main() {
     });
   });
 
+  group('headings and notes (D153)', () {
+    testWidgets('Heading and Note add their kind, labelled by kind',
+        (WidgetTester tester) async {
+      await _pump(tester, draft: RecipeDraft.empty());
+
+      await tester.tap(find.widgetWithText(TextButton, 'Heading'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Note'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Step'));
+      await tester.pumpAndSettle();
+
+      // Step 1, Heading, Note, then Step 2 -- not Step 4.
+      expect(find.text('Step 1'), findsOneWidget);
+      expect(find.text('Step 2'), findsOneWidget);
+      expect(find.text('Step 4'), findsNothing);
+      expect(find.byIcon(Icons.title), findsNWidgets(2)); // label + button
+      expect(find.byIcon(Icons.sticky_note_2_outlined), findsNWidgets(2));
+      // The label beside its icon, not just the add button.
+      expect(find.text('Heading'), findsNWidgets(2));
+      expect(find.text('Note'), findsNWidgets(2));
+    });
+
+    testWidgets('step labels skip headings and notes',
+        (WidgetTester tester) async {
+      await _pump(
+        tester,
+        draft: const RecipeDraft(steps: <RecipeDraftStep>[
+          RecipeDraftStep(
+              localId: 0, text: 'Za testo', kind: RecipeStepKind.heading),
+          RecipeDraftStep(localId: 1, text: 'Umesiti testo.'),
+          RecipeDraftStep(
+              localId: 2, text: 'Može i dan ranije.', kind: RecipeStepKind.note),
+          RecipeDraftStep(localId: 3, text: 'Peći.'),
+        ]),
+      );
+
+      expect(find.text('Step 1'), findsOneWidget);
+      expect(find.text('Step 2'), findsOneWidget);
+      expect(find.text('Step 3'), findsNothing);
+    });
+
+    testWidgets('removing a heading offers Undo, which puts it back in place',
+        (WidgetTester tester) async {
+      await _pump(
+        tester,
+        draft: const RecipeDraft(steps: <RecipeDraftStep>[
+          RecipeDraftStep(localId: 0, text: 'Umesiti testo.'),
+          RecipeDraftStep(localId: 1, text: 'Fil', kind: RecipeStepKind.heading),
+          RecipeDraftStep(localId: 2, text: 'Umutiti fil.'),
+        ]),
+      );
+
+      final Finder headingRow = find.ancestor(
+        of: find.text('Fil'),
+        matching: find.byType(Row),
+      );
+      await tester.tap(find
+          .descendant(
+            of: headingRow.first,
+            matching: find.widgetWithIcon(IconButton, Icons.close),
+          )
+          .first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Fil'), findsNothing);
+      expect(find.text('Heading removed.'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(SnackBarAction, 'Undo'));
+      await tester.pumpAndSettle();
+
+      final Iterable<String> fields = tester
+          .widgetList<EditableText>(find.byType(EditableText))
+          .map((EditableText e) => e.controller.text)
+          .where((String t) => <String>[
+                'Umesiti testo.',
+                'Fil',
+                'Umutiti fil.',
+              ].contains(t));
+      expect(fields, <String>['Umesiti testo.', 'Fil', 'Umutiti fil.']);
+    });
+
+    testWidgets('removing a step or a note offers no Undo',
+        (WidgetTester tester) async {
+      await _pump(
+        tester,
+        draft: const RecipeDraft(steps: <RecipeDraftStep>[
+          RecipeDraftStep(
+              localId: 0, text: 'Pazi.', kind: RecipeStepKind.note),
+        ]),
+      );
+
+      await tester.tap(find.widgetWithIcon(IconButton, Icons.close).last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pazi.'), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+  });
+
   group('an existing recipe', () {
     testWidgets('opens with its fields and lines filled in',
         (WidgetTester tester) async {

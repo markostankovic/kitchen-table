@@ -249,12 +249,32 @@ abstract class RecipeDraft with _$RecipeDraft {
         lines: _reordered<RecipeDraftLine>(lines, oldIndex, newIndex),
       );
 
-  RecipeDraft addStep() => copyWith(
+  RecipeDraft addStep({RecipeStepKind kind = RecipeStepKind.step}) =>
+      copyWith(
         steps: <RecipeDraftStep>[
           ...steps,
-          RecipeDraftStep(localId: _nextStepId, text: ''),
+          RecipeDraftStep(localId: _nextStepId, text: '', kind: kind),
         ],
       );
+
+  /// Puts a row back at [index] -- the Undo after a heading is removed.
+  ///
+  /// [index] is clamped to the list, and the row gets a **fresh** local id
+  /// rather than the one it had: [_nextStepId] is the high-water mark plus
+  /// one, so once the highest row is gone an add in between could already
+  /// have been handed that id, and two live widgets would share a key.
+  RecipeDraft insertStep(
+    int index, {
+    required RecipeStepKind kind,
+    required String text,
+  }) {
+    final List<RecipeDraftStep> next = List<RecipeDraftStep>.of(steps)
+      ..insert(
+        index.clamp(0, steps.length),
+        RecipeDraftStep(localId: _nextStepId, text: text, kind: kind),
+      );
+    return copyWith(steps: List<RecipeDraftStep>.unmodifiable(next));
+  }
 
   RecipeDraft removeStep(int localId) => copyWith(
         steps: steps

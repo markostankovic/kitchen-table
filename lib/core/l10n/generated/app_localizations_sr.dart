@@ -1078,4 +1078,16 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get sourceLabel => 'Izvor';
+
+  @override
+  String get stepKindStep => 'Korak';
+
+  @override
+  String get stepKindHeading => 'Naslov';
+
+  @override
+  String get stepKindNote => 'Beleška';
+
+  @override
+  String get headingRemovedSnackbar => 'Naslov je uklonjen.';
 }

@@ -302,7 +302,7 @@ abstract class AppLocalizations {
   /// **'Opis'**
   String get descriptionLabel;
 
-  /// Translation review screen, the editable label above each translated step -- {number} is 1-based, the source step's own position.
+  /// Translation review screen, and the recipe editor, the label above each step row -- {number} is 1-based and counts step-kind rows only (headings and notes are not numbered), continuing across headings.
   ///
   /// In sr, this message translates to:
   /// **'Korak {number}'**
@@ -1879,6 +1879,30 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Izvor'**
   String get sourceLabel;
+
+  /// Recipe editor, the method's add row: the tonal button that adds a numbered step.
+  ///
+  /// In sr, this message translates to:
+  /// **'Korak'**
+  String get stepKindStep;
+
+  /// Recipe editor, the add-row button and the row label for a step heading that groups the steps after it (e.g. 'Za testo'); also the translation review label for a heading row.
+  ///
+  /// In sr, this message translates to:
+  /// **'Naslov'**
+  String get stepKindHeading;
+
+  /// Recipe editor, the add-row button and the row label for an un-numbered note between steps; also the translation review label for a note row. Deliberately not 'Napomena', which is the recipe's end note.
+  ///
+  /// In sr, this message translates to:
+  /// **'Beleška'**
+  String get stepKindNote;
+
+  /// Recipe editor, the snackbar after removing a step heading; offers undoSnackbarAction to put it back.
+  ///
+  /// In sr, this message translates to:
+  /// **'Naslov je uklonjen.'**
+  String get headingRemovedSnackbar;
 }
 
 class _AppLocalizationsDelegate

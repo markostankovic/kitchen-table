@@ -287,7 +287,7 @@ from the container roles, not from Material's tint.
 | 0 | cards | a container-role fill (`KitchenColors.card`), no hairline, no shadow |
 | 0 | app bar, nav bar, fields | a container-role tone step. No shadow. |
 | 2 | menus, snackbar | a soft two-layer shadow (y1 blur2, y2 blur6 spread2) |
-| 3 | dialogs, bottom sheets | the same, heavier; in dark, black at 60% |
+| 3 | dialogs, bottom sheets, a dragged step row in the editor | the same, heavier; in dark, black at 60%. The dragged row is a `Material` on `surfaceContainerHigh` with `colorScheme.shadow`, radius `md` (the steps list's `proxyDecorator`; the ingredient list keeps the default lift) |
 
 Scrim behind dialogs and sheets: `#1F190F` at 32% in light, black at 50% in dark.
 
@@ -500,7 +500,17 @@ in both states, `md` under it; then `xl`, then Read. Private to
 
 **A step field is labelled** `Korak N` / `Step N` with `AppFieldLabel` above
 its row, indented past the grip, not hinted: a hint vanishes once the cook
-types. Steps sit `md` apart.
+types. Steps sit `md` apart. N counts steps only, as on detail. A heading's
+label is `Naslov` / `Heading` after a 16dp `title` icon, a note's `Beleška` /
+`Note` after `sticky_note_2_outlined`, both icons `onSurfaceVariant`, `xs` to
+the text. Every kind keeps the same grip | field | ✕ frame (the canvas's
+✕-in-the-label-row would fight the 48dp `iconButtonTheme` minimum); a heading
+field is one line, a step or note field three. Under the list, indented with
+the labels, a `Wrap` (`xs` apart) of tonal `Korak` (`add`), then text buttons
+`Naslov` (`title`) and `Beleška` (`sticky_note_2_outlined`). Removing a
+heading shows `Naslov je uklonjen.` with `Poništi`; a step or note goes
+without one. A dragged row lifts to level 3 (§ Elevation); the gap
+`ReorderableListView` opens is the drop indicator, no drawn line.
 
 **The translation review's original text** sits in a panel above its field
 (D84): `docLanguage` with a 1dp `outlineVariant` ring, radius `sm`, padded
@@ -623,6 +633,21 @@ sits inside the step above, so the line crosses it, and a step whose text
 wraps stretches the line with it. No line above step 1 or below the last
 step, so a single step draws none. The 2 and the 4 are private consts in
 `recipe_detail_screen.dart`, its only user.
+
+**Numbering counts steps only** and continues across headings (1–4 under
+`Za testo`, 5–7 under `Fil`) — never `position + 1`.
+
+**A heading** groups the steps after it: `titleSmall` in `primary`, flush with
+the disc column, `sm` top (32 effective after the row above's `xl`; 0 when it
+is first) and `md` bottom. **A note** is an un-numbered aside: `bodyMedium`
+`onSurfaceVariant` on a `KitchenColors.card` panel, radius `sm`, padded
+`sm`/`md`, in the text column (the disc column stays, empty), `xl` below. A
+warning reads the same — never red.
+
+**The line breaks at a heading and runs past a note.** A step draws its line
+only when a step or note follows, running straight into a note's segment. A
+note draws one when a step or note precedes it or a step follows; before a
+heading or at the end its line stops level with the panel's bottom.
 
 The servings / prep / cook /
 rating strip puts labels in `bodyMedium` `onSurfaceVariant` above values in
@@ -847,8 +872,11 @@ unmatched line is **not** flagged, it gets the dashed ring.
 
 **Method.** A theme `Card` holding a collapsed `ExpansionTile` (`const
 Border()` shapes, `expand_more` in `outline`): `Postupak` in `titleMedium`,
-`N koraka` in `bodyMedium` `onSurfaceVariant`. It expands **in place** to the
-step fields and Add step. No route, so no chevron.
+`N koraka` in `bodyMedium` `onSurfaceVariant`, N counting steps only. It
+expands **in place** to the step fields and Add step. No route, so no
+chevron. A heading or note field carries a `title` /
+`sticky_note_2_outlined` prefix icon in `outline`, so it doesn't read as one
+more step.
 
 **The action bar.** `AppActionBar` (§ Action bar), pinned under the list —
 this screen's bar is the one the widget was lifted from. Outlined `Odbaci ovaj uvoz`

@@ -23,6 +23,7 @@ import '../application/recipe_editor.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_draft.dart';
 import '../domain/recipe_image_upload.dart';
+import '../domain/recipe_step.dart';
 import '../../../core/ingredients/widgets/ingredient_line_field.dart';
 
 /// Create or edit one recipe.
@@ -368,6 +369,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
             physics: const NeverScrollableScrollPhysics(),
             buildDefaultDragHandles: false,
             onReorderItem: _editor.reorderSteps,
+            proxyDecorator: _liftedStepRow,
             children: <Widget>[
               for (final (int index, RecipeDraftStep step)
                   in draft.steps.indexed)
@@ -375,25 +377,107 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
                   key: ValueKey<int>(step.localId),
                   index: index,
                   initialValue: step.text,
-                  label: l10n.stepLabel(index + 1),
-                  maxLines: 3,
+                  label: switch (step.kind) {
+                    // Numbers count steps only, as on detail (D153).
+                    RecipeStepKind.step => l10n.stepLabel(
+                      draft.steps
+                              .take(index)
+                              .where(
+                                (RecipeDraftStep s) =>
+                                    s.kind == RecipeStepKind.step,
+                              )
+                              .length +
+                          1,
+                    ),
+                    RecipeStepKind.heading => l10n.stepKindHeading,
+                    RecipeStepKind.note => l10n.stepKindNote,
+                  },
+                  labelIcon: switch (step.kind) {
+                    RecipeStepKind.step => null,
+                    RecipeStepKind.heading => Icons.title,
+                    RecipeStepKind.note => Icons.sticky_note_2_outlined,
+                  },
+                  maxLines: step.kind == RecipeStepKind.heading ? 1 : 3,
                   onChanged: (String value) =>
                       _editor.setStepText(step.localId, value),
-                  onRemove: () => _editor.removeStep(step.localId),
+                  onRemove: step.kind == RecipeStepKind.heading
+                      ? () => _removeHeading(l10n, index, step)
+                      : () => _editor.removeStep(step.localId),
                   removeTooltip: l10n.removeTooltip,
                 ),
             ],
           ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: _editor.addStep,
-              icon: const Icon(Icons.add),
-              label: Text(l10n.addStepButton),
+          Padding(
+            // The same indent as the row labels.
+            padding: const EdgeInsets.only(
+              left: AppSizes.grip + AppSpacing.xs,
+            ),
+            child: Wrap(
+              spacing: AppSpacing.xs,
+              children: <Widget>[
+                FilledButton.tonalIcon(
+                  onPressed: () => _editor.addStep(),
+                  icon: const Icon(Icons.add),
+                  label: Text(l10n.stepKindStep),
+                ),
+                TextButton.icon(
+                  onPressed: () =>
+                      _editor.addStep(kind: RecipeStepKind.heading),
+                  icon: const Icon(Icons.title),
+                  label: Text(l10n.stepKindHeading),
+                ),
+                TextButton.icon(
+                  onPressed: () => _editor.addStep(kind: RecipeStepKind.note),
+                  icon: const Icon(Icons.sticky_note_2_outlined),
+                  label: Text(l10n.stepKindNote),
+                ),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// Removes a heading, with Undo. A heading carries no text worth retyping
+  /// but losing one ungroups every step under it, so it alone gets the
+  /// snackbar; steps and notes go as they always have.
+  ///
+  /// Undo puts it back at [index] under a fresh local id
+  /// ([RecipeDraft.insertStep]).
+  void _removeHeading(AppLocalizations l10n, int index, RecipeDraftStep step) {
+    _editor.removeStep(step.localId);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(l10n.headingRemovedSnackbar),
+          // A snackbar with an action persists by default in this Flutter;
+          // keep the usual 4 s auto-dismiss.
+          persist: false,
+          action: SnackBarAction(
+            label: l10n.undoSnackbarAction,
+            onPressed: () => _editor.insertStep(
+              index,
+              kind: RecipeStepKind.heading,
+              text: step.text,
+            ),
+          ),
+        ),
+      );
+  }
+
+  /// The step row under a finger: lifted to elevation 3 on
+  /// `surfaceContainerHigh`, so it has an edge against the page in both
+  /// themes. Steps only; the ingredient list keeps the default.
+  Widget _liftedStepRow(Widget child, int index, Animation<double> animation) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    return Material(
+      elevation: 3,
+      color: colors.surfaceContainerHigh,
+      shadowColor: colors.shadow,
+      borderRadius: BorderRadius.circular(AppRadii.md),
+      child: child,
     );
   }
 
@@ -552,7 +636,9 @@ class _PhotoField extends StatelessWidget {
   }
 }
 
-/// One labelled, draggable, removable step row.
+/// One labelled, draggable, removable step row -- a step, a heading or a
+/// note (D153). The frame is the same for all three; only the label says
+/// which, a heading or note's with a kind icon before it.
 class _EditableRow extends StatelessWidget {
   const _EditableRow({
     required this.index,
@@ -561,6 +647,7 @@ class _EditableRow extends StatelessWidget {
     required this.onChanged,
     required this.onRemove,
     required this.removeTooltip,
+    this.labelIcon,
     this.maxLines = 1,
     super.key,
   });
@@ -568,6 +655,7 @@ class _EditableRow extends StatelessWidget {
   final int index;
   final String initialValue;
   final String label;
+  final IconData? labelIcon;
   final int maxLines;
   final ValueChanged<String> onChanged;
   final VoidCallback onRemove;
@@ -587,7 +675,19 @@ class _EditableRow extends StatelessWidget {
             padding: const EdgeInsets.only(
               left: AppSizes.grip + AppSpacing.xs,
             ),
-            child: AppFieldLabel(text: label),
+            child: labelIcon == null
+                ? AppFieldLabel(text: label)
+                : Row(
+                    children: <Widget>[
+                      Icon(
+                        labelIcon,
+                        size: AppSizes.iconInMeta,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Flexible(child: AppFieldLabel(text: label)),
+                    ],
+                  ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Row(

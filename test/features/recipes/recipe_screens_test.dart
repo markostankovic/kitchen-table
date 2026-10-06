@@ -794,6 +794,166 @@ void main() {
       );
     });
 
+    testWidgets(
+        'headings group the steps, notes sit between them, numbers continue',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          steps: const <RecipeStep>[
+            RecipeStep(
+              position: 0,
+              text: 'Za testo',
+              kind: RecipeStepKind.heading,
+            ),
+            RecipeStep(position: 1, text: 'Umuti jaja.'),
+            RecipeStep(position: 2, text: 'Dodaj brašno.'),
+            RecipeStep(
+              position: 3,
+              text: 'Testo treba da bude meko.',
+              kind: RecipeStepKind.note,
+            ),
+            RecipeStep(position: 4, text: 'Ostavi da odmori.'),
+            RecipeStep(position: 5, text: 'Fil', kind: RecipeStepKind.heading),
+            RecipeStep(position: 6, text: 'Umuti fil.'),
+          ],
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Umuti fil.'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      // The discs count steps only and run on across the heading.
+      final Iterable<String> discs = tester
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byWidgetPredicate(
+                (Widget w) =>
+                    w is Container &&
+                    w.decoration is BoxDecoration &&
+                    (w.decoration! as BoxDecoration).shape == BoxShape.circle,
+              ),
+              matching: find.byType(Text),
+            ),
+          )
+          .map((Text t) => t.data!);
+      expect(discs, <String>['1', '2', '3', '4']);
+
+      expect(find.text('Za testo'), findsOneWidget);
+      expect(find.text('Fil'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('stepNotePanel')),
+          matching: find.text('Testo treba da bude meko.'),
+        ),
+        findsOneWidget,
+      );
+      // Step 1 -> step 2, step 2 -> the note, the note -> step 3. Step 3
+      // breaks at "Fil", and step 4 is last.
+      expect(
+        find.byKey(const Key('stepConnector'), skipOffstage: false),
+        findsNWidgets(3),
+      );
+    });
+
+    testWidgets('a translated method numbers by the source rows\' kinds',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          readingLocale: 'en',
+          steps: const <RecipeStep>[
+            RecipeStep(
+              position: 0,
+              text: 'Za testo',
+              kind: RecipeStepKind.heading,
+            ),
+            RecipeStep(position: 1, text: 'Umesiti testo.'),
+            RecipeStep(
+              position: 2,
+              text: 'Može i dan ranije.',
+              kind: RecipeStepKind.note,
+            ),
+            RecipeStep(position: 3, text: 'Razvući testo.'),
+          ],
+          translations: const <RecipeTranslation>[
+            RecipeTranslation(
+              locale: 'en',
+              title: 'Carrot cake',
+              // Prose only -- every translated row has the default kind.
+              steps: <RecipeStep>[
+                RecipeStep(position: 0, text: 'For the dough'),
+                RecipeStep(position: 1, text: 'Knead the dough.'),
+                RecipeStep(position: 2, text: 'It keeps a day ahead.'),
+                RecipeStep(position: 3, text: 'Roll it out.'),
+              ],
+            ),
+          ],
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Roll it out.'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      final Iterable<String> discs = tester
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byWidgetPredicate(
+                (Widget w) =>
+                    w is Container &&
+                    w.decoration is BoxDecoration &&
+                    (w.decoration! as BoxDecoration).shape == BoxShape.circle,
+              ),
+              matching: find.byType(Text),
+            ),
+          )
+          .map((Text t) => t.data!);
+      expect(discs, <String>['1', '2']);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('stepNotePanel')),
+          matching: find.text('It keeps a day ahead.'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a note ending a group still carries the line into it',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          steps: const <RecipeStep>[
+            RecipeStep(position: 0, text: 'Umuti jaja.'),
+            RecipeStep(
+              position: 1,
+              text: 'Ne preteruj.',
+              kind: RecipeStepKind.note,
+            ),
+            RecipeStep(
+              position: 2,
+              text: 'Usamljena beleška.',
+              kind: RecipeStepKind.note,
+            ),
+          ],
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Usamljena beleška.'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      // Step -> note, note -> note, and the last note's own stretch.
+      expect(
+        find.byKey(const Key('stepConnector'), skipOffstage: false),
+        findsNWidgets(3),
+      );
+    });
+
     testWidgets('renders the recipe photo when the recipe has one',
         (WidgetTester tester) async {
       await _pumpDetail(

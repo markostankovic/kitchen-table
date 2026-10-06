@@ -21,6 +21,7 @@ import '../../../core/widgets/app_section_heading.dart';
 import '../../ingredients/domain/ingredient_line_parser.dart';
 import '../../ingredients/domain/unit_catalog.dart';
 import '../../recipes/domain/recipe_draft.dart';
+import '../../recipes/domain/recipe_step.dart';
 import '../application/import_confirm.dart';
 import '../domain/parsed_recipe_draft.dart';
 import '../application/import_providers.dart';
@@ -670,7 +671,12 @@ class _MethodCard extends StatelessWidget {
         expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
         title: Text(l10n.methodHeading, style: theme.textTheme.titleMedium),
         subtitle: Text(
-          l10n.importStepsCount(steps.length),
+          // Headings and notes are not steps (D153).
+          l10n.importStepsCount(
+            steps
+                .where((RecipeDraftStep s) => s.kind == RecipeStepKind.step)
+                .length,
+          ),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -684,6 +690,23 @@ class _MethodCard extends StatelessWidget {
                 initialValue: step.text,
                 maxLines: null,
                 style: theme.textTheme.bodyMedium,
+                // A kind icon, so an imported heading or note doesn't read
+                // as one more step. A step's field stays bare.
+                decoration: switch (step.kind) {
+                  RecipeStepKind.step => const InputDecoration(),
+                  RecipeStepKind.heading => InputDecoration(
+                    prefixIcon: Icon(
+                      Icons.title,
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                  RecipeStepKind.note => InputDecoration(
+                    prefixIcon: Icon(
+                      Icons.sticky_note_2_outlined,
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                },
                 onChanged: (String v) => onStepChanged(step.localId, v),
               ),
             ),

@@ -15,6 +15,7 @@ import '../../../core/recipes/widgets/recipe_photo.dart';
 import '../../../core/refresh/data_revision.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/text/text_normalizer.dart';
+import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/kitchen_colors.dart';
@@ -555,16 +556,58 @@ class _Body extends ConsumerWidget {
                   ),
                 )
               else
-                for (int i = 0; i < detail.displaySteps.length; i++)
-                  _StepRow(
-                    step: detail.displaySteps[i],
-                    isLast: i == detail.displaySteps.length - 1,
-                  ),
+                ..._stepRows(detail.displaySteps),
               ..._sourceFooter(context),
             ],
           ),
       ),
     );
+  }
+
+  /// The method, row by row: numbered steps, headings and notes (D153).
+  ///
+  /// Numbers count step-kind rows only and continue across headings, so
+  /// `position + 1` is never the number. Each row draws its own stretch of
+  /// the connector from the kinds either side of it: the line breaks at a
+  /// heading and runs on past a note. A method of steps only comes out
+  /// exactly as it did before kinds existed.
+  List<Widget> _stepRows(List<RecipeStep> steps) {
+    RecipeStepKind? kindAt(int i) =>
+        i < 0 || i >= steps.length ? null : steps[i].kind;
+    bool isStepOrNote(RecipeStepKind? kind) =>
+        kind == RecipeStepKind.step || kind == RecipeStepKind.note;
+
+    int number = 0;
+    return <Widget>[
+      for (int i = 0; i < steps.length; i++)
+        switch (steps[i].kind) {
+          RecipeStepKind.step => _StepRow(
+            step: steps[i],
+            number: ++number,
+            connectorBelow: isStepOrNote(kindAt(i + 1)),
+            bottomInset: kindAt(i + 1) == RecipeStepKind.note
+                ? 0
+                : _connectorGap,
+          ),
+          RecipeStepKind.heading => _StepHeadingRow(
+            step: steps[i],
+            isFirst: i == 0,
+          ),
+          RecipeStepKind.note => _StepNoteRow(
+            step: steps[i],
+            connector:
+                isStepOrNote(kindAt(i - 1)) ||
+                kindAt(i + 1) == RecipeStepKind.step,
+            topInset: isStepOrNote(kindAt(i - 1)) ? 0 : _connectorGap,
+            bottomInset: switch (kindAt(i + 1)) {
+              RecipeStepKind.step => _connectorGap,
+              RecipeStepKind.note => 0,
+              // Level with the panel's bottom, not on into the gap.
+              RecipeStepKind.heading || null => AppSpacing.xl,
+            },
+          ),
+        },
+    ];
   }
 
   /// The badges that qualify this recipe, and the gap under them.
@@ -802,13 +845,24 @@ class _PhotoWell extends StatelessWidget {
 /// The disc is what makes a list of steps countable at a glance while
 /// cooking -- a bare `1.` in the text column reads as part of the sentence.
 /// A 2dp line joins each disc to the next, stopping short of both, so the
-/// steps read as one timeline; it stretches with a step that wraps, and
-/// there is none below the last step.
+/// steps read as one timeline; it stretches with a step that wraps. The line
+/// breaks at a heading (and after the last step), and runs on past a note:
+/// before a note it stops short of nothing, [bottomInset] 0, and the note's
+/// own segment carries it on.
 class _StepRow extends StatelessWidget {
-  const _StepRow({required this.step, required this.isLast});
+  const _StepRow({
+    required this.step,
+    required this.number,
+    required this.connectorBelow,
+    required this.bottomInset,
+  });
 
   final RecipeStep step;
-  final bool isLast;
+
+  /// Counts step-kind rows only, from 1, across headings.
+  final int number;
+  final bool connectorBelow;
+  final double bottomInset;
 
   @override
   Widget build(BuildContext context) {
@@ -833,24 +887,16 @@ class _StepRow extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Text(
-                    '${step.position + 1}',
+                    '$number',
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: theme.colorScheme.onPrimaryContainer,
                     ),
                   ),
                 ),
-                if (!isLast) ...<Widget>[
+                if (connectorBelow) ...<Widget>[
                   const SizedBox(height: _connectorGap),
-                  Expanded(
-                    child: Center(
-                      child: Container(
-                        key: const Key('stepConnector'),
-                        width: _connectorWidth,
-                        color: kitchen.stepConnector,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: _connectorGap),
+                  const Expanded(child: _StepConnector()),
+                  SizedBox(height: bottomInset),
                 ],
               ],
             ),
@@ -863,6 +909,120 @@ class _StepRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A heading that groups the steps after it ("Za testo", "Fil").
+///
+/// Flush with the disc column, not the text column, so it reads as above the
+/// steps rather than one of them. The row above already ends in `xl`, so the
+/// `sm` on top puts it 32 below; first in the method, it takes none.
+class _StepHeadingRow extends StatelessWidget {
+  const _StepHeadingRow({required this.step, required this.isFirst});
+
+  final RecipeStep step;
+  final bool isFirst;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.only(
+        top: isFirst ? 0 : AppSpacing.sm,
+        bottom: AppSpacing.md,
+      ),
+      child: Text(
+        step.text,
+        style: theme.textTheme.titleSmall?.copyWith(
+          color: theme.colorScheme.primary,
+        ),
+      ),
+    );
+  }
+}
+
+/// An un-numbered aside between steps, on a calm tinted panel in the text
+/// column. A warning reads the same way -- never red.
+///
+/// The disc column stays, empty but for the connector, which runs through
+/// the note when there is a step or note either side of it (see
+/// `_stepRows`). Before a heading or at the end it stops level with the
+/// panel's bottom.
+class _StepNoteRow extends StatelessWidget {
+  const _StepNoteRow({
+    required this.step,
+    required this.connector,
+    required this.topInset,
+    required this.bottomInset,
+  });
+
+  final RecipeStep step;
+  final bool connector;
+  final double topInset;
+  final double bottomInset;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final KitchenColors kitchen = theme.extension<KitchenColors>()!;
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          SizedBox(
+            width: AppSizes.stepDisc,
+            child: connector
+                ? Column(
+                    children: <Widget>[
+                      SizedBox(height: topInset),
+                      const Expanded(child: _StepConnector()),
+                      SizedBox(height: bottomInset),
+                    ],
+                  )
+                : null,
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+              child: Container(
+                key: const Key('stepNotePanel'),
+                padding: const EdgeInsets.symmetric(
+                  vertical: AppSpacing.sm,
+                  horizontal: AppSpacing.md,
+                ),
+                decoration: BoxDecoration(
+                  color: kitchen.card,
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
+                ),
+                child: Text(
+                  step.text,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One stretch of the 2dp timeline line, centred in the disc column.
+class _StepConnector extends StatelessWidget {
+  const _StepConnector();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        key: const Key('stepConnector'),
+        width: _connectorWidth,
+        color: Theme.of(context).extension<KitchenColors>()!.stepConnector,
       ),
     );
   }

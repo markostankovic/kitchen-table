@@ -13,6 +13,7 @@ import '../domain/recipe.dart';
 import '../domain/recipe_detail.dart';
 import '../domain/recipe_draft.dart';
 import '../domain/recipe_image_upload.dart';
+import '../domain/recipe_step.dart';
 import 'recipe_providers.dart';
 
 part 'recipe_editor.g.dart';
@@ -117,7 +118,18 @@ class RecipeEditor extends _$RecipeEditor {
   void reorderLines(int oldIndex, int newIndex) =>
       _update((RecipeDraft d) => d.reorderLines(oldIndex, newIndex));
 
-  void addStep() => _update((RecipeDraft d) => d.addStep());
+  void addStep({RecipeStepKind kind = RecipeStepKind.step}) =>
+      _update((RecipeDraft d) => d.addStep(kind: kind));
+
+  /// Undo for a removed heading; see [RecipeDraft.insertStep].
+  void insertStep(
+    int index, {
+    required RecipeStepKind kind,
+    required String text,
+  }) =>
+      _update(
+        (RecipeDraft d) => d.insertStep(index, kind: kind, text: text),
+      );
 
   void removeStep(int localId) =>
       _update((RecipeDraft d) => d.removeStep(localId));

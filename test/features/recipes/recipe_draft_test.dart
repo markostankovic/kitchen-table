@@ -312,6 +312,77 @@ void main() {
           <int?>[null, null, 60]);
     });
 
+    test('addStep adds the kind it is given, a step by default', () {
+      final RecipeDraft draft = const RecipeDraft()
+          .addStep()
+          .addStep(kind: RecipeStepKind.heading)
+          .addStep(kind: RecipeStepKind.note);
+
+      expect(draft.steps.map((RecipeDraftStep s) => s.kind), <RecipeStepKind>[
+        RecipeStepKind.step,
+        RecipeStepKind.heading,
+        RecipeStepKind.note,
+      ]);
+      expect(draft.steps.map((RecipeDraftStep s) => s.localId), <int>[0, 1, 2]);
+    });
+
+    test('insertStep puts a row back at its index', () {
+      const RecipeDraft draft = RecipeDraft(steps: <RecipeDraftStep>[
+        RecipeDraftStep(localId: 0, text: 'Umesiti testo.'),
+        RecipeDraftStep(localId: 1, text: 'Peći.'),
+      ]);
+
+      final RecipeDraft next =
+          draft.insertStep(1, kind: RecipeStepKind.heading, text: 'Fil');
+
+      expect(next.steps.map((RecipeDraftStep s) => s.text),
+          <String>['Umesiti testo.', 'Fil', 'Peći.']);
+      expect(next.steps[1].kind, RecipeStepKind.heading);
+    });
+
+    test('insertStep clamps the index to the list', () {
+      const RecipeDraft draft = RecipeDraft(steps: <RecipeDraftStep>[
+        RecipeDraftStep(localId: 0, text: 'Peći.'),
+      ]);
+
+      expect(
+        draft
+            .insertStep(9, kind: RecipeStepKind.heading, text: 'Kraj')
+            .steps
+            .last
+            .text,
+        'Kraj',
+      );
+      expect(
+        draft
+            .insertStep(-3, kind: RecipeStepKind.heading, text: 'Početak')
+            .steps
+            .first
+            .text,
+        'Početak',
+      );
+    });
+
+    test('insertStep allocates a fresh id even when the removed row held '
+        'the max', () {
+      const RecipeDraft draft = RecipeDraft(steps: <RecipeDraftStep>[
+        RecipeDraftStep(localId: 0, text: 'Umesiti testo.'),
+        RecipeDraftStep(localId: 1, text: 'Fil', kind: RecipeStepKind.heading),
+      ]);
+
+      // Remove the max-id heading, add a step (which takes id 1 again),
+      // then Undo: the heading must not come back as id 1 too.
+      final RecipeDraft next = draft
+          .removeStep(1)
+          .addStep()
+          .insertStep(1, kind: RecipeStepKind.heading, text: 'Fil');
+
+      final List<int> ids =
+          next.steps.map((RecipeDraftStep s) => s.localId).toList();
+      expect(ids.toSet().length, ids.length);
+      expect(next.steps[1].localId, 2);
+    });
+
     test('notes survive fromDetail and reach toRecipe unchanged', () {
       final RecipeDraft draft = RecipeDraft.fromDetail(RecipeDetail(
         recipe: _torta.copyWith(notes: '- Čuva se dva dana.'),

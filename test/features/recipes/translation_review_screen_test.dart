@@ -140,6 +140,42 @@ void main() {
     expect(find.text('Enter a title.'), findsOneWidget);
   });
 
+  testWidgets('labels follow the source row\'s kind, and steps count only '
+      'steps (D153)', (WidgetTester tester) async {
+    await _pump(
+      tester,
+      draft: _draft.copyWith(
+        sourceSteps: const <RecipeStep>[
+          RecipeStep(
+            position: 0,
+            text: 'Za testo',
+            kind: RecipeStepKind.heading,
+          ),
+          RecipeStep(position: 1, text: 'Umutiti sastojke.'),
+          RecipeStep(
+            position: 2,
+            text: 'Može i dan ranije.',
+            kind: RecipeStepKind.note,
+          ),
+          RecipeStep(position: 3, text: 'Peći 40 minuta.'),
+        ],
+        steps: const <RecipeStep>[
+          RecipeStep(position: 0, text: 'For the dough'),
+          RecipeStep(position: 1, text: 'Mix the ingredients.'),
+          RecipeStep(position: 2, text: 'It keeps a day ahead.'),
+          RecipeStep(position: 3, text: 'Bake for 40 minutes.'),
+        ],
+      ),
+    );
+
+    expect(find.text('Heading'), findsOneWidget);
+    expect(find.text('Note'), findsOneWidget);
+    expect(find.text('Step 1'), findsOneWidget);
+    expect(find.text('Step 2'), findsOneWidget);
+    expect(find.text('Step 3'), findsNothing);
+    expect(find.text('Step 4'), findsNothing);
+  });
+
   testWidgets('a translation with no description shows no description field',
       (WidgetTester tester) async {
     final TranslationReviewDraft withoutDescription = TranslationReviewDraft(

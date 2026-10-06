@@ -158,7 +158,7 @@
   },
   "stepLabel": "Korak {number}",
   "@stepLabel": {
-    "description": "Translation review screen, the editable label above each translated step -- {number} is 1-based, the source step's own position.",
+    "description": "Translation review screen, and the recipe editor, the label above each step row -- {number} is 1-based and counts step-kind rows only (headings and notes are not numbered), continuing across headings.",
     "placeholders": {
       "number": {
         "type": "int"
@@ -1408,5 +1408,21 @@
   "sourceLabel": "Izvor",
   "@sourceLabel": {
     "description": "Recipe detail screen, the source line's lead-in for a manual or AI-generated recipe that still carries a source; followed by ' · ' and the attribution or the URL's host."
+  },
+  "stepKindStep": "Korak",
+  "@stepKindStep": {
+    "description": "Recipe editor, the method's add row: the tonal button that adds a numbered step."
+  },
+  "stepKindHeading": "Naslov",
+  "@stepKindHeading": {
+    "description": "Recipe editor, the add-row button and the row label for a step heading that groups the steps after it (e.g. 'Za testo'); also the translation review label for a heading row."
+  },
+  "stepKindNote": "Beleška",
+  "@stepKindNote": {
+    "description": "Recipe editor, the add-row button and the row label for an un-numbered note between steps; also the translation review label for a note row. Deliberately not 'Napomena', which is the recipe's end note."
+  },
+  "headingRemovedSnackbar": "Naslov je uklonjen.",
+  "@headingRemovedSnackbar": {
+    "description": "Recipe editor, the snackbar after removing a step heading; offers undoSnackbarAction to put it back."
   }
 }

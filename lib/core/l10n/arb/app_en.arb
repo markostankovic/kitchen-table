@@ -320,5 +320,9 @@
   "ingredientsForServings": "{count, plural, one{for {count} serving} other{for {count} servings}}",
   "sourceImportedFromLink": "Imported from a link",
   "sourceImportedFromPhoto": "Imported from a photo",
-  "sourceLabel": "Source"
+  "sourceLabel": "Source",
+  "stepKindStep": "Step",
+  "stepKindHeading": "Heading",
+  "stepKindNote": "Note",
+  "headingRemovedSnackbar": "Heading removed."
 }

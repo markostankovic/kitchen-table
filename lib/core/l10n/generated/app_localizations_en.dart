@@ -1063,4 +1063,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sourceLabel => 'Source';
+
+  @override
+  String get stepKindStep => 'Step';
+
+  @override
+  String get stepKindHeading => 'Heading';
+
+  @override
+  String get stepKindNote => 'Note';
+
+  @override
+  String get headingRemovedSnackbar => 'Heading removed.';
 }

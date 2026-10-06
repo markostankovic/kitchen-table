@@ -165,10 +165,27 @@ class _TranslationReviewScreenState
               onChanged: _reviewer.setDescription,
             ),
           ],
-          for (final (RecipeStep source, RecipeStep translated)
-              in draft.pairedSteps) ...<Widget>[
+          for (final (int index, (RecipeStep source, RecipeStep translated))
+              in draft.pairedSteps.indexed) ...<Widget>[
             const SizedBox(height: AppSpacing.lg),
-            AppFieldLabel(text: l10n.stepLabel(translated.position + 1)),
+            // Labelled by the source row's kind; a step's number counts
+            // source steps only, as on detail (D153).
+            AppFieldLabel(
+              text: switch (source.kind) {
+                RecipeStepKind.step => l10n.stepLabel(
+                  draft.pairedSteps
+                          .take(index)
+                          .where(
+                            ((RecipeStep, RecipeStep) pair) =>
+                                pair.$1.kind == RecipeStepKind.step,
+                          )
+                          .length +
+                      1,
+                ),
+                RecipeStepKind.heading => l10n.stepKindHeading,
+                RecipeStepKind.note => l10n.stepKindNote,
+              },
+            ),
             const SizedBox(height: AppSpacing.sm),
             _OriginalText(label: originalLabel, text: source.text),
             const SizedBox(height: AppSpacing.sm),
