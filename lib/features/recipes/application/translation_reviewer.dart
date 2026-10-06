@@ -58,6 +58,9 @@ class TranslationReviewer extends _$TranslationReviewer {
   void setDescription(String? value) =>
       _update((TranslationReviewDraft d) => d.setDescription(value));
 
+  void setNotes(String? value) =>
+      _update((TranslationReviewDraft d) => d.setNotes(value));
+
   void setStepText(int position, String text) => _update(
         (TranslationReviewDraft d) => d.setStepText(position, text),
       );

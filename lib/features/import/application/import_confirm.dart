@@ -64,6 +64,8 @@ class ImportConfirm extends _$ImportConfirm {
 
   void setTitle(String value) =>
       _update((RecipeDraft d) => d.copyWith(title: value));
+  void setNotes(String? value) =>
+      _update((RecipeDraft d) => d.copyWith(notes: value));
   void setServings(int? value) =>
       _update((RecipeDraft d) => d.copyWith(servings: value));
   void addLine() => _update((RecipeDraft d) => d.addLine());

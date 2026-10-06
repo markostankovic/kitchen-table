@@ -954,6 +954,83 @@ void main() {
       );
     });
 
+    testWidgets('the end note renders as a card after the last step', (
+      WidgetTester tester,
+    ) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          recipe: _torta.copyWith(notes: 'Čuva se tri dana u frižideru.'),
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Čuva se tri dana u frižideru.'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      expect(find.byIcon(Icons.edit_note), findsOneWidget);
+      // The harness renders in English: `recipeNotesHeading` is `Notes`.
+      expect(find.text('Notes'), findsOneWidget);
+      final Finder card = find.ancestor(
+        of: find.text('Čuva se tri dana u frižideru.'),
+        matching: find.byType(Card),
+      );
+      expect(card, findsOneWidget);
+      expect(
+        tester.getTopLeft(card).dy,
+        greaterThan(tester.getBottomLeft(find.text('Zagrej rernu.')).dy),
+      );
+    });
+
+    for (final String? notes in <String?>[null, '   ']) {
+      testWidgets(
+        'no end note card for notes: ${notes == null ? 'null' : 'blank'}',
+        (WidgetTester tester) async {
+          await _pumpDetail(
+            tester,
+            _detail.copyWith(recipe: _torta.copyWith(notes: notes)),
+          );
+
+          expect(
+            find.byIcon(Icons.edit_note, skipOffstage: false),
+            findsNothing,
+          );
+          expect(find.text('Notes', skipOffstage: false), findsNothing);
+        },
+      );
+    }
+
+    testWidgets('a translated recipe shows the translation\'s end note', (
+      WidgetTester tester,
+    ) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          readingLocale: 'en',
+          recipe: _torta.copyWith(notes: 'Čuva se tri dana.'),
+          translations: const <RecipeTranslation>[
+            RecipeTranslation(
+              locale: 'en',
+              title: 'Carrot cake',
+              notes: 'Keeps three days.',
+              steps: <RecipeStep>[
+                RecipeStep(position: 0, text: 'Heat the oven.'),
+              ],
+            ),
+          ],
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Keeps three days.'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      expect(find.text('Notes'), findsOneWidget);
+      expect(find.text('Čuva se tri dana.', skipOffstage: false), findsNothing);
+    });
+
     testWidgets('renders the recipe photo when the recipe has one',
         (WidgetTester tester) async {
       await _pumpDetail(

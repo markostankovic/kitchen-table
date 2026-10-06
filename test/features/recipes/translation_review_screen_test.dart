@@ -189,4 +189,45 @@ void main() {
     // Just the title field -- no description field to edit a null into.
     expect(find.byType(TextFormField), findsOneWidget);
   });
+
+  testWidgets('no end note pair when the source has no note', (
+    WidgetTester tester,
+  ) async {
+    await _pump(tester, draft: _draft);
+
+    expect(find.text('Notes'), findsNothing);
+  });
+
+  testWidgets('the end note pair renders, and an edited note is what save '
+      'sends (D153)', (WidgetTester tester) async {
+    await _pump(
+      tester,
+      draft: _draft.copyWith(
+        sourceNotes: 'Čuva se tri dana.',
+        notes: 'Keeps three days.',
+      ),
+    );
+
+    expect(find.text('Notes'), findsOneWidget);
+    expect(find.text('Čuva se tri dana.'), findsOneWidget);
+    expect(find.text('Keeps three days.'), findsOneWidget);
+    expect(find.byType(TextFormField), findsNWidgets(5));
+
+    await tester.enterText(
+      find.byType(TextFormField).last,
+      'Keeps for three days, chilled.',
+    );
+    await tester.pump();
+
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(TranslationReviewScreen)),
+    );
+    expect(
+      container
+          .read(translationReviewerProvider('r1', locale: 'en'))
+          .value!
+          .notes,
+      'Keeps for three days, chilled.',
+    );
+  });
 }

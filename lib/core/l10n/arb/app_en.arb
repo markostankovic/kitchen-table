@@ -324,5 +324,8 @@
   "stepKindStep": "Step",
   "stepKindHeading": "Heading",
   "stepKindNote": "Note",
-  "headingRemovedSnackbar": "Heading removed."
+  "headingRemovedSnackbar": "Heading removed.",
+  "recipeNotesHeading": "Notes",
+  "recipeNotesHelperText": "Optional. Serving, storage, variations, tips.",
+  "importNotesNoneFound": "None found"
 }

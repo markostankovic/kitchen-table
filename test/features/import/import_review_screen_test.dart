@@ -18,6 +18,7 @@ import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
 import 'package:kitchen_table/core/router/routes.dart';
 import 'package:kitchen_table/core/theme/app_theme.dart';
 import 'package:kitchen_table/core/widgets/app_empty_state.dart';
+import 'package:kitchen_table/features/import/application/import_confirm.dart';
 import 'package:kitchen_table/features/import/application/import_providers.dart';
 import 'package:kitchen_table/features/import/data/import_repository.dart';
 import 'package:kitchen_table/features/import/domain/import_job.dart';
@@ -470,5 +471,74 @@ void main() {
     expect(find.text(sr.saveRecipeButton), findsOneWidget);
     expect(sr.discardImportButton, 'Odbaci ovaj uvoz');
     expect(sr.saveRecipeButton, 'Sačuvaj recept');
+  });
+
+  testWidgets('Notes is collapsed under Method and says when none was found', (
+    WidgetTester tester,
+  ) async {
+    await _pump(tester, _job(ImportJobStatus.needsReview, result: _parsed()));
+
+    expect(find.text('Notes'), findsOneWidget);
+    expect(find.text('None found'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Notes')).dy,
+      greaterThan(tester.getTopLeft(find.text('Method')).dy),
+    );
+  });
+
+  testWidgets('Serbian says Nije pronađena for a missing note', (
+    WidgetTester tester,
+  ) async {
+    await _pump(
+      tester,
+      _job(ImportJobStatus.needsReview, result: _parsed()),
+      locale: const Locale('sr'),
+    );
+
+    expect(find.text('Napomena'), findsOneWidget);
+    expect(find.text('Nije pronađena'), findsOneWidget);
+  });
+
+  testWidgets('a found note shows its first words collapsed; typing updates '
+      'the subline and the draft save() sends', (WidgetTester tester) async {
+    await _pump(
+      tester,
+      _job(
+        ImportJobStatus.needsReview,
+        result: _parsed().copyWith(notes: 'Čuva se\n- tri dana u frižideru'),
+      ),
+    );
+
+    // Whitespace collapsed to one line.
+    expect(find.text('Čuva se - tri dana u frižideru'), findsOneWidget);
+
+    await tester.tap(find.text('Notes'));
+    await tester.pumpAndSettle();
+    final Finder field = find.descendant(
+      of: find.ancestor(
+        of: find.text('Notes'),
+        matching: find.byType(ExpansionTile),
+      ),
+      matching: find.byType(TextFormField),
+    );
+    expect(field, findsOneWidget);
+
+    await tester.enterText(field, 'Najbolja sutradan.');
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(ListTile),
+        matching: find.text('Najbolja sutradan.'),
+      ),
+      findsOneWidget,
+    );
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(ImportReviewScreen)),
+    );
+    expect(
+      container.read(importConfirmProvider(_jobId)).value!.draft.notes,
+      'Najbolja sutradan.',
+    );
   });
 }

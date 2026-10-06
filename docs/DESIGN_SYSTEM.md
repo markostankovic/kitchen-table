@@ -649,6 +649,14 @@ only when a step or note follows, running straight into a note's segment. A
 note draws one when a step or note precedes it or a step follows; before a
 heading or at the end its line stops level with the panel's bottom.
 
+**The end note** (`Napomena` / `Notes`, never `Beleška`) is a themed `Card`
+(radius 12, padded `lg`), full width, outside the timeline, `xxl` (32) below
+the last step — `sm` on top of the last row's own `xl`. Its header is
+`edit_note` at 20 (`iconInButton`) in `onSurfaceVariant`, `sm`, then
+`Napomena` in `titleMedium`; then `sm`, then the body in `bodyLarge`, plain
+text until the rich-text slice. An empty note renders nothing at all — no
+heading, no gap — and the source footer follows unchanged either way.
+
 The servings / prep / cook /
 rating strip puts labels in `bodyMedium` `onSurfaceVariant` above values in
 `titleMedium` (18/24 w600) `statValue`, both start-aligned in equal-width
@@ -877,6 +885,12 @@ expands **in place** to the step fields and Add step. No route, so no
 chevron. A heading or note field carries a `title` /
 `sticky_note_2_outlined` prefix icon in `outline`, so it doesn't read as one
 more step.
+
+**Notes.** The same collapsed `ExpansionTile` card as Method, `md` (12) below
+it: `Napomena` in `titleMedium`, then the note's first words on one line with
+an ellipsis (whitespace collapsed), or `Nije pronađena` / `None found`, in
+`bodyMedium` `onSurfaceVariant`. It expands in place to one multiline field
+(`minLines` 3, growing); the subline follows what is typed.
 
 **The action bar.** `AppActionBar` (§ Action bar), pinned under the list —
 this screen's bar is the one the widget was lifted from. Outlined `Odbaci ovaj uvoz`

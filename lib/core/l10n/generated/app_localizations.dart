@@ -1903,6 +1903,24 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Naslov je uklonjen.'**
   String get headingRemovedSnackbar;
+
+  /// The recipe's end note (serving, storage, variations, tips): the heading of the card on recipe detail, the section heading in the editor, the import review card title and the translation review field label. Deliberately not stepKindNote's 'Beleška', which is an aside between steps.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napomena'**
+  String get recipeNotesHeading;
+
+  /// Recipe editor, helper text under the end note field.
+  ///
+  /// In sr, this message translates to:
+  /// **'Neobavezno. Serviranje, čuvanje, varijacije, saveti.'**
+  String get recipeNotesHelperText;
+
+  /// Import review, the collapsed Notes card's subline when no end note was found in the source. Feminine, agreeing with 'Napomena'.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nije pronađena'**
+  String get importNotesNoneFound;
 }
 
 class _AppLocalizationsDelegate

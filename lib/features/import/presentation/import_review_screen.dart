@@ -466,6 +466,12 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
           onStepChanged: _confirm.setStepText,
           onAddStep: _confirm.addStep,
         ),
+        const SizedBox(height: AppSpacing.md),
+        _NotesCard(
+          notes: draft.notes,
+          l10n: l10n,
+          onChanged: _confirm.setNotes,
+        ),
       ],
     );
   }
@@ -717,6 +723,72 @@ class _MethodCard extends StatelessWidget {
               icon: const Icon(Icons.add),
               label: Text(l10n.addStepButton),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The recipe's end note (D153), the same collapsed card as Method and for
+/// the same reason: it expands in place, so `expand_more`, no chevron, no
+/// route. The subline is the note's first words, rebuilt from the draft as
+/// the cook types.
+class _NotesCard extends StatelessWidget {
+  const _NotesCard({
+    required this.notes,
+    required this.l10n,
+    required this.onChanged,
+  });
+
+  final String? notes;
+  final AppLocalizations l10n;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String summary =
+        (notes ?? '').trim().replaceAll(RegExp(r'\s+'), ' ');
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        shape: const Border(),
+        collapsedShape: const Border(),
+        initiallyExpanded: false,
+        maintainState: true,
+        tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        childrenPadding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.md,
+        ),
+        iconColor: theme.colorScheme.outline,
+        collapsedIconColor: theme.colorScheme.outline,
+        expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+        title: Text(
+          l10n.recipeNotesHeading,
+          style: theme.textTheme.titleMedium,
+        ),
+        subtitle: Text(
+          summary.isEmpty ? l10n.importNotesNoneFound : summary,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        children: <Widget>[
+          TextFormField(
+            initialValue: notes ?? '',
+            textCapitalization: TextCapitalization.sentences,
+            keyboardType: TextInputType.multiline,
+            minLines: 3,
+            maxLines: null,
+            style: theme.textTheme.bodyMedium,
+            onChanged: onChanged,
           ),
         ],
       ),

@@ -199,6 +199,23 @@ class _TranslationReviewScreenState
                   _reviewer.setStepText(translated.position, value),
             ),
           ],
+          if (draft.sourceNotes?.trim().isNotEmpty ?? false) ...<Widget>[
+            const SizedBox(height: AppSpacing.lg),
+            AppFieldLabel(text: l10n.recipeNotesHeading),
+            const SizedBox(height: AppSpacing.sm),
+            _OriginalText(label: originalLabel, text: draft.sourceNotes!),
+            const SizedBox(height: AppSpacing.sm),
+            // No validator: a blank note saves as null (D153).
+            TextFormField(
+              initialValue: draft.notes ?? '',
+              textCapitalization: TextCapitalization.sentences,
+              keyboardType: TextInputType.multiline,
+              minLines: 3,
+              maxLines: null,
+              style: fieldStyle,
+              onChanged: _reviewer.setNotes,
+            ),
+          ],
         ],
       ),
     );

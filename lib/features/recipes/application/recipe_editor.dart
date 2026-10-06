@@ -76,6 +76,9 @@ class RecipeEditor extends _$RecipeEditor {
   void setDescription(String? value) =>
       _update((RecipeDraft d) => d.copyWith(description: value));
 
+  void setNotes(String? value) =>
+      _update((RecipeDraft d) => d.copyWith(notes: value));
+
   void setServings(int? value) =>
       _update((RecipeDraft d) => d.copyWith(servings: value));
 

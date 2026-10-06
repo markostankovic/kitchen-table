@@ -475,6 +475,8 @@ class _Body extends ConsumerWidget {
             const <String, String>{};
 
     final String? description = detail.displayDescription;
+    final String? notes = detail.displayNotes?.trim();
+    final bool hasNotes = notes != null && notes.isNotEmpty;
 
     // A sliver under the screen's `SliverAppBar`, which carries the photo.
     return SliverPadding(
@@ -557,6 +559,17 @@ class _Body extends ConsumerWidget {
                 )
               else
                 ..._stepRows(detail.displaySteps),
+              if (hasNotes) ...<Widget>[
+                // 32 below the method: the last step or note row already
+                // ends in `xl`, so `sm` tops it up; plain empty-state text
+                // has no trailing padding and takes the whole `xxl`.
+                SizedBox(
+                  height: detail.displaySteps.isEmpty
+                      ? AppSpacing.xxl
+                      : AppSpacing.sm,
+                ),
+                _RecipeNotesCard(notes: notes, l10n: l10n),
+              ],
               ..._sourceFooter(context),
             ],
           ),
@@ -1007,6 +1020,54 @@ class _StepNoteRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The recipe's end note (D153), a full-width card after the timeline.
+///
+/// The body is plain `Text` for now: `phase8-rich-text-render` swaps it for
+/// the markdown-subset renderer, so the markers show literally until then.
+class _RecipeNotesCard extends StatelessWidget {
+  const _RecipeNotesCard({required this.notes, required this.l10n});
+
+  final String notes;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  // The canvas's 20dp; `iconInButton` is the only 20 token.
+                  Icon(
+                    Icons.edit_note,
+                    size: AppSizes.iconInButton,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      l10n.recipeNotesHeading,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(notes, style: theme.textTheme.bodyLarge),
+            ],
+          ),
+        ),
       ),
     );
   }

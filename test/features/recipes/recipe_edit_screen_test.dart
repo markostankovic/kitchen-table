@@ -324,6 +324,71 @@ void main() {
     });
   });
 
+  group('the end note (D153)', () {
+    testWidgets('its heading, helper and field follow the add row', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, draft: RecipeDraft.empty());
+
+      expect(find.text('Notes'), findsOneWidget);
+      expect(
+        find.text('Optional. Serving, storage, variations, tips.'),
+        findsOneWidget,
+      );
+      expect(
+        tester.getTopLeft(find.text('Notes')).dy,
+        greaterThan(
+          tester.getBottomLeft(find.widgetWithText(TextButton, 'Note')).dy,
+        ),
+      );
+      final TextField field = tester.widget<TextField>(
+        find.byType(TextField).last,
+      );
+      expect(field.minLines, 3);
+      expect(field.maxLines, isNull);
+    });
+
+    testWidgets('typing reaches the draft save() sends', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, draft: RecipeDraft.empty());
+
+      await tester.enterText(
+        find.byType(TextFormField).last,
+        'Čuva se tri dana.',
+      );
+      await tester.pump();
+
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(RecipeEditScreen)),
+      );
+      expect(
+        container.read(recipeEditorProvider(null)).value!.notes,
+        'Čuva se tri dana.',
+      );
+    });
+
+    testWidgets('an existing recipe\'s note pre-fills the field', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        recipeId: 'r1',
+        draft: RecipeDraft.fromDetail(
+          _detail.copyWith(recipe: _torta.copyWith(notes: 'Bolja sutradan.')),
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byType(TextFormField).last,
+          matching: find.text('Bolja sutradan.'),
+        ),
+        findsOneWidget,
+      );
+    });
+  });
+
   group('photo', () {
     testWidgets('a recipe with no photo offers Camera and Gallery, no Remove',
         (WidgetTester tester) async {
@@ -418,8 +483,9 @@ void main() {
       final ThemeData theme = AppTheme.light();
       final Iterable<TextField> fields =
           tester.widgetList<TextField>(find.byType(TextField));
-      // Title, description, three numbers, tags, two lines, one step.
-      expect(fields, hasLength(9));
+      // Title, description, three numbers, tags, two lines, one step, the
+      // end note.
+      expect(fields, hasLength(10));
       for (final TextField field in fields) {
         expect(field.style, isNotNull);
         expect(field.style!.fontFamily, isNot('Literata'));

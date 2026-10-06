@@ -434,6 +434,21 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
               ],
             ),
           ),
+          const SizedBox(height: AppSpacing.xl),
+          AppSectionHeading(text: l10n.recipeNotesHeading),
+          TextFormField(
+            initialValue: draft.notes ?? '',
+            textCapitalization: TextCapitalization.sentences,
+            keyboardType: TextInputType.multiline,
+            minLines: 3,
+            // Grows with its content: an end note can run to paragraphs.
+            maxLines: null,
+            style: fieldStyle,
+            decoration: InputDecoration(
+              helperText: l10n.recipeNotesHelperText,
+            ),
+            onChanged: _editor.setNotes,
+          ),
         ],
       ),
     );

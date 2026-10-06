@@ -1075,4 +1075,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get headingRemovedSnackbar => 'Heading removed.';
+
+  @override
+  String get recipeNotesHeading => 'Notes';
+
+  @override
+  String get recipeNotesHelperText =>
+      'Optional. Serving, storage, variations, tips.';
+
+  @override
+  String get importNotesNoneFound => 'None found';
 }

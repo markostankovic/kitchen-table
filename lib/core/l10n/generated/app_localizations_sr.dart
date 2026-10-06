@@ -1090,4 +1090,14 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get headingRemovedSnackbar => 'Naslov je uklonjen.';
+
+  @override
+  String get recipeNotesHeading => 'Napomena';
+
+  @override
+  String get recipeNotesHelperText =>
+      'Neobavezno. Serviranje, čuvanje, varijacije, saveti.';
+
+  @override
+  String get importNotesNoneFound => 'Nije pronađena';
 }
