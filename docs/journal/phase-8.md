@@ -735,3 +735,92 @@ migration, no `make types`, no new package, nothing under `data/`.
     `docs/STATE.md`. Two cosmetic notes are recorded there too: the lifted
     row's label sits about 4dp from its top edge, and a late tap meant for
     `Poništi` lands on Save under the snackbar.
+
+### Round 2026-10-06, slice 6 — The recipe's end note on four screens
+
+**Status: complete** (`6984595`). Decisions taken during it: D155.
+
+The sixth slice of round `2026-10-06-round-2-recipe-structure`
+(`docs/design/handoffs/2026-10-06-round-2-recipe-structure/`), canvas § A2
+(A2·1–A2·3). It shows and edits the `recipes.notes` /
+`recipe_translations.notes` that slice 4 stored and that every save path
+already carried (D153). Planned with `/plan-slice-ui` on 2026-10-06 and
+built in a fresh session. The work is client-only: no migration, no Edge
+Function, no package.
+
+- **Strings.** `recipeNotesHeading` (`Napomena` / `Notes`; its
+  description says it is not `stepKindNote`'s `Beleška`),
+  `recipeNotesHelperText` and `importNotesNoneFound` (`Nije pronađena` /
+  `None found`).
+- **Notifiers.** A one-line `setNotes` on `RecipeEditor`, `ImportConfirm`
+  and `TranslationReviewer`. These are the only edits outside
+  `presentation/`. No `.g.dart` changed.
+- **Recipe detail.** A private `_RecipeNotesCard` holds a themed `Card` in
+  a full-width `SizedBox`, padded `lg`. Its header is `edit_note` at
+  `iconInButton` plus `titleMedium` `Napomena`, then `sm`, then a
+  `bodyLarge` `Text`. It reads `displayNotes`, trimmed, and renders only
+  when that is non-empty. The gap above it is `sm` after step rows and
+  `xxl` after the `noStepsYet` text. The source footer is unchanged.
+- **Editor.** After the Step / Heading / Note add row: `xl`, an
+  `AppSectionHeading`, then a `TextFormField` (`multiline`, `minLines` 3,
+  `maxLines` null, helper text) wired to `setNotes`.
+- **Import review.** A private `_NotesCard` 12 below Method, copying
+  `_MethodCard`'s `Card` + `ExpansionTile` frame line for line. Its subline
+  is the whitespace-collapsed note on one line with an ellipsis, or `Nije
+  pronađena`. Its one child is a growing field.
+- **Translation review.** When `sourceNotes` is non-blank, a pair follows
+  the steps: `AppFieldLabel`, then `_OriginalText`, then a growing field
+  wired to `setNotes`, with no validator.
+- **DESIGN_SYSTEM.md.** The end note goes under § Steps and stats, and
+  Notes under § Import review. § Inputs is unchanged, since it lists no
+  field shapes per screen.
+- **Tests (+12).**
+  - `recipe_screens_test`: the card renders after the last step; there is
+    no card for a null or a blank note; a translated recipe shows the
+    translation's note.
+  - `recipe_edit_screen_test`: the heading, the helper and a growing field
+    follow the add row; typing reaches the draft; an existing note
+    pre-fills the field.
+  - `import_review_screen_test`: `None found`, and `Nije pronađena` under
+    `sr`. A found note shows collapsed, and typing updates the subline and
+    the draft.
+  - `translation_review_screen_test`: no pair without a source note; with
+    one, the pair shows and an edit reaches the draft.
+
+**Differs from the plan.**
+- **"Save sends notes" is tested at the draft, not the repository.** The
+  plan asked for a fake repository, but all three screen test files hold to
+  "no test presses Save": `save()` reaches a real Supabase client, and the
+  editor's tests have no fake repository. So the tests read the notifier's
+  draft, which is exactly what `save()` sends. That `save()` passes
+  `notes` through is D153's and is covered there.
+- **The editor's "every field types in bodyMedium" test** now counts 10
+  fields, not 9.
+
+**How it was verified.**
+- `dart analyze` clean; `flutter test` **820/820** (808 + 12). The function
+  tests passed (165).
+- `make check` failed only at `seed-check`, the known red since `c8be2bc`.
+  `make test-sql` passed when run by hand. `make l10n-check` failed only
+  because the ARB change was not yet committed; a fresh `flutter gen-l10n`
+  left the working-tree files byte-identical.
+- **Walked** (`/design-walk recipe-detail`, 2026-10-06) on the
+  **emulator** in all four combinations, on a hosted release build:
+  - **Detail.** `Pita proba koraka` with no note ends where it did. With a
+    seven-line note (typed in the editor, with `- ` and `**` markers) the
+    card is gutter to gutter and 84px (32dp) below the last row, measured
+    by pixel scan. In dark its fill still separates from the ground.
+  - **Translation.** The recipe was machine-translated (one hosted AI
+    call). Under `en` the card shows the translated note. The function kept
+    the markers. An edit in translation review (`… Enjoy!`) is what detail
+    shows after Save and approve.
+  - **Editor.** The Serbian helper fits on one line at 411dp. The field
+    grew from 3 to 7 lines. The note persisted on reopen. Clearing it and
+    saving removed the card.
+  - **Import review.** One paste import parsed a `Napomena:` section. The
+    card sits 31px (12dp) under Method, with the first words and an
+    ellipsis, and expands in place. Clearing it shows `Nije pronađena`,
+    which reads naturally. The saved `Palacinke` carried the note to
+    detail.
+  - **Not reached:** the note above a source footer. Neither walk recipe
+    has a source. This is left open in `docs/STATE.md`.

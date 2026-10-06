@@ -114,7 +114,7 @@ The rest are UI (`/plan-slice-ui`).
         steps and shows `Heading removed.` with Undo. A dragged row lifts to
         level 3.
       - A recipe with no headings or notes must look exactly as it does today.
-- [ ] `phase8-recipe-end-note`: Recipe detail, editor and import review.
+- [x] `phase8-recipe-end-note`: Recipe detail, editor and import review.
       Files: `recipe_detail_screen.dart`, `recipe_edit_screen.dart`,
       `import_review_screen.dart`, `translation_review_screen.dart` (the note
       is translated text).

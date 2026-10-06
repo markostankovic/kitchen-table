@@ -1,31 +1,33 @@
 # State — 2026-10-06
 
 **Branch:** `main`
-**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 5 —
-`phase8-step-headings-notes` (`b149a8f`): step headings and notes, on
-recipe detail and in the editor (D154, rendering D153's data).
+**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 6 —
+`phase8-recipe-end-note` (`6984595`): the recipe's end note (`Napomena` /
+`Notes`) on four screens (D155, rendering D153's `notes`).
 
-- **Detail.** Numbers count steps only and continue across headings. A
-  heading is `titleSmall` `primary`, flush with the discs, and breaks the
-  connector. A note is a `card` panel in the text column, and the connector
-  runs past it. A step-only recipe looks exactly as before (walked against
-  the previous build).
-- **Editor.** Labels by kind (`Korak N`, `Naslov`, `Beleška`). The add row
-  is tonal `Korak`, then `Naslov` and `Beleška`. A dragged step row lifts
-  to level 3. Removing a heading offers `Poništi`.
-- **Import review** counts steps only in the Method subline and marks
-  heading/note fields with an icon. **Translation review** labels rows by
-  the source kind.
+- **Detail.** A full-width themed card 32 below the method, outside the
+  timeline. Its header is `edit_note` + `Napomena`, and the body is in
+  `bodyLarge`. It shows the translation's note under a translated
+  reading. Nothing renders when the note is blank, and the source footer
+  is unchanged.
+- **Editor.** A `Napomena` section after the step add row. It holds one
+  growing field with the helper `Neobavezno. Serviranje, čuvanje,
+  varijacije, saveti.`
+- **Import review.** A collapsed Notes card under Method, with the first
+  words or `Nije pronađena`. It expands in place.
+- **Translation review.** An original-then-field pair after the steps,
+  shown only when the source has a note.
+- Markers (`- `, `**`) show literally until `phase8-rich-text-render`.
 
-`dart analyze` is clean and `flutter test` passes 808/808. `make check` is
+`dart analyze` is clean and `flutter test` passes 820/820. `make check` is
 green except the known `seed-check` (below); `make test-sql` passes.
 **Walked** on the emulator against hosted, all four combinations: clean on
-everything it reached. The import-review half is left open in the walk list
-below.
+everything it reached. The note above a source footer was not reached, and
+that check is open in the walk list below.
 
-**Hosted is current** (2026-10-06): migration 24 is applied, and
-`translate-recipe` plus the three `import-*` functions are deployed. This
-slice is client-only.
+**Hosted is current**: this slice is client-only. The walk left a reviewed
+English translation with a note on `Pita proba koraka`, and a new pasted
+recipe, `Palacinke`, in the household.
 
 Still open, not this slice's:
 - right after a recipe save, the detail's well shows the placeholder (or
@@ -69,10 +71,10 @@ Still open, not this slice's:
   Design updates them.
 
 **In flight:** none.
-**Next:** the round's slice 6, `phase8-recipe-end-note`
-(**/plan-slice-ui**): the recipe's end note (`Napomena` / `Notes`) on
-detail, in the editor and in import review, and in translation review
-(canvas § A2).
+**Next:** the round's slice 7, `phase8-ingredient-sections`
+(**/plan-slice-ui**): ingredient section headings on recipe detail
+(canvas § A4, A4·3). `recipe_ingredients.section` is already stored and
+carried through import and save, but nothing shows it yet.
 
 The round's slices and their order are in
 `docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`. Phase 8
@@ -87,9 +89,9 @@ Smaller candidates still open from round `sync-design-initial`:
 - the recipe-delete confirm, the one filled destructive confirm left
   (§ Buttons says text in destructive). The open device-walk loops below
   still want one sitting with the Galaxy attached.
-**Latest decision:** D154
+**Latest decision:** D155
 
-**Eighteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Nineteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -166,7 +168,10 @@ opened its own for two findings it did not fix. The
 `phase8-step-headings-notes` walk (`/design-walk recipe detail steps +
 recipe editor steps`, 2026-10-06, emulator, all four combinations) was clean
 on everything it reached, and opened a loop for the import-review check it
-did not reach.
+did not reach. The `phase8-recipe-end-note` walk (`/design-walk
+recipe-detail`, 2026-10-06, emulator, all four combinations, with the
+editor, import review and translation review) was clean on everything it
+reached, and opened a loop for the source-footer check it did not reach.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
@@ -947,6 +952,41 @@ Oldest first:
   `mleko` ended on the to-buy list as it began, but now with a household
   `always_have = false` override where it may have had none (D152's Undo
   semantics; no difference to the list).
+- **Phase 8 round 2 slice 6** (`phase8-recipe-end-note`) — the end note on
+  detail, in the editor, in import review and in translation review.
+  Walked on the **emulator** (2026-10-06, all four combinations, hosted
+  release build). A seven-line note with `- ` and `**` markers was added to
+  `Pita proba koraka`. That recipe was then machine-translated (one hosted AI
+  call), and one paste import made the new recipe `Palacinke`, which is still
+  in the household. **Clean:**
+  - detail: with no note, `Pita proba koraka` ends at its last note panel,
+    exactly as before. With a note, the card is full width (gutter to
+    gutter) and sits 84px (32dp) below the last row. In dark the card fill
+    separates from the ground, and the `edit_note` icon and body read.
+    Markers show literally, as expected;
+  - under `en` the card shows the translated note. An edit made in
+    translation review (`… Enjoy!`) is what detail shows after Save and
+    approve;
+  - editor: the `Napomena` heading, then the field, then the helper
+    `Neobavezno. Serviranje, čuvanje, varijacije, saveti.` on one line at
+    411dp. The field grew from 3 to 7 lines while typing. The note persists
+    on reopen. Clearing it and saving removed the card from detail;
+  - import review: the paste's `Napomena:` section was parsed into the
+    note. The card sits 31px (12dp) below Method and collapses to the first
+    words with an ellipsis. It expands in place to one field. Clearing the
+    field shows `Nije pronađena`, which reads naturally under `Napomena`,
+    and the subline follows typing. The saved recipe's detail carries the
+    note;
+  - translation review: the `Notes` pair follows the last step pair, in
+    both themes.
+
+  **Still open:**
+  - the end note above a **source footer** was not seen. Both walk recipes
+    are manual or pasted without a source. It needs a URL import, or a
+    recipe with an attribution. The footer's own spacing code is unchanged.
+
+  **Not seen on device (covered by the widget test):** translation review
+  for a recipe without a note, where no pair should appear.
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind
