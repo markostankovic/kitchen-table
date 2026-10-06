@@ -682,7 +682,8 @@ Oldest first:
   wants a non-default `alignmentOffset` (or a menu style with an end inset),
   then a re-walk of just the menu. **Re-checked 2026-10-05** (emulator,
   sr/light, the Phase 8 part 2 `/design-walk recipes` sitting): still flush,
-  fill to x=1079, so the loop stays open. Clean: the `+` long-press tooltip,
+  fill to x=1079, so the loop stays open. **Re-checked again 2026-10-06**
+  (emulator, sr/light, sr/dark and en/light): still flush, fill to x=1079. Clean: the `+` long-press tooltip,
   `Fotografiši stranicu` on one line, four regular-weight rows, the menu not
   covering the `+`; `5 recepata` / `5 recipes`; Favorites + `Jednostavno`
   giving the carded panel with `Poništi filtere` (which cleared both); a
@@ -780,13 +781,32 @@ Oldest first:
   English `to` (Material's own localization). The walk left `alwaysHave`
   overrides on hleb, bread, jaje and voda in the walk household, which
   render the same as their defaults.
-- **Phase 8 part 3** (`phase8-part3`) — refresh on tab switch. Not walked.
-  On a release build against hosted (`make install-hosted`): edit a recipe
-  or a plan entry from a second account or the Supabase dashboard, switch
-  away and back, and confirm the change shows with no blank or spinner
-  (List's 2px progress bar flashing is expected, D149). In airplane mode,
-  switching tabs keeps the cached content and the offline banner. Re-tapping
-  a tab pops it to its root and does nothing else.
+- **Phase 8 part 3** (`phase8-part3`) — refresh on tab switch. **Partly
+  walked on the emulator** (`/design-walk recipes`, 2026-10-06, all four
+  combinations on the recipe list, online and offline). Confirmed:
+  - Recipes → Plan → Recipes, in sr/light and sr/dark: in rapid screencaps
+    right after the tap, the list stays on screen with no blank or spinner
+    frame;
+  - with Kajgana's detail open, re-tapping `Recepti` pops to the list root;
+  - in airplane mode, Recipes → Lista → Recipes and Plan → Recipes keep the
+    cached list and shopping list, with the banner on every tab.
+
+  **Still open, the one thing it exists for:** a change made *outside* the
+  device (a second account or the Supabase dashboard), seen after a switch
+  away and back, on Recipes, Plan, List and Settings' member count. The walk
+  had no outside writer: only the emulator was attached, and pulling the
+  hosted service-role key for a REST edit was refused by the session's
+  permission check. Make the edit by hand, or walk it on the Galaxy with
+  the emulator as the second device.
+
+  **Seen, not part 3's:** going offline *while a photo detail is open*
+  leaves the status-bar icons white on the cream banner. The detail's light
+  style is right over the photo, but the banner pushes the photo down and
+  nothing re-asserts the style. It sticks across tab switches (Lista showed
+  it too) until a screen with its own app bar at the top resets it. Opening
+  a detail while already offline is fine (dark icons). The offline
+  banner's gap above the app bar (STATE's list above) showed on every tab,
+  as known.
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind
