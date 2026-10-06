@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;flex-direction:column;gap:12px;text-wrap:pretty">
+<sc-for list="{{ blocks }}" as="b" hint-placeholder-count="1">
+<sc-if value="{{ b.p }}" hint-placeholder-val="{{ true }}"><p style="margin:0"><sc-for list="{{ b.runs }}" as="r"><sc-if value="{{ r.b }}"><strong style="font-weight:600">{{ r.t }}</strong></sc-if><sc-if value="{{ r.i }}"><em style="font-style:italic">{{ r.t }}</em></sc-if><sc-if value="{{ r.n }}">{{ r.t }}</sc-if></sc-for></p></sc-if>
+<sc-if value="{{ b.list }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:4px">
+<sc-for list="{{ b.items }}" as="li" hint-placeholder-count="2"><div style="display:flex;align-items:flex-start">
+<span style="width:20px;flex:none;height:1lh;display:flex;align-items:center;color:var(--on-surface-variant);font-variant-numeric:tabular-nums"><sc-if value="{{ li.bullet }}"><span style="width:6px;height:6px;margin-left:4px;border-radius:50%;background:var(--on-surface-variant)"></span></sc-if><sc-if value="{{ li.num }}">{{ li.num }}</sc-if></span>
+<span style="flex:1;min-width:0"><sc-for list="{{ li.runs }}" as="r"><sc-if value="{{ r.b }}"><strong style="font-weight:600">{{ r.t }}</strong></sc-if><sc-if value="{{ r.i }}"><em style="font-style:italic">{{ r.t }}</em></sc-if><sc-if value="{{ r.n }}">{{ r.t }}</sc-if></sc-for></span>
+</div></sc-for>
+</div></sc-if>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:320,&quot;height&quot;:200},&quot;text&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Mix **well**, then *rest*.\n- one\n- two&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const runs = s => {
+      const out = []; const re = /\*\*(.+?)\*\*|\*(.+?)\*/g; let m, i = 0;
+      while ((m = re.exec(s))) {
+        if (m.index > i) out.push({ t: s.slice(i, m.index), n: true });
+        out.push(m[1] ? { t: m[1], b: true } : { t: m[2], i: true });
+        i = re.lastIndex;
+      }
+      if (i < s.length) out.push({ t: s.slice(i), n: true });
+      return out;
+    };
+    const blocks = []; let cur = null;
+    String(this.props.text || '').split('\n').forEach(line => {
+      const ul = line.match(/^- (.*)/), ol = line.match(/^(\d+)\. (.*)/);
+      if (ul || ol) {
+        const kind = ul ? 'ul' : 'ol';
+        if (!cur || cur.kind !== kind) { cur = { list: true, kind, items: [] }; blocks.push(cur); }
+        cur.items.push(ul ? { bullet: true, runs: runs(ul[1]) } : { num: ol[1] + '.', runs: runs(ol[2]) });
+      } else if (line.trim()) { cur = null; blocks.push({ p: true, runs: runs(line) }); }
+      else cur = null;
+    });
+    return { blocks };
+  }
+}
+</script>
+</body>
+</html>

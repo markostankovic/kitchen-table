@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/tokens/colors.css">
+<link rel="stylesheet" href="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/tokens/typography.css">
+<link rel="stylesheet" href="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/tokens/base.css">
+<link rel="stylesheet" href="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/styles.css">
+<script src="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/_ds_bundle.js"></script>
+<style>body{margin:0;background:#E9E4DB}a{color:#366A35}a:hover{color:#1D511E}</style>
+</helmet>
+
+<div style="padding:48px 56px 8px;max-width:960px;font-family:var(--font-sans);color:#1F190F">
+  <div style="font:700 32px/40px var(--font-sans);letter-spacing:.5px;color:#366A35">Kitchen Table · design fixes</div>
+  <div style="font:400 16px/24px var(--font-sans);color:#484134;margin-top:8px;text-wrap:pretty">Answers to the brief, in sections A1–A4, B and C. Each row has the spec on the left and the screens on the right. Screens are 360dp wide. Use Tweaks to switch theme and to compare the timeline and note alternatives.</div>
+</div>
+
+<section data-screen-label="A1 Headings and notes" data-theme="{{ theme }}" style="padding:40px 56px 24px">
+  <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:20px;font:600 13px/16px var(--font-sans);color:#1F190F"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1F190F;color:#fff;border-radius:4px">A1</span>Headings and notes between steps</div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="width:300px;flex:none;font:13px/1.55 var(--font-sans);color:#3A332A;display:flex;flex-direction:column;gap:10px;text-wrap:pretty">
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F">Heading</div>
+      <p style="margin:0">Uses the group label style: titleSmall (14/20, weight 600) in <b>primary</b>, the same green as the step discs, so it belongs to the timeline. It sits flush with the disc column, 32 below the previous step and 12 above the next one.</p>
+      <p style="margin:0">The connector <b>breaks</b> at a heading, so each group reads as its own run. The numbers stay continuous, so the method still reads as one sequence.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Note</div>
+      <p style="margin:0">Sits in the text column (44 from the left) with no disc and no number. Uses bodyMedium in onSurfaceVariant on a radius-8 <b>card</b> panel with 8/12 padding. The connector runs <b>past</b> it, so the sequence isn't interrupted. Warnings use the same quiet panel: the voice stays calm, never red.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Numbering continues: 1–4, then 5–7</div>
+      <p style="margin:0">Keep it continuous. "Step 5" is then one unambiguous place for cooking mode, for progress and for someone saying "I'm on 5". If numbering restarted, there would be two step 2s in the same recipe.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Editor</div>
+      <p style="margin:0">Every row keeps the same frame: a grip, a label row and a field. The label says what the row is: "Step 5", or an icon with "Heading" or "Note". Each label row ends with an ✕ that deletes the row. Deleting a heading keeps its steps and shows "Heading removed." with Undo.</p>
+      <p style="margin:0">At the end, one row adds a <b>Step</b> (tonal), a <b>Heading</b> or a <b>Note</b>. Pressing Enter in a step field still starts the next step. All three kinds drag by the grip. A dragged row lifts to level 3, and the drop line is 2dp primary.</p>
+      <p style="margin:0;color:#6F6759">A recipe with no headings and no notes (A1·2) uses the same rows and is pixel-identical to today's StepList.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">A1·1 · Detail · starts with a heading</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="Plum dumplings" leading="back" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:8px 16px 32px">
+            <h2 style="margin:0 0 16px;font:var(--type-title-medium)">Steps</h2>
+            <sc-for list="{{ dumplingSteps }}" as="it" hint-placeholder-count="6">
+              <sc-if value="{{ it.isH }}" hint-placeholder-val="{{ false }}"><div style="position:relative;padding:{{ it.pt }}px 0 12px {{ it.pl }}px;font:var(--type-title-small);color:var(--primary);letter-spacing:.1px"><sc-if value="{{ it.line }}"><span style="position:absolute;left:13px;top:0;bottom:0;width:2px;background:var(--step-connector)"></span></sc-if>{{ it.text }}</div></sc-if>
+              <sc-if value="{{ it.isS }}" hint-placeholder-val="{{ true }}"><div style="display:flex;gap:16px;position:relative;padding-bottom:24px"><span style="width:28px;height:28px;flex:none;border-radius:50%;background:var(--today-container);color:var(--on-primary-container);font:var(--type-label-large);display:grid;place-items:center">{{ it.num }}</span><sc-if value="{{ it.line }}"><span style="position:absolute;left:13px;top:{{ it.lt }}px;bottom:{{ it.lb }}px;width:2px;background:var(--step-connector)"></span></sc-if><div style="flex:1;min-width:0;font:var(--type-body-large);margin-top:-1px"><dc-import name="RichText" text="{{ it.text }}" hint-size="100%,56px"></dc-import></div></div></sc-if>
+              <sc-if value="{{ it.isN }}" hint-placeholder-val="{{ false }}"><div style="position:relative;padding:0 0 24px 44px"><sc-if value="{{ it.line }}"><span style="position:absolute;left:13px;top:{{ it.lt }}px;bottom:{{ it.lb }}px;width:2px;background:var(--step-connector)"></span></sc-if><sc-if value="{{ tinted }}" hint-placeholder-val="{{ true }}"><div style="background:var(--card);border-radius:8px;padding:8px 12px;font:var(--type-body-medium);color:var(--on-surface-variant)"><dc-import name="RichText" text="{{ it.text }}" hint-size="100%,40px"></dc-import></div></sc-if><sc-if value="{{ plainNote }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:8px;font:var(--type-body-medium);color:var(--on-surface-variant)"><span class="kt-icon" style="font-size:16px;line-height:20px">info</span><div style="flex:1;min-width:0"><dc-import name="RichText" text="{{ it.text }}" hint-size="100%,40px"></dc-import></div></div></sc-if></div></sc-if>
+            </sc-for>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="recipes" hint-size="100%,80px"></x-import>
+        </div>
+      </div>
+
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">A1·2 · Detail · no headings (as today)</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="Stuffed peppers" leading="back" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:8px 16px 32px">
+            <h2 style="margin:0 0 16px;font:var(--type-title-medium)">Steps</h2>
+            <sc-for list="{{ pepperSteps }}" as="it" hint-placeholder-count="4">
+              <div style="display:flex;gap:16px;position:relative;padding-bottom:24px"><span style="width:28px;height:28px;flex:none;border-radius:50%;background:var(--today-container);color:var(--on-primary-container);font:var(--type-label-large);display:grid;place-items:center">{{ it.num }}</span><sc-if value="{{ it.line }}"><span style="position:absolute;left:13px;top:{{ it.lt }}px;bottom:{{ it.lb }}px;width:2px;background:var(--step-connector)"></span></sc-if><div style="flex:1;min-width:0;font:var(--type-body-large);margin-top:-1px"><dc-import name="RichText" text="{{ it.text }}" hint-size="100%,56px"></dc-import></div></div>
+            </sc-for>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="recipes" hint-size="100%,80px"></x-import>
+        </div>
+      </div>
+
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">A1·3 · Editor · headings, notes, add row</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="Edit recipe" leading="close" actions="{{ saveAction }}" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:8px 16px 32px">
+            <h2 style="margin:0 0 12px;font:var(--type-title-medium)">Steps</h2>
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <sc-for list="{{ editSteps }}" as="e" hint-placeholder-count="4">
+                <div style="display:flex;gap:4px;align-items:flex-start">
+                  <span class="kt-icon" style="font-size:20px;color:var(--drag-handle);width:24px;flex:none;margin-top:10px">drag_indicator</span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                    <div style="display:flex;align-items:center;gap:6px;min-height:40px">
+                      <sc-if value="{{ e.icon }}" hint-placeholder-val="{{ false }}"><span class="kt-icon" style="font-size:18px;color:var(--on-surface-variant)">{{ e.icon }}</span></sc-if>
+                      <span style="flex:1;font:var(--type-title-small);color:var(--on-surface)">{{ e.label }}</span>
+                      <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="close" size="{{ 40 }}" label="Remove" hint-size="40px,40px"></x-import>
+                    </div>
+                    <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.TextField" multiline="{{ e.multi }}" default-value="{{ e.text }}" hint-size="100%,52px"></x-import>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:16px;padding-left:28px">
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="tonal" icon="add" hint-size="auto,48px">Step</x-import>
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="text" icon="title" hint-size="auto,48px">Heading</x-import>
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="text" icon="sticky_note_2" hint-size="auto,48px">Note</x-import>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">A1·4 · Editor · dragging a heading</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="Edit recipe" leading="close" actions="{{ saveAction }}" hint-size="100%,64px"></x-import>
+          <div style="flex:1;overflow:hidden;padding:8px 16px 32px;position:relative">
+            <h2 style="margin:0 0 12px;font:var(--type-title-medium)">Steps</h2>
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <sc-for list="{{ dragSteps }}" as="e" hint-placeholder-count="3">
+                <div style="display:flex;flex-direction:column;gap:16px">
+                  <sc-if value="{{ e.dropBefore }}" hint-placeholder-val="{{ false }}"><div style="height:2px;margin:-9px 0 -9px 28px;border-radius:1px;background:var(--primary)"></div></sc-if>
+                  <div style="display:flex;gap:4px;align-items:flex-start">
+                    <span class="kt-icon" style="font-size:20px;color:var(--drag-handle);width:24px;flex:none;margin-top:10px">drag_indicator</span>
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                      <div style="display:flex;align-items:center;gap:6px;min-height:40px">
+                        <sc-if value="{{ e.icon }}" hint-placeholder-val="{{ false }}"><span class="kt-icon" style="font-size:18px;color:var(--on-surface-variant)">{{ e.icon }}</span></sc-if>
+                        <span style="flex:1;font:var(--type-title-small)">{{ e.label }}</span>
+                        <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="close" size="{{ 40 }}" label="Remove" hint-size="40px,40px"></x-import>
+                      </div>
+                      <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.TextField" multiline="{{ e.multi }}" default-value="{{ e.text }}" hint-size="100%,52px"></x-import>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="position:absolute;left:24px;right:8px;top:336px;display:flex;gap:4px;align-items:flex-start;padding:8px 12px 12px 4px;background:var(--surface-container-high);border-radius:12px;box-shadow:var(--elevation-3)">
+              <span class="kt-icon" style="font-size:20px;color:var(--on-surface);width:24px;flex:none;margin-top:10px">drag_indicator</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;align-items:center;gap:6px;min-height:40px"><span class="kt-icon" style="font-size:18px;color:var(--on-surface-variant)">title</span><span style="flex:1;font:var(--type-title-small)">Heading</span></div>
+                <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.TextField" default-value="Filling" hint-size="100%,52px"></x-import>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="A2 End note" data-theme="{{ theme }}" style="padding:24px 56px">
+  <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:20px;font:600 13px/16px var(--font-sans);color:#1F190F"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1F190F;color:#fff;border-radius:4px">A2</span>Recipe end note</div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="width:300px;flex:none;font:13px/1.55 var(--font-sans);color:#3A332A;display:flex;flex-direction:column;gap:10px;text-wrap:pretty">
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F">Afterword, not a step</div>
+      <p style="margin:0">Starts 32 after the last step, outside the timeline. It's a borderless <b>card</b> with radius 12 and 16 padding. The header is an <span style="font-family:ui-monospace,monospace">edit_note</span> icon with "Notes" in titleMedium. The body is bodyLarge. There's no disc, no line, and no docLanguage ring.</p>
+      <p style="margin:0">When the note is empty, the card and its heading are not rendered at all. The source footer follows.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Editor</div>
+      <p style="margin:0">A single multiline field after the steps' add row, under its own "Notes" section heading. The helper text explains it: "Optional. Serving, storage, variations, tips." The field grows with its content, with no fixed 96 height.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Import review</div>
+      <p style="margin:0">A collapsed card after Method, same as Method. The subline shows the first words of the note. If nothing was found, it reads "None found", and tapping it opens an empty field.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">A2·1 · Detail · end of the recipe</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="Plum dumplings" leading="back" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:8px 16px 32px">
+            <sc-for list="{{ tailSteps }}" as="it" hint-placeholder-count="2">
+              <div style="display:flex;gap:16px;position:relative;padding-bottom:24px"><span style="width:28px;height:28px;flex:none;border-radius:50%;background:var(--today-container);color:var(--on-primary-container);font:var(--type-label-large);display:grid;place-items:center">{{ it.num }}</span><sc-if value="{{ it.line }}"><span style="position:absolute;left:13px;top:32px;bottom:4px;width:2px;background:var(--step-connector)"></span></sc-if><div style="flex:1;min-width:0;font:var(--type-body-large);margin-top:-1px"><dc-import name="RichText" text="{{ it.text }}" hint-size="100%,56px"></dc-import></div></div>
+            </sc-for>
+            <div style="margin-top:8px;background:var(--card);border-radius:12px;padding:16px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="kt-icon" style="font-size:20px;color:var(--on-surface-variant)">edit_note</span><span style="font:var(--type-title-medium)">Notes</span></div>
+              <div style="font:var(--type-body-large)"><dc-import name="RichText" text="{{ endNote }}" hint-size="100%,200px"></dc-import></div>
+            </div>
+            <div style="margin-top:24px;padding-top:12px;border-top:1px solid var(--outline-variant);display:flex;align-items:center;gap:8px;font:var(--type-body-small);color:var(--on-surface-variant)"><span class="kt-icon" style="font-size:16px">menu_book</span>From Grandma Ljubica's notebook</div>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="recipes" hint-size="100%,80px"></x-import>
+        </div>
+      </div>
+
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">A2·2 · Editor · Notes after steps</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="Edit recipe" leading="close" actions="{{ saveAction }}" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:8px 16px 32px">
+            <div style="display:flex;gap:4px;align-items:flex-start">
+              <span class="kt-icon" style="font-size:20px;color:var(--drag-handle);width:24px;flex:none;margin-top:10px">drag_indicator</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;align-items:center;min-height:40px"><span style="flex:1;font:var(--type-title-small)">Step 7</span><x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="close" size="{{ 40 }}" label="Remove" hint-size="40px,40px"></x-import></div>
+                <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.TextField" multiline="{{ true }}" default-value="Roll the hot dumplings in the toasted crumbs and serve straight away." hint-size="100%,96px"></x-import>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:16px;padding-left:28px">
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="tonal" icon="add" hint-size="auto,48px">Step</x-import>
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="text" icon="title" hint-size="auto,48px">Heading</x-import>
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="text" icon="sticky_note_2" hint-size="auto,48px">Note</x-import>
+            </div>
+            <div style="height:1px;background:var(--outline-variant);margin:24px 0"></div>
+            <h2 style="margin:0 0 12px;font:var(--type-title-medium)">Notes</h2>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.TextField" multiline="{{ true }}" default-value="Serve warm with a spoon of sour cream. They keep two days in the fridge — reheat in butter, not the microwave." helper="Optional. Serving, storage, variations, tips." style="--field-h:auto" hint-size="100%,120px"></x-import>
+            <div style="height:1px;background:var(--outline-variant);margin:24px 0"></div>
+            <h2 style="margin:0 0 12px;font:var(--type-title-medium)">Source</h2>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.TextField" default-value="Grandma Ljubica's notebook" hint-size="100%,52px"></x-import>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">A2·3 · Import review · Notes after Method</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="Review import" leading="close" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:4px 16px 24px;display:grid;align-content:start;grid-template-columns:minmax(0,1fr);gap:12px">
+            <div style="background:var(--card);border-radius:12px;padding:16px">
+              <div style="font:var(--type-title-medium)">8 of 8 ingredients matched</div>
+              <div style="height:4px;border-radius:2px;background:var(--surface-container-highest);margin:12px 0 0"><div style="width:100%;height:100%;border-radius:2px;background:var(--primary)"></div></div>
+            </div>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.TextField" label="Title" default-value="Plum dumplings" hint-size="100%,52px"></x-import>
+            <div class="kt-state" style="flex:none;min-height:min-content;display:flex;align-items:center;background:var(--card);border-radius:12px;padding:16px;margin-top:4px">
+              <div style="flex:1"><div style="font:var(--type-title-medium)">Ingredients</div><div style="font:var(--type-body-medium);color:var(--on-surface-variant)">8 lines · 2 sections</div></div>
+              <span class="kt-icon" style="color:var(--on-surface-variant)">chevron_right</span>
+            </div>
+            <div class="kt-state" style="flex:none;min-height:min-content;display:flex;align-items:center;background:var(--card);border-radius:12px;padding:16px">
+              <div style="flex:1"><div style="font:var(--type-title-medium)">Method</div><div style="font:var(--type-body-medium);color:var(--on-surface-variant)">7 steps · 3 headings · 2 notes</div></div>
+              <span class="kt-icon" style="color:var(--on-surface-variant)">chevron_right</span>
+            </div>
+            <div class="kt-state" style="flex:none;min-height:min-content;display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:16px">
+              <div style="flex:1;min-width:0"><div style="font:var(--type-title-medium)">Notes</div><div style="font:var(--type-body-medium);color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Serve warm with a spoon of sour cream…</div></div>
+              <span class="kt-icon" style="color:var(--on-surface-variant)">chevron_right</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;padding:12px 16px 16px;border-top:1px solid var(--outline-variant);background:var(--surface)">
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="outlined" style="flex:1" hint-size="50%,48px">Discard</x-import>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" style="flex:1" hint-size="50%,48px">Save recipe</x-import>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="A3 Formatting" data-theme="{{ theme }}" style="padding:24px 56px">
+  <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:20px;font:600 13px/16px var(--font-sans);color:#1F190F"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1F190F;color:#fff;border-radius:4px">A3</span>Light text formatting</div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="width:300px;flex:none;font:13px/1.55 var(--font-sans);color:#3A332A;display:flex;flex-direction:column;gap:10px;text-wrap:pretty">
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F">Rendering (bodyLarge 18/28)</div>
+      <p style="margin:0"><b>Bold</b> is weight <b>600</b>, not 700, because 700 belongs to recipe names. <i>Italic</i> is the true italic. Both keep the text colour.</p>
+      <p style="margin:0"><b>Bullet:</b> a 6dp disc in onSurfaceVariant, centred on the first line. The glyph sits 4 in from the text column and the item text starts 20 in. <b>Numbered:</b> "1." in onSurfaceVariant with tabular figures, in the same 20 column.</p>
+      <p style="margin:0">4 between list items and 12 between paragraphs or blocks. Wrapped lines hang at the text indent. Inside a step, the list hangs from the step's text column, so the disc and timeline stay clear (A3·1, step 2).</p>
+      <p style="margin:0">bodyMedium contexts (description, step notes) use the same rules at 14/20.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Editing: a toolbar above the keyboard</div>
+      <p style="margin:0">A 48dp bar on surfaceContainer with a hairline on top. It appears only while the description, a step, a note or the end note is focused. It has four 48dp toggles (bold, italic, bullet list, numbered list) and a hide-keyboard button at the end. An active toggle gets the mustard <b>secondaryContainer</b> pill, the same as a selected chip.</p>
+      <p style="margin:0">Fields show formatting as you type (WYSIWYG), so cooks never see <span style="font-family:ui-monospace,monospace">**</span>. Typing "- " or "1. " at the start of a line also starts a list. A toolbar is the smallest thing that makes formatting discoverable without a menu.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">A3·1 · Detail · formatting rendered</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" leading="back" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:0 16px 32px">
+            <h1 style="margin:0 0 8px;font:var(--type-headline-small);letter-spacing:var(--tracking-headline-small)">Plum dumplings</h1>
+            <div style="font:var(--type-body-medium);color:var(--on-surface-variant)"><dc-import name="RichText" text="{{ fmtDesc }}" hint-size="100%,60px"></dc-import></div>
+            <h2 style="margin:24px 0 16px;font:var(--type-title-medium)">Steps</h2>
+            <sc-for list="{{ fmtSteps }}" as="it" hint-placeholder-count="3">
+              <div style="display:flex;gap:16px;position:relative;padding-bottom:24px"><span style="width:28px;height:28px;flex:none;border-radius:50%;background:var(--today-container);color:var(--on-primary-container);font:var(--type-label-large);display:grid;place-items:center">{{ it.num }}</span><sc-if value="{{ it.line }}"><span style="position:absolute;left:13px;top:32px;bottom:4px;width:2px;background:var(--step-connector)"></span></sc-if><div style="flex:1;min-width:0;font:var(--type-body-large);margin-top:-1px"><dc-import name="RichText" text="{{ it.text }}" hint-size="100%,56px"></dc-import></div></div>
+            </sc-for>
+            <div style="margin-top:8px;background:var(--card);border-radius:12px;padding:16px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="kt-icon" style="font-size:20px;color:var(--on-surface-variant)">edit_note</span><span style="font:var(--type-title-medium)">Notes</span></div>
+              <div style="font:var(--type-body-large)"><dc-import name="RichText" text="{{ fmtNote }}" hint-size="100%,160px"></dc-import></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <sc-for list="{{ toolbarThemes }}" as="tt" hint-placeholder-count="2">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">{{ tt.cap }}</div>
+        <div data-theme="{{ tt.id }}" style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="Edit recipe" leading="close" actions="{{ saveAction }}" hint-size="100%,64px"></x-import>
+          <div style="flex:1;overflow:hidden;padding:8px 16px 16px;display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;gap:4px;align-items:flex-start">
+              <span class="kt-icon" style="font-size:20px;color:var(--drag-handle);width:24px;flex:none;margin-top:10px">drag_indicator</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;align-items:center;min-height:40px"><span style="flex:1;font:var(--type-title-small);color:var(--primary)">Step 2</span><x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="close" size="{{ 40 }}" label="Remove" hint-size="40px,40px"></x-import></div>
+                <div style="background:var(--surface-container-highest);border-radius:8px;box-shadow:inset 0 0 0 2px var(--primary);padding:14px 16px;font:400 16px/24px var(--font-sans);color:var(--on-surface);text-wrap:pretty">Work in the flour and egg. <span style="background:var(--primary-container);color:var(--on-primary-container);font-weight:600;border-radius:2px;padding:1px 0">Don't over-knead</span><span style="display:inline-block;width:2px;height:20px;background:var(--primary);vertical-align:-4px"></span> — stop as soon as it holds together.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px;align-items:flex-start">
+              <span class="kt-icon" style="font-size:20px;color:var(--drag-handle);width:24px;flex:none;margin-top:10px">drag_indicator</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;align-items:center;min-height:40px"><span style="flex:1;font:var(--type-title-small)">Step 3</span><x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="close" size="{{ 40 }}" label="Remove" hint-size="40px,40px"></x-import></div>
+                <div style="background:var(--surface-container-highest);border-radius:8px;padding:14px 16px;font:400 16px/24px var(--font-sans);color:var(--on-surface)"><dc-import name="RichText" text="{{ fieldList }}" hint-size="100%,96px"></dc-import></div>
+              </div>
+            </div>
+          </div>
+          <div style="height:48px;flex:none;display:flex;align-items:center;gap:4px;padding:0 4px;background:var(--surface-container);border-top:1px solid var(--outline-variant)">
+            <span style="width:48px;height:48px;display:grid;place-items:center"><span class="kt-icon" style="width:40px;height:32px;border-radius:16px;display:grid;place-items:center;background:var(--secondary-container);color:var(--on-secondary-container)">format_bold</span></span>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="format_italic" label="Italic" hint-size="48px,48px"></x-import>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="format_list_bulleted" label="Bulleted list" hint-size="48px,48px"></x-import>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="format_list_numbered" label="Numbered list" hint-size="48px,48px"></x-import>
+            <span style="flex:1"></span>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="keyboard_hide" label="Hide keyboard" hint-size="48px,48px"></x-import>
+          </div>
+          <div style="height:232px;flex:none;background:var(--surface-container-highest);display:grid;place-items:center;color:var(--outline);font:var(--type-label-medium)">System keyboard</div>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="A4 Ingredients" data-theme="{{ theme }}" style="padding:24px 56px">
+  <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:20px;font:600 13px/16px var(--font-sans);color:#1F190F"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1F190F;color:#fff;border-radius:4px">A4</span>Ingredient editing and review</div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="width:300px;flex:none;font:13px/1.55 var(--font-sans);color:#3A332A;display:flex;flex-direction:column;gap:10px;text-wrap:pretty">
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F">Write it like a list, see it as a recipe</div>
+      <p style="margin:0">The editor shows each line as the parsed recipe row: name on the left, amount on the right, the note below, dashed 6/4 dividers. Only a grip is added. The page then reads like the recipe it will become, not a column of fields.</p>
+      <p style="margin:0"><b>Tap a line</b> to open it into one field showing the raw text the cook typed. Under the text, a live preview row shows the parse in the final layout: <span style="font-family:ui-monospace,monospace">→ flour · sifted &nbsp; 2–3 cups</span>. Ranges and fractions appear as typed (2–3, ½).</p>
+      <p style="margin:0"><b>Fast entry:</b> Enter commits the line and opens a new empty one below it, and the keyboard stays up. Backspace on an empty line deletes it and moves up. The open line has an ✕ to delete it. Lines drag by the grip.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">States</div>
+      <p style="margin:0"><b>Matched:</b> no marker. A clean row means OK. <b>Suggestion:</b> a 32dp mustard pill "cinnamon?" with a check under the row. Tapping the pill confirms it, and tapping the row lets the cook choose another. <b>Unmatched:</b> a 14dp dashed ring after the name, never red. <b>Optional:</b> "· optional" in bodyMedium. <b>No amount:</b> the right column is empty.</p>
+      <p style="margin:0"><b>Flagged (review):</b> a 3px reviewMarker inset edge on a surfaceContainerLow tint, with a 13 text inset.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Sections</div>
+      <p style="margin:0">Same as the step heading in A1: titleSmall in primary, 24 above and 4 below. In the editor it gets a grip and drags too, taking its lines with it. "Add section" sits next to "Add ingredient".</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">A4·1 · Editor · 8 lines, 2 sections</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="Edit recipe" leading="close" actions="{{ saveAction }}" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:8px 16px 32px">
+            <h2 style="margin:0 0 4px;font:var(--type-title-medium)">Ingredients</h2>
+            <sc-for list="{{ edIngr }}" as="g" hint-placeholder-count="8">
+              <sc-if value="{{ g.sec }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:4px;padding:{{ g.pt }}px 0 4px"><span class="kt-icon" style="font-size:20px;color:var(--drag-handle);width:24px;flex:none">drag_indicator</span><span style="flex:1;font:var(--type-title-small);color:var(--primary);letter-spacing:.1px">{{ g.sec }}</span></div></sc-if>
+              <sc-if value="{{ g.line }}" hint-placeholder-val="{{ true }}"><div class="{{ g.cls }}" style="display:flex;gap:4px;align-items:flex-start;padding:10px 0;min-height:48px;box-sizing:border-box"><span class="kt-icon" style="font-size:20px;color:var(--drag-handle);width:24px;flex:none;margin-top:4px">drag_indicator</span><div style="flex:1;min-width:0"><div style="display:flex;align-items:baseline;gap:16px;font:var(--type-body-large)"><span style="flex:1;min-width:0;text-wrap:pretty">{{ g.name }}<sc-if value="{{ g.optional }}"><span style="font:var(--type-body-medium);color:var(--on-surface-variant)"> · optional</span></sc-if><sc-if value="{{ g.unmatched }}"><span style="display:inline-block;width:12px;height:12px;margin-left:8px;border-radius:50%;border:1px dashed var(--unmatched);vertical-align:-1px"></span></sc-if></span><sc-if value="{{ g.amount }}"><span style="flex:none;white-space:nowrap"><b style="font-weight:600;color:var(--primary)">{{ g.amount }}</b><span style="color:var(--on-surface-variant)"> {{ g.unit }}</span></span></sc-if></div><sc-if value="{{ g.note }}"><div style="font:var(--type-body-medium);color:var(--on-surface-variant);margin-top:2px">{{ g.note }}</div></sc-if><sc-if value="{{ g.suggest }}"><div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span class="kt-state" style="height:32px;display:inline-flex;align-items:center;gap:4px;padding:0 12px 0 8px;border-radius:16px;background:var(--secondary-container);color:var(--on-secondary-container);font:var(--type-label-large)"><span class="kt-icon" style="font-size:18px">check</span>{{ g.suggest }}</span><span style="font:var(--type-body-small);color:var(--on-surface-variant)">Tap to confirm</span></div></sc-if></div></div></sc-if>
+            </sc-for>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:12px;padding-left:20px">
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="text" icon="add" hint-size="auto,48px">Add ingredient</x-import>
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="text" icon="title" hint-size="auto,48px">Add section</x-import>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">A4·2 · Editor · fast entry</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="Edit recipe" leading="close" actions="{{ saveAction }}" hint-size="100%,64px"></x-import>
+          <div style="flex:1;overflow:hidden;padding:8px 16px 0;display:flex;flex-direction:column"><h2 style="margin:0 0 4px;font:var(--type-title-medium)">Ingredients</h2>
+            <div style="display:flex;align-items:center;gap:4px;padding:8px 0 4px"><span class="kt-icon" style="font-size:20px;color:var(--drag-handle);width:24px">drag_indicator</span><span style="flex:1;font:var(--type-title-small);color:var(--primary)">For the dough</span></div>
+            <sc-for list="{{ fastDone }}" as="g" hint-placeholder-count="2">
+              <div class="kt-dash" style="display:flex;gap:4px;align-items:flex-start;padding:10px 0"><span class="kt-icon" style="font-size:20px;color:var(--drag-handle);width:24px;flex:none;margin-top:4px">drag_indicator</span><div style="flex:1;min-width:0"><div style="display:flex;align-items:baseline;gap:16px;font:var(--type-body-large)"><span style="flex:1">{{ g.name }}</span><span style="white-space:nowrap"><b style="font-weight:600;color:var(--primary)">{{ g.amount }}</b><span style="color:var(--on-surface-variant)"> {{ g.unit }}</span></span></div><sc-if value="{{ g.note }}"><div style="font:var(--type-body-medium);color:var(--on-surface-variant);margin-top:2px">{{ g.note }}</div></sc-if></div></div>
+            </sc-for>
+            <div style="display:flex;gap:4px;align-items:flex-start;padding:8px 0">
+              <span class="kt-icon" style="font-size:20px;color:var(--drag-handle);width:24px;flex:none;margin-top:14px">drag_indicator</span>
+              <div style="flex:1;min-width:0;background:var(--surface-container-highest);border-radius:8px;box-shadow:inset 0 0 0 2px var(--primary);padding:10px 12px">
+                <div style="font:var(--type-body-large)">2–3 cups flour, sifted<span style="display:inline-block;width:2px;height:22px;background:var(--primary);vertical-align:-5px;margin-left:1px"></span></div>
+                <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px;font:var(--type-body-medium);color:var(--on-surface-variant)"><span style="flex:1">→ flour · sifted</span><span><b style="font-weight:600;color:var(--primary)">2–3</b> cups</span></div>
+              </div>
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="close" label="Delete line" hint-size="48px,48px"></x-import>
+            </div>
+            <div style="display:flex;gap:4px;align-items:center;padding:4px 0 12px;color:var(--outline);font:var(--type-body-large)"><span style="width:24px"></span><span style="padding-left:12px">Next ingredient</span></div>
+          </div>
+          <div style="height:248px;flex:none;background:var(--surface-container-highest);position:relative;display:grid;place-items:center;color:var(--outline);font:var(--type-label-medium)">System keyboard
+            <span style="position:absolute;right:8px;bottom:56px;height:40px;padding:0 14px;border-radius:8px;background:var(--primary);color:var(--on-primary);display:flex;align-items:center;gap:6px;font:var(--type-label-large)"><span class="kt-icon" style="font-size:18px">keyboard_return</span>Next</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">A4·3 · Detail · ingredient sections</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="Plum dumplings" leading="back" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:8px 16px 32px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px"><h2 style="margin:0;font:var(--type-title-medium)">Ingredients</h2><span style="font:var(--type-body-medium);color:var(--on-surface-variant)">for 16 dumplings</span></div>
+            <sc-for list="{{ detIngr }}" as="g" hint-placeholder-count="8">
+              <sc-if value="{{ g.sec }}" hint-placeholder-val="{{ false }}"><div style="padding:{{ g.pt }}px 0 4px;font:var(--type-title-small);color:var(--primary);letter-spacing:.1px">{{ g.sec }}</div></sc-if>
+              <sc-if value="{{ g.line }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IngredientRow" name="{{ g.name }}" amount="{{ g.amount }}" unit="{{ g.unit }}" note="{{ g.note }}" optional="{{ g.optional }}" unmatched="{{ g.unmatched }}" last="{{ g.last }}" hint-size="100%,52px"></x-import></sc-if>
+            </sc-for>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="recipes" hint-size="100%,80px"></x-import>
+        </div>
+      </div>
+
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">A4·4 · Import review · one flagged row</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="Review import" leading="close" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:4px 16px 24px">
+            <div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">
+              <div style="font:var(--type-title-medium)">7 of 8 ingredients matched</div>
+              <div style="height:4px;border-radius:2px;background:var(--surface-container-highest);margin:12px 0"><div style="width:88%;height:100%;border-radius:2px;background:var(--primary)"></div></div>
+              <div style="display:flex;align-items:center;gap:8px;font:var(--type-body-medium);color:var(--on-surface-variant)"><span style="width:3px;height:16px;background:var(--review-marker);border-radius:1px"></span>1 worth a look before saving</div>
+            </div>
+            <h2 style="margin:0 0 4px;font:var(--type-title-medium)">Ingredients</h2>
+            <sc-for list="{{ revIngr }}" as="g" hint-placeholder-count="8">
+              <sc-if value="{{ g.sec }}" hint-placeholder-val="{{ false }}"><div style="padding:{{ g.pt }}px 0 4px;font:var(--type-title-small);color:var(--primary);letter-spacing:.1px">{{ g.sec }}</div></sc-if>
+              <sc-if value="{{ g.line }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IngredientRow" name="{{ g.name }}" amount="{{ g.amount }}" unit="{{ g.unit }}" note="{{ g.note }}" optional="{{ g.optional }}" unmatched="{{ g.unmatched }}" flagged="{{ g.flagged }}" last="{{ g.last }}" hint-size="100%,52px"></x-import></sc-if>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:12px;padding:12px 16px 16px;border-top:1px solid var(--outline-variant);background:var(--surface)">
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="outlined" style="flex:1" hint-size="50%,48px">Discard</x-import>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" style="flex:1" hint-size="50%,48px">Save recipe</x-import>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="B Shopping list markers" data-theme="{{ theme }}" style="padding:24px 56px">
+  <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:20px;font:600 13px/16px var(--font-sans);color:#1F190F"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1F190F;color:#fff;border-radius:4px">B</span>Shopping list: item markers</div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="width:300px;flex:none;font:13px/1.55 var(--font-sans);color:#3A332A;display:flex;flex-direction:column;gap:10px;text-wrap:pretty">
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F">Quantities on the right, status after the name</div>
+      <p style="margin:0"><b>More than one unit family:</b> every amount goes in the amount column, stacked and right-aligned. The second and later amounts start with a muted "+", and each number is primary w600. In a shop you read down one column, so nothing hides in a trailer line under the name.</p>
+      <p style="margin:0"><b>Unmatched:</b> the raw line is the name, followed by the 16dp dashed ring. The muted trailer now says why: "Not added up · from Sauerkraut sarma".</p>
+      <p style="margin:0"><b>Pantry staple:</b> a 16dp outlined <span style="font-family:ui-monospace,monospace">push_pin</span> in outline after the name. It marks items that always go to Probably have. Items moved there once have no pin.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Discovering the long-press</div>
+      <p style="margin:0">The collapsed card's subline changes from "Cupboard staples" to <b>"Long-press any item to move it here."</b> It teaches the gesture right where the result lands. A long-press now opens a 2-item menu instead of moving the item silently. The menu offers "Move to Probably have" and "Always put here", and the second one sets the pin. The move confirms with a snackbar and Undo.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Shared row</div>
+      <p style="margin:0">The stacked amounts and the dashed ring belong to IngredientLineRow, so they also apply in recipe detail and import review. The pin, the long-press menu and the hint are list-only. No check-off state is added.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">B·1 · List · markers at a glance</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="List" actions="{{ listActions }}" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:4px 16px 24px;display:grid;align-content:start;grid-template-columns:minmax(0,1fr);gap:12px">
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.SegmentedButton" options="{{ rangeOptions }}" value="this" hint-size="100%,40px"></x-import>
+            <div style="background:var(--card);border-radius:12px;padding:4px 16px 8px">
+              <sc-for list="{{ list }}" as="a" hint-placeholder-count="3">
+                <div>
+                  <div style="font:var(--type-title-small);font-size:15px;padding:16px 0 0">{{ a.aisle }}</div>
+                  <sc-for list="{{ a.items }}" as="it" hint-placeholder-count="2">
+                    <div class="{{ it.cls }}" style="display:flex;align-items:flex-start;gap:16px;padding:10px 0;min-height:48px;box-sizing:border-box">
+                      <div style="flex:1;min-width:0">
+                        <div style="font:var(--type-body-large);text-wrap:pretty">{{ it.name }}<sc-if value="{{ it.staple }}"><span class="kt-icon" style="font-size:16px;color:var(--outline);margin-left:6px;vertical-align:-2px">push_pin</span></sc-if><sc-if value="{{ it.unmatched }}"><span style="display:inline-block;width:16px;height:16px;box-sizing:border-box;margin-left:8px;border-radius:50%;border:1px dashed var(--unmatched);vertical-align:-2px"></span></sc-if></div>
+                        <sc-if value="{{ it.trailer }}"><div style="font:var(--type-body-medium);color:var(--on-surface-variant);margin-top:2px">{{ it.trailer }}</div></sc-if>
+                      </div>
+                      <div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;font:var(--type-body-large);font-variant-numeric:tabular-nums">
+                        <sc-for list="{{ it.amts }}" as="q"><span style="white-space:nowrap"><sc-if value="{{ q.plus }}"><span style="color:var(--outline)">+ </span></sc-if><b style="font-weight:600;color:var(--primary)">{{ q.n }}</b><span style="color:var(--on-surface-variant)"> {{ q.u }}</span></span></sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+            <div class="kt-state" style="flex:none;min-height:min-content;display:flex;align-items:center;background:var(--card);border-radius:12px;padding:12px 16px">
+              <div style="flex:1"><div style="font:var(--type-title-small);font-size:15px">Probably have (6)</div><div style="font:var(--type-body-medium);color:var(--on-surface-variant)">Long-press any item to move it here.</div></div>
+              <span class="kt-icon" style="color:var(--on-surface-variant)">expand_more</span>
+            </div>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="list" hint-size="100%,80px"></x-import>
+        </div>
+      </div>
+
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">B·2 · Long-press · menu instead of a silent move</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="List" actions="{{ listActions }}" hint-size="100%,64px"></x-import>
+          <div style="flex:1;overflow:hidden;padding:4px 16px 24px;display:grid;align-content:start;grid-template-columns:minmax(0,1fr);gap:12px;position:relative">
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.SegmentedButton" options="{{ rangeOptions }}" value="this" hint-size="100%,40px"></x-import>
+            <div style="background:var(--card);border-radius:12px;padding:4px 16px 8px">
+              <div style="font:var(--type-title-small);font-size:15px;padding:16px 0 0">Pantry</div>
+              <div class="kt-dash" style="display:flex;gap:16px;padding:10px 0;font:var(--type-body-large)"><span style="flex:1">rice</span><span><b style="font-weight:600;color:var(--primary)">300</b><span style="color:var(--on-surface-variant)"> g</span></span></div>
+              <div style="display:flex;gap:16px;padding:10px 12px;margin:0 -12px;border-radius:8px;background:var(--surface-container-highest);font:var(--type-body-large)"><span style="flex:1">plain flour</span><span><b style="font-weight:600;color:var(--primary)">1</b><span style="color:var(--on-surface-variant)"> kg</span></span></div>
+              <div style="display:flex;gap:16px;padding:10px 0;font:var(--type-body-large)"><span style="flex:1">tomato purée</span><span><b style="font-weight:600;color:var(--primary)">800</b><span style="color:var(--on-surface-variant)"> g</span></span></div>
+            </div>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Menu" items="{{ pressMenu }}" style="position:absolute;top:196px;left:40px;min-width:248px;z-index:3" hint-size="248px,112px"></x-import>
+            <div class="kt-state" style="flex:none;min-height:min-content;display:flex;align-items:center;background:var(--card);border-radius:12px;padding:12px 16px">
+              <div style="flex:1"><div style="font:var(--type-title-small);font-size:15px">Probably have (6)</div><div style="font:var(--type-body-medium);color:var(--on-surface-variant)">Long-press any item to move it here.</div></div>
+              <span class="kt-icon" style="color:var(--on-surface-variant)">expand_more</span>
+            </div>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="list" hint-size="100%,80px"></x-import>
+        </div>
+      </div>
+
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">B·3 · Probably have · staples pinned</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="List" actions="{{ listActions }}" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:4px 16px 24px;display:grid;align-content:start;grid-template-columns:minmax(0,1fr);gap:12px">
+            <div style="background:var(--card);border-radius:12px;padding:12px 16px 8px">
+              <div style="display:flex;align-items:center">
+                <div style="flex:1"><div style="font:var(--type-title-small);font-size:15px">Probably have (7)</div><div style="font:var(--type-body-medium);color:var(--on-surface-variant)">Long-press an item to move it back.</div></div>
+                <span class="kt-icon" style="color:var(--on-surface-variant)">expand_less</span>
+              </div>
+              <div style="margin-top:4px">
+                <sc-for list="{{ have }}" as="it" hint-placeholder-count="6">
+                  <div class="{{ it.cls }}" style="display:flex;align-items:flex-start;gap:16px;padding:10px 0;min-height:48px;box-sizing:border-box;font:var(--type-body-large)">
+                    <span style="flex:1;min-width:0">{{ it.name }}<sc-if value="{{ it.staple }}"><span class="kt-icon" style="font-size:16px;color:var(--outline);margin-left:6px;vertical-align:-2px">push_pin</span></sc-if></span>
+                    <sc-if value="{{ it.n }}"><span style="white-space:nowrap"><b style="font-weight:600;color:var(--primary)">{{ it.n }}</b><span style="color:var(--on-surface-variant)"> {{ it.u }}</span></span></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="list" hint-size="100%,80px"></x-import>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Snackbar" message="Plain flour moved to Probably have." action="Undo" style="position:absolute;left:12px;right:12px;bottom:92px" hint-size="336px,48px"></x-import>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="C Full weekday names" data-theme="{{ theme }}" style="padding:24px 56px 40px">
+  <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:20px;font:600 13px/16px var(--font-sans);color:#1F190F"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1F190F;color:#fff;border-radius:4px">C</span>Meal plan: full weekday names</div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="width:300px;flex:none;font:13px/1.55 var(--font-sans);color:#3A332A;display:flex;flex-direction:column;gap:10px;text-wrap:pretty">
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F">Fits at 360dp</div>
+      <p style="margin:0">Headers read "Ponedeljak 5" / "Monday 5" in titleSmall. The inner width of a card at 360dp is 360 − 32 gutter − 20 padding = <b>308</b>.</p>
+      <p style="margin:0"><b>Worst expanded row:</b> "Ponedeljak 5" (≈84) + 8 + "Danas" tag (≈56) = ≈148. That leaves plenty of room. <b>Worst collapsed row:</b> "Četvrtak 8" (≈70) + the drop hint "Pustite ovde" (≈80) + "Dodaj obrok" (≈128) = ≈294 of 308. It fits but it's tight (C·1, Thursday). If a longer translation ever lands, hide the drop hint's text while dragging, because the 2dp ring already says "drop here".</p>
+      <p style="margin:0">The leftover meta stays abbreviated: "Večera · od pon 5", "Dinner · from Mon 5".</p>
+      <p style="margin:0;color:#6F6759">Screen dates are illustrative: the week of 5–11 October, with Monday as today to test the longest name.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <sc-for list="{{ planFrames }}" as="pf" hint-placeholder-count="3">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">{{ pf.cap }}</div>
+        <div style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="Plan" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:4px 16px 24px;display:grid;align-content:start;grid-template-columns:minmax(0,1fr);gap:12px">
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.SegmentedButton" options="{{ pf.seg }}" value="{{ pf.segVal }}" hint-size="100%,40px"></x-import>
+            <sc-if value="{{ pf.week }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px">
+                <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="chevron_left" label="Previous week" hint-size="48px,48px"></x-import>
+                <span style="font:var(--type-title-medium)">{{ pf.range }}</span>
+                <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="chevron_right" label="Next week" hint-size="48px,48px"></x-import>
+              </div>
+            </sc-if>
+            <sc-for list="{{ pf.days }}" as="d" hint-placeholder-count="3">
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.DayCard" label="{{ d.label }}" today="{{ d.today }}" today-label="{{ pf.todayLabel }}" add-label="{{ pf.addLabel }}" drop-hint="{{ d.drop }}" hint-size="100%,120px">
+                <sc-for list="{{ d.meals }}" as="m" hint-placeholder-count="1">
+                  <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.MealEntry" meta="{{ m.meta }}" title="{{ m.title }}" note="{{ m.note }}" leftover="{{ m.leftover }}" draggable="{{ m.drag }}" hint-size="100%,64px"></x-import>
+                </sc-for>
+              </x-import>
+            </sc-for>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="plan" items="{{ pf.nav }}" hint-size="100%,80px"></x-import>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Display&quot;},&quot;timelineAtHeading&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;break&quot;,&quot;continue&quot;],&quot;default&quot;:&quot;break&quot;,&quot;tsType&quot;:&quot;'break'|'continue'&quot;,&quot;section&quot;:&quot;A1 alternatives&quot;},&quot;noteStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;panel&quot;,&quot;inline&quot;],&quot;default&quot;:&quot;panel&quot;,&quot;tsType&quot;:&quot;'panel'|'inline'&quot;,&quot;section&quot;:&quot;A1 alternatives&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() {
+    const tick = () => { if (window.KitchenTableDesignSystem_abd297) this.forceUpdate(); else this._t = setTimeout(tick, 100); };
+    tick();
+  }
+  componentWillUnmount() { clearTimeout(this._t); }
+  renderVals() {
+    const P = this.props, h = React.createElement;
+    const NS = window.KitchenTableDesignSystem_abd297 || {};
+    const cont = P.timelineAtHeading === 'continue';
+    const kind = x => x ? (x.h ? 'h' : x.n ? 'n' : 's') : null;
+    const build = arr => { let n = 0; return arr.map((x, i) => {
+      const k = kind(x), pk = kind(arr[i - 1]), nk = kind(arr[i + 1]);
+      const o = { isH: k === 'h', isS: k === 's', isN: k === 'n', text: x.h || x.n || x.s };
+      if (k === 's') { o.num = ++n; o.line = nk === 's' || nk === 'n' || (cont && nk === 'h'); o.lt = 32; o.lb = nk === 's' ? 4 : 0; }
+      if (k === 'n') { const fromAbove = pk === 's' || pk === 'n' || (cont && pk === 'h' && i > 1); o.line = fromAbove || nk === 's'; o.lt = fromAbove ? 0 : 4; o.lb = nk === 's' ? 4 : (nk === 'n' || (cont && nk === 'h')) ? 0 : 24; }
+      if (k === 'h') { o.pt = i > 0 ? 8 : 0; o.pl = cont ? 44 : 0; o.line = cont && i > 0 && !!nk; }
+      return o; }); };
+    const dumpling = [
+      { h: 'For the dough' },
+      { s: 'Boil the potatoes in their skins until soft, then peel and mash while still warm.' },
+      { s: 'Work in the flour, egg and a pinch of salt until a soft dough forms.' },
+      { n: 'The dough should feel soft, like an earlobe. Add flour a spoonful at a time.' },
+      { s: 'Roll out 1 cm thick and cut into 8 cm squares.' },
+      { h: 'Filling' },
+      { s: 'Pit the plums and fill each with ½ teaspoon of sugar and a pinch of cinnamon.' },
+      { s: 'Wrap each plum in a square and pinch the edges closed.' },
+      { n: "Don't let them stand — cook within 15 minutes or the dough goes soft." },
+      { h: 'To finish' },
+      { s: 'Simmer in salted water for about 10 minutes, until they float.' },
+    ];
+    const peppers = build(['Cut the tops off the peppers and remove the seeds.', 'Fry the onion in oil until translucent, then add the meat, rice and spices.', 'Stuff the peppers, stand them upright in a pot and cover with tomato purée thinned with water.', 'Simmer covered for about an hour, until the peppers are soft.'].map(s => ({ s })));
+    const ed = (arr) => { let n = 0; return arr.map(x => x.h ? { label: 'Heading', icon: 'title', text: x.h, multi: false, dropBefore: x.drop } : x.n ? { label: 'Note', icon: 'sticky_note_2', text: x.n, multi: true, dropBefore: x.drop } : { label: 'Step ' + (++n), text: x.s, multi: true, dropBefore: x.drop }); };
+    const ingr = [
+      { sec: 'For the dough' },
+      { name: 'potatoes', amount: '1', unit: 'kg', note: 'floury, unpeeled' },
+      { name: 'flour', amount: '2–3', unit: 'cups', note: 'sifted' },
+      { name: 'egg', amount: '1' },
+      { name: 'salt, to taste' },
+      { sec: 'For the filling' },
+      { name: 'plums', amount: '16', note: 'small, ripe' },
+      { name: 'cinamon', amount: '1', unit: 'pinch', suggest: 'cinnamon?', rev: { name: 'cinnamon', note: '→ cinnamon' } },
+      { name: 'lemon zest', amount: '½', unit: 'tsp', optional: true },
+      { name: 'bakin pekmez', amount: '2', unit: 'tbsp', unmatched: true, note: 'No match · tap to choose', rev: { note: 'Not matched to an ingredient', flagged: true } },
+    ];
+    const prep = (arr, mode) => arr.map((g, i) => {
+      if (g.sec) return { sec: g.sec, pt: i === 0 ? 8 : 24 };
+      const nx = arr[i + 1]; const last = !nx || !!nx.sec;
+      let o = { line: true, ...g, last, cls: last ? '' : 'kt-dash' };
+      if (mode === 'det') { o.suggest = null; if (g.suggest) { o.name = 'cinnamon'; } if (g.unmatched) o.note = null; }
+      if (mode === 'rev') { o.suggest = null; if (g.rev) o = { ...o, ...g.rev }; if (!g.rev && g.suggest) o.name = 'cinnamon'; }
+      return o;
+    });
+    const B = (p, c) => NS.Button ? h(NS.Button, p, c) : null;
+    const IB = p => NS.IconButton ? h(NS.IconButton, p) : null;
+    const last = a => a.map((x, i) => ({ ...x, cls: i === a.length - 1 ? '' : 'kt-dash' }));
+    const A = (n, u, plus) => ({ n, u, plus });
+    const navSr = [{ value: 'recipes', label: 'Recepti', icon: 'menu_book' }, { value: 'plan', label: 'Plan', icon: 'calendar_month' }, { value: 'list', label: 'Spisak', icon: 'list' }, { value: 'settings', label: 'Podešavanja', icon: 'tune' }];
+    const srWeek = [
+      { label: 'Ponedeljak 5', today: true, meals: [{ meta: 'Ručak · 6 porcija', title: 'Prebranac', drag: true }, { meta: 'Večera · beleška', title: 'Večera kod mame', note: true, drag: true }] },
+      { label: 'Utorak 6', meals: [{ meta: 'Ručak · 8 porcija', title: 'Posna sarma', drag: true }, { meta: 'Večera · od pon 5', title: 'Ostaci: Prebranac', leftover: true }] },
+      { label: 'Sreda 7', meals: [] },
+      { label: 'Četvrtak 8', drop: 'Pustite ovde', meals: [] },
+      { label: 'Petak 9', meals: [{ meta: 'Večera · 4 porcije', title: 'Riblja čorba', drag: true }] },
+      { label: 'Subota 10', meals: [] },
+      { label: 'Nedelja 11', meals: [] },
+    ];
+    const enWeek = [
+      { label: 'Monday 5', today: true, meals: [{ meta: 'Lunch · 6 servings', title: 'Baked beans prebranac', drag: true }, { meta: 'Dinner · note', title: "Dinner at Mum's", note: true, drag: true }] },
+      { label: 'Tuesday 6', meals: [{ meta: 'Lunch · 8 servings', title: 'Lenten sarma', drag: true }, { meta: 'Dinner · from Mon 5', title: 'Leftovers: Baked beans prebranac', leftover: true }] },
+      { label: 'Wednesday 7', meals: [] },
+      { label: 'Thursday 8', drop: 'Drop here', meals: [] },
+      { label: 'Friday 9', meals: [{ meta: 'Dinner · 4 servings', title: 'Fish soup', drag: true }] },
+      { label: 'Saturday 10', meals: [] },
+      { label: 'Sunday 11', meals: [] },
+    ];
+    const srToday = [{ label: 'Ponedeljak 5', today: true, meals: [{ meta: 'Doručak · 4 porcije', title: 'Proja sa sirom', drag: true }, { meta: 'Ručak · 6 porcija', title: 'Prebranac', drag: true }, { meta: 'Večera · od ned 4', title: 'Ostaci: Punjene paprike', leftover: true }] }];
+    return {
+      theme: P.theme ?? 'light',
+      tinted: (P.noteStyle ?? 'panel') === 'panel', plainNote: P.noteStyle === 'inline',
+      dumplingSteps: build(dumpling), pepperSteps: peppers,
+      editSteps: ed(dumpling.slice(0, 7)),
+      dragSteps: ed([{ h: 'For the dough' }, { s: 'Boil the potatoes in their skins until soft, then peel and mash while still warm.' }, { s: 'Work in the flour, egg and a pinch of salt until a soft dough forms.', }, { s: 'Roll out 1 cm thick and cut into 8 cm squares.', drop: true }, { s: 'Pit the plums and fill each with ½ teaspoon of sugar.' }]),
+      tailSteps: [{ num: 6, line: true, text: 'Simmer in salted water for about 10 minutes, until they float.' }, { num: 7, line: false, text: 'Roll the hot dumplings in breadcrumbs toasted in butter with a little sugar.' }],
+      endNote: "Serve warm with a spoon of sour cream.\nThey keep two days in the fridge — reheat in butter, not the microwave.\n*Grandma's tip:* use **Požegača** plums; they hold their shape.",
+      fmtDesc: "Potato dough wrapped around a **whole plum**, rolled in buttery crumbs. *Knedle* the way Grandma Ljubica made them.",
+      fmtSteps: [{ num: 1, line: true, text: 'Boil the potatoes in their skins until soft, then peel and mash while still warm.' }, { num: 2, line: true, text: "Work in the flour and egg. **Don't over-knead** — stop when it holds.\n- 2 cups first, then the rest a spoonful at a time\n- a pinch of salt" }, { num: 3, line: false, text: 'Roll out *1 cm* thick and cut into 8 cm squares.' }],
+      fmtNote: 'To freeze:\n1. Freeze uncooked on a floured tray.\n2. Bag once firm.\n3. Cook from frozen, 4 minutes longer.',
+      fieldList: 'Roll out 1 cm thick.\n- cut into 8 cm squares\n- keep covered with a cloth',
+      toolbarThemes: [{ id: 'light', cap: 'A3·2 · Toolbar · light, selection made bold' }, { id: 'dark', cap: 'A3·3 · Toolbar · dark, selection made bold' }],
+      saveAction: B({ variant: 'text' }, 'Save'),
+      listActions: h(React.Fragment, null, IB({ icon: 'refresh', label: 'Regenerate' }), IB({ icon: 'content_copy', label: 'Copy list' })),
+      edIngr: prep(ingr, 'ed'), detIngr: prep(ingr, 'det'), revIngr: prep(ingr, 'rev'),
+      fastDone: [{ name: 'potatoes', amount: '1', unit: 'kg', note: 'floury, unpeeled' }],
+      rangeOptions: [{ value: 'this', label: 'This week' }, { value: 'next', label: 'Next' }, { value: 'pick', label: 'Dates' }],
+      list: [
+        { aisle: 'Vegetables', items: last([{ name: 'bell peppers', amts: [A('8')] }, { name: 'onions', amts: [A('1', 'kg'), A('3', 'pcs', true)] }, { name: 'a bunch of dill', unmatched: true, trailer: 'Not added up · from Fish soup', amts: [] }]) },
+        { aisle: 'Meat', items: last([{ name: 'minced meat', amts: [A('1.5', 'kg')] }, { name: 'smoked bacon', amts: [A('200', 'g')] }]) },
+        { aisle: 'Dairy', items: last([{ name: 'yoghurt', amts: [A('1', 'l'), A('2', 'cups', true)] }, { name: 'white cheese', amts: [A('500', 'g')] }]) },
+        { aisle: 'Pantry', items: last([{ name: '2 handfuls of rice', unmatched: true, trailer: 'Not added up · from Sauerkraut sarma', amts: [] }, { name: 'tomato purée', amts: [A('800', 'g')] }]) },
+      ],
+      pressMenu: [{ label: 'Move to Probably have' }, { label: 'Always put here' }],
+      have: last([{ name: 'salt', staple: true }, { name: 'sunflower oil', staple: true, n: '4', u: 'tbsp' }, { name: 'black pepper', staple: true }, { name: 'sugar', staple: true, n: '50', u: 'g' }, { name: 'sweet paprika', staple: true, n: '2', u: 'tsp' }, { name: 'sour cream', n: '200', u: 'g' }, { name: 'plain flour', n: '1', u: 'kg' }]),
+      planFrames: [
+        { cap: 'C·1 · Week · Serbian, dragging to Thursday', week: true, range: '5 – 11. okt', seg: [{ value: 'week', label: 'Ova nedelja' }, { value: 'today', label: 'Danas' }], segVal: 'week', todayLabel: 'Danas', addLabel: 'Dodaj obrok', days: srWeek, nav: navSr },
+        { cap: 'C·2 · Week · English', week: true, range: 'Oct 5 – 11', seg: [{ value: 'week', label: 'This week' }, { value: 'today', label: 'Today' }], segVal: 'week', todayLabel: 'Today', addLabel: 'Add meal', days: enWeek },
+        { cap: 'C·3 · Today · Serbian', week: false, seg: [{ value: 'week', label: 'Ova nedelja' }, { value: 'today', label: 'Danas' }], segVal: 'today', todayLabel: 'Danas', addLabel: 'Dodaj obrok', days: srToday, nav: navSr },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

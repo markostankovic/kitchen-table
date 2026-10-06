@@ -1,26 +1,25 @@
-# State — 2026-10-05
+# State — 2026-10-06
 
 **Branch:** `main`
-**Last shipped:** Phase 8 part 3 (`67640c6`), the third part of Phase 8 —
-Freshness and images: switching to a different tab re-reads it (D149).
+**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 1 —
+`phase8-weekday-full-names` (`96b8c15`): the meal plan's day headers use full
+weekday names (D150).
 
-- **`AppShell` refreshes the branch you switch to.** `_refreshBranch`
-  `ref.invalidate`s the whole `recipeListProvider` family on Recipes,
-  `mealPlanEditorProvider` on Plan, `currentShoppingListProvider` on List (a
-  re-read, never generate) and `householdMembersProvider` on Settings. Each
-  is a cached read (D67), so the screen keeps its content and updates in
-  place.
-- **Re-tapping the current tab still only pops to its root**, and no
-  revision is ever bumped: a tab switch is not a write.
-- Part 2 (`6d789bd`, D148) is what makes the recipe re-read cheap: photos
-  are cached by object path, so re-signed URLs are hits.
+- **Week view:** `Ponedeljak 5` / `Monday 5` (`weekdayNameAndDay`).
+  **Today view:** `Ponedeljak, 6. oktobar` / `Monday, October 6`
+  (`fullDateLabel`). Both are sentence-cased and go through `_tag()` (D91).
+- **Still abbreviated on purpose:** the leftover meta (`od pon 5` /
+  `from Mon 5`) and the move dialog's dropdown keep `weekdayAndDay`. The
+  leftover dialog keeps `shortDateLabel`.
 
-`dart analyze` is clean, `flutter test` passes 757/757, and `make check` is
-green except the known `seed-check` (below); the targets after it pass with
-`make -k check`. **Not walked yet.** Its device check is a new open loop
-below.
+`dart analyze` is clean, `flutter test` passes 763/763, and `make check` is
+green except the known `seed-check` (below); `make test-sql` and
+`make l10n-check` pass on their own. **Walked** on the emulator
+(`/design-walk meal-plan`, 2026-10-06, all four combinations) and clean. It
+opened no loop. The worst-case Today header (`Ponedeljak, 30. septembar`) and
+the Galaxy weren't reached.
 
-Still open, not part 3's:
+Still open, not this slice's:
 - right after a recipe save, the detail's well shows the placeholder (or
   the previous photo) for about 8–15 s, until the signed detail arrives. The
   new path has never been cached and the first emission is unsigned. It was
@@ -57,11 +56,12 @@ Still open, not part 3's:
   Design updates them.
 
 **In flight:** none.
-**Next:** Phase 8's must-do parts are done. Part 4 (real thumbnails) is
-optional, "only if part 2 is not enough on the device". The 2× decode read
-sharp on the emulator, and the Galaxy has not judged it yet. Otherwise, one
-of the smaller candidates below. Walking part 3 (its loop below) is cheap,
-and it can share a sitting with any Galaxy walk.
+**Next:** the round's slice 2, `phase8-shopping-row-markers`
+(`/plan-slice-ui`). The round's slices and their order are in
+`docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`. Two of
+them, `phase8-recipe-structure-data` among them, need `/plan-slice`. Phase 8
+part 4 (real thumbnails) stays optional, "only if part 2 is not enough on
+the device".
 
 Smaller candidates still open from round `sync-design-initial`:
 - the offline banner gap (`AppShell`, every tab);
@@ -69,7 +69,7 @@ Smaller candidates still open from round `sync-design-initial`:
 - the recipe-delete confirm, the one filled destructive confirm left
   (§ Buttons says text in destructive). The open device-walk loops below
   still want one sitting with the Galaxy attached.
-**Latest decision:** D149
+**Latest decision:** D150
 
 **Fifteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB

@@ -268,3 +268,68 @@ nowhere else.
   away and back, with no blank or spinner; airplane mode keeping the cached
   content and the banner; a re-tap only popping to root) was not run. It
   stays open in `docs/STATE.md`.
+
+### Round 2026-10-06, slice 1 — Full weekday names in the meal plan
+
+**Status: complete** (`96b8c15`). Decisions taken during it: D150.
+
+The first slice of round `2026-10-06-round-2-recipe-structure`
+(`docs/design/handoffs/2026-10-06-round-2-recipe-structure/`), canvas § C,
+frames C·1–C·3. Planned with `/plan-slice-ui` on 2026-10-06 and built in a
+fresh session. No migration, no new ARB key, no new package, no codegen, and
+no token change.
+
+- **`lib/core/l10n/date_labels.dart`.** Two new helpers next to
+  `weekdayAndDay`, both through `_tag()` (D91) and both sentence-cased with
+  intl's `toBeginningOfSentenceCase`, given the tagged locale (intl gives
+  Serbian weekdays in lower case):
+  - `weekdayNameAndDay`, `DateFormat('EEEE d')`: `Ponedeljak 5` /
+    `Monday 5`, the week view's header;
+  - `fullDateLabel`, `DateFormat.MMMMEEEEd`: `Ponedeljak, 6. oktobar` /
+    `Monday, October 6`, the Today view's header.
+
+  `weekdayAndDay`'s doc comment no longer calls it a day header. It is the
+  compact form for the leftover meta (`od pon 5`, which can't take a
+  declined full name) and the move dialog's dropdown.
+- **`meal_plan_screen.dart`.** `_DayCard._header` swaps to the two helpers,
+  and the `showFullDate` doc comment names them. Role, colour, pill and
+  spacing are unchanged. The leftover meta, the move dialog
+  (`weekdayAndDay`) and the leftover dialog (`shortDateLabel`) are unchanged.
+- **Tests.** `date_labels_test.dart` gained a `weekdayNameAndDay` group (all
+  seven weekdays in en and sr, Latin-only, no Cyrillic from a bare `'sr'`)
+  and a `fullDateLabel` group. `meal_plan_screen_test.dart`'s header finds
+  moved to the new helpers. The leftover test now also asserts that Monday's
+  header carries the full name while its leftover meta stays abbreviated.
+- **`docs/DESIGN_SYSTEM.md`** § Meal entries, the day-card paragraph.
+
+**Differs from the plan.** The plan listed one Today-header find in the
+screen test. There were three: the one it named, the "back to Today" pin
+(~line 322) and the srLatn test (~1187). All three moved to `fullDateLabel`.
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **763/763**.
+- `make -k check` failed only at `seed-check`, the known red since
+  `c8be2bc`. `make test-sql` and `make l10n-check` passed when run on their
+  own.
+- **Walked** (`/design-walk meal-plan`, 2026-10-06, **emulator**, hosted
+  release build, Dev login, all four combinations). Today was Tuesday
+  6 October.
+  - Week view: `Ponedeljak 5` … `Nedelja 11` and `Monday 5` … `Sunday 11`,
+    each on one line beside `+ Dodaj obrok` / `+ Add meal`, and `Utorak 6`
+    beside the `Danas` pill.
+  - Today view: `Utorak, 6. oktobar` / `Tuesday, October 6` on one line
+    beside the pill.
+  - A leftover planned from Monday read `od pon 5` / `from Mon 5` under the
+    `Ponedeljak 5` header. The move dialog still showed `pon 5`, and the
+    leftover dialog `uto 6. okt`.
+  - A drag held over collapsed Thursday kept that card at the same
+    single-row height as the other collapsed cards (UI dump: 147px), so the
+    header didn't wrap. The dragged card covers the header text itself, so
+    the screenshot can't show it.
+  - In dark, the `onSurfaceVariant` headers, the pill and the today border
+    all read clearly.
+  - The test entries were removed afterwards, and Srpski / Svetla were
+    restored.
+  - **Not reached:** the worst-case Today header (`Ponedeljak, 30.
+    septembar`, ≈250 of 308dp per the canvas) wasn't on screen, and neither
+    was the Galaxy. It opened no loop.
