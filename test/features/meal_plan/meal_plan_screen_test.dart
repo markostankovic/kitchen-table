@@ -232,7 +232,7 @@ void main() {
       await _pump(tester, initial: MealPlanWeek.empty(_week), weekView: true);
 
       for (final DateTime day in _week.days) {
-        expect(find.text(weekdayAndDay(day, 'en')), findsOneWidget);
+        expect(find.text(weekdayNameAndDay(day, 'en')), findsOneWidget);
       }
       // The pinned week is in June 2026, so today is outside it and every day
       // collapses -- no `+ <Slot>` button anywhere.
@@ -287,11 +287,11 @@ void main() {
     },
   );
 
-  testWidgets('the Today header renders shortDateLabel(DateTime.now(), en)', (
+  testWidgets('the Today header renders fullDateLabel(DateTime.now(), en)', (
     WidgetTester tester,
   ) async {
     await _pump(tester, initial: MealPlanWeek.empty(_week));
-    expect(find.text(shortDateLabel(DateTime.now(), 'en')), findsOneWidget);
+    expect(find.text(fullDateLabel(DateTime.now(), 'en')), findsOneWidget);
   });
 
   testWidgets(
@@ -319,7 +319,7 @@ void main() {
       await tester.tap(find.text('Today'));
       await tester.pumpAndSettle();
 
-      expect(find.text(shortDateLabel(DateTime.now(), 'en')), findsOneWidget);
+      expect(find.text(fullDateLabel(DateTime.now(), 'en')), findsOneWidget);
     },
   );
 
@@ -883,6 +883,13 @@ void main() {
 
       expect(find.text('from ${weekdayAndDay(_monday, 'en')}'), findsOneWidget);
       expect(find.textContaining('from '), findsOneWidget);
+      // The meta stays abbreviated on purpose while Monday's own header
+      // carries the full name -- the two must not converge.
+      expect(find.text(weekdayNameAndDay(_monday, 'en')), findsOneWidget);
+      expect(
+        weekdayNameAndDay(_monday, 'en'),
+        isNot(weekdayAndDay(_monday, 'en')),
+      );
 
       final Finder missingCard = find.ancestor(
         of: find.text('Leftovers: zzz gibanica'),
@@ -1032,7 +1039,7 @@ void main() {
 
       await dragTo(
         tester,
-        tester.getCenter(find.text(weekdayAndDay(_tuesday, 'en'))),
+        tester.getCenter(find.text(weekdayNameAndDay(_tuesday, 'en'))),
       );
 
       expect(calls.moved, (id: 'e1', date: _tuesday, slot: MealSlot.breakfast));
@@ -1093,7 +1100,7 @@ void main() {
       expect(tester.takeException(), isNull);
 
       await tester.scrollUntilVisible(
-        find.text(weekdayAndDay(_week.days[6], 'sr')),
+        find.text(weekdayNameAndDay(_week.days[6], 'sr')),
         300,
         scrollable: find.byType(Scrollable).last,
       );
@@ -1184,7 +1191,7 @@ void main() {
 
       // Today's own header, in Latin-script Serbian -- the D91 regression
       // covers the new header path too, not just the week view's.
-      expect(find.text(shortDateLabel(DateTime.now(), 'sr')), findsOneWidget);
+      expect(find.text(fullDateLabel(DateTime.now(), 'sr')), findsOneWidget);
       // A Serbian string nowhere in the English vocabulary.
       expect(find.text(AppLocalizationsSr().addMealButton), findsOneWidget);
 
@@ -1200,7 +1207,7 @@ void main() {
         find.text(weekRangeLabel(_week.start, _week.end, 'sr')),
         findsOneWidget,
       );
-      expect(find.text(weekdayAndDay(_monday, 'sr')), findsOneWidget);
+      expect(find.text(weekdayNameAndDay(_monday, 'sr')), findsOneWidget);
     },
   );
 }

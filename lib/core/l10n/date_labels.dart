@@ -31,11 +31,35 @@ import 'package:intl/intl.dart';
 /// load-bearing line in the file.
 String _tag(String locale) => locale == 'sr' ? 'sr_Latn' : locale;
 
-/// A day header -- weekday abbreviation and day of month (`Mon 1`, `pon 1`).
-/// Unambiguous only within a single visible week; a range that can cross a
-/// month wants [shortDateLabel] instead.
+/// The compact form -- weekday abbreviation and day of month (`Mon 1`,
+/// `pon 1`). No longer a day header (that is [weekdayNameAndDay]); it stays
+/// for the leftover meta, where a full Serbian weekday after `od` would have
+/// to be declined (`od ponedeljka`) and a generated string can't be, so it
+/// reads `od pon 14` -- and for the move dialog's day dropdown. Unambiguous
+/// only within a single visible week; a range that can cross a month wants
+/// [shortDateLabel] instead.
 String weekdayAndDay(DateTime date, String locale) =>
     DateFormat('E d', _tag(locale)).format(date);
+
+/// The week view's day header -- full weekday name and day of month
+/// (`Monday 1`, `Ponedeljak 1`). Unambiguous only within one visible week,
+/// where the week bar already names the month. `intl` gives Serbian weekdays
+/// in lower case, and a header starts a line, so it is sentence-cased.
+String weekdayNameAndDay(DateTime date, String locale) =>
+    toBeginningOfSentenceCase(
+      DateFormat('EEEE d', _tag(locale)).format(date),
+      _tag(locale),
+    );
+
+/// The Today view's day header -- full weekday, day and month (`Monday,
+/// June 1`, `Ponedeljak, 1. jun`). A lone day card has no week bar above it
+/// to name the month, so this one does. Sentence-cased, as
+/// [weekdayNameAndDay] is.
+String fullDateLabel(DateTime date, String locale) =>
+    toBeginningOfSentenceCase(
+      DateFormat.MMMMEEEEd(_tag(locale)).format(date),
+      _tag(locale),
+    );
 
 /// Weekday, day and month -- unambiguous across a month boundary, unlike
 /// [weekdayAndDay]. The leftover dialog needs exactly this: D56's 14-day

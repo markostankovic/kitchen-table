@@ -338,10 +338,11 @@ class _DayCard extends ConsumerWidget {
   final DateTime day;
   final MealPlanWeek plan;
 
-  /// Whether the header carries the month (`shortDateLabel`) instead of just
-  /// the weekday (`weekdayAndDay`). The Today view sets this: there is no
-  /// week around a lone day card to disambiguate the month, the same
-  /// argument `_showLeftoverDialog` already makes for its 14-day list.
+  /// Whether the header carries the month (`fullDateLabel`, `Ponedeljak, 6.
+  /// oktobar`) instead of just the weekday and day (`weekdayNameAndDay`,
+  /// `Ponedeljak 6`). The Today view sets this: there is no week around a
+  /// lone day card to disambiguate the month, the same argument
+  /// `_showLeftoverDialog` already makes for its 14-day list.
   final bool showFullDate;
 
   /// The Today view's card never collapses, even with nothing planned.
@@ -373,8 +374,8 @@ class _DayCard extends ConsumerWidget {
         Flexible(
           child: Text(
             showFullDate
-                ? shortDateLabel(day, l10n.localeName)
-                : weekdayAndDay(day, l10n.localeName),
+                ? fullDateLabel(day, l10n.localeName)
+                : weekdayNameAndDay(day, l10n.localeName),
             style: theme.textTheme.titleSmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

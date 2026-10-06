@@ -635,8 +635,10 @@ consumer, so none of them is in `core/widgets/`.
 **The day card.** The theme's `Card` (`KitchenColors.card`, no hairline,
 radius 12), padded `md` — except `xs` at the bottom, where the add button's
 own 48dp target makes the space — with the day header in
-`titleSmall` `onSurfaceVariant` — `weekdayAndDay` (`pon 14`) in the week view, where
-the week bar already names the month, and `shortDateLabel` in the Today view.
+`titleSmall` `onSurfaceVariant` — `weekdayNameAndDay` (`Ponedeljak 14` /
+`Monday 14`) in the week view, where the week bar already names the month, and
+`fullDateLabel` (`Ponedeljak, 14. septembar` / `Monday, September 14`) in the
+Today view, both sentence-cased.
 Today's card keeps that fill and gets a **2dp border in `today`** plus a
 `Danas`/`Today` pill beside the header: `today` fill, `onPrimary` text in
 `labelMedium`, `StadiumBorder`, `sm` horizontal and `xs` vertical padding,

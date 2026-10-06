@@ -40,6 +40,63 @@ void main() {
     });
   });
 
+  group('weekdayNameAndDay', () {
+    test('all seven weekdays, English', () {
+      final DateTime monday = DateTime(2026, 6, 1);
+      final List<String> labels = List<String>.generate(
+        7,
+        (int i) => weekdayNameAndDay(
+            DateTime(monday.year, monday.month, monday.day + i), 'en'),
+      );
+      expect(labels, <String>[
+        'Monday 1', 'Tuesday 2', 'Wednesday 3', 'Thursday 4', 'Friday 5',
+        'Saturday 6', 'Sunday 7',
+      ]);
+    });
+
+    test('all seven weekdays, Serbian -- sentence-cased, Latin script only '
+        '(D91, D4)', () {
+      final DateTime monday = DateTime(2026, 6, 1);
+      final List<String> labels = List<String>.generate(
+        7,
+        (int i) => weekdayNameAndDay(
+            DateTime(monday.year, monday.month, monday.day + i), 'sr'),
+      );
+      expect(labels, <String>[
+        'Ponedeljak 1', 'Utorak 2', 'Sreda 3', 'Četvrtak 4', 'Petak 5',
+        'Subota 6', 'Nedelja 7',
+      ]);
+      for (final String label in labels) {
+        expect(RegExp(r'^[\x00-\x7Fčćžšđ ]+$', caseSensitive: false)
+            .hasMatch(label), isTrue, reason: '$label is not Latin script');
+      }
+    });
+
+    test('a bare "sr" locale never renders the Cyrillic symbol table (D91)',
+        () {
+      expect(weekdayNameAndDay(DateTime(2026, 6, 1), 'sr'),
+          isNot(contains('пон')));
+    });
+  });
+
+  group('fullDateLabel', () {
+    test('English', () {
+      expect(fullDateLabel(DateTime(2026, 6, 1), 'en'), 'Monday, June 1');
+    });
+
+    test('Serbian -- sentence-cased, Latin script only (D91, D4)', () {
+      final String label = fullDateLabel(DateTime(2026, 6, 1), 'sr');
+      expect(label, 'Ponedeljak, 1. jun');
+      expect(RegExp(r'^[\x00-\x7Fčćžšđ ]+$', caseSensitive: false)
+          .hasMatch(label), isTrue, reason: '$label is not Latin script');
+    });
+
+    test('a bare "sr" locale never renders the Cyrillic symbol table (D91)',
+        () {
+      expect(fullDateLabel(DateTime(2026, 6, 1), 'sr'), isNot(contains('пон')));
+    });
+  });
+
   group('shortDateLabel', () {
     test('English', () {
       expect(shortDateLabel(DateTime(2026, 9, 14), 'en'), 'Mon, Sep 14');
