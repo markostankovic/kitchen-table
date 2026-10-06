@@ -369,6 +369,7 @@ create table recipes (
   title text not null,
   title_normalized text generated always as (normalize_text(title)) stored,
   description text,
+  notes text,                       -- end note ('Napomena'), markdown subset (D153)
   servings int,
   prep_minutes int,
   cook_minutes int,
@@ -417,7 +418,9 @@ create table recipe_steps (
   recipe_id uuid not null references recipes(id) on delete cascade,
   position int not null,
   text text not null,
-  timer_seconds int
+  timer_seconds int,                -- only on kind = 'step' (D153)
+  kind text not null default 'step'
+    check (kind in ('step','heading','note'))   -- D153
 );
 
 create table recipe_translations (
@@ -426,7 +429,8 @@ create table recipe_translations (
   locale text not null check (locale in ('sr','en')),
   title text not null,
   description text,
-  steps jsonb not null default '[]',   -- [{position, text}]
+  notes text,                          -- translated end note (D153)
+  steps jsonb not null default '[]',   -- [{position, text}], no kind (D153)
   is_machine_generated boolean not null default true,
   reviewed_by uuid references profiles(id),
   reviewed_at timestamptz,
@@ -461,6 +465,15 @@ first `alter table ... add column` against an already-applied table (D100).
 Both are household facts, not personal ones (D24): any member's tap changes
 either for everyone. No RLS or trigger change was needed — the existing
 `recipes` policies and `recipes_set_updated_at` are already column-agnostic.
+
+`recipe_steps.kind`, `recipes.notes` and `recipe_translations.notes` arrived
+in migration 24 (Phase 8, round 2, slice 4; D153). A heading or a note is a
+row of the same ordered step list with its own `position`, so a translation's
+`steps` stays prose and takes its kind from the source row at the same
+position. `save_recipe_translation` and `review_recipe_translation` gained a
+trailing `new_notes text default null`, and a review clears notes it is not
+sent. The Drift cache needed no change: an old blob without the keys decodes
+to `step` and null.
 
 ---
 

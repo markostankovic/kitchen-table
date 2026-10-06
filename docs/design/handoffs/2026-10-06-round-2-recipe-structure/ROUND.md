@@ -86,7 +86,7 @@ The rest are UI (`/plan-slice-ui`).
       the list is a snapshot (D13). Open D13 and D147 first. If a one-off move
       needs a column, this becomes a `/plan-slice`. Or ask Marko whether only
       the `Always` item is wanted.
-- [ ] `phase8-recipe-structure-data` (**/plan-slice**): schema, translation
+- [x] `phase8-recipe-structure-data` (**/plan-slice**): schema, translation
       and import; no screens. Files: a new migration,
       `supabase/functions/_shared/{schema,translate}.ts`,
       `supabase/functions/translate-recipe/`, the `import-*` functions,

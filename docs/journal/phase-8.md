@@ -506,3 +506,129 @@ package, no token change. Three ARB keys added.
     only the dividers it covers show its edge. Both are in `docs/STATE.md`.
   - `mleko` ended on the to-buy list, now with an explicit override. Srpski /
     Svetla were restored.
+
+### Round 2026-10-06, slice 4 — Recipe structure data: step kinds and notes
+
+**Status: complete** (`009d15d`). Decisions taken during it: D153.
+
+The fourth slice of round `2026-10-06-round-2-recipe-structure`
+(`docs/design/handoffs/2026-10-06-round-2-recipe-structure/`). It is data
+only, with no screen changes: slices 5 (`phase8-step-headings-notes`), 6
+(`phase8-recipe-end-note`) and 9 (`phase8-rich-text-render`) render what it
+stores. Planned with `/plan-slice` on 2026-10-06 and built in a fresh
+session. No new package, no Drift schema change, no ARB change, nothing
+under `presentation/`.
+
+The risk was silent data loss. Once a recipe has a heading or a note, every
+path that rewrites it (editor save, import save, translation review save)
+has to send them back. Today's editor and review screens don't show them,
+so the drafts carry them through untouched.
+
+- **Migration 24, `20261006100000_recipe_structure.sql`.**
+  - `recipe_steps.kind` text not null default `'step'`, checked against
+    `step` / `heading` / `note`. A new constraint,
+    `recipe_steps_timer_only_on_step`, allows a timer only on a step.
+  - `recipes.notes` and `recipe_translations.notes`, nullable text, with
+    column comments.
+  - `replace_recipe_lines` and `save_imported_recipe` are `create or
+    replace` with the same signatures. Kind rides in the steps jsonb (absent
+    or blank means `step`), and `recipe.notes` in the recipe jsonb (blank
+    means null). `save_imported_recipe` still composes
+    `replace_recipe_lines` (D44).
+  - `save_recipe_translation` and `review_recipe_translation` are dropped
+    and recreated with a trailing `new_notes text default null`, and their
+    revoke/grant is re-applied on the six-argument signatures. The upsert
+    writes notes on both insert and conflict; the review writes
+    `notes = nullif(btrim(new_notes), '')`.
+- **Edge Functions.**
+  - `_shared/schema.ts`: `ModelStep.kind` (`ParsedStepKind`, nullable),
+    `ModelRecipe.notes`, `ModelTranslation.notes`. `ModelTranslationStep`
+    is unchanged.
+  - `_shared/read_recipe.ts`: the import prompt learns method subheadings
+    (`kind: "heading"`), asides (`kind: "note"`), a Tips / Napomena / Saveti
+    section (`notes`), and keeping `- ` / `1. ` lists without adding bold or
+    italics. A headnote is "the description, … and never notes". `enrich`
+    spreads `model`, so both reach `import_jobs.result` unchanged.
+  - `_shared/jsonld.ts`: a `HowToSection` with a string `name` emits a
+    heading row ahead of its `itemListElement`.
+  - `_shared/translate.ts`: the source carries `kind` and `notes`.
+    `buildTranslationRequest` is exported, tags non-step rows `3. [heading]
+    …` / `5. [note] …`, and adds a `Notes:` line. The prompt states the tag
+    rule (translate the words, return them without the tag, keep headings
+    short) and the marker rule (`**`, `*`, `"- "`, `"1. "` stay where they
+    are). `translateRecipe` returns `notes`.
+  - `translate-recipe/index.ts` selects `notes` and
+    `recipe_steps(position, text, kind)` and sends `new_notes`.
+  - The `import-*` functions were read, not changed: none builds a
+    `ModelRecipe` by hand.
+  - `make types` changed only `kind` / `ParsedStepKind` / `notes` in
+    `parsed_recipe.dart`.
+- **Dart.**
+  - `RecipeStepKind { step, heading, note }` with `fromWire` (null → step,
+    unknown throws), and `RecipeStep.kind` defaulting to `step`.
+  - `Recipe.notes` and `RecipeTranslation.notes`.
+  - `RecipeDetail.displayNotes` mirrors `displayDescription`. When a
+    translation is shown, `displaySteps` overlays each row's kind from the
+    source step at the same position.
+  - `RecipeDraft.notes` and `RecipeDraftStep.kind` are carried by
+    `fromDetail` and written by `toSteps` / `toRecipe`. `toSteps` drops a
+    blank row of any kind and keeps a timer only on a step. No new
+    mutators: slice 5 adds them.
+  - `TranslationReviewDraft` gains `sourceNotes`, `notes` and a pure
+    `setNotes`.
+  - DTO, datasource and repository: `notes` on create, update and review;
+    `kind` in the step embed and the step payloads of both
+    `recipe_repository.dart` and `import_repository.dart`.
+  - Plumbing: `RecipeEditor`, `TranslationReviewer`, `ImportConfirm` and
+    `draftFromParsed` pass the new fields along.
+- **Tests.**
+  - SQL:
+    - `rls_recipes_test.sql`: kinds stored in order, omitted kind → step,
+      unknown kind and a timer on a heading refused, a refused call rolls
+      back.
+    - `save_imported_recipe_test.sql`: imported notes trimmed, imported
+      kinds stored.
+    - `review_recipe_translation_test.sql`: a review with notes writes
+      them, without notes clears them.
+    - `rls_recipe_translations_test.sql`: the same two for the upsert.
+    - Both grant checks moved to the six-argument signatures.
+  - Deno: the HowToSection heading, the four markers named in the prompt,
+    the tag rule, and `buildTranslationRequest` tagging (plus no `Notes:`
+    line when there are none).
+  - Dart:
+    - `recipe_draft_test` (kind round trip, blank heading dropped, no timer
+      on a heading or note, notes through `toRecipe`).
+    - `recipe_detail_translation_test` (kind overlay, `displayNotes` three
+      ways, the review draft carries both notes).
+    - `local_recipe_datasource_test` (a pre-D153 cached blob decodes to
+      `step` and null).
+    - `parsed_recipe_draft_test` (kinds and notes mapped, null kind → step).
+    - The offline-test fake gained the new parameters.
+
+**Differs from the plan.**
+- **`save_recipe_translation` had explicit grants too.** The plan named
+  only the review function's. Since a drop takes the grants with it, both
+  are re-applied, and `rls_recipe_translations_test.sql`'s grant checks
+  moved to the new signature.
+- **`alignSteps` takes `Pick<TranslationSourceStep, "position">`.** It only
+  reads positions, so the existing kind-less test fixtures still
+  type-check.
+- **`save_recipe_translation` blanks notes to null** (`nullif(btrim(…))`),
+  unlike its verbatim `description`.
+- Tests beyond the list: the upsert's notes cases, the review draft
+  carrying notes, and an import with no notes.
+
+**How it was verified.**
+- `supabase db reset` applied migration 24 cleanly, and `make test-sql`
+  passed all 20 suites, the new cases included.
+- `make test-functions` **165/165**, and `make lint-functions` (check,
+  lint, fmt) clean.
+- `dart run build_runner build -d`, then `dart analyze` clean and
+  `flutter test` **795/795**.
+- `make check` failed only at `seed-check`, the known red since `c8be2bc`.
+  `test-sql` and `l10n-check`, which `make check` runs after it, were run
+  by hand and passed.
+- **Not deployed and not walked.** There is nothing on screen to walk. The
+  hosted project still needs `supabase db push` for migration 24, and
+  `make functions-deploy` for `translate-recipe` and the three `import-*`
+  functions, before slices 5–6 can be walked on a device.

@@ -1,28 +1,36 @@
 # State — 2026-10-06
 
 **Branch:** `main`
-**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 3 —
-`phase8-shopping-long-press-menu` (`a2a278d`): the shopping long-press
-menu with Undo (D152).
+**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 4 —
+`phase8-recipe-structure-data` (`009d15d`): step kinds and recipe notes,
+data only (D153).
 
-- **A long-press opens a one-item menu at the finger**: `Uvek u Verovatno
-  imate` / `Always in Probably have` on a to-buy row, `Uvek na listi` /
-  `Always on the list` on a Probably-have row. Text-only, chrome. The
-  pressed row holds a `surfaceContainerHighest` fill while it is open.
-- **Picking does what the long-press used to** (D147: set the preference,
-  regenerate the same list, scroll kept).
-- **The snackbar carries `Poništi` / `Undo`**, which writes the opposite
-  preference and regenerates again, with no second snackbar.
-- **No one-off "Move to Probably have"**: Marko declined it in planning,
-  since it would be per-item state on a snapshot (D13). The pin now simply
-  marks a staple.
+- **`recipe_steps.kind`** (`step` | `heading` | `note`, default `step`; a
+  timer only on a step), plus **`recipes.notes`** and
+  **`recipe_translations.notes`**, in migration 24
+  (`20261006100000_recipe_structure.sql`).
+- **Every writer carries them:** `replace_recipe_lines`,
+  `save_imported_recipe`, and `save_recipe_translation` /
+  `review_recipe_translation`, which gained a trailing `new_notes`. The
+  editor and review drafts pass kind and notes through untouched, because a
+  review clears notes it is not sent.
+- **Translations stay prose.** Kind is read from the source step by position
+  (`RecipeDetail.displaySteps`). `translate-recipe` sends `[heading]` /
+  `[note]` tags, translates notes, and keeps `**`, `*`, `- ` and `1. `.
+- **Import** learns method headings, inline notes and a Tips / Napomena
+  section. JSON-LD `HowToSection` names become heading rows.
+- **No screen changes.** A recipe with no headings or notes reads exactly as
+  before.
 
-`dart analyze` is clean, `flutter test` passes 782/782, and `make check` is
-green except the known `seed-check` (below); `make l10n-check` passes.
-**Walked** on the emulator (`/design-walk shopping-list`, 2026-10-06, all
-four combinations, online and offline). Everything in scope held. It left a
-loop open for two findings: the menu is flush with the right edge near it,
-and in dark the menu has almost no edge over a card (the list below).
+`dart analyze` is clean, `flutter test` passes 795/795,
+`make test-functions` passes 165/165, `make lint-functions` is clean, and
+`make test-sql` passes all 20 suites. `make check` is green except the known
+`seed-check` (below); `make l10n-check` passes. **Not walked**: there is
+nothing on screen yet.
+
+**Hosted is behind.** Before slices 5–6 can be walked on a device, migration
+24 needs `supabase db push`, and `translate-recipe` plus the three
+`import-*` functions need `make functions-deploy`. Neither has been done.
 
 Still open, not this slice's:
 - right after a recipe save, the detail's well shows the placeholder (or
@@ -66,14 +74,13 @@ Still open, not this slice's:
   Design updates them.
 
 **In flight:** none.
-**Next:** the round's slice 4, `phase8-recipe-structure-data`
-(**/plan-slice**): `recipe_steps.kind`, `recipes.notes` /
-`recipe_translations.notes`, through the save RPC, DTOs, models,
-translate-recipe and the import schemas. No screens.
+**Next:** the round's slice 5, `phase8-step-headings-notes`
+(**/plan-slice-ui**): render headings and inline notes in the recipe
+detail's Steps, and add Step / Heading / Note rows to the editor (canvas
+§ A1). Deploy to hosted first (above), so the walk has data to show.
 
 The round's slices and their order are in
-`docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`. Two of
-them, `phase8-recipe-structure-data` among them, need `/plan-slice`. Phase 8
+`docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`. Phase 8
 part 4 (real thumbnails) stays optional, "only if part 2 is not enough on
 the device".
 
@@ -85,7 +92,7 @@ Smaller candidates still open from round `sync-design-initial`:
 - the recipe-delete confirm, the one filled destructive confirm left
   (§ Buttons says text in destructive). The open device-walk loops below
   still want one sitting with the Galaxy attached.
-**Latest decision:** D152
+**Latest decision:** D153
 
 **Seventeen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
