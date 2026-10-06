@@ -1,36 +1,31 @@
 # State — 2026-10-06
 
 **Branch:** `main`
-**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 4 —
-`phase8-recipe-structure-data` (`009d15d`): step kinds and recipe notes,
-data only (D153).
+**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 5 —
+`phase8-step-headings-notes` (`b149a8f`): step headings and notes, on
+recipe detail and in the editor (D154, rendering D153's data).
 
-- **`recipe_steps.kind`** (`step` | `heading` | `note`, default `step`; a
-  timer only on a step), plus **`recipes.notes`** and
-  **`recipe_translations.notes`**, in migration 24
-  (`20261006100000_recipe_structure.sql`).
-- **Every writer carries them:** `replace_recipe_lines`,
-  `save_imported_recipe`, and `save_recipe_translation` /
-  `review_recipe_translation`, which gained a trailing `new_notes`. The
-  editor and review drafts pass kind and notes through untouched, because a
-  review clears notes it is not sent.
-- **Translations stay prose.** Kind is read from the source step by position
-  (`RecipeDetail.displaySteps`). `translate-recipe` sends `[heading]` /
-  `[note]` tags, translates notes, and keeps `**`, `*`, `- ` and `1. `.
-- **Import** learns method headings, inline notes and a Tips / Napomena
-  section. JSON-LD `HowToSection` names become heading rows.
-- **No screen changes.** A recipe with no headings or notes reads exactly as
-  before.
+- **Detail.** Numbers count steps only and continue across headings. A
+  heading is `titleSmall` `primary`, flush with the discs, and breaks the
+  connector. A note is a `card` panel in the text column, and the connector
+  runs past it. A step-only recipe looks exactly as before (walked against
+  the previous build).
+- **Editor.** Labels by kind (`Korak N`, `Naslov`, `Beleška`). The add row
+  is tonal `Korak`, then `Naslov` and `Beleška`. A dragged step row lifts
+  to level 3. Removing a heading offers `Poništi`.
+- **Import review** counts steps only in the Method subline and marks
+  heading/note fields with an icon. **Translation review** labels rows by
+  the source kind.
 
-`dart analyze` is clean, `flutter test` passes 795/795,
-`make test-functions` passes 165/165, `make lint-functions` is clean, and
-`make test-sql` passes all 20 suites. `make check` is green except the known
-`seed-check` (below); `make l10n-check` passes. **Not walked**: there is
-nothing on screen yet.
+`dart analyze` is clean and `flutter test` passes 808/808. `make check` is
+green except the known `seed-check` (below); `make test-sql` passes.
+**Walked** on the emulator against hosted, all four combinations: clean on
+everything it reached. The import-review half is left open in the walk list
+below.
 
-**Hosted is current** (2026-10-06): migration 24 is applied with
-`supabase db push`, and `translate-recipe` plus the three `import-*`
-functions are deployed with `make functions-deploy`.
+**Hosted is current** (2026-10-06): migration 24 is applied, and
+`translate-recipe` plus the three `import-*` functions are deployed. This
+slice is client-only.
 
 Still open, not this slice's:
 - right after a recipe save, the detail's well shows the placeholder (or
@@ -74,10 +69,10 @@ Still open, not this slice's:
   Design updates them.
 
 **In flight:** none.
-**Next:** the round's slice 5, `phase8-step-headings-notes`
-(**/plan-slice-ui**): render headings and inline notes in the recipe
-detail's Steps, and add Step / Heading / Note rows to the editor (canvas
-§ A1).
+**Next:** the round's slice 6, `phase8-recipe-end-note`
+(**/plan-slice-ui**): the recipe's end note (`Napomena` / `Notes`) on
+detail, in the editor and in import review, and in translation review
+(canvas § A2).
 
 The round's slices and their order are in
 `docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`. Phase 8
@@ -92,9 +87,9 @@ Smaller candidates still open from round `sync-design-initial`:
 - the recipe-delete confirm, the one filled destructive confirm left
   (§ Buttons says text in destructive). The open device-walk loops below
   still want one sitting with the Galaxy attached.
-**Latest decision:** D153
+**Latest decision:** D154
 
-**Seventeen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Eighteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -167,7 +162,11 @@ it opened no loop. It re-checked part 16's add menu (still flush). The
 and re-walked the same sitting. It opened a loop for the two checks it could
 not reach; the `phase8-shopping-long-press-menu` walk (the same day,
 emulator, all four combinations) closed that loop's tooltip half and
-opened its own for two findings it did not fix.
+opened its own for two findings it did not fix. The
+`phase8-step-headings-notes` walk (`/design-walk recipe detail steps +
+recipe editor steps`, 2026-10-06, emulator, all four combinations) was clean
+on everything it reached, and opened a loop for the import-review check it
+did not reach.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
@@ -907,6 +906,43 @@ Oldest first:
     two are close too (`#EFE5DA` on `#F5EBDF`) but the shadow carries it.
     A fix is theme-level (the menu's fill or an outline), so it touches
     every menu; it wants a decision, not a call-site style.
+- **Phase 8 round 2 slice 5** (`phase8-step-headings-notes`) — step
+  headings and notes on detail and in the editor. Walked on the
+  **emulator** (2026-10-06, all four combinations, hosted release build), on
+  a new walk recipe `Pita proba koraka` (leading heading, two groups, two
+  notes; one wraps two lines). `adb input text` cannot type č/ć/š/ž, so the
+  walk's step text is ASCII Serbian. **Clean:**
+  - an existing step-only recipe (`Domaći čorbasti pasulj…`) is unchanged:
+    the disc-to-disc spacing (210/357/210/357/210 px) matches a screenshot of
+    the previous build exactly, and the crops differ only in sub-pixel
+    anti-aliasing;
+  - numbering runs 1–3 under `Za testo` and 4–5 under `Fil`; the line breaks
+    at `Fil` and runs unbroken through the first note into step 3; the last
+    note's line stops level with its panel. `Za testo`, first, sits right
+    under `Koraci`; `Fil` sits ~32dp below step 3, flush with the discs;
+  - dark: the note text on its panel measured 9.4:1. The panel against the
+    page is 1.24:1, the same step every dark card uses;
+  - editor labels read `Korak 1`, `Korak 2`, `Beleška`, `Korak 3`, `Naslov`,
+    `Korak 4…` (en: `Step N` / `Heading` / `Note`). At 411dp the Serbian add
+    row fits one line; at 360dp (`wm size 945x2424`) `Beleška` wraps cleanly
+    under `Korak`, with no overflow;
+  - a dragged row lifts with a visible edge in both themes, and the drop gap
+    opens where it lands; reorder works up and down;
+  - removing `Fil` shows `Naslov je uklonjen.` / `Poništi`, and Undo puts it
+    back between step 3 and step 4.
+
+  **Still open:**
+  - *Import review* (Method subline counting steps only; heading/note
+    prefix icons) was not reached: it needs an import of a URL whose JSON-LD
+    carries `HowToSection`, which this walk did not run against hosted.
+    The widget test covers both behaviours.
+
+  **Noted, not defects:**
+  - the lifted row has no top padding, so its label sits about 4dp under
+    the card's top edge;
+  - the snackbar sits over the Save button. A tap meant for `Poništi` that
+    lands after the 4s dismissal saves the recipe instead. The walk did that
+    once by accident.
 
   `mleko` ended on the to-buy list as it began, but now with a household
   `always_have = false` override where it may have had none (D152's Undo

@@ -100,7 +100,7 @@ The rest are UI (`/plan-slice-ui`).
       - Run `make types` and `dart analyze` after.
       - The translate prompt must also keep `**`, `*`, `- ` and `1. ` intact,
         with a Deno test. Do that here, so slices 7–8 only render.
-- [ ] `phase8-step-headings-notes`: Recipe detail Steps and the editor's
+- [x] `phase8-step-headings-notes`: Recipe detail Steps and the editor's
       Steps. Files: `recipe_detail_screen.dart`, `recipe_edit_screen.dart`,
       `import_review_screen.dart` (the Method subline counts).
       Bundle: canvas § A1 (A1·1–A1·4).

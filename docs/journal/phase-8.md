@@ -632,3 +632,106 @@ so the drafts carry them through untouched.
   hosted project still needs `supabase db push` for migration 24, and
   `make functions-deploy` for `translate-recipe` and the three `import-*`
   functions, before slices 5–6 can be walked on a device.
+
+### Round 2026-10-06, slice 5 — Step headings and notes, on detail and in the editor
+
+**Status: complete** (`b149a8f`). Decisions taken during it: D154.
+
+The fifth slice of round `2026-10-06-round-2-recipe-structure`
+(`docs/design/handoffs/2026-10-06-round-2-recipe-structure/`), canvas § A1.
+It renders the `recipe_steps.kind` values slice 4 stored (D153). Planned
+with `/plan-slice-ui` on 2026-10-06 and built in a fresh session. No
+migration, no `make types`, no new package, nothing under `data/`.
+
+- **Recipe detail** (`recipe_detail_screen.dart`).
+  - A new `_stepRows` walks `displaySteps` with the kind either side of each
+    row. It numbers step-kind rows only, from 1 and across headings, so
+    `position + 1` is gone.
+  - `_StepRow` swaps `isLast` for `number`, `connectorBelow` and
+    `bottomInset`. A step draws its line only when a step or note follows,
+    with 0 inset before a note so the line flows into it.
+  - `_StepHeadingRow`: `titleSmall` in `primary`, flush with the disc
+    column, `sm` top (0 when first) and `md` bottom.
+  - `_StepNoteRow`: the disc column kept empty but for the connector, then
+    a `KitchenColors.card` panel (radius `sm`, padded `sm`/`md`) holding
+    `bodyMedium` `onSurfaceVariant`, `xl` below. It draws a segment when a
+    step or note precedes it or a step follows; before a heading or at the
+    end the line stops `xl` short, level with the panel.
+  - The line itself is a private `_StepConnector`, still keyed
+    `stepConnector`, shared by both rows.
+- **Draft and editor.** `RecipeDraft.addStep({kind})` and a new
+  `insertStep(index, {kind, text})`, which clamps the index and allocates a
+  fresh `_nextStepId`. `RecipeEditor` passes both through.
+- **Editor** (`recipe_edit_screen.dart`).
+  - `_EditableRow` takes an optional `labelIcon`. A step is `Korak N`,
+    counting steps only. A heading is the `title` icon plus `Naslov`, a note
+    `sticky_note_2_outlined` plus `Beleška`, at 16dp in `onSurfaceVariant`.
+    A heading field is one line.
+  - The add row is a `Wrap` (`xs`) on the labels' indent: tonal `Korak`,
+    then text buttons `Naslov` and `Beleška`.
+  - Removing a heading shows `Naslov je uklonjen.` with `Poništi`
+    (`persist: false`, on `_writeStaple`'s precedent); Undo calls
+    `insertStep` at the old index.
+  - The steps list (only) gets a `proxyDecorator`: `Material` elevation 3,
+    `surfaceContainerHigh`, `colorScheme.shadow`, radius `md`.
+- **Import review.** The Method subline counts step-kind rows; a heading or
+  note field carries a `title` / `sticky_note_2_outlined` prefix icon in
+  `outline`.
+- **Translation review.** Each label follows the source row's kind, and a
+  step's number counts source steps only.
+- **ARB.** `stepKindStep`, `stepKindHeading`, `stepKindNote`,
+  `headingRemovedSnackbar`; `stepLabel`'s description now says it counts
+  steps only.
+- **DESIGN_SYSTEM.md.** § Steps and stats (numbering, heading, note,
+  connector rule), § Inputs (labels by kind, the add row, Undo, the lift),
+  § Import review → Method, and § Elevation level 3.
+- **Tests.**
+  - `recipe_screens_test`: [heading, step, step, note, step, heading, step]
+    gives discs 1–4, the note inside its panel, and three connectors. A
+    trailing note pair gives three. A translated method numbers by the
+    source kinds. The existing step-only connector tests are unchanged and
+    pass.
+  - `recipe_draft_test`: `addStep(kind:)`, `insertStep` at an index,
+    clamping, and a fresh id after the max-id row is removed and an add
+    took its id.
+  - `recipe_edit_screen_test`: Heading and Note add their kind and label,
+    step labels skip non-steps, heading removal shows the snackbar and Undo
+    restores it in place, and a note's removal shows none.
+  - `import_review_screen_test` (subline and icons) and
+    `translation_review_screen_test` (labels by kind).
+
+**Differs from the plan.**
+- **The translated-numbering test is in `recipe_screens_test.dart`**, not
+  `recipe_detail_translation_test.dart`. That file is pure unit tests with
+  no widget tree, and its kind-overlay test already covers the domain half.
+- **The import review's step field keeps `const InputDecoration()`**, not
+  `null`. On a `TextFormField`, `null` removes the decoration altogether.
+- **The connector became a small private widget** (`_StepConnector`), so
+  the step and the note draw the same line. Its geometry is unchanged.
+- **The editor's step labels count with `take(index).where(step)`** on each
+  build, rather than a running counter, because the rows are built inside a
+  collection `for`.
+
+**How it was verified.**
+- `dart analyze` clean; `flutter test` **808/808**.
+- `make check` failed only at `seed-check`, the known red since `c8be2bc`.
+  `make test-sql` passed when run by hand. `make l10n-check` diffs against
+  the index, so it fails until the ARB change is committed; a `flutter
+  gen-l10n` left the working-tree files byte-identical.
+- **Walked** (`/design-walk recipe detail steps + recipe editor steps`,
+  2026-10-06), on the **emulator**, with a hosted release build, in all four
+  combinations:
+  - The step-only check was made against the previous build: a screenshot
+    of `Domaći čorbasti pasulj…` taken before installing. Disc-to-disc
+    spacing on the new build is identical (210/357/210/357/210 px); the
+    crops differ only in sub-pixel anti-aliasing.
+  - A new walk recipe, `Pita proba koraka`: a leading heading, two groups,
+    two notes. Numbers continue, the line breaks at `Fil` and runs past
+    each note. Dark note text on its panel measured 9.4:1.
+  - At 360dp (`wm size 945x2424`) the Serbian add row wraps `Beleška`
+    cleanly under `Korak`. The lift shows in both themes. Undo restores a
+    removed heading in place.
+  - Not reached: import review with a `HowToSection` import, left open in
+    `docs/STATE.md`. Two cosmetic notes are recorded there too: the lifted
+    row's label sits about 4dp from its top edge, and a late tap meant for
+    `Poništi` lands on Save under the snackbar.
