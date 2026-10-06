@@ -61,7 +61,7 @@ The rest are UI (`/plan-slice-ui`).
       Bundle: canvas § C. Day headers become `Ponedeljak 5` / `Monday 5` in
       `titleSmall`. The leftover meta stays abbreviated (`od pon 5`), so the
       full name is a new helper next to `weekdayAndDay`, not a change to it.
-- [ ] `phase8-shopping-row-markers`: Shopping list row, plus the shared
+- [x] `phase8-shopping-row-markers`: Shopping list row, plus the shared
       `IngredientLineRow`. Files:
       `lib/core/ingredients/widgets/ingredient_line_row.dart`,
       `lib/features/shopping_list/presentation/shopping_list_screen.dart`.

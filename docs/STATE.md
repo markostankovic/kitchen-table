@@ -1,23 +1,31 @@
 # State — 2026-10-06
 
 **Branch:** `main`
-**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 1 —
-`phase8-weekday-full-names` (`96b8c15`): the meal plan's day headers use full
-weekday names (D150).
+**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 2 —
+`phase8-shopping-row-markers` (`124d814`): the shopping row's markers
+(D151).
 
-- **Week view:** `Ponedeljak 5` / `Monday 5` (`weekdayNameAndDay`).
-  **Today view:** `Ponedeljak, 6. oktobar` / `Monday, October 6`
-  (`fullDateLabel`). Both are sentence-cased and go through `_tag()` (D91).
-- **Still abbreviated on purpose:** the leftover meta (`od pon 5` /
-  `from Mon 5`) and the move dialog's dropdown keep `weekdayAndDay`. The
-  leftover dialog keeps `shortDateLabel`.
+- **Stacked amounts:** a second unit family sits under the first in the
+  amount column (`500 g` / `+ 25 ml`), with a muted `+`. This is
+  `IngredientLineRow`'s new `extraAmounts`; recipe detail and import review
+  pass none.
+- **Staple pin:** every Probably-have row carries a 16dp `push_pin_outlined`
+  in `outline` (tooltip `Uvek u Verovatno imate`). It goes through the row's
+  generic `nameMarker` slot and is drawn from `isPantryStaple`.
+- **`Nije sabrano` / `Not added up`** sits under an unmatched item with no
+  amount, in the reader's locale.
+- **The Probably-have subline** teaches the long-press: `…premestite ovde.`
+  collapsed, `…vratite na listu.` expanded, in the reader's locale.
+- **Markers travel with the last word:** the row measures the name's last
+  line and moves the last word down when the ring or pin won't fit after it.
+  The word joiner alone let Flutter strand the ring (found on the walk).
 
-`dart analyze` is clean, `flutter test` passes 763/763, and `make check` is
+`dart analyze` is clean, `flutter test` passes 777/777, and `make check` is
 green except the known `seed-check` (below); `make test-sql` and
 `make l10n-check` pass on their own. **Walked** on the emulator
-(`/design-walk meal-plan`, 2026-10-06, all four combinations) and clean. It
-opened no loop. The worst-case Today header (`Ponedeljak, 30. septembar`) and
-the Galaxy weren't reached.
+(`/design-walk shopping-list`, 2026-10-06, all four combinations). It found
+two defects, both fixed and re-walked the same sitting. It left a loop open
+for the pin's tooltip and import review on a device (the list below).
 
 Still open, not this slice's:
 - right after a recipe save, the detail's well shows the placeholder (or
@@ -56,8 +64,18 @@ Still open, not this slice's:
   Design updates them.
 
 **In flight:** none.
-**Next:** the round's slice 2, `phase8-shopping-row-markers`
-(`/plan-slice-ui`). The round's slices and their order are in
+**Next:** the round's slice 3, `phase8-shopping-long-press-menu`
+(`/plan-slice-ui`, or `/plan-slice` if a one-off move needs a column). For
+its planner:
+- Long-press always sets the permanent pantry preference today (D147), and
+  the list is a snapshot (D13). Open both before deciding whether
+  `Move to Probably have` (one-off) needs storage, or whether only `Always
+  put here` is wanted.
+- **The pin distinguishes nothing yet.** Every Probably-have row is a
+  staple, so every row carries it. It is drawn from `isPantryStaple`, not
+  the card (D151), so a one-off move would render without it for free.
+
+The round's slices and their order are in
 `docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`. Two of
 them, `phase8-recipe-structure-data` among them, need `/plan-slice`. Phase 8
 part 4 (real thumbnails) stays optional, "only if part 2 is not enough on
@@ -69,9 +87,9 @@ Smaller candidates still open from round `sync-design-initial`:
 - the recipe-delete confirm, the one filled destructive confirm left
   (§ Buttons says text in destructive). The open device-walk loops below
   still want one sitting with the Galaxy attached.
-**Latest decision:** D150
+**Latest decision:** D151
 
-**Fifteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Sixteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -138,7 +156,11 @@ planned. No hosted member has a long enough name to test wrapping. Phase 8 part
 2's walk (`/design-walk recipes`, 2026-10-05, emulator, all four
 combinations, online, offline and a photo replaced) found one defect, the
 pull's thumbnail flash, which was fixed and re-walked the same sitting, so
-it opened no loop. It re-checked part 16's add menu (still flush).
+it opened no loop. It re-checked part 16's add menu (still flush). The
+`phase8-shopping-row-markers` walk (`/design-walk shopping-list`,
+2026-10-06, emulator, all four combinations) found two defects, both fixed
+and re-walked the same sitting. It opened a loop for the two checks it could
+not reach.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
@@ -807,6 +829,45 @@ Oldest first:
   a detail while already offline is fine (dark icons). The offline
   banner's gap above the app bar (STATE's list above) showed on every tab,
   as known.
+- **Phase 8 round 2 slice 2** (`phase8-shopping-row-markers`) — stacked
+  amounts, staple pin, `Not added up`, long-press hint. Walked on the
+  **emulator** (`/design-walk shopping-list`, 2026-10-06, all four
+  combinations, on the walk household's existing `sr` list for 28 Sep – 4
+  Oct; no regeneration, no long-press). **Clean:**
+  - `brašno` `500 g` / `+ 25 ml` stacks right-aligned in one column, with a
+    muted `+`. The name column is not squeezed, and it is readable in dark;
+  - `Nije sabrano` / `Not added up` sits under each unmatched item in the
+    **reader's** locale (English under an `sr` list, as designed). It is
+    muted, never red, and readable in dark;
+  - the `Verovatno imate` subline is `Dugo pritisnite stavku da je
+    premestite ovde.` collapsed and `… vratite na listu.` expanded. Each
+    fits on one line in Serbian with no ellipsis. Under English chrome the
+    English hints appear while the heading stays `Verovatno imate (5)`;
+  - all five Probably-have rows carry the `outline` pin, readable on the
+    dark card fill;
+  - recipe detail ingredient rows are unchanged (en/dark spot check).
+    Import review was not reached.
+
+  **Two defects found, both fixed in the slice before close and re-walked
+  the same sitting** (emulator, sr/light, sr/light expanded, en/dark, and en/dark
+  recipe detail):
+  - *A marker stranded alone on a line.* The ring under `1 manji koren
+    peršuna … preporučujem)` sat by itself on a fourth line. The U+2060 word
+    joiner does not stop Flutter breaking before a placeholder that
+    overflows. This was older than the slice, but the new pin copied the
+    same glue. `IngredientLineRow` now measures the name's last line and,
+    if the markers won't fit, moves the last word down with them.
+    Re-walked: `preporučujem) ◌` on one line, in both brightnesses;
+    recipe detail is unchanged.
+  - *`Nije sabrano` beside an amount* on that same unmatched item
+    (`1.67 kom`). The trailer now shows only when the item has no amount.
+    Re-walked: the item shows `1.67 kom` and the ring, with no trailer.
+
+  **Still open:** the pin's `Uvek u Verovatno imate` tooltip (a long-press
+  on the row would toggle the real pantry preference, so it needs a
+  throwaway item or an outside reset), and import review, which renders
+  the same row and so the new last-word measurement. Widget tests cover
+  the row there; it has not been seen on a device.
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind

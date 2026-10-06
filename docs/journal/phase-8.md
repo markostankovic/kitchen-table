@@ -333,3 +333,93 @@ screen test. There were three: the one it named, the "back to Today" pin
   - **Not reached:** the worst-case Today header (`Ponedeljak, 30.
     septembar`, ≈250 of 308dp per the canvas) wasn't on screen, and neither
     was the Galaxy. It opened no loop.
+
+### Round 2026-10-06, slice 2 — Shopping list row markers
+
+**Status: complete** (`124d814`). Decisions taken during it: D151.
+
+The second slice of round `2026-10-06-round-2-recipe-structure`
+(`docs/design/handoffs/2026-10-06-round-2-recipe-structure/`), canvas § B,
+frames B·1 and B·3. Planned with `/plan-slice-ui` on 2026-10-06 and built in
+a fresh session. No migration, no provider or domain change, no new
+package, no token change. Four ARB keys added, one removed.
+
+- **`lib/core/ingredients/widgets/ingredient_line_row.dart`.** Two optional
+  parameters, both still primitives (D127):
+  - `extraAmounts`, a list of `({String? quantity, String? unit})` records,
+    stacked under the first amount in a right-aligned `Column`. One private
+    `_amount` builder draws the first line (still
+    `Key('ingredientAmount')`) and each extra
+    (`Key('ingredientExtraAmount')`, led by `+ ` in `onSurfaceVariant`).
+  - `nameMarker`, a widget drawn inline after the name and optional label in
+    a fixed 16dp box, `xs` before it, before the unmatched ring.
+
+  Recipe detail and import review pass neither, and their files were not
+  touched.
+- **`shopping_list_screen.dart`.**
+  - `_ItemRow` passes `parts.skip(1)` as `extraAmounts`, so the trailer lost
+    its `+ …` line.
+  - It passes the staple pin (`Key('stapleMarker')`, `outline`, tooltip
+    `pantryStapleTooltip`) when `item.isPantryStaple`.
+  - An unmatched item with no amount gets `notAddedUpTrailer` first in its
+    trailer.
+  - The staples card became `_StaplesCard`, a `StatefulWidget` that tracks
+    `onExpansionChanged`. Its subline is `staplesHintCollapsed` /
+    `staplesHintExpanded` from the reader's `l10n`; the heading still uses
+    `bodyL10n`.
+- **ARB.** Added `staplesHintCollapsed`, `staplesHintExpanded`,
+  `notAddedUpTrailer` and `pantryStapleTooltip`. Removed
+  `cupboardStaplesSubtitle`. Regenerated.
+- **`format_item_quantity.dart`.** A comment fix only: the unit has sat
+  beside the number since D127, not beside the name.
+- **Tests.** The row test gained 9: the stack and its alignment, the `+`
+  colour, extras without a first amount, the marker's placement and its
+  absence, and four last-word cases. The screen test gained 5, and its
+  two-families test asserts the stack via the keys.
+- **`docs/DESIGN_SYSTEM.md`** § Ingredient lines and § Shopping list. The
+  latter also lost its stale "the snackbar says it applies next time"
+  (D147).
+
+**Differs from the plan.**
+- Every extra amount carries the same `Key('ingredientExtraAmount')`, and
+  sibling keys must be unique, so each sits under a
+  `KeyedSubtree(ValueKey<int>(i))`.
+- **The walk found two defects, both fixed in this slice before close:**
+  - The unmatched ring stranded alone on a fourth line under
+    `1 manji koren peršuna … preporučujem)`. The U+2060 word joiner does not
+    stop Flutter breaking before an overflowing placeholder. This was older
+    than the slice, but the pin had copied the same glue.
+    `_keepMarkersWithLastWord` now measures the name's last line and, when
+    the markers won't fit, turns the last space into a line break. That is
+    why `nameMarker` got a fixed 16dp box.
+  - `Nije sabrano` sat beside a parsed amount (`1.67 kom`) on the same item.
+    The plan assumed unmatched items have no amount. The trailer is now
+    gated on `parts.isEmpty`.
+- `from <recipe>` was dropped as planned: `ShoppingItem` carries no source
+  recipe.
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **777/777**.
+- `make check` failed only at `seed-check`, the known red since `c8be2bc`.
+  `make test-sql` passed when run on its own. `make l10n-check` passed once
+  the generated files were committed.
+- **Walked** (`/design-walk shopping-list`, 2026-10-06, **emulator**, hosted
+  release build, Dev login, all four combinations). It used the household's
+  existing `sr` list for 28 Sep – 4 Oct, with no regeneration and no
+  long-press.
+  - `brašno` read `500 g` over `+ 25 ml`, right-aligned, with a muted `+`.
+  - `Nije sabrano` sat under `malo ljubavi` and under `malo ljute aleve
+    paprike…`. Under English chrome it read `Not added up` while the list
+    stayed Serbian.
+  - The subline read `Dugo pritisnite stavku da je premestite ovde.`
+    collapsed and `…vratite na listu.` expanded, each on one line in
+    Serbian.
+  - All five Probably-have rows had the pin, readable on the dark card.
+  - It found the two defects above. After the fix it re-walked sr/light,
+    sr/light expanded, en/dark and en/dark recipe detail: `preporučujem) ◌` sat
+    on one line, the item showed `1.67 kom` with no trailer, and recipe
+    detail rows were unchanged.
+  - Srpski / Svetla were restored.
+  - **Not reached:** the pin's tooltip (a long-press on the row would toggle
+    the real pantry preference) and import review on a device. Both stay
+    open in `docs/STATE.md`.
