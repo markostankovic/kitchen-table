@@ -28,9 +28,9 @@ data only (D153).
 `seed-check` (below); `make l10n-check` passes. **Not walked**: there is
 nothing on screen yet.
 
-**Hosted is behind.** Before slices 5–6 can be walked on a device, migration
-24 needs `supabase db push`, and `translate-recipe` plus the three
-`import-*` functions need `make functions-deploy`. Neither has been done.
+**Hosted is current** (2026-10-06): migration 24 is applied with
+`supabase db push`, and `translate-recipe` plus the three `import-*`
+functions are deployed with `make functions-deploy`.
 
 Still open, not this slice's:
 - right after a recipe save, the detail's well shows the placeholder (or
@@ -77,7 +77,7 @@ Still open, not this slice's:
 **Next:** the round's slice 5, `phase8-step-headings-notes`
 (**/plan-slice-ui**): render headings and inline notes in the recipe
 detail's Steps, and add Step / Heading / Note rows to the editor (canvas
-§ A1). Deploy to hosted first (above), so the walk has data to show.
+§ A1).
 
 The round's slices and their order are in
 `docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`. Phase 8
