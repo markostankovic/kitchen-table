@@ -125,6 +125,7 @@ class _FakeRemote implements RemoteRecipeDataSource {
     required String locale,
     required String title,
     String? description,
+    String? notes,
     required List<Map<String, dynamic>> stepPayloads,
   }) =>
       throw UnimplementedError();
@@ -135,6 +136,7 @@ class _FakeRemote implements RemoteRecipeDataSource {
     required String title,
     required String originalLocale,
     String? description,
+    String? notes,
     int? servings,
     int? prepMinutes,
     int? cookMinutes,
@@ -151,6 +153,7 @@ class _FakeRemote implements RemoteRecipeDataSource {
     required String id,
     required String title,
     String? description,
+    String? notes,
     int? servings,
     int? prepMinutes,
     int? cookMinutes,

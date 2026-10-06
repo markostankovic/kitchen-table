@@ -13,6 +13,7 @@ _ParsedRecipe _$ParsedRecipeFromJson(Map<String, dynamic> json) =>
       ingredients: (json['ingredients'] as List<dynamic>)
           .map((e) => ParsedIngredientLine.fromJson(e as Map<String, dynamic>))
           .toList(),
+      notes: json['notes'] as String?,
       originalLocale: $enumDecode(
         _$ParsedLocaleEnumMap,
         json['originalLocale'],
@@ -32,6 +33,7 @@ Map<String, dynamic> _$ParsedRecipeToJson(_ParsedRecipe instance) =>
       'cookMinutes': instance.cookMinutes,
       'description': instance.description,
       'ingredients': instance.ingredients,
+      'notes': instance.notes,
       'originalLocale': _$ParsedLocaleEnumMap[instance.originalLocale]!,
       'prepMinutes': instance.prepMinutes,
       'servings': instance.servings,
@@ -106,12 +108,20 @@ Map<String, dynamic> _$ParsedQuantityToJson(_ParsedQuantity instance) =>
     };
 
 _ParsedStep _$ParsedStepFromJson(Map<String, dynamic> json) => _ParsedStep(
+  kind: $enumDecodeNullable(_$ParsedStepKindEnumMap, json['kind']),
   text: json['text'] as String,
   timerSeconds: (json['timerSeconds'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$ParsedStepToJson(_ParsedStep instance) =>
     <String, dynamic>{
+      'kind': _$ParsedStepKindEnumMap[instance.kind],
       'text': instance.text,
       'timerSeconds': instance.timerSeconds,
     };
+
+const _$ParsedStepKindEnumMap = {
+  ParsedStepKind.HEADING: 'heading',
+  ParsedStepKind.NOTE: 'note',
+  ParsedStepKind.STEP: 'step',
+};

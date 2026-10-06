@@ -122,8 +122,8 @@ function servingsOf(value: unknown): number | null {
  * with newlines, an array of strings, an array of HowToStep, and HowToSection
  * wrapping `itemListElement`.
  */
-function stepsOf(value: unknown): { text: string }[] {
-  const out: { text: string }[] = [];
+function stepsOf(value: unknown): ModelRecipeT["steps"] {
+  const out: ModelRecipeT["steps"] = [];
 
   const walk = (node: unknown, depth: number): void => {
     if (depth > 4) return;
@@ -144,6 +144,16 @@ function stepsOf(value: unknown): { text: string }[] {
     if (node !== null && typeof node === "object") {
       const record = node as Record<string, unknown>;
       if (Array.isArray(record.itemListElement)) {
+        // A section's name is the method's own subheading ("Za fil"), so it
+        // becomes a heading row ahead of the steps it covers (D153). JSON-LD
+        // has nothing that maps to notes.
+        if (
+          typesOf(record).includes("HowToSection") &&
+          typeof record.name === "string"
+        ) {
+          const name = stripHtml(decodeEntities(record.name)).trim();
+          if (name.length > 0) out.push({ text: name, kind: "heading" });
+        }
         walk(record.itemListElement, depth + 1);
         return;
       }

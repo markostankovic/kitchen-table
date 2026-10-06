@@ -406,16 +406,48 @@ begin
   end if;
 
   ---------------------------------------------------------------------------
+  -- Notes (D153): a review is a whole-document write, so notes sent are
+  -- written, and notes NOT sent are cleared. The second half is why the
+  -- client's review draft carries the translation's notes through.
+  ---------------------------------------------------------------------------
+  perform review_recipe_translation(recipe_a, 'en', 'zzz reviewed with notes',
+    null,
+    jsonb_build_array(
+      jsonb_build_object('position', 0, 'text', 'x'),
+      jsonb_build_object('position', 1, 'text', 'y')
+    ),
+    '  - Keeps for two days.  ');
+
+  select notes into txt from recipe_translations where id = translation_id;
+  if txt is distinct from '- Keeps for two days.' then
+    failures := failures + 1;
+    raise warning 'review with notes stored %, expected the trimmed notes', txt;
+  end if;
+
+  perform review_recipe_translation(recipe_a, 'en', 'zzz reviewed without notes',
+    null,
+    jsonb_build_array(
+      jsonb_build_object('position', 0, 'text', 'x'),
+      jsonb_build_object('position', 1, 'text', 'y')
+    ));
+
+  select notes into txt from recipe_translations where id = translation_id;
+  if txt is not null then
+    failures := failures + 1;
+    raise warning 'review without notes left notes = %, expected null', txt;
+  end if;
+
+  ---------------------------------------------------------------------------
   -- Grants
   ---------------------------------------------------------------------------
   if not has_function_privilege('authenticated',
-       'review_recipe_translation(uuid,text,text,text,jsonb)', 'execute') then
+       'review_recipe_translation(uuid,text,text,text,jsonb,text)', 'execute') then
     failures := failures + 1;
     raise warning 'authenticated cannot execute review_recipe_translation';
   end if;
 
   if has_function_privilege('anon',
-       'review_recipe_translation(uuid,text,text,text,jsonb)', 'execute') then
+       'review_recipe_translation(uuid,text,text,text,jsonb,text)', 'execute') then
     failures := failures + 1;
     raise warning 'anon can execute review_recipe_translation';
   end if;

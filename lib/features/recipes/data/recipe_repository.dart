@@ -251,12 +251,14 @@ class RecipeRepository {
     required String locale,
     required String title,
     String? description,
+    String? notes,
     required List<RecipeStep> steps,
   }) => _remote.reviewTranslation(
     recipeId: recipeId,
     locale: locale,
     title: title,
     description: description,
+    notes: notes,
     stepPayloads:
         steps.map(_translatedStepPayload).toList(growable: false),
   );
@@ -320,6 +322,7 @@ class RecipeRepository {
     required String title,
     required String originalLocale,
     String? description,
+    String? notes,
     int? servings,
     int? prepMinutes,
     int? cookMinutes,
@@ -335,6 +338,7 @@ class RecipeRepository {
       title: title,
       originalLocale: originalLocale,
       description: description,
+      notes: notes,
       servings: servings,
       prepMinutes: prepMinutes,
       cookMinutes: cookMinutes,
@@ -361,6 +365,7 @@ class RecipeRepository {
     id: recipe.id,
     title: recipe.title,
     description: recipe.description,
+    notes: recipe.notes,
     servings: recipe.servings,
     prepMinutes: recipe.prepMinutes,
     cookMinutes: recipe.cookMinutes,
@@ -634,6 +639,7 @@ class RecipeRepository {
   Map<String, dynamic> _stepPayload(RecipeStep step) => <String, dynamic>{
         'text': step.text,
         'timer_seconds': step.timerSeconds,
+        'kind': step.kind.name,
       };
 
   /// The inverse of [_stepPayload]: POSITION IS SENT, not derived.

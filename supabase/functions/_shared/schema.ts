@@ -86,6 +86,12 @@ export const ModelStep = z.object({
   timerSeconds: z.int().positive().nullable().optional().describe(
     "Duration in seconds if the step names an explicit time, else null.",
   ),
+  kind: z.enum(["step", "heading", "note"]).meta({ title: "ParsedStepKind" })
+    .nullable().optional().describe(
+      "step for an instruction; heading for a subheading inside the method " +
+        "such as 'Za testo' or 'For the filling'; note for a tip or aside " +
+        "between steps that is not itself an instruction. Null means step.",
+    ),
 }).meta({ title: "ParsedStep" });
 
 /**
@@ -114,6 +120,10 @@ export const ModelRecipe = z.object({
   ),
   ingredients: z.array(ModelIngredientLine),
   steps: z.array(ModelStep),
+  notes: z.string().nullable().optional().describe(
+    "A tips / notes / 'Napomena' section after the method, verbatim. Lists " +
+      "as '- ' or '1. ' lines. Null if none.",
+  ),
 });
 
 // ---------------------------------------------------------------------------
@@ -219,6 +229,7 @@ export const ModelTranslation = z.object({
   title: z.string().min(1),
   description: z.string().nullable().optional(),
   steps: z.array(ModelTranslationStep),
+  notes: z.string().nullable().optional(),
 }).meta({ title: "ModelTranslation" });
 
 export type ModelTranslationT = z.infer<typeof ModelTranslation>;

@@ -115,6 +115,7 @@ class ImportConfirm extends _$ImportConfirm {
               title: current.title,
               originalLocale: current.originalLocale,
               description: current.description,
+              notes: current.notes,
               servings: current.servings,
               prepMinutes: current.prepMinutes,
               cookMinutes: current.cookMinutes,

@@ -234,6 +234,7 @@ ingredients(is_pantry_staple, category)''')
     required String locale,
     required String title,
     String? description,
+    String? notes,
     required List<Map<String, dynamic>> stepPayloads,
   }) =>
       runGuarded(() async {
@@ -245,6 +246,7 @@ ingredients(is_pantry_staple, category)''')
             'new_title': title,
             'new_description': description,
             'new_steps': stepPayloads,
+            'new_notes': notes,
           },
         );
       });
@@ -266,6 +268,7 @@ ingredients(is_pantry_staple, category)''')
     required String title,
     required String originalLocale,
     String? description,
+    String? notes,
     int? servings,
     int? prepMinutes,
     int? cookMinutes,
@@ -290,6 +293,7 @@ ingredients(is_pantry_staple, category)''')
               'household_id': householdId,
               'title': title.trim(),
               'description': _blankToNull(description),
+              'notes': _blankToNull(notes),
               'servings': servings,
               'prep_minutes': prepMinutes,
               'cook_minutes': cookMinutes,
@@ -316,6 +320,7 @@ ingredients(is_pantry_staple, category)''')
     required String id,
     required String title,
     String? description,
+    String? notes,
     int? servings,
     int? prepMinutes,
     int? cookMinutes,
@@ -330,6 +335,7 @@ ingredients(is_pantry_staple, category)''')
         await _client.from('recipes').update(<String, dynamic>{
           'title': title.trim(),
           'description': _blankToNull(description),
+          'notes': _blankToNull(notes),
           'servings': servings,
           'prep_minutes': prepMinutes,
           'cook_minutes': cookMinutes,

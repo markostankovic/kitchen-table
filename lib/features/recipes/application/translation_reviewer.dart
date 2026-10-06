@@ -77,6 +77,9 @@ class TranslationReviewer extends _$TranslationReviewer {
       locale: current.locale,
       title: current.title.trim(),
       description: current.description,
+      // Carried through though the screen does not edit it yet: the review
+      // write clears notes it is not sent (D153).
+      notes: current.notes,
       steps: current.steps,
     );
 

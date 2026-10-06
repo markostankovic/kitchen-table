@@ -29,7 +29,10 @@ import {
 import { callerClient, requireCaller, serviceClient } from "../_shared/auth.ts";
 import { checkQuota, recordUsage } from "../_shared/usage.ts";
 import { AiFailure } from "../_shared/ai.ts";
-import { translateRecipe } from "../_shared/translate.ts";
+import {
+  translateRecipe,
+  type TranslationSourceStep,
+} from "../_shared/translate.ts";
 
 const LOCALES = new Set(["sr", "en"]);
 
@@ -58,7 +61,7 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
   const { data: recipe, error: recipeError } = await caller
     .from("recipes")
     .select(
-      "id, household_id, title, description, original_locale, recipe_steps(position, text)",
+      "id, household_id, title, description, notes, original_locale, recipe_steps(position, text, kind)",
     )
     .eq("id", recipeId)
     .is("deleted_at", null)
@@ -88,7 +91,7 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
 
   await checkQuota(service, householdId);
 
-  const steps = (recipe.recipe_steps as { position: number; text: string }[])
+  const steps = (recipe.recipe_steps as TranslationSourceStep[])
     .toSorted((a, b) => a.position - b.position);
 
   let translation;
@@ -97,6 +100,7 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
       {
         title: recipe.title as string,
         description: (recipe.description as string | null) ?? null,
+        notes: (recipe.notes as string | null) ?? null,
         steps,
       },
       targetLocale as "sr" | "en",
@@ -131,6 +135,7 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
     new_title: translation.value.title,
     new_description: translation.value.description,
     new_steps: translation.value.steps,
+    new_notes: translation.value.notes,
   });
   if (saveError) throw saveError;
 

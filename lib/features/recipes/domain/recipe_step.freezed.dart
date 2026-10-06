@@ -20,7 +20,7 @@ mixin _$RecipeStep {
 /// 1c reads it; the column is cheap and retrofitting it onto entered
 /// recipes would not be.
  int? get timerSeconds;/// Null for a step that has not been saved yet.
- String? get id;
+ String? get id; RecipeStepKind get kind;
 /// Create a copy of RecipeStep
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -34,20 +34,20 @@ $RecipeStepCopyWith<RecipeStep> get copyWith => _$RecipeStepCopyWithImpl<RecipeS
 @override
 bool operator ==(Object other) {
   final _this = this as RecipeStep;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecipeStep&&(identical(other.position, _this.position) || other.position == _this.position)&&(identical(other.text, _this.text) || other.text == _this.text)&&(identical(other.timerSeconds, _this.timerSeconds) || other.timerSeconds == _this.timerSeconds)&&(identical(other.id, _this.id) || other.id == _this.id));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecipeStep&&(identical(other.position, _this.position) || other.position == _this.position)&&(identical(other.text, _this.text) || other.text == _this.text)&&(identical(other.timerSeconds, _this.timerSeconds) || other.timerSeconds == _this.timerSeconds)&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.kind, _this.kind) || other.kind == _this.kind));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RecipeStep;
-  return Object.hash(runtimeType,_this.position,_this.text,_this.timerSeconds,_this.id);
+  return Object.hash(runtimeType,_this.position,_this.text,_this.timerSeconds,_this.id,_this.kind);
 }
 
 @override
 String toString() {
   final _this = this as RecipeStep;
-  return 'RecipeStep(position: ${_this.position}, text: ${_this.text}, timerSeconds: ${_this.timerSeconds}, id: ${_this.id})';
+  return 'RecipeStep(position: ${_this.position}, text: ${_this.text}, timerSeconds: ${_this.timerSeconds}, id: ${_this.id}, kind: ${_this.kind})';
 }
 
 
@@ -58,7 +58,7 @@ abstract mixin class $RecipeStepCopyWith<$Res>  {
   factory $RecipeStepCopyWith(RecipeStep value, $Res Function(RecipeStep) _then) = _$RecipeStepCopyWithImpl;
 @useResult
 $Res call({
- int position, String text, int? timerSeconds, String? id
+ int position, String text, int? timerSeconds, String? id, RecipeStepKind kind
 });
 
 
@@ -75,13 +75,14 @@ class _$RecipeStepCopyWithImpl<$Res>
 
 /// Create a copy of RecipeStep
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? position = null,Object? text = null,Object? timerSeconds = freezed,Object? id = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? position = null,Object? text = null,Object? timerSeconds = freezed,Object? id = freezed,Object? kind = null,}) {
   return _then(RecipeStep(
 position: null == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
 as int,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
 as String,timerSeconds: freezed == timerSeconds ? _self.timerSeconds : timerSeconds // ignore: cast_nullable_to_non_nullable
 as int?,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as RecipeStepKind,
   ));
 }
 
@@ -166,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int position,  String text,  int? timerSeconds,  String? id)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int position,  String text,  int? timerSeconds,  String? id,  RecipeStepKind kind)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RecipeStep() when $default != null:
-return $default(_that.position,_that.text,_that.timerSeconds,_that.id);case _:
+return $default(_that.position,_that.text,_that.timerSeconds,_that.id,_that.kind);case _:
   return orElse();
 
 }
@@ -187,10 +188,10 @@ return $default(_that.position,_that.text,_that.timerSeconds,_that.id);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int position,  String text,  int? timerSeconds,  String? id)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int position,  String text,  int? timerSeconds,  String? id,  RecipeStepKind kind)  $default,) {final _that = this;
 switch (_that) {
 case _RecipeStep():
-return $default(_that.position,_that.text,_that.timerSeconds,_that.id);case _:
+return $default(_that.position,_that.text,_that.timerSeconds,_that.id,_that.kind);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -207,10 +208,10 @@ return $default(_that.position,_that.text,_that.timerSeconds,_that.id);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int position,  String text,  int? timerSeconds,  String? id)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int position,  String text,  int? timerSeconds,  String? id,  RecipeStepKind kind)?  $default,) {final _that = this;
 switch (_that) {
 case _RecipeStep() when $default != null:
-return $default(_that.position,_that.text,_that.timerSeconds,_that.id);case _:
+return $default(_that.position,_that.text,_that.timerSeconds,_that.id,_that.kind);case _:
   return null;
 
 }
@@ -222,7 +223,7 @@ return $default(_that.position,_that.text,_that.timerSeconds,_that.id);case _:
 @JsonSerializable()
 
 class _RecipeStep implements RecipeStep {
-  const _RecipeStep({required this.position, required this.text, this.timerSeconds, this.id});
+  const _RecipeStep({required this.position, required this.text, this.timerSeconds, this.id, this.kind = RecipeStepKind.step});
   factory _RecipeStep.fromJson(Map<String, dynamic> json) => _$RecipeStepFromJson(json);
 
 @override final  int position;
@@ -233,6 +234,7 @@ class _RecipeStep implements RecipeStep {
 @override final  int? timerSeconds;
 /// Null for a step that has not been saved yet.
 @override final  String? id;
+@override@JsonKey() final  RecipeStepKind kind;
 
 /// Create a copy of RecipeStep
 /// with the given fields replaced by the non-null parameter values.
@@ -247,18 +249,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecipeStep&&(identical(other.position, position) || other.position == position)&&(identical(other.text, text) || other.text == text)&&(identical(other.timerSeconds, timerSeconds) || other.timerSeconds == timerSeconds)&&(identical(other.id, id) || other.id == id));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecipeStep&&(identical(other.position, position) || other.position == position)&&(identical(other.text, text) || other.text == text)&&(identical(other.timerSeconds, timerSeconds) || other.timerSeconds == timerSeconds)&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,position,text,timerSeconds,id);
+    return Object.hash(runtimeType,position,text,timerSeconds,id,kind);
 }
 
 @override
 String toString() {
-    return 'RecipeStep(position: $position, text: $text, timerSeconds: $timerSeconds, id: $id)';
+    return 'RecipeStep(position: $position, text: $text, timerSeconds: $timerSeconds, id: $id, kind: $kind)';
 }
 
 
@@ -269,7 +271,7 @@ abstract mixin class _$RecipeStepCopyWith<$Res> implements $RecipeStepCopyWith<$
   factory _$RecipeStepCopyWith(_RecipeStep value, $Res Function(_RecipeStep) _then) = __$RecipeStepCopyWithImpl;
 @override @useResult
 $Res call({
- int position, String text, int? timerSeconds, String? id
+ int position, String text, int? timerSeconds, String? id, RecipeStepKind kind
 });
 
 
@@ -286,13 +288,14 @@ class __$RecipeStepCopyWithImpl<$Res>
 
 /// Create a copy of RecipeStep
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? position = null,Object? text = null,Object? timerSeconds = freezed,Object? id = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? position = null,Object? text = null,Object? timerSeconds = freezed,Object? id = freezed,Object? kind = null,}) {
   return _then(_RecipeStep(
 position: null == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
 as int,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
 as String,timerSeconds: freezed == timerSeconds ? _self.timerSeconds : timerSeconds // ignore: cast_nullable_to_non_nullable
 as int?,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as RecipeStepKind,
   ));
 }
 

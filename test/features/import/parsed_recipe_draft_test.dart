@@ -12,6 +12,7 @@ import 'package:kitchen_table/features/import/domain/parsed_recipe.dart';
 import 'package:kitchen_table/features/import/domain/parsed_recipe_draft.dart';
 import 'package:kitchen_table/features/ingredients/domain/ingredient_match.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_draft.dart';
+import 'package:kitchen_table/features/recipes/domain/recipe_step.dart';
 
 ParsedIngredientLine _line({
   required String rawText,
@@ -230,5 +231,37 @@ void main() {
     expect(review.draft.steps.map((RecipeDraftStep s) => s.text),
         <String>['Zagrejati rernu.', 'Peći.']);
     expect(review.draft.steps[1].timerSeconds, 2400);
+  });
+
+  test('step kinds and notes are carried; a missing kind is a step (D153)',
+      () {
+    final ParsedRecipe parsed = _recipe(
+      <ParsedIngredientLine>[_line(rawText: 'a')],
+      steps: const <ParsedStep>[
+        ParsedStep(text: 'Za testo', kind: ParsedStepKind.HEADING),
+        // No kind at all: what the model returns for an ordinary step, and
+        // what every import_jobs.result written before D153 holds.
+        ParsedStep(text: 'Umesiti testo.'),
+        ParsedStep(text: 'Može i dan ranije.', kind: ParsedStepKind.NOTE),
+        ParsedStep(text: 'Peći.', kind: ParsedStepKind.STEP),
+      ],
+    ).copyWith(notes: '- Čuva se dva dana.');
+
+    final ImportReview review = draftFromParsed(parsed);
+
+    expect(review.draft.steps.map((RecipeDraftStep s) => s.kind),
+        <RecipeStepKind>[
+          RecipeStepKind.heading,
+          RecipeStepKind.step,
+          RecipeStepKind.note,
+          RecipeStepKind.step,
+        ]);
+    expect(review.draft.notes, '- Čuva se dva dana.');
+  });
+
+  test('a recipe without notes imports with null notes', () {
+    final ImportReview review =
+        draftFromParsed(_recipe(<ParsedIngredientLine>[_line(rawText: 'a')]));
+    expect(review.draft.notes, isNull);
   });
 }

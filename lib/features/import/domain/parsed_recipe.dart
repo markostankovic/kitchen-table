@@ -33,6 +33,10 @@ abstract class ParsedRecipe with _$ParsedRecipe {
     @JsonKey(name: "ingredients")
     required List<ParsedIngredientLine> ingredients,
 
+    ///A tips / notes / 'Napomena' section after the method, verbatim. Lists as '- ' or '1. '
+    ///lines. Null if none.
+    @JsonKey(name: "notes") String? notes,
+
     ///The language the recipe is written in. 'sr' for Serbian (in either script), 'en' for
     ///English.
     @JsonKey(name: "originalLocale") required ParsedLocale originalLocale,
@@ -131,6 +135,11 @@ final parsedLocaleValues = EnumValues({
 @freezed
 abstract class ParsedStep with _$ParsedStep {
   const factory ParsedStep({
+    ///step for an instruction; heading for a subheading inside the method such as 'Za testo' or
+    ///'For the filling'; note for a tip or aside between steps that is not itself an
+    ///instruction. Null means step.
+    @JsonKey(name: "kind") ParsedStepKind? kind,
+
     ///One preparation step, in the recipe's original language.
     @JsonKey(name: "text") required String text,
 
@@ -141,6 +150,21 @@ abstract class ParsedStep with _$ParsedStep {
   factory ParsedStep.fromJson(Map<String, dynamic> json) =>
       _$ParsedStepFromJson(json);
 }
+
+enum ParsedStepKind {
+  @JsonValue("heading")
+  HEADING,
+  @JsonValue("note")
+  NOTE,
+  @JsonValue("step")
+  STEP,
+}
+
+final parsedStepKindValues = EnumValues({
+  "heading": ParsedStepKind.HEADING,
+  "note": ParsedStepKind.NOTE,
+  "step": ParsedStepKind.STEP,
+});
 
 class EnumValues<T> {
   Map<String, T> map;

@@ -12,6 +12,7 @@ import 'package:kitchen_table/features/recipes/domain/recipe.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_detail.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_step.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_translation.dart';
+import 'package:kitchen_table/features/recipes/domain/translation_review_draft.dart';
 
 const Recipe _torta = Recipe(
   id: 'r1',
@@ -157,6 +158,84 @@ void main() {
     });
     test('canTranslate stays false -- retranslating is not offered', () {
       expect(detail.canTranslate, isFalse);
+    });
+  });
+
+  group('headings, notes and the end note (D153)', () {
+    const List<RecipeStep> structured = <RecipeStep>[
+      RecipeStep(position: 0, text: 'Za testo', kind: RecipeStepKind.heading),
+      RecipeStep(position: 1, text: 'Umesiti testo.'),
+      RecipeStep(position: 2, text: 'Može i dan ranije.', kind: RecipeStepKind.note),
+    ];
+
+    RecipeDetail detailWith({String? translatedNotes}) => RecipeDetail(
+          recipe: _torta.copyWith(notes: '- Čuva se dva dana.'),
+          readingLocale: 'en',
+          steps: structured,
+          translations: <RecipeTranslation>[
+            RecipeTranslation(
+              locale: 'en',
+              title: 'Carrot cake',
+              notes: translatedNotes,
+              // A translation is prose only -- every row has the default kind.
+              steps: const <RecipeStep>[
+                RecipeStep(position: 0, text: 'For the dough'),
+                RecipeStep(position: 1, text: 'Knead the dough.'),
+                RecipeStep(position: 2, text: 'It keeps a day ahead.'),
+              ],
+            ),
+          ],
+        );
+
+    test('displaySteps under a translation keeps the source\'s kinds', () {
+      final List<RecipeStep> shown = detailWith().displaySteps;
+
+      expect(shown.map((RecipeStep s) => s.text), <String>[
+        'For the dough',
+        'Knead the dough.',
+        'It keeps a day ahead.',
+      ]);
+      expect(shown.map((RecipeStep s) => s.kind), <RecipeStepKind>[
+        RecipeStepKind.heading,
+        RecipeStepKind.step,
+        RecipeStepKind.note,
+      ]);
+    });
+
+    test('displaySteps without a translation is the original, kinds and all',
+        () {
+      final RecipeDetail detail = detailWith().copyWith(readingLocale: 'sr');
+      expect(detail.displaySteps, structured);
+    });
+
+    test('displayNotes picks the translation\'s notes when one is shown', () {
+      expect(
+        detailWith(translatedNotes: '- Keeps for two days.').displayNotes,
+        '- Keeps for two days.',
+      );
+    });
+
+    test('displayNotes follows the translation even when it has none', () {
+      // displayDescription's own rule: a shown translation is the document.
+      expect(detailWith().displayNotes, isNull);
+    });
+
+    test('the review draft carries both notes, so a review cannot wipe them',
+        () {
+      // review_recipe_translation clears notes it is not sent; the review
+      // screen does not edit them yet, so the draft must carry them through.
+      final TranslationReviewDraft draft = TranslationReviewDraft.fromDetail(
+          detailWith(translatedNotes: '- Keeps for two days.'));
+
+      expect(draft.sourceNotes, '- Čuva se dva dana.');
+      expect(draft.notes, '- Keeps for two days.');
+    });
+
+    test('displayNotes is the original when reading the own language', () {
+      expect(
+        detailWith().copyWith(readingLocale: 'sr').displayNotes,
+        '- Čuva se dva dana.',
+      );
     });
   });
 

@@ -14,6 +14,11 @@
 /// `ingredients(is_pantry_staple, category)` is present only when the
 /// caller asked for it (the shopping list's `fetchLinesForRecipes`), and
 /// absent (and therefore defaulted) for a single recipe's own detail.
+///
+/// `recipe_steps.kind` and the two `notes` columns (D153) arrived after blobs
+/// were already cached; an old blob lacks them and decodes to
+/// [RecipeStepKind.step] and null, which is what every recipe written before
+/// that migration was.
 library;
 
 import '../../domain/recipe.dart';
@@ -27,7 +32,7 @@ import '../../../ingredients/domain/quantity.dart';
 /// cannot drift between the search query, the detail query and the delta
 /// fetch.
 const String recipeColumns = '''
-id, household_id, title, description, servings, prep_minutes, cook_minutes,
+id, household_id, title, description, notes, servings, prep_minutes, cook_minutes,
 original_locale, source_type, source_url, source_attribution, status,
 image_path, tags, is_favorite, rating, created_by, updated_at, deleted_at''';
 
@@ -43,8 +48,8 @@ recipe_ingredients(id, position, section, raw_text, ingredient_id,
                    qty_num, qty_den, qty_max_num, qty_max_den,
                    unit_code, note, is_optional,
                    match_method, match_confidence, matched_at),
-recipe_steps(id, position, text, timer_seconds),
-recipe_translations(locale, title, description, steps,
+recipe_steps(id, position, text, timer_seconds, kind),
+recipe_translations(locale, title, description, notes, steps,
                     is_machine_generated, reviewed_by, reviewed_at)''';
 
 Recipe recipeFromWire(Map<String, dynamic> row) => Recipe(
@@ -52,6 +57,7 @@ Recipe recipeFromWire(Map<String, dynamic> row) => Recipe(
       householdId: row['household_id'] as String,
       title: row['title'] as String,
       description: row['description'] as String?,
+      notes: row['notes'] as String?,
       servings: row['servings'] as int?,
       prepMinutes: row['prep_minutes'] as int?,
       cookMinutes: row['cook_minutes'] as int?,
@@ -129,6 +135,7 @@ RecipeStep recipeStepFromWire(Map<String, dynamic> row) => RecipeStep(
       position: row['position'] as int,
       text: row['text'] as String,
       timerSeconds: row['timer_seconds'] as int?,
+      kind: RecipeStepKind.fromWire(row['kind'] as String?),
     );
 
 /// `recipe_translations.steps` is stored as `jsonb` -- `[{position, text}]`
@@ -136,11 +143,15 @@ RecipeStep recipeStepFromWire(Map<String, dynamic> row) => RecipeStep(
 /// decode from a nested list already parsed out of that column, not from a
 /// second embed. Sorted by position for the same reason [recipeStepsFromWire]
 /// is: nothing promises embed or array order survives the wire.
+///
+/// The steps decode with the default kind: a translation is prose only, and
+/// `RecipeDetail.displaySteps` overlays the source's kind by position (D153).
 RecipeTranslation recipeTranslationFromWire(Map<String, dynamic> row) =>
     RecipeTranslation(
       locale: row['locale'] as String,
       title: row['title'] as String,
       description: row['description'] as String?,
+      notes: row['notes'] as String?,
       steps: (row['steps'] as List<dynamic>? ?? <dynamic>[])
           .cast<Map<String, dynamic>>()
           .map((Map<String, dynamic> step) => RecipeStep(

@@ -13,6 +13,7 @@ _TranslationReviewDraft _$TranslationReviewDraftFromJson(
   sourceLocale: json['sourceLocale'] as String,
   sourceTitle: json['sourceTitle'] as String,
   sourceDescription: json['sourceDescription'] as String?,
+  sourceNotes: json['sourceNotes'] as String?,
   sourceSteps:
       (json['sourceSteps'] as List<dynamic>?)
           ?.map((e) => RecipeStep.fromJson(e as Map<String, dynamic>))
@@ -20,6 +21,7 @@ _TranslationReviewDraft _$TranslationReviewDraftFromJson(
       const <RecipeStep>[],
   title: json['title'] as String,
   description: json['description'] as String?,
+  notes: json['notes'] as String?,
   steps:
       (json['steps'] as List<dynamic>?)
           ?.map((e) => RecipeStep.fromJson(e as Map<String, dynamic>))
@@ -34,8 +36,10 @@ Map<String, dynamic> _$TranslationReviewDraftToJson(
   'sourceLocale': instance.sourceLocale,
   'sourceTitle': instance.sourceTitle,
   'sourceDescription': instance.sourceDescription,
+  'sourceNotes': instance.sourceNotes,
   'sourceSteps': instance.sourceSteps,
   'title': instance.title,
   'description': instance.description,
+  'notes': instance.notes,
   'steps': instance.steps,
 };

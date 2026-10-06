@@ -253,7 +253,7 @@ final class CurrentShoppingListProvider
 }
 
 String _$currentShoppingListHash() =>
-    r'2fc3c10660dbd7425117770a97b7a14803bb3463';
+    r'17602d1282d1adfb3a49ecc2aa7e9a3ef3026434';
 
 /// The household's current list, and the actions that change it.
 ///

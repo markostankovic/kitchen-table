@@ -189,6 +189,7 @@ class RecipeEditor extends _$RecipeEditor {
         title: draft.title.trim(),
         originalLocale: draft.originalLocale,
         description: draft.description,
+        notes: draft.notes,
         servings: draft.servings,
         prepMinutes: draft.prepMinutes,
         cookMinutes: draft.cookMinutes,

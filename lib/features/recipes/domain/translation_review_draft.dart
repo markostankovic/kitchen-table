@@ -23,6 +23,10 @@ part 'translation_review_draft.g.dart';
 /// editable translation so the review screen never needs a second fetch to
 /// show both.
 ///
+/// [notes] has no field on the review screen yet, but it rides through: a
+/// review is a whole-document write, and `review_recipe_translation` clears
+/// notes it is not sent (D153).
+///
 /// In memory only, like [RecipeDraft] -- D12 rejects offline writes.
 ///
 /// Pure Dart (rule 7).
@@ -39,9 +43,11 @@ abstract class TranslationReviewDraft with _$TranslationReviewDraft {
     required String sourceLocale,
     required String sourceTitle,
     String? sourceDescription,
+    String? sourceNotes,
     @Default(<RecipeStep>[]) List<RecipeStep> sourceSteps,
     required String title,
     String? description,
+    String? notes,
     @Default(<RecipeStep>[]) List<RecipeStep> steps,
   }) = _TranslationReviewDraft;
 
@@ -67,9 +73,11 @@ abstract class TranslationReviewDraft with _$TranslationReviewDraft {
       sourceLocale: detail.recipe.originalLocale,
       sourceTitle: detail.recipe.title,
       sourceDescription: detail.recipe.description,
+      sourceNotes: detail.recipe.notes,
       sourceSteps: detail.steps,
       title: translation.title,
       description: translation.description,
+      notes: translation.notes,
       steps: translation.steps,
     );
   }
@@ -96,6 +104,8 @@ abstract class TranslationReviewDraft with _$TranslationReviewDraft {
 
   TranslationReviewDraft setDescription(String? value) =>
       copyWith(description: value);
+
+  TranslationReviewDraft setNotes(String? value) => copyWith(notes: value);
 
   /// Edits the text of the translated step at [position]. No other field of
   /// [RecipeStep] is ever touched here -- there is nothing on this screen

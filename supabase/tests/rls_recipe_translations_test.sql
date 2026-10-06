@@ -130,6 +130,29 @@ begin
     raise warning 're-translation did not overwrite the title, got `%`', txt;
   end if;
 
+  -- Notes ride the upsert too (D153): written when sent, and a re-translation
+  -- without them clears them, like any other column of the document.
+  perform save_recipe_translation(
+    recipe_a, 'en', 'zzz translated title, revised', 'revised description',
+    jsonb_build_array(jsonb_build_object('position', 0, 'text', 'Mix it well.')),
+    'Keeps for two days.');
+
+  select notes into txt from recipe_translations where id = translation_id;
+  if txt is distinct from 'Keeps for two days.' then
+    failures := failures + 1;
+    raise warning 'save_recipe_translation did not write notes, got `%`', txt;
+  end if;
+
+  perform save_recipe_translation(
+    recipe_a, 'en', 'zzz translated title, revised', 'revised description',
+    jsonb_build_array(jsonb_build_object('position', 0, 'text', 'Mix it well.')));
+
+  select notes into txt from recipe_translations where id = translation_id;
+  if txt is not null then
+    failures := failures + 1;
+    raise warning 're-translating without notes left notes = `%`', txt;
+  end if;
+
   ---------------------------------------------------------------------------
   -- Refusals
   ---------------------------------------------------------------------------
@@ -286,13 +309,13 @@ begin
   -- Grants
   ---------------------------------------------------------------------------
   if not has_function_privilege('authenticated',
-       'save_recipe_translation(uuid,text,text,text,jsonb)', 'execute') then
+       'save_recipe_translation(uuid,text,text,text,jsonb,text)', 'execute') then
     failures := failures + 1;
     raise warning 'authenticated cannot execute save_recipe_translation';
   end if;
 
   if has_function_privilege('anon',
-       'save_recipe_translation(uuid,text,text,text,jsonb)', 'execute') then
+       'save_recipe_translation(uuid,text,text,text,jsonb,text)', 'execute') then
     failures := failures + 1;
     raise warning 'anon can execute save_recipe_translation';
   end if;

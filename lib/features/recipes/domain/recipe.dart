@@ -65,6 +65,10 @@ abstract class Recipe with _$Recipe {
     required RecipeStatus status,
     required String createdBy,
     String? description,
+
+    /// The end note ("Napomena" / "Notes"), free text with the markdown
+    /// subset (D153). Null when there is none.
+    String? notes,
     int? servings,
     int? prepMinutes,
     int? cookMinutes,

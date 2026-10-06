@@ -104,6 +104,7 @@ class ImportRepository {
     required List<RecipeIngredient> ingredients,
     required List<RecipeStep> steps,
     String? description,
+    String? notes,
     int? servings,
     int? prepMinutes,
     int? cookMinutes,
@@ -119,6 +120,7 @@ class ImportRepository {
             'recipe': <String, dynamic>{
               'title': title.trim(),
               'description': description,
+              'notes': notes,
               'servings': servings,
               'prep_minutes': prepMinutes,
               'cook_minutes': cookMinutes,
@@ -240,5 +242,6 @@ class ImportRepository {
   Map<String, dynamic> _stepPayload(RecipeStep step) => <String, dynamic>{
         'text': step.text,
         'timer_seconds': step.timerSeconds,
+        'kind': step.kind.name,
       };
 }

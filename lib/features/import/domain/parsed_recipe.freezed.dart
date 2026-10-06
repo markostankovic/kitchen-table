@@ -17,7 +17,9 @@ T _$identity<T>(T value) => value;
 mixin _$ParsedRecipe {
 
 @JsonKey(name: "cookMinutes") int? get cookMinutes;///A headnote or short introduction, if the source has one.
-@JsonKey(name: "description") String? get description;@JsonKey(name: "ingredients") List<ParsedIngredientLine> get ingredients;///The language the recipe is written in. 'sr' for Serbian (in either script), 'en' for
+@JsonKey(name: "description") String? get description;@JsonKey(name: "ingredients") List<ParsedIngredientLine> get ingredients;///A tips / notes / 'Napomena' section after the method, verbatim. Lists as '- ' or '1. '
+///lines. Null if none.
+@JsonKey(name: "notes") String? get notes;///The language the recipe is written in. 'sr' for Serbian (in either script), 'en' for
 ///English.
 @JsonKey(name: "originalLocale") ParsedLocale get originalLocale;@JsonKey(name: "prepMinutes") int? get prepMinutes;@JsonKey(name: "servings") int? get servings;///Book title, author, page, or site name -- whatever credits the source. Null if the source
 ///does not say.
@@ -35,20 +37,20 @@ $ParsedRecipeCopyWith<ParsedRecipe> get copyWith => _$ParsedRecipeCopyWithImpl<P
 @override
 bool operator ==(Object other) {
   final _this = this as ParsedRecipe;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParsedRecipe&&(identical(other.cookMinutes, _this.cookMinutes) || other.cookMinutes == _this.cookMinutes)&&(identical(other.description, _this.description) || other.description == _this.description)&&const DeepCollectionEquality().equals(other.ingredients, _this.ingredients)&&(identical(other.originalLocale, _this.originalLocale) || other.originalLocale == _this.originalLocale)&&(identical(other.prepMinutes, _this.prepMinutes) || other.prepMinutes == _this.prepMinutes)&&(identical(other.servings, _this.servings) || other.servings == _this.servings)&&(identical(other.sourceAttribution, _this.sourceAttribution) || other.sourceAttribution == _this.sourceAttribution)&&(identical(other.sourceUrl, _this.sourceUrl) || other.sourceUrl == _this.sourceUrl)&&const DeepCollectionEquality().equals(other.steps, _this.steps)&&(identical(other.title, _this.title) || other.title == _this.title));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParsedRecipe&&(identical(other.cookMinutes, _this.cookMinutes) || other.cookMinutes == _this.cookMinutes)&&(identical(other.description, _this.description) || other.description == _this.description)&&const DeepCollectionEquality().equals(other.ingredients, _this.ingredients)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.originalLocale, _this.originalLocale) || other.originalLocale == _this.originalLocale)&&(identical(other.prepMinutes, _this.prepMinutes) || other.prepMinutes == _this.prepMinutes)&&(identical(other.servings, _this.servings) || other.servings == _this.servings)&&(identical(other.sourceAttribution, _this.sourceAttribution) || other.sourceAttribution == _this.sourceAttribution)&&(identical(other.sourceUrl, _this.sourceUrl) || other.sourceUrl == _this.sourceUrl)&&const DeepCollectionEquality().equals(other.steps, _this.steps)&&(identical(other.title, _this.title) || other.title == _this.title));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ParsedRecipe;
-  return Object.hash(runtimeType,_this.cookMinutes,_this.description,const DeepCollectionEquality().hash(_this.ingredients),_this.originalLocale,_this.prepMinutes,_this.servings,_this.sourceAttribution,_this.sourceUrl,const DeepCollectionEquality().hash(_this.steps),_this.title);
+  return Object.hash(runtimeType,_this.cookMinutes,_this.description,const DeepCollectionEquality().hash(_this.ingredients),_this.notes,_this.originalLocale,_this.prepMinutes,_this.servings,_this.sourceAttribution,_this.sourceUrl,const DeepCollectionEquality().hash(_this.steps),_this.title);
 }
 
 @override
 String toString() {
   final _this = this as ParsedRecipe;
-  return 'ParsedRecipe(cookMinutes: ${_this.cookMinutes}, description: ${_this.description}, ingredients: ${_this.ingredients}, originalLocale: ${_this.originalLocale}, prepMinutes: ${_this.prepMinutes}, servings: ${_this.servings}, sourceAttribution: ${_this.sourceAttribution}, sourceUrl: ${_this.sourceUrl}, steps: ${_this.steps}, title: ${_this.title})';
+  return 'ParsedRecipe(cookMinutes: ${_this.cookMinutes}, description: ${_this.description}, ingredients: ${_this.ingredients}, notes: ${_this.notes}, originalLocale: ${_this.originalLocale}, prepMinutes: ${_this.prepMinutes}, servings: ${_this.servings}, sourceAttribution: ${_this.sourceAttribution}, sourceUrl: ${_this.sourceUrl}, steps: ${_this.steps}, title: ${_this.title})';
 }
 
 
@@ -59,7 +61,7 @@ abstract mixin class $ParsedRecipeCopyWith<$Res>  {
   factory $ParsedRecipeCopyWith(ParsedRecipe value, $Res Function(ParsedRecipe) _then) = _$ParsedRecipeCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: "cookMinutes") int? cookMinutes,@JsonKey(name: "description") String? description,@JsonKey(name: "ingredients") List<ParsedIngredientLine> ingredients,@JsonKey(name: "originalLocale") ParsedLocale originalLocale,@JsonKey(name: "prepMinutes") int? prepMinutes,@JsonKey(name: "servings") int? servings,@JsonKey(name: "sourceAttribution") String? sourceAttribution,@JsonKey(name: "sourceUrl") String? sourceUrl,@JsonKey(name: "steps") List<ParsedStep> steps,@JsonKey(name: "title") String title
+@JsonKey(name: "cookMinutes") int? cookMinutes,@JsonKey(name: "description") String? description,@JsonKey(name: "ingredients") List<ParsedIngredientLine> ingredients,@JsonKey(name: "notes") String? notes,@JsonKey(name: "originalLocale") ParsedLocale originalLocale,@JsonKey(name: "prepMinutes") int? prepMinutes,@JsonKey(name: "servings") int? servings,@JsonKey(name: "sourceAttribution") String? sourceAttribution,@JsonKey(name: "sourceUrl") String? sourceUrl,@JsonKey(name: "steps") List<ParsedStep> steps,@JsonKey(name: "title") String title
 });
 
 
@@ -76,12 +78,13 @@ class _$ParsedRecipeCopyWithImpl<$Res>
 
 /// Create a copy of ParsedRecipe
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? cookMinutes = freezed,Object? description = freezed,Object? ingredients = null,Object? originalLocale = null,Object? prepMinutes = freezed,Object? servings = freezed,Object? sourceAttribution = freezed,Object? sourceUrl = freezed,Object? steps = null,Object? title = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? cookMinutes = freezed,Object? description = freezed,Object? ingredients = null,Object? notes = freezed,Object? originalLocale = null,Object? prepMinutes = freezed,Object? servings = freezed,Object? sourceAttribution = freezed,Object? sourceUrl = freezed,Object? steps = null,Object? title = null,}) {
   return _then(ParsedRecipe(
 cookMinutes: freezed == cookMinutes ? _self.cookMinutes : cookMinutes // ignore: cast_nullable_to_non_nullable
 as int?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,ingredients: null == ingredients ? _self.ingredients : ingredients // ignore: cast_nullable_to_non_nullable
-as List<ParsedIngredientLine>,originalLocale: null == originalLocale ? _self.originalLocale : originalLocale // ignore: cast_nullable_to_non_nullable
+as List<ParsedIngredientLine>,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String?,originalLocale: null == originalLocale ? _self.originalLocale : originalLocale // ignore: cast_nullable_to_non_nullable
 as ParsedLocale,prepMinutes: freezed == prepMinutes ? _self.prepMinutes : prepMinutes // ignore: cast_nullable_to_non_nullable
 as int?,servings: freezed == servings ? _self.servings : servings // ignore: cast_nullable_to_non_nullable
 as int?,sourceAttribution: freezed == sourceAttribution ? _self.sourceAttribution : sourceAttribution // ignore: cast_nullable_to_non_nullable
@@ -173,10 +176,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: "cookMinutes")  int? cookMinutes, @JsonKey(name: "description")  String? description, @JsonKey(name: "ingredients")  List<ParsedIngredientLine> ingredients, @JsonKey(name: "originalLocale")  ParsedLocale originalLocale, @JsonKey(name: "prepMinutes")  int? prepMinutes, @JsonKey(name: "servings")  int? servings, @JsonKey(name: "sourceAttribution")  String? sourceAttribution, @JsonKey(name: "sourceUrl")  String? sourceUrl, @JsonKey(name: "steps")  List<ParsedStep> steps, @JsonKey(name: "title")  String title)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: "cookMinutes")  int? cookMinutes, @JsonKey(name: "description")  String? description, @JsonKey(name: "ingredients")  List<ParsedIngredientLine> ingredients, @JsonKey(name: "notes")  String? notes, @JsonKey(name: "originalLocale")  ParsedLocale originalLocale, @JsonKey(name: "prepMinutes")  int? prepMinutes, @JsonKey(name: "servings")  int? servings, @JsonKey(name: "sourceAttribution")  String? sourceAttribution, @JsonKey(name: "sourceUrl")  String? sourceUrl, @JsonKey(name: "steps")  List<ParsedStep> steps, @JsonKey(name: "title")  String title)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ParsedRecipe() when $default != null:
-return $default(_that.cookMinutes,_that.description,_that.ingredients,_that.originalLocale,_that.prepMinutes,_that.servings,_that.sourceAttribution,_that.sourceUrl,_that.steps,_that.title);case _:
+return $default(_that.cookMinutes,_that.description,_that.ingredients,_that.notes,_that.originalLocale,_that.prepMinutes,_that.servings,_that.sourceAttribution,_that.sourceUrl,_that.steps,_that.title);case _:
   return orElse();
 
 }
@@ -194,10 +197,10 @@ return $default(_that.cookMinutes,_that.description,_that.ingredients,_that.orig
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: "cookMinutes")  int? cookMinutes, @JsonKey(name: "description")  String? description, @JsonKey(name: "ingredients")  List<ParsedIngredientLine> ingredients, @JsonKey(name: "originalLocale")  ParsedLocale originalLocale, @JsonKey(name: "prepMinutes")  int? prepMinutes, @JsonKey(name: "servings")  int? servings, @JsonKey(name: "sourceAttribution")  String? sourceAttribution, @JsonKey(name: "sourceUrl")  String? sourceUrl, @JsonKey(name: "steps")  List<ParsedStep> steps, @JsonKey(name: "title")  String title)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: "cookMinutes")  int? cookMinutes, @JsonKey(name: "description")  String? description, @JsonKey(name: "ingredients")  List<ParsedIngredientLine> ingredients, @JsonKey(name: "notes")  String? notes, @JsonKey(name: "originalLocale")  ParsedLocale originalLocale, @JsonKey(name: "prepMinutes")  int? prepMinutes, @JsonKey(name: "servings")  int? servings, @JsonKey(name: "sourceAttribution")  String? sourceAttribution, @JsonKey(name: "sourceUrl")  String? sourceUrl, @JsonKey(name: "steps")  List<ParsedStep> steps, @JsonKey(name: "title")  String title)  $default,) {final _that = this;
 switch (_that) {
 case _ParsedRecipe():
-return $default(_that.cookMinutes,_that.description,_that.ingredients,_that.originalLocale,_that.prepMinutes,_that.servings,_that.sourceAttribution,_that.sourceUrl,_that.steps,_that.title);case _:
+return $default(_that.cookMinutes,_that.description,_that.ingredients,_that.notes,_that.originalLocale,_that.prepMinutes,_that.servings,_that.sourceAttribution,_that.sourceUrl,_that.steps,_that.title);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -214,10 +217,10 @@ return $default(_that.cookMinutes,_that.description,_that.ingredients,_that.orig
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: "cookMinutes")  int? cookMinutes, @JsonKey(name: "description")  String? description, @JsonKey(name: "ingredients")  List<ParsedIngredientLine> ingredients, @JsonKey(name: "originalLocale")  ParsedLocale originalLocale, @JsonKey(name: "prepMinutes")  int? prepMinutes, @JsonKey(name: "servings")  int? servings, @JsonKey(name: "sourceAttribution")  String? sourceAttribution, @JsonKey(name: "sourceUrl")  String? sourceUrl, @JsonKey(name: "steps")  List<ParsedStep> steps, @JsonKey(name: "title")  String title)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: "cookMinutes")  int? cookMinutes, @JsonKey(name: "description")  String? description, @JsonKey(name: "ingredients")  List<ParsedIngredientLine> ingredients, @JsonKey(name: "notes")  String? notes, @JsonKey(name: "originalLocale")  ParsedLocale originalLocale, @JsonKey(name: "prepMinutes")  int? prepMinutes, @JsonKey(name: "servings")  int? servings, @JsonKey(name: "sourceAttribution")  String? sourceAttribution, @JsonKey(name: "sourceUrl")  String? sourceUrl, @JsonKey(name: "steps")  List<ParsedStep> steps, @JsonKey(name: "title")  String title)?  $default,) {final _that = this;
 switch (_that) {
 case _ParsedRecipe() when $default != null:
-return $default(_that.cookMinutes,_that.description,_that.ingredients,_that.originalLocale,_that.prepMinutes,_that.servings,_that.sourceAttribution,_that.sourceUrl,_that.steps,_that.title);case _:
+return $default(_that.cookMinutes,_that.description,_that.ingredients,_that.notes,_that.originalLocale,_that.prepMinutes,_that.servings,_that.sourceAttribution,_that.sourceUrl,_that.steps,_that.title);case _:
   return null;
 
 }
@@ -229,7 +232,7 @@ return $default(_that.cookMinutes,_that.description,_that.ingredients,_that.orig
 @JsonSerializable()
 
 class _ParsedRecipe implements ParsedRecipe {
-  const _ParsedRecipe({@JsonKey(name: "cookMinutes") this.cookMinutes, @JsonKey(name: "description") this.description, @JsonKey(name: "ingredients") required  List<ParsedIngredientLine> ingredients, @JsonKey(name: "originalLocale") required this.originalLocale, @JsonKey(name: "prepMinutes") this.prepMinutes, @JsonKey(name: "servings") this.servings, @JsonKey(name: "sourceAttribution") this.sourceAttribution, @JsonKey(name: "sourceUrl") this.sourceUrl, @JsonKey(name: "steps") required  List<ParsedStep> steps, @JsonKey(name: "title") required this.title}): _ingredients = ingredients,_steps = steps;
+  const _ParsedRecipe({@JsonKey(name: "cookMinutes") this.cookMinutes, @JsonKey(name: "description") this.description, @JsonKey(name: "ingredients") required  List<ParsedIngredientLine> ingredients, @JsonKey(name: "notes") this.notes, @JsonKey(name: "originalLocale") required this.originalLocale, @JsonKey(name: "prepMinutes") this.prepMinutes, @JsonKey(name: "servings") this.servings, @JsonKey(name: "sourceAttribution") this.sourceAttribution, @JsonKey(name: "sourceUrl") this.sourceUrl, @JsonKey(name: "steps") required  List<ParsedStep> steps, @JsonKey(name: "title") required this.title}): _ingredients = ingredients,_steps = steps;
   factory _ParsedRecipe.fromJson(Map<String, dynamic> json) => _$ParsedRecipeFromJson(json);
 
 @override@JsonKey(name: "cookMinutes") final  int? cookMinutes;
@@ -242,6 +245,9 @@ class _ParsedRecipe implements ParsedRecipe {
   return EqualUnmodifiableListView(_ingredients);
 }
 
+///A tips / notes / 'Napomena' section after the method, verbatim. Lists as '- ' or '1. '
+///lines. Null if none.
+@override@JsonKey(name: "notes") final  String? notes;
 ///The language the recipe is written in. 'sr' for Serbian (in either script), 'en' for
 ///English.
 @override@JsonKey(name: "originalLocale") final  ParsedLocale originalLocale;
@@ -273,18 +279,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParsedRecipe&&(identical(other.cookMinutes, cookMinutes) || other.cookMinutes == cookMinutes)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.ingredients, _ingredients)&&(identical(other.originalLocale, originalLocale) || other.originalLocale == originalLocale)&&(identical(other.prepMinutes, prepMinutes) || other.prepMinutes == prepMinutes)&&(identical(other.servings, servings) || other.servings == servings)&&(identical(other.sourceAttribution, sourceAttribution) || other.sourceAttribution == sourceAttribution)&&(identical(other.sourceUrl, sourceUrl) || other.sourceUrl == sourceUrl)&&const DeepCollectionEquality().equals(other.steps, _steps)&&(identical(other.title, title) || other.title == title));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParsedRecipe&&(identical(other.cookMinutes, cookMinutes) || other.cookMinutes == cookMinutes)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.ingredients, _ingredients)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.originalLocale, originalLocale) || other.originalLocale == originalLocale)&&(identical(other.prepMinutes, prepMinutes) || other.prepMinutes == prepMinutes)&&(identical(other.servings, servings) || other.servings == servings)&&(identical(other.sourceAttribution, sourceAttribution) || other.sourceAttribution == sourceAttribution)&&(identical(other.sourceUrl, sourceUrl) || other.sourceUrl == sourceUrl)&&const DeepCollectionEquality().equals(other.steps, _steps)&&(identical(other.title, title) || other.title == title));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,cookMinutes,description,const DeepCollectionEquality().hash(_ingredients),originalLocale,prepMinutes,servings,sourceAttribution,sourceUrl,const DeepCollectionEquality().hash(_steps),title);
+    return Object.hash(runtimeType,cookMinutes,description,const DeepCollectionEquality().hash(_ingredients),notes,originalLocale,prepMinutes,servings,sourceAttribution,sourceUrl,const DeepCollectionEquality().hash(_steps),title);
 }
 
 @override
 String toString() {
-    return 'ParsedRecipe(cookMinutes: $cookMinutes, description: $description, ingredients: $ingredients, originalLocale: $originalLocale, prepMinutes: $prepMinutes, servings: $servings, sourceAttribution: $sourceAttribution, sourceUrl: $sourceUrl, steps: $steps, title: $title)';
+    return 'ParsedRecipe(cookMinutes: $cookMinutes, description: $description, ingredients: $ingredients, notes: $notes, originalLocale: $originalLocale, prepMinutes: $prepMinutes, servings: $servings, sourceAttribution: $sourceAttribution, sourceUrl: $sourceUrl, steps: $steps, title: $title)';
 }
 
 
@@ -295,7 +301,7 @@ abstract mixin class _$ParsedRecipeCopyWith<$Res> implements $ParsedRecipeCopyWi
   factory _$ParsedRecipeCopyWith(_ParsedRecipe value, $Res Function(_ParsedRecipe) _then) = __$ParsedRecipeCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: "cookMinutes") int? cookMinutes,@JsonKey(name: "description") String? description,@JsonKey(name: "ingredients") List<ParsedIngredientLine> ingredients,@JsonKey(name: "originalLocale") ParsedLocale originalLocale,@JsonKey(name: "prepMinutes") int? prepMinutes,@JsonKey(name: "servings") int? servings,@JsonKey(name: "sourceAttribution") String? sourceAttribution,@JsonKey(name: "sourceUrl") String? sourceUrl,@JsonKey(name: "steps") List<ParsedStep> steps,@JsonKey(name: "title") String title
+@JsonKey(name: "cookMinutes") int? cookMinutes,@JsonKey(name: "description") String? description,@JsonKey(name: "ingredients") List<ParsedIngredientLine> ingredients,@JsonKey(name: "notes") String? notes,@JsonKey(name: "originalLocale") ParsedLocale originalLocale,@JsonKey(name: "prepMinutes") int? prepMinutes,@JsonKey(name: "servings") int? servings,@JsonKey(name: "sourceAttribution") String? sourceAttribution,@JsonKey(name: "sourceUrl") String? sourceUrl,@JsonKey(name: "steps") List<ParsedStep> steps,@JsonKey(name: "title") String title
 });
 
 
@@ -312,12 +318,13 @@ class __$ParsedRecipeCopyWithImpl<$Res>
 
 /// Create a copy of ParsedRecipe
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? cookMinutes = freezed,Object? description = freezed,Object? ingredients = null,Object? originalLocale = null,Object? prepMinutes = freezed,Object? servings = freezed,Object? sourceAttribution = freezed,Object? sourceUrl = freezed,Object? steps = null,Object? title = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? cookMinutes = freezed,Object? description = freezed,Object? ingredients = null,Object? notes = freezed,Object? originalLocale = null,Object? prepMinutes = freezed,Object? servings = freezed,Object? sourceAttribution = freezed,Object? sourceUrl = freezed,Object? steps = null,Object? title = null,}) {
   return _then(_ParsedRecipe(
 cookMinutes: freezed == cookMinutes ? _self.cookMinutes : cookMinutes // ignore: cast_nullable_to_non_nullable
 as int?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,ingredients: null == ingredients ? _self._ingredients : ingredients // ignore: cast_nullable_to_non_nullable
-as List<ParsedIngredientLine>,originalLocale: null == originalLocale ? _self.originalLocale : originalLocale // ignore: cast_nullable_to_non_nullable
+as List<ParsedIngredientLine>,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String?,originalLocale: null == originalLocale ? _self.originalLocale : originalLocale // ignore: cast_nullable_to_non_nullable
 as ParsedLocale,prepMinutes: freezed == prepMinutes ? _self.prepMinutes : prepMinutes // ignore: cast_nullable_to_non_nullable
 as int?,servings: freezed == servings ? _self.servings : servings // ignore: cast_nullable_to_non_nullable
 as int?,sourceAttribution: freezed == sourceAttribution ? _self.sourceAttribution : sourceAttribution // ignore: cast_nullable_to_non_nullable
@@ -955,7 +962,10 @@ as int,
 /// @nodoc
 mixin _$ParsedStep {
 
-///One preparation step, in the recipe's original language.
+///step for an instruction; heading for a subheading inside the method such as 'Za testo' or
+///'For the filling'; note for a tip or aside between steps that is not itself an
+///instruction. Null means step.
+@JsonKey(name: "kind") ParsedStepKind? get kind;///One preparation step, in the recipe's original language.
 @JsonKey(name: "text") String get text;///Duration in seconds if the step names an explicit time, else null.
 @JsonKey(name: "timerSeconds") int? get timerSeconds;
 /// Create a copy of ParsedStep
@@ -971,20 +981,20 @@ $ParsedStepCopyWith<ParsedStep> get copyWith => _$ParsedStepCopyWithImpl<ParsedS
 @override
 bool operator ==(Object other) {
   final _this = this as ParsedStep;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParsedStep&&(identical(other.text, _this.text) || other.text == _this.text)&&(identical(other.timerSeconds, _this.timerSeconds) || other.timerSeconds == _this.timerSeconds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParsedStep&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.text, _this.text) || other.text == _this.text)&&(identical(other.timerSeconds, _this.timerSeconds) || other.timerSeconds == _this.timerSeconds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ParsedStep;
-  return Object.hash(runtimeType,_this.text,_this.timerSeconds);
+  return Object.hash(runtimeType,_this.kind,_this.text,_this.timerSeconds);
 }
 
 @override
 String toString() {
   final _this = this as ParsedStep;
-  return 'ParsedStep(text: ${_this.text}, timerSeconds: ${_this.timerSeconds})';
+  return 'ParsedStep(kind: ${_this.kind}, text: ${_this.text}, timerSeconds: ${_this.timerSeconds})';
 }
 
 
@@ -995,7 +1005,7 @@ abstract mixin class $ParsedStepCopyWith<$Res>  {
   factory $ParsedStepCopyWith(ParsedStep value, $Res Function(ParsedStep) _then) = _$ParsedStepCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: "text") String text,@JsonKey(name: "timerSeconds") int? timerSeconds
+@JsonKey(name: "kind") ParsedStepKind? kind,@JsonKey(name: "text") String text,@JsonKey(name: "timerSeconds") int? timerSeconds
 });
 
 
@@ -1012,9 +1022,10 @@ class _$ParsedStepCopyWithImpl<$Res>
 
 /// Create a copy of ParsedStep
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? text = null,Object? timerSeconds = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? kind = freezed,Object? text = null,Object? timerSeconds = freezed,}) {
   return _then(ParsedStep(
-text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
+kind: freezed == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as ParsedStepKind?,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
 as String,timerSeconds: freezed == timerSeconds ? _self.timerSeconds : timerSeconds // ignore: cast_nullable_to_non_nullable
 as int?,
   ));
@@ -1101,10 +1112,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: "text")  String text, @JsonKey(name: "timerSeconds")  int? timerSeconds)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: "kind")  ParsedStepKind? kind, @JsonKey(name: "text")  String text, @JsonKey(name: "timerSeconds")  int? timerSeconds)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ParsedStep() when $default != null:
-return $default(_that.text,_that.timerSeconds);case _:
+return $default(_that.kind,_that.text,_that.timerSeconds);case _:
   return orElse();
 
 }
@@ -1122,10 +1133,10 @@ return $default(_that.text,_that.timerSeconds);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: "text")  String text, @JsonKey(name: "timerSeconds")  int? timerSeconds)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: "kind")  ParsedStepKind? kind, @JsonKey(name: "text")  String text, @JsonKey(name: "timerSeconds")  int? timerSeconds)  $default,) {final _that = this;
 switch (_that) {
 case _ParsedStep():
-return $default(_that.text,_that.timerSeconds);case _:
+return $default(_that.kind,_that.text,_that.timerSeconds);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1142,10 +1153,10 @@ return $default(_that.text,_that.timerSeconds);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: "text")  String text, @JsonKey(name: "timerSeconds")  int? timerSeconds)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: "kind")  ParsedStepKind? kind, @JsonKey(name: "text")  String text, @JsonKey(name: "timerSeconds")  int? timerSeconds)?  $default,) {final _that = this;
 switch (_that) {
 case _ParsedStep() when $default != null:
-return $default(_that.text,_that.timerSeconds);case _:
+return $default(_that.kind,_that.text,_that.timerSeconds);case _:
   return null;
 
 }
@@ -1157,9 +1168,13 @@ return $default(_that.text,_that.timerSeconds);case _:
 @JsonSerializable()
 
 class _ParsedStep implements ParsedStep {
-  const _ParsedStep({@JsonKey(name: "text") required this.text, @JsonKey(name: "timerSeconds") this.timerSeconds});
+  const _ParsedStep({@JsonKey(name: "kind") this.kind, @JsonKey(name: "text") required this.text, @JsonKey(name: "timerSeconds") this.timerSeconds});
   factory _ParsedStep.fromJson(Map<String, dynamic> json) => _$ParsedStepFromJson(json);
 
+///step for an instruction; heading for a subheading inside the method such as 'Za testo' or
+///'For the filling'; note for a tip or aside between steps that is not itself an
+///instruction. Null means step.
+@override@JsonKey(name: "kind") final  ParsedStepKind? kind;
 ///One preparation step, in the recipe's original language.
 @override@JsonKey(name: "text") final  String text;
 ///Duration in seconds if the step names an explicit time, else null.
@@ -1178,18 +1193,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParsedStep&&(identical(other.text, text) || other.text == text)&&(identical(other.timerSeconds, timerSeconds) || other.timerSeconds == timerSeconds));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParsedStep&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.text, text) || other.text == text)&&(identical(other.timerSeconds, timerSeconds) || other.timerSeconds == timerSeconds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,text,timerSeconds);
+    return Object.hash(runtimeType,kind,text,timerSeconds);
 }
 
 @override
 String toString() {
-    return 'ParsedStep(text: $text, timerSeconds: $timerSeconds)';
+    return 'ParsedStep(kind: $kind, text: $text, timerSeconds: $timerSeconds)';
 }
 
 
@@ -1200,7 +1215,7 @@ abstract mixin class _$ParsedStepCopyWith<$Res> implements $ParsedStepCopyWith<$
   factory _$ParsedStepCopyWith(_ParsedStep value, $Res Function(_ParsedStep) _then) = __$ParsedStepCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: "text") String text,@JsonKey(name: "timerSeconds") int? timerSeconds
+@JsonKey(name: "kind") ParsedStepKind? kind,@JsonKey(name: "text") String text,@JsonKey(name: "timerSeconds") int? timerSeconds
 });
 
 
@@ -1217,9 +1232,10 @@ class __$ParsedStepCopyWithImpl<$Res>
 
 /// Create a copy of ParsedStep
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? text = null,Object? timerSeconds = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? kind = freezed,Object? text = null,Object? timerSeconds = freezed,}) {
   return _then(_ParsedStep(
-text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
+kind: freezed == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as ParsedStepKind?,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
 as String,timerSeconds: freezed == timerSeconds ? _self.timerSeconds : timerSeconds // ignore: cast_nullable_to_non_nullable
 as int?,
   ));

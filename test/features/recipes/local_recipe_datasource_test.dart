@@ -7,7 +7,9 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/db/app_database.dart';
+import 'package:kitchen_table/features/recipes/data/dto/recipe_dto.dart';
 import 'package:kitchen_table/features/recipes/data/local_recipe_datasource.dart';
+import 'package:kitchen_table/features/recipes/domain/recipe_step.dart';
 
 Map<String, dynamic> _recipeRow(
   String id, {
@@ -128,6 +130,44 @@ void main() {
 
       final Map<String, dynamic>? row = await local.readOne('r1');
       expect(row!.containsKey('recipe_ingredients'), isTrue);
+    });
+
+    test('a blob cached before D153 decodes to step kinds and null notes',
+        () async {
+      // Cached before recipe_steps.kind and the notes columns existed: no
+      // `kind` on the step, no `notes` on the recipe or its translation.
+      await local.upsertMany(
+        householdId: 'h1',
+        rows: <Map<String, dynamic>>[
+          <String, dynamic>{
+            ..._recipeRow('r1', updatedAt: '2026-01-01T00:00:00Z'),
+            'recipe_steps': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'id': 's1',
+                'position': 0,
+                'text': 'Umesiti testo.',
+                'timer_seconds': null,
+              },
+            ],
+            'recipe_translations': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'locale': 'en',
+                'title': 'Pie',
+                'description': null,
+                'steps': <Map<String, dynamic>>[
+                  <String, dynamic>{'position': 0, 'text': 'Knead the dough.'},
+                ],
+              },
+            ],
+          },
+        ],
+      );
+
+      final Map<String, dynamic> row = (await local.readOne('r1'))!;
+
+      expect(recipeFromWire(row).notes, isNull);
+      expect(recipeStepsFromWire(row).single.kind, RecipeStepKind.step);
+      expect(recipeTranslationsFromWire(row).single.notes, isNull);
     });
 
     test('readAll carries each cached translation title by locale', () async {

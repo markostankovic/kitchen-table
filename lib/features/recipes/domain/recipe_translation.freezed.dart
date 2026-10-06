@@ -16,7 +16,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$RecipeTranslation {
 
- String get locale; String get title; String? get description; List<RecipeStep> get steps; bool get isMachineGenerated; String? get reviewedBy; DateTime? get reviewedAt;
+ String get locale; String get title; String? get description; String? get notes;/// Prose only: every step here carries the default kind. The kind on
+/// screen is the source step's at the same position, overlaid by
+/// [RecipeDetail.displaySteps] (D153).
+ List<RecipeStep> get steps; bool get isMachineGenerated; String? get reviewedBy; DateTime? get reviewedAt;
 /// Create a copy of RecipeTranslation
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +33,20 @@ $RecipeTranslationCopyWith<RecipeTranslation> get copyWith => _$RecipeTranslatio
 @override
 bool operator ==(Object other) {
   final _this = this as RecipeTranslation;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecipeTranslation&&(identical(other.locale, _this.locale) || other.locale == _this.locale)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.description, _this.description) || other.description == _this.description)&&const DeepCollectionEquality().equals(other.steps, _this.steps)&&(identical(other.isMachineGenerated, _this.isMachineGenerated) || other.isMachineGenerated == _this.isMachineGenerated)&&(identical(other.reviewedBy, _this.reviewedBy) || other.reviewedBy == _this.reviewedBy)&&(identical(other.reviewedAt, _this.reviewedAt) || other.reviewedAt == _this.reviewedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecipeTranslation&&(identical(other.locale, _this.locale) || other.locale == _this.locale)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&const DeepCollectionEquality().equals(other.steps, _this.steps)&&(identical(other.isMachineGenerated, _this.isMachineGenerated) || other.isMachineGenerated == _this.isMachineGenerated)&&(identical(other.reviewedBy, _this.reviewedBy) || other.reviewedBy == _this.reviewedBy)&&(identical(other.reviewedAt, _this.reviewedAt) || other.reviewedAt == _this.reviewedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RecipeTranslation;
-  return Object.hash(runtimeType,_this.locale,_this.title,_this.description,const DeepCollectionEquality().hash(_this.steps),_this.isMachineGenerated,_this.reviewedBy,_this.reviewedAt);
+  return Object.hash(runtimeType,_this.locale,_this.title,_this.description,_this.notes,const DeepCollectionEquality().hash(_this.steps),_this.isMachineGenerated,_this.reviewedBy,_this.reviewedAt);
 }
 
 @override
 String toString() {
   final _this = this as RecipeTranslation;
-  return 'RecipeTranslation(locale: ${_this.locale}, title: ${_this.title}, description: ${_this.description}, steps: ${_this.steps}, isMachineGenerated: ${_this.isMachineGenerated}, reviewedBy: ${_this.reviewedBy}, reviewedAt: ${_this.reviewedAt})';
+  return 'RecipeTranslation(locale: ${_this.locale}, title: ${_this.title}, description: ${_this.description}, notes: ${_this.notes}, steps: ${_this.steps}, isMachineGenerated: ${_this.isMachineGenerated}, reviewedBy: ${_this.reviewedBy}, reviewedAt: ${_this.reviewedAt})';
 }
 
 
@@ -54,7 +57,7 @@ abstract mixin class $RecipeTranslationCopyWith<$Res>  {
   factory $RecipeTranslationCopyWith(RecipeTranslation value, $Res Function(RecipeTranslation) _then) = _$RecipeTranslationCopyWithImpl;
 @useResult
 $Res call({
- String locale, String title, String? description, List<RecipeStep> steps, bool isMachineGenerated, String? reviewedBy, DateTime? reviewedAt
+ String locale, String title, String? description, String? notes, List<RecipeStep> steps, bool isMachineGenerated, String? reviewedBy, DateTime? reviewedAt
 });
 
 
@@ -71,11 +74,12 @@ class _$RecipeTranslationCopyWithImpl<$Res>
 
 /// Create a copy of RecipeTranslation
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? locale = null,Object? title = null,Object? description = freezed,Object? steps = null,Object? isMachineGenerated = null,Object? reviewedBy = freezed,Object? reviewedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? locale = null,Object? title = null,Object? description = freezed,Object? notes = freezed,Object? steps = null,Object? isMachineGenerated = null,Object? reviewedBy = freezed,Object? reviewedAt = freezed,}) {
   return _then(RecipeTranslation(
 locale: null == locale ? _self.locale : locale // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,steps: null == steps ? _self.steps : steps // ignore: cast_nullable_to_non_nullable
 as List<RecipeStep>,isMachineGenerated: null == isMachineGenerated ? _self.isMachineGenerated : isMachineGenerated // ignore: cast_nullable_to_non_nullable
 as bool,reviewedBy: freezed == reviewedBy ? _self.reviewedBy : reviewedBy // ignore: cast_nullable_to_non_nullable
@@ -165,10 +169,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String locale,  String title,  String? description,  List<RecipeStep> steps,  bool isMachineGenerated,  String? reviewedBy,  DateTime? reviewedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String locale,  String title,  String? description,  String? notes,  List<RecipeStep> steps,  bool isMachineGenerated,  String? reviewedBy,  DateTime? reviewedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RecipeTranslation() when $default != null:
-return $default(_that.locale,_that.title,_that.description,_that.steps,_that.isMachineGenerated,_that.reviewedBy,_that.reviewedAt);case _:
+return $default(_that.locale,_that.title,_that.description,_that.notes,_that.steps,_that.isMachineGenerated,_that.reviewedBy,_that.reviewedAt);case _:
   return orElse();
 
 }
@@ -186,10 +190,10 @@ return $default(_that.locale,_that.title,_that.description,_that.steps,_that.isM
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String locale,  String title,  String? description,  List<RecipeStep> steps,  bool isMachineGenerated,  String? reviewedBy,  DateTime? reviewedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String locale,  String title,  String? description,  String? notes,  List<RecipeStep> steps,  bool isMachineGenerated,  String? reviewedBy,  DateTime? reviewedAt)  $default,) {final _that = this;
 switch (_that) {
 case _RecipeTranslation():
-return $default(_that.locale,_that.title,_that.description,_that.steps,_that.isMachineGenerated,_that.reviewedBy,_that.reviewedAt);case _:
+return $default(_that.locale,_that.title,_that.description,_that.notes,_that.steps,_that.isMachineGenerated,_that.reviewedBy,_that.reviewedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -206,10 +210,10 @@ return $default(_that.locale,_that.title,_that.description,_that.steps,_that.isM
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String locale,  String title,  String? description,  List<RecipeStep> steps,  bool isMachineGenerated,  String? reviewedBy,  DateTime? reviewedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String locale,  String title,  String? description,  String? notes,  List<RecipeStep> steps,  bool isMachineGenerated,  String? reviewedBy,  DateTime? reviewedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _RecipeTranslation() when $default != null:
-return $default(_that.locale,_that.title,_that.description,_that.steps,_that.isMachineGenerated,_that.reviewedBy,_that.reviewedAt);case _:
+return $default(_that.locale,_that.title,_that.description,_that.notes,_that.steps,_that.isMachineGenerated,_that.reviewedBy,_that.reviewedAt);case _:
   return null;
 
 }
@@ -221,13 +225,20 @@ return $default(_that.locale,_that.title,_that.description,_that.steps,_that.isM
 @JsonSerializable()
 
 class _RecipeTranslation implements RecipeTranslation {
-  const _RecipeTranslation({required this.locale, required this.title, this.description,  List<RecipeStep> steps = const <RecipeStep>[], this.isMachineGenerated = true, this.reviewedBy, this.reviewedAt}): _steps = steps;
+  const _RecipeTranslation({required this.locale, required this.title, this.description, this.notes,  List<RecipeStep> steps = const <RecipeStep>[], this.isMachineGenerated = true, this.reviewedBy, this.reviewedAt}): _steps = steps;
   factory _RecipeTranslation.fromJson(Map<String, dynamic> json) => _$RecipeTranslationFromJson(json);
 
 @override final  String locale;
 @override final  String title;
 @override final  String? description;
+@override final  String? notes;
+/// Prose only: every step here carries the default kind. The kind on
+/// screen is the source step's at the same position, overlaid by
+/// [RecipeDetail.displaySteps] (D153).
  final  List<RecipeStep> _steps;
+/// Prose only: every step here carries the default kind. The kind on
+/// screen is the source step's at the same position, overlaid by
+/// [RecipeDetail.displaySteps] (D153).
 @override@JsonKey() List<RecipeStep> get steps {
   if (_steps is EqualUnmodifiableListView) return _steps;
   // ignore: implicit_dynamic_type
@@ -251,18 +262,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecipeTranslation&&(identical(other.locale, locale) || other.locale == locale)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.steps, _steps)&&(identical(other.isMachineGenerated, isMachineGenerated) || other.isMachineGenerated == isMachineGenerated)&&(identical(other.reviewedBy, reviewedBy) || other.reviewedBy == reviewedBy)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecipeTranslation&&(identical(other.locale, locale) || other.locale == locale)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other.steps, _steps)&&(identical(other.isMachineGenerated, isMachineGenerated) || other.isMachineGenerated == isMachineGenerated)&&(identical(other.reviewedBy, reviewedBy) || other.reviewedBy == reviewedBy)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,locale,title,description,const DeepCollectionEquality().hash(_steps),isMachineGenerated,reviewedBy,reviewedAt);
+    return Object.hash(runtimeType,locale,title,description,notes,const DeepCollectionEquality().hash(_steps),isMachineGenerated,reviewedBy,reviewedAt);
 }
 
 @override
 String toString() {
-    return 'RecipeTranslation(locale: $locale, title: $title, description: $description, steps: $steps, isMachineGenerated: $isMachineGenerated, reviewedBy: $reviewedBy, reviewedAt: $reviewedAt)';
+    return 'RecipeTranslation(locale: $locale, title: $title, description: $description, notes: $notes, steps: $steps, isMachineGenerated: $isMachineGenerated, reviewedBy: $reviewedBy, reviewedAt: $reviewedAt)';
 }
 
 
@@ -273,7 +284,7 @@ abstract mixin class _$RecipeTranslationCopyWith<$Res> implements $RecipeTransla
   factory _$RecipeTranslationCopyWith(_RecipeTranslation value, $Res Function(_RecipeTranslation) _then) = __$RecipeTranslationCopyWithImpl;
 @override @useResult
 $Res call({
- String locale, String title, String? description, List<RecipeStep> steps, bool isMachineGenerated, String? reviewedBy, DateTime? reviewedAt
+ String locale, String title, String? description, String? notes, List<RecipeStep> steps, bool isMachineGenerated, String? reviewedBy, DateTime? reviewedAt
 });
 
 
@@ -290,11 +301,12 @@ class __$RecipeTranslationCopyWithImpl<$Res>
 
 /// Create a copy of RecipeTranslation
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? locale = null,Object? title = null,Object? description = freezed,Object? steps = null,Object? isMachineGenerated = null,Object? reviewedBy = freezed,Object? reviewedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? locale = null,Object? title = null,Object? description = freezed,Object? notes = freezed,Object? steps = null,Object? isMachineGenerated = null,Object? reviewedBy = freezed,Object? reviewedAt = freezed,}) {
   return _then(_RecipeTranslation(
 locale: null == locale ? _self.locale : locale // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,steps: null == steps ? _self._steps : steps // ignore: cast_nullable_to_non_nullable
 as List<RecipeStep>,isMachineGenerated: null == isMachineGenerated ? _self.isMachineGenerated : isMachineGenerated // ignore: cast_nullable_to_non_nullable
 as bool,reviewedBy: freezed == reviewedBy ? _self.reviewedBy : reviewedBy // ignore: cast_nullable_to_non_nullable

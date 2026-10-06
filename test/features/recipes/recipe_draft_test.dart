@@ -259,6 +259,70 @@ void main() {
     });
   });
 
+  group('headings, notes and the end note (D153)', () {
+    // Today's editor shows none of these; they must ride through a save
+    // untouched or the first edit of an imported recipe would wipe them.
+    const List<RecipeStep> structured = <RecipeStep>[
+      RecipeStep(position: 0, text: 'Za testo', kind: RecipeStepKind.heading),
+      RecipeStep(position: 1, text: 'Umesiti testo.', timerSeconds: 600),
+      RecipeStep(position: 2, text: 'Može i dan ranije.', kind: RecipeStepKind.note),
+      RecipeStep(position: 3, text: 'Peći.'),
+    ];
+
+    test('fromDetail then toSteps round-trips kinds and positions', () {
+      final RecipeDraft draft = RecipeDraft.fromDetail(RecipeDetail(
+        recipe: _torta,
+        readingLocale: 'sr',
+        steps: structured,
+      ));
+
+      expect(draft.toSteps(), structured);
+    });
+
+    test('a blank heading or note is dropped like a blank step', () {
+      const RecipeDraft draft = RecipeDraft(steps: <RecipeDraftStep>[
+        RecipeDraftStep(localId: 0, text: '  ', kind: RecipeStepKind.heading),
+        RecipeDraftStep(localId: 1, text: 'Umesiti testo.'),
+        RecipeDraftStep(localId: 2, text: '', kind: RecipeStepKind.note),
+      ]);
+
+      final List<RecipeStep> steps = draft.toSteps();
+
+      expect(steps.single.text, 'Umesiti testo.');
+      expect(steps.single.position, 0);
+    });
+
+    test('a timer is not emitted on a heading or a note', () {
+      // recipe_steps refuses one there; a stale value must not fail a save.
+      const RecipeDraft draft = RecipeDraft(steps: <RecipeDraftStep>[
+        RecipeDraftStep(
+            localId: 0,
+            text: 'Za testo',
+            timerSeconds: 60,
+            kind: RecipeStepKind.heading),
+        RecipeDraftStep(
+            localId: 1,
+            text: 'Pazi.',
+            timerSeconds: 60,
+            kind: RecipeStepKind.note),
+        RecipeDraftStep(localId: 2, text: 'Peći.', timerSeconds: 60),
+      ]);
+
+      expect(draft.toSteps().map((RecipeStep s) => s.timerSeconds),
+          <int?>[null, null, 60]);
+    });
+
+    test('notes survive fromDetail and reach toRecipe unchanged', () {
+      final RecipeDraft draft = RecipeDraft.fromDetail(RecipeDetail(
+        recipe: _torta.copyWith(notes: '- Čuva se dva dana.'),
+        readingLocale: 'sr',
+      ));
+
+      expect(draft.notes, '- Čuva se dva dana.');
+      expect(draft.toRecipe().notes, '- Čuva se dva dana.');
+    });
+  });
+
   group('canTranslateInto -- the one definition D85 depends on', () {
     test('false when the target is the recipe\'s own original locale', () {
       expect(

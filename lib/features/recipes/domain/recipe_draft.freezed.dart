@@ -23,7 +23,10 @@ mixin _$RecipeDraft {
 /// `createdBy`, `sourceType` -- so [toRecipe] can build a complete row
 /// without the screen having to know they exist. It is also how a second
 /// save knows to update rather than create (D37).
- Recipe? get source; String get title; String? get description; int? get servings; int? get prepMinutes; int? get cookMinutes; String get originalLocale; RecipeStatus get status; List<String> get tags;/// A Storage object path already written to `recipe-images`, or null for
+ Recipe? get source; String get title; String? get description;/// The recipe's end note. No editor field sets it yet (slice 6); it rides
+/// through so a save does not wipe one an import or a translation wrote
+/// (D153). Blank becomes null at the data edge, like [description].
+ String? get notes; int? get servings; int? get prepMinutes; int? get cookMinutes; String get originalLocale; RecipeStatus get status; List<String> get tags;/// A Storage object path already written to `recipe-images`, or null for
 /// no photo. This is the *persisted* path -- a photo just picked and not
 /// yet uploaded lives in the screen's own state as a `RecipeImageUpload`
 /// and is not reflected here until `RecipeEditor.save()` uploads it and
@@ -46,20 +49,20 @@ $RecipeDraftCopyWith<RecipeDraft> get copyWith => _$RecipeDraftCopyWithImpl<Reci
 @override
 bool operator ==(Object other) {
   final _this = this as RecipeDraft;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecipeDraft&&(identical(other.source, _this.source) || other.source == _this.source)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.servings, _this.servings) || other.servings == _this.servings)&&(identical(other.prepMinutes, _this.prepMinutes) || other.prepMinutes == _this.prepMinutes)&&(identical(other.cookMinutes, _this.cookMinutes) || other.cookMinutes == _this.cookMinutes)&&(identical(other.originalLocale, _this.originalLocale) || other.originalLocale == _this.originalLocale)&&(identical(other.status, _this.status) || other.status == _this.status)&&const DeepCollectionEquality().equals(other.tags, _this.tags)&&(identical(other.imagePath, _this.imagePath) || other.imagePath == _this.imagePath)&&const DeepCollectionEquality().equals(other.lines, _this.lines)&&const DeepCollectionEquality().equals(other.steps, _this.steps)&&const DeepCollectionEquality().equals(other.translatedLocales, _this.translatedLocales));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecipeDraft&&(identical(other.source, _this.source) || other.source == _this.source)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.servings, _this.servings) || other.servings == _this.servings)&&(identical(other.prepMinutes, _this.prepMinutes) || other.prepMinutes == _this.prepMinutes)&&(identical(other.cookMinutes, _this.cookMinutes) || other.cookMinutes == _this.cookMinutes)&&(identical(other.originalLocale, _this.originalLocale) || other.originalLocale == _this.originalLocale)&&(identical(other.status, _this.status) || other.status == _this.status)&&const DeepCollectionEquality().equals(other.tags, _this.tags)&&(identical(other.imagePath, _this.imagePath) || other.imagePath == _this.imagePath)&&const DeepCollectionEquality().equals(other.lines, _this.lines)&&const DeepCollectionEquality().equals(other.steps, _this.steps)&&const DeepCollectionEquality().equals(other.translatedLocales, _this.translatedLocales));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RecipeDraft;
-  return Object.hash(runtimeType,_this.source,_this.title,_this.description,_this.servings,_this.prepMinutes,_this.cookMinutes,_this.originalLocale,_this.status,const DeepCollectionEquality().hash(_this.tags),_this.imagePath,const DeepCollectionEquality().hash(_this.lines),const DeepCollectionEquality().hash(_this.steps),const DeepCollectionEquality().hash(_this.translatedLocales));
+  return Object.hash(runtimeType,_this.source,_this.title,_this.description,_this.notes,_this.servings,_this.prepMinutes,_this.cookMinutes,_this.originalLocale,_this.status,const DeepCollectionEquality().hash(_this.tags),_this.imagePath,const DeepCollectionEquality().hash(_this.lines),const DeepCollectionEquality().hash(_this.steps),const DeepCollectionEquality().hash(_this.translatedLocales));
 }
 
 @override
 String toString() {
   final _this = this as RecipeDraft;
-  return 'RecipeDraft(source: ${_this.source}, title: ${_this.title}, description: ${_this.description}, servings: ${_this.servings}, prepMinutes: ${_this.prepMinutes}, cookMinutes: ${_this.cookMinutes}, originalLocale: ${_this.originalLocale}, status: ${_this.status}, tags: ${_this.tags}, imagePath: ${_this.imagePath}, lines: ${_this.lines}, steps: ${_this.steps}, translatedLocales: ${_this.translatedLocales})';
+  return 'RecipeDraft(source: ${_this.source}, title: ${_this.title}, description: ${_this.description}, notes: ${_this.notes}, servings: ${_this.servings}, prepMinutes: ${_this.prepMinutes}, cookMinutes: ${_this.cookMinutes}, originalLocale: ${_this.originalLocale}, status: ${_this.status}, tags: ${_this.tags}, imagePath: ${_this.imagePath}, lines: ${_this.lines}, steps: ${_this.steps}, translatedLocales: ${_this.translatedLocales})';
 }
 
 
@@ -70,7 +73,7 @@ abstract mixin class $RecipeDraftCopyWith<$Res>  {
   factory $RecipeDraftCopyWith(RecipeDraft value, $Res Function(RecipeDraft) _then) = _$RecipeDraftCopyWithImpl;
 @useResult
 $Res call({
- Recipe? source, String title, String? description, int? servings, int? prepMinutes, int? cookMinutes, String originalLocale, RecipeStatus status, List<String> tags, String? imagePath, List<RecipeDraftLine> lines, List<RecipeDraftStep> steps, List<String> translatedLocales
+ Recipe? source, String title, String? description, String? notes, int? servings, int? prepMinutes, int? cookMinutes, String originalLocale, RecipeStatus status, List<String> tags, String? imagePath, List<RecipeDraftLine> lines, List<RecipeDraftStep> steps, List<String> translatedLocales
 });
 
 
@@ -87,11 +90,12 @@ class _$RecipeDraftCopyWithImpl<$Res>
 
 /// Create a copy of RecipeDraft
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? source = freezed,Object? title = null,Object? description = freezed,Object? servings = freezed,Object? prepMinutes = freezed,Object? cookMinutes = freezed,Object? originalLocale = null,Object? status = null,Object? tags = null,Object? imagePath = freezed,Object? lines = null,Object? steps = null,Object? translatedLocales = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? source = freezed,Object? title = null,Object? description = freezed,Object? notes = freezed,Object? servings = freezed,Object? prepMinutes = freezed,Object? cookMinutes = freezed,Object? originalLocale = null,Object? status = null,Object? tags = null,Object? imagePath = freezed,Object? lines = null,Object? steps = null,Object? translatedLocales = null,}) {
   return _then(RecipeDraft(
 source: freezed == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as Recipe?,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,servings: freezed == servings ? _self.servings : servings // ignore: cast_nullable_to_non_nullable
 as int?,prepMinutes: freezed == prepMinutes ? _self.prepMinutes : prepMinutes // ignore: cast_nullable_to_non_nullable
 as int?,cookMinutes: freezed == cookMinutes ? _self.cookMinutes : cookMinutes // ignore: cast_nullable_to_non_nullable
@@ -199,10 +203,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Recipe? source,  String title,  String? description,  int? servings,  int? prepMinutes,  int? cookMinutes,  String originalLocale,  RecipeStatus status,  List<String> tags,  String? imagePath,  List<RecipeDraftLine> lines,  List<RecipeDraftStep> steps,  List<String> translatedLocales)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Recipe? source,  String title,  String? description,  String? notes,  int? servings,  int? prepMinutes,  int? cookMinutes,  String originalLocale,  RecipeStatus status,  List<String> tags,  String? imagePath,  List<RecipeDraftLine> lines,  List<RecipeDraftStep> steps,  List<String> translatedLocales)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RecipeDraft() when $default != null:
-return $default(_that.source,_that.title,_that.description,_that.servings,_that.prepMinutes,_that.cookMinutes,_that.originalLocale,_that.status,_that.tags,_that.imagePath,_that.lines,_that.steps,_that.translatedLocales);case _:
+return $default(_that.source,_that.title,_that.description,_that.notes,_that.servings,_that.prepMinutes,_that.cookMinutes,_that.originalLocale,_that.status,_that.tags,_that.imagePath,_that.lines,_that.steps,_that.translatedLocales);case _:
   return orElse();
 
 }
@@ -220,10 +224,10 @@ return $default(_that.source,_that.title,_that.description,_that.servings,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Recipe? source,  String title,  String? description,  int? servings,  int? prepMinutes,  int? cookMinutes,  String originalLocale,  RecipeStatus status,  List<String> tags,  String? imagePath,  List<RecipeDraftLine> lines,  List<RecipeDraftStep> steps,  List<String> translatedLocales)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Recipe? source,  String title,  String? description,  String? notes,  int? servings,  int? prepMinutes,  int? cookMinutes,  String originalLocale,  RecipeStatus status,  List<String> tags,  String? imagePath,  List<RecipeDraftLine> lines,  List<RecipeDraftStep> steps,  List<String> translatedLocales)  $default,) {final _that = this;
 switch (_that) {
 case _RecipeDraft():
-return $default(_that.source,_that.title,_that.description,_that.servings,_that.prepMinutes,_that.cookMinutes,_that.originalLocale,_that.status,_that.tags,_that.imagePath,_that.lines,_that.steps,_that.translatedLocales);case _:
+return $default(_that.source,_that.title,_that.description,_that.notes,_that.servings,_that.prepMinutes,_that.cookMinutes,_that.originalLocale,_that.status,_that.tags,_that.imagePath,_that.lines,_that.steps,_that.translatedLocales);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -240,10 +244,10 @@ return $default(_that.source,_that.title,_that.description,_that.servings,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Recipe? source,  String title,  String? description,  int? servings,  int? prepMinutes,  int? cookMinutes,  String originalLocale,  RecipeStatus status,  List<String> tags,  String? imagePath,  List<RecipeDraftLine> lines,  List<RecipeDraftStep> steps,  List<String> translatedLocales)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Recipe? source,  String title,  String? description,  String? notes,  int? servings,  int? prepMinutes,  int? cookMinutes,  String originalLocale,  RecipeStatus status,  List<String> tags,  String? imagePath,  List<RecipeDraftLine> lines,  List<RecipeDraftStep> steps,  List<String> translatedLocales)?  $default,) {final _that = this;
 switch (_that) {
 case _RecipeDraft() when $default != null:
-return $default(_that.source,_that.title,_that.description,_that.servings,_that.prepMinutes,_that.cookMinutes,_that.originalLocale,_that.status,_that.tags,_that.imagePath,_that.lines,_that.steps,_that.translatedLocales);case _:
+return $default(_that.source,_that.title,_that.description,_that.notes,_that.servings,_that.prepMinutes,_that.cookMinutes,_that.originalLocale,_that.status,_that.tags,_that.imagePath,_that.lines,_that.steps,_that.translatedLocales);case _:
   return null;
 
 }
@@ -255,7 +259,7 @@ return $default(_that.source,_that.title,_that.description,_that.servings,_that.
 @JsonSerializable()
 
 class _RecipeDraft extends RecipeDraft {
-  const _RecipeDraft({this.source, this.title = '', this.description, this.servings, this.prepMinutes, this.cookMinutes, this.originalLocale = 'sr', this.status = RecipeStatus.draft,  List<String> tags = const <String>[], this.imagePath,  List<RecipeDraftLine> lines = const <RecipeDraftLine>[],  List<RecipeDraftStep> steps = const <RecipeDraftStep>[],  List<String> translatedLocales = const <String>[]}): _tags = tags,_lines = lines,_steps = steps,_translatedLocales = translatedLocales,super._();
+  const _RecipeDraft({this.source, this.title = '', this.description, this.notes, this.servings, this.prepMinutes, this.cookMinutes, this.originalLocale = 'sr', this.status = RecipeStatus.draft,  List<String> tags = const <String>[], this.imagePath,  List<RecipeDraftLine> lines = const <RecipeDraftLine>[],  List<RecipeDraftStep> steps = const <RecipeDraftStep>[],  List<String> translatedLocales = const <String>[]}): _tags = tags,_lines = lines,_steps = steps,_translatedLocales = translatedLocales,super._();
   factory _RecipeDraft.fromJson(Map<String, dynamic> json) => _$RecipeDraftFromJson(json);
 
 /// The recipe as last read from or written to the server, or null for a
@@ -268,6 +272,10 @@ class _RecipeDraft extends RecipeDraft {
 @override final  Recipe? source;
 @override@JsonKey() final  String title;
 @override final  String? description;
+/// The recipe's end note. No editor field sets it yet (slice 6); it rides
+/// through so a save does not wipe one an import or a translation wrote
+/// (D153). Blank becomes null at the data edge, like [description].
+@override final  String? notes;
 @override final  int? servings;
 @override final  int? prepMinutes;
 @override final  int? cookMinutes;
@@ -329,18 +337,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecipeDraft&&(identical(other.source, source) || other.source == source)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.servings, servings) || other.servings == servings)&&(identical(other.prepMinutes, prepMinutes) || other.prepMinutes == prepMinutes)&&(identical(other.cookMinutes, cookMinutes) || other.cookMinutes == cookMinutes)&&(identical(other.originalLocale, originalLocale) || other.originalLocale == originalLocale)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.tags, _tags)&&(identical(other.imagePath, imagePath) || other.imagePath == imagePath)&&const DeepCollectionEquality().equals(other.lines, _lines)&&const DeepCollectionEquality().equals(other.steps, _steps)&&const DeepCollectionEquality().equals(other.translatedLocales, _translatedLocales));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecipeDraft&&(identical(other.source, source) || other.source == source)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.servings, servings) || other.servings == servings)&&(identical(other.prepMinutes, prepMinutes) || other.prepMinutes == prepMinutes)&&(identical(other.cookMinutes, cookMinutes) || other.cookMinutes == cookMinutes)&&(identical(other.originalLocale, originalLocale) || other.originalLocale == originalLocale)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.tags, _tags)&&(identical(other.imagePath, imagePath) || other.imagePath == imagePath)&&const DeepCollectionEquality().equals(other.lines, _lines)&&const DeepCollectionEquality().equals(other.steps, _steps)&&const DeepCollectionEquality().equals(other.translatedLocales, _translatedLocales));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,source,title,description,servings,prepMinutes,cookMinutes,originalLocale,status,const DeepCollectionEquality().hash(_tags),imagePath,const DeepCollectionEquality().hash(_lines),const DeepCollectionEquality().hash(_steps),const DeepCollectionEquality().hash(_translatedLocales));
+    return Object.hash(runtimeType,source,title,description,notes,servings,prepMinutes,cookMinutes,originalLocale,status,const DeepCollectionEquality().hash(_tags),imagePath,const DeepCollectionEquality().hash(_lines),const DeepCollectionEquality().hash(_steps),const DeepCollectionEquality().hash(_translatedLocales));
 }
 
 @override
 String toString() {
-    return 'RecipeDraft(source: $source, title: $title, description: $description, servings: $servings, prepMinutes: $prepMinutes, cookMinutes: $cookMinutes, originalLocale: $originalLocale, status: $status, tags: $tags, imagePath: $imagePath, lines: $lines, steps: $steps, translatedLocales: $translatedLocales)';
+    return 'RecipeDraft(source: $source, title: $title, description: $description, notes: $notes, servings: $servings, prepMinutes: $prepMinutes, cookMinutes: $cookMinutes, originalLocale: $originalLocale, status: $status, tags: $tags, imagePath: $imagePath, lines: $lines, steps: $steps, translatedLocales: $translatedLocales)';
 }
 
 
@@ -351,7 +359,7 @@ abstract mixin class _$RecipeDraftCopyWith<$Res> implements $RecipeDraftCopyWith
   factory _$RecipeDraftCopyWith(_RecipeDraft value, $Res Function(_RecipeDraft) _then) = __$RecipeDraftCopyWithImpl;
 @override @useResult
 $Res call({
- Recipe? source, String title, String? description, int? servings, int? prepMinutes, int? cookMinutes, String originalLocale, RecipeStatus status, List<String> tags, String? imagePath, List<RecipeDraftLine> lines, List<RecipeDraftStep> steps, List<String> translatedLocales
+ Recipe? source, String title, String? description, String? notes, int? servings, int? prepMinutes, int? cookMinutes, String originalLocale, RecipeStatus status, List<String> tags, String? imagePath, List<RecipeDraftLine> lines, List<RecipeDraftStep> steps, List<String> translatedLocales
 });
 
 
@@ -368,11 +376,12 @@ class __$RecipeDraftCopyWithImpl<$Res>
 
 /// Create a copy of RecipeDraft
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? source = freezed,Object? title = null,Object? description = freezed,Object? servings = freezed,Object? prepMinutes = freezed,Object? cookMinutes = freezed,Object? originalLocale = null,Object? status = null,Object? tags = null,Object? imagePath = freezed,Object? lines = null,Object? steps = null,Object? translatedLocales = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? source = freezed,Object? title = null,Object? description = freezed,Object? notes = freezed,Object? servings = freezed,Object? prepMinutes = freezed,Object? cookMinutes = freezed,Object? originalLocale = null,Object? status = null,Object? tags = null,Object? imagePath = freezed,Object? lines = null,Object? steps = null,Object? translatedLocales = null,}) {
   return _then(_RecipeDraft(
 source: freezed == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as Recipe?,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,servings: freezed == servings ? _self.servings : servings // ignore: cast_nullable_to_non_nullable
 as int?,prepMinutes: freezed == prepMinutes ? _self.prepMinutes : prepMinutes // ignore: cast_nullable_to_non_nullable
 as int?,cookMinutes: freezed == cookMinutes ? _self.cookMinutes : cookMinutes // ignore: cast_nullable_to_non_nullable
@@ -733,7 +742,7 @@ $QuantityCopyWith<$Res>? get quantity {
 /// @nodoc
 mixin _$RecipeDraftStep {
 
- int get localId; String get text; int? get timerSeconds;
+ int get localId; String get text; int? get timerSeconds; RecipeStepKind get kind;
 /// Create a copy of RecipeDraftStep
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -747,20 +756,20 @@ $RecipeDraftStepCopyWith<RecipeDraftStep> get copyWith => _$RecipeDraftStepCopyW
 @override
 bool operator ==(Object other) {
   final _this = this as RecipeDraftStep;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecipeDraftStep&&(identical(other.localId, _this.localId) || other.localId == _this.localId)&&(identical(other.text, _this.text) || other.text == _this.text)&&(identical(other.timerSeconds, _this.timerSeconds) || other.timerSeconds == _this.timerSeconds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecipeDraftStep&&(identical(other.localId, _this.localId) || other.localId == _this.localId)&&(identical(other.text, _this.text) || other.text == _this.text)&&(identical(other.timerSeconds, _this.timerSeconds) || other.timerSeconds == _this.timerSeconds)&&(identical(other.kind, _this.kind) || other.kind == _this.kind));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RecipeDraftStep;
-  return Object.hash(runtimeType,_this.localId,_this.text,_this.timerSeconds);
+  return Object.hash(runtimeType,_this.localId,_this.text,_this.timerSeconds,_this.kind);
 }
 
 @override
 String toString() {
   final _this = this as RecipeDraftStep;
-  return 'RecipeDraftStep(localId: ${_this.localId}, text: ${_this.text}, timerSeconds: ${_this.timerSeconds})';
+  return 'RecipeDraftStep(localId: ${_this.localId}, text: ${_this.text}, timerSeconds: ${_this.timerSeconds}, kind: ${_this.kind})';
 }
 
 
@@ -771,7 +780,7 @@ abstract mixin class $RecipeDraftStepCopyWith<$Res>  {
   factory $RecipeDraftStepCopyWith(RecipeDraftStep value, $Res Function(RecipeDraftStep) _then) = _$RecipeDraftStepCopyWithImpl;
 @useResult
 $Res call({
- int localId, String text, int? timerSeconds
+ int localId, String text, int? timerSeconds, RecipeStepKind kind
 });
 
 
@@ -788,12 +797,13 @@ class _$RecipeDraftStepCopyWithImpl<$Res>
 
 /// Create a copy of RecipeDraftStep
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? localId = null,Object? text = null,Object? timerSeconds = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? localId = null,Object? text = null,Object? timerSeconds = freezed,Object? kind = null,}) {
   return _then(RecipeDraftStep(
 localId: null == localId ? _self.localId : localId // ignore: cast_nullable_to_non_nullable
 as int,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
 as String,timerSeconds: freezed == timerSeconds ? _self.timerSeconds : timerSeconds // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as RecipeStepKind,
   ));
 }
 
@@ -878,10 +888,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int localId,  String text,  int? timerSeconds)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int localId,  String text,  int? timerSeconds,  RecipeStepKind kind)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RecipeDraftStep() when $default != null:
-return $default(_that.localId,_that.text,_that.timerSeconds);case _:
+return $default(_that.localId,_that.text,_that.timerSeconds,_that.kind);case _:
   return orElse();
 
 }
@@ -899,10 +909,10 @@ return $default(_that.localId,_that.text,_that.timerSeconds);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int localId,  String text,  int? timerSeconds)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int localId,  String text,  int? timerSeconds,  RecipeStepKind kind)  $default,) {final _that = this;
 switch (_that) {
 case _RecipeDraftStep():
-return $default(_that.localId,_that.text,_that.timerSeconds);case _:
+return $default(_that.localId,_that.text,_that.timerSeconds,_that.kind);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -919,10 +929,10 @@ return $default(_that.localId,_that.text,_that.timerSeconds);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int localId,  String text,  int? timerSeconds)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int localId,  String text,  int? timerSeconds,  RecipeStepKind kind)?  $default,) {final _that = this;
 switch (_that) {
 case _RecipeDraftStep() when $default != null:
-return $default(_that.localId,_that.text,_that.timerSeconds);case _:
+return $default(_that.localId,_that.text,_that.timerSeconds,_that.kind);case _:
   return null;
 
 }
@@ -934,12 +944,13 @@ return $default(_that.localId,_that.text,_that.timerSeconds);case _:
 @JsonSerializable()
 
 class _RecipeDraftStep implements RecipeDraftStep {
-  const _RecipeDraftStep({required this.localId, required this.text, this.timerSeconds});
+  const _RecipeDraftStep({required this.localId, required this.text, this.timerSeconds, this.kind = RecipeStepKind.step});
   factory _RecipeDraftStep.fromJson(Map<String, dynamic> json) => _$RecipeDraftStepFromJson(json);
 
 @override final  int localId;
 @override final  String text;
 @override final  int? timerSeconds;
+@override@JsonKey() final  RecipeStepKind kind;
 
 /// Create a copy of RecipeDraftStep
 /// with the given fields replaced by the non-null parameter values.
@@ -954,18 +965,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecipeDraftStep&&(identical(other.localId, localId) || other.localId == localId)&&(identical(other.text, text) || other.text == text)&&(identical(other.timerSeconds, timerSeconds) || other.timerSeconds == timerSeconds));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecipeDraftStep&&(identical(other.localId, localId) || other.localId == localId)&&(identical(other.text, text) || other.text == text)&&(identical(other.timerSeconds, timerSeconds) || other.timerSeconds == timerSeconds)&&(identical(other.kind, kind) || other.kind == kind));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,localId,text,timerSeconds);
+    return Object.hash(runtimeType,localId,text,timerSeconds,kind);
 }
 
 @override
 String toString() {
-    return 'RecipeDraftStep(localId: $localId, text: $text, timerSeconds: $timerSeconds)';
+    return 'RecipeDraftStep(localId: $localId, text: $text, timerSeconds: $timerSeconds, kind: $kind)';
 }
 
 
@@ -976,7 +987,7 @@ abstract mixin class _$RecipeDraftStepCopyWith<$Res> implements $RecipeDraftStep
   factory _$RecipeDraftStepCopyWith(_RecipeDraftStep value, $Res Function(_RecipeDraftStep) _then) = __$RecipeDraftStepCopyWithImpl;
 @override @useResult
 $Res call({
- int localId, String text, int? timerSeconds
+ int localId, String text, int? timerSeconds, RecipeStepKind kind
 });
 
 
@@ -993,12 +1004,13 @@ class __$RecipeDraftStepCopyWithImpl<$Res>
 
 /// Create a copy of RecipeDraftStep
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? localId = null,Object? text = null,Object? timerSeconds = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? localId = null,Object? text = null,Object? timerSeconds = freezed,Object? kind = null,}) {
   return _then(_RecipeDraftStep(
 localId: null == localId ? _self.localId : localId // ignore: cast_nullable_to_non_nullable
 as int,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
 as String,timerSeconds: freezed == timerSeconds ? _self.timerSeconds : timerSeconds // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as RecipeStepKind,
   ));
 }
 

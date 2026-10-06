@@ -81,10 +81,25 @@ abstract class RecipeDetail with _$RecipeDetail {
       ? translation!.description
       : recipe.description;
 
+  String? get displayNotes =>
+      translation != null ? translation!.notes : recipe.notes;
+
   /// [steps] in [readingLocale] when a translation exists, [steps]
-  /// (the original) otherwise. A translation's own step list is never
-  /// missing a position relative to the original -- `save_recipe_translation`
-  /// and `translate-recipe`'s `alignSteps` both refuse to save one that is --
-  /// so this can return it directly rather than merging by position.
-  List<RecipeStep> get displaySteps => translation?.steps ?? steps;
+  /// (the original) otherwise.
+  ///
+  /// A translation holds prose only; its rows' kind is read from the
+  /// original step at the same position (D153), so a heading stays a heading
+  /// in either language. Position is the alignment key `alignSteps` and
+  /// `review_recipe_translation` both enforce (D80). A translated row with
+  /// no original at its position -- a translation made before the method
+  /// was edited (D85) -- keeps the default kind.
+  List<RecipeStep> get displaySteps {
+    final translated = translation?.steps;
+    if (translated == null) return steps;
+    final kindAt = {for (final s in steps) s.position: s.kind};
+    return [
+      for (final s in translated)
+        s.copyWith(kind: kindAt[s.position] ?? RecipeStepKind.step),
+    ];
+  }
 }

@@ -139,6 +139,58 @@ begin
   end if;
 
   ---------------------------------------------------------------------------
+  -- Step kinds (D153): omitted -> step; heading and note stored as given; an
+  -- unknown kind and a timer on anything but a step are refused
+  ---------------------------------------------------------------------------
+  perform replace_recipe_lines(
+    rid,
+    jsonb_build_array(jsonb_build_object('raw_text', 'so po ukusu')),
+    jsonb_build_array(
+      jsonb_build_object('text', 'Za testo', 'kind', 'heading'),
+      jsonb_build_object('text', 'Zagrej rernu.', 'timer_seconds', 600),
+      jsonb_build_object('text', 'Može i dan ranije.', 'kind', 'note'),
+      jsonb_build_object('text', 'Peci.', 'kind', 'step')
+    )
+  );
+
+  select string_agg(kind, ',' order by position) into txt
+    from recipe_steps where recipe_id = rid;
+  if txt is distinct from 'heading,step,note,step' then
+    failures := failures + 1;
+    raise warning 'step kinds stored as `%`, expected heading,step,note,step', txt;
+  end if;
+
+  got_error := false;
+  begin
+    perform replace_recipe_lines(rid, '[]'::jsonb,
+      jsonb_build_array(jsonb_build_object('text', 'x', 'kind', 'tip')));
+  exception when others then got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'replace_recipe_lines accepted an unknown step kind';
+  end if;
+
+  got_error := false;
+  begin
+    perform replace_recipe_lines(rid, '[]'::jsonb,
+      jsonb_build_array(jsonb_build_object(
+        'text', 'Za fil', 'kind', 'heading', 'timer_seconds', 60)));
+  exception when others then got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'replace_recipe_lines accepted a timer on a heading';
+  end if;
+
+  -- The refusals rolled back to the four-row list above.
+  select count(*) into n from recipe_steps where recipe_id = rid;
+  if n <> 4 then
+    failures := failures + 1;
+    raise warning 'a refused replace_recipe_lines changed the steps: % rows', n;
+  end if;
+
+  ---------------------------------------------------------------------------
   -- rule 3: raw_text is NOT NULL, always
   ---------------------------------------------------------------------------
   got_error := false;

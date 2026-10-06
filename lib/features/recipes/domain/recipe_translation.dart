@@ -25,6 +25,11 @@ abstract class RecipeTranslation with _$RecipeTranslation {
     required String locale,
     required String title,
     String? description,
+    String? notes,
+
+    /// Prose only: every step here carries the default kind. The kind on
+    /// screen is the source step's at the same position, overlaid by
+    /// [RecipeDetail.displaySteps] (D153).
     @Default(<RecipeStep>[]) List<RecipeStep> steps,
     @Default(true) bool isMachineGenerated,
     String? reviewedBy,

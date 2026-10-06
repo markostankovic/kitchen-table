@@ -117,9 +117,11 @@ Deno.test("reads HowToSection instructions", () => {
       },
     ],
   }))!;
-  assertEquals(got.steps.map((s) => s.text), [
-    "Umutiti jaja.",
-    "Dodati šećer.",
+  // The section's name comes out as a heading ahead of its steps (D153).
+  assertEquals(got.steps, [
+    { text: "Za fil", kind: "heading" },
+    { text: "Umutiti jaja." },
+    { text: "Dodati šećer." },
   ]);
 });
 

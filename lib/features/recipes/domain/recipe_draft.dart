@@ -39,6 +39,11 @@ abstract class RecipeDraft with _$RecipeDraft {
     Recipe? source,
     @Default('') String title,
     String? description,
+
+    /// The recipe's end note. No editor field sets it yet (slice 6); it rides
+    /// through so a save does not wipe one an import or a translation wrote
+    /// (D153). Blank becomes null at the data edge, like [description].
+    String? notes,
     int? servings,
     int? prepMinutes,
     int? cookMinutes,
@@ -79,6 +84,7 @@ abstract class RecipeDraft with _$RecipeDraft {
       source: recipe,
       title: recipe.title,
       description: recipe.description,
+      notes: recipe.notes,
       servings: recipe.servings,
       prepMinutes: recipe.prepMinutes,
       cookMinutes: recipe.cookMinutes,
@@ -100,6 +106,7 @@ abstract class RecipeDraft with _$RecipeDraft {
             localId: index,
             text: step.text,
             timerSeconds: step.timerSeconds,
+            kind: step.kind,
           ),
       ],
     );
@@ -159,7 +166,11 @@ abstract class RecipeDraft with _$RecipeDraft {
   }
 
   /// The steps as they will be written. Blank steps are dropped, for the same
-  /// reason and against the same check constraint.
+  /// reason and against the same check constraint -- a blank heading or note
+  /// too, since they share the column.
+  ///
+  /// A timer is kept only on a [RecipeStepKind.step]: `recipe_steps` refuses
+  /// one on a heading or a note (D153), and a stale one must not fail a save.
   List<RecipeStep> toSteps() {
     final List<RecipeStep> kept = <RecipeStep>[];
     for (final RecipeDraftStep step in steps) {
@@ -167,7 +178,9 @@ abstract class RecipeDraft with _$RecipeDraft {
       kept.add(RecipeStep(
         position: kept.length,
         text: step.text.trim(),
-        timerSeconds: step.timerSeconds,
+        timerSeconds:
+            step.kind == RecipeStepKind.step ? step.timerSeconds : null,
+        kind: step.kind,
       ));
     }
     return kept;
@@ -186,6 +199,7 @@ abstract class RecipeDraft with _$RecipeDraft {
     return current.copyWith(
       title: title.trim(),
       description: description,
+      notes: notes,
       servings: servings,
       prepMinutes: prepMinutes,
       cookMinutes: cookMinutes,
@@ -355,14 +369,15 @@ abstract class RecipeDraftLine with _$RecipeDraftLine {
       );
 }
 
-/// One preparation step being edited. [localId] exists for the same reason it
-/// does on [RecipeDraftLine].
+/// One row of the method being edited -- a step, a heading or a note (D153).
+/// [localId] exists for the same reason it does on [RecipeDraftLine].
 @freezed
 abstract class RecipeDraftStep with _$RecipeDraftStep {
   const factory RecipeDraftStep({
     required int localId,
     required String text,
     int? timerSeconds,
+    @Default(RecipeStepKind.step) RecipeStepKind kind,
   }) = _RecipeDraftStep;
 
   factory RecipeDraftStep.fromJson(Map<String, dynamic> json) =>

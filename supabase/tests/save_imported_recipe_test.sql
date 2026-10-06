@@ -83,6 +83,7 @@ begin
       'source_url', 'https://example.com/zzz',
       'source_attribution', 'Example Cookbook',
       'servings', 4,
+      'notes', '  - Čuva se dva dana.  ',
       'tags', jsonb_build_array('kolač', 'zzz')
     ),
     jsonb_build_array(
@@ -92,7 +93,9 @@ begin
       jsonb_build_object('raw_text', 'za posluživanje')
     ),
     jsonb_build_array(
+      jsonb_build_object('text', 'Za testo', 'kind', 'heading'),
       jsonb_build_object('text', 'Zagrejati rernu.'),
+      jsonb_build_object('text', 'Može i bez šećera.', 'kind', 'note'),
       jsonb_build_object('text', 'Pomešati sve.', 'timer_seconds', 300)
     )
   ) into rid;
@@ -132,6 +135,21 @@ begin
     raise warning 'source_attribution not stored: %', txt;
   end if;
 
+  -- Notes and step kinds travel with the import (D153): notes trimmed, a
+  -- step without a kind stored as 'step'.
+  select notes into txt from recipes where id = rid;
+  if txt is distinct from '- Čuva se dva dana.' then
+    failures := failures + 1;
+    raise warning 'imported notes not stored: %', txt;
+  end if;
+
+  select string_agg(kind, ',' order by position) into txt
+    from recipe_steps where recipe_id = rid;
+  if txt is distinct from 'heading,step,note,step' then
+    failures := failures + 1;
+    raise warning 'imported step kinds stored as `%`', txt;
+  end if;
+
   select count(*) into n from recipe_ingredients where recipe_id = rid;
   if n <> 2 then
     failures := failures + 1;
@@ -156,9 +174,9 @@ begin
   end if;
 
   select count(*) into n from recipe_steps where recipe_id = rid;
-  if n <> 2 then
+  if n <> 4 then
     failures := failures + 1;
-    raise warning 'expected 2 steps, got %', n;
+    raise warning 'expected 4 steps, got %', n;
   end if;
 
   -- And the job is done, pointing at the recipe -- the third of the three

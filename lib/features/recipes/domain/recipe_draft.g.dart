@@ -12,6 +12,7 @@ _RecipeDraft _$RecipeDraftFromJson(Map<String, dynamic> json) => _RecipeDraft(
       : Recipe.fromJson(json['source'] as Map<String, dynamic>),
   title: json['title'] as String? ?? '',
   description: json['description'] as String?,
+  notes: json['notes'] as String?,
   servings: (json['servings'] as num?)?.toInt(),
   prepMinutes: (json['prepMinutes'] as num?)?.toInt(),
   cookMinutes: (json['cookMinutes'] as num?)?.toInt(),
@@ -45,6 +46,7 @@ Map<String, dynamic> _$RecipeDraftToJson(_RecipeDraft instance) =>
       'source': instance.source,
       'title': instance.title,
       'description': instance.description,
+      'notes': instance.notes,
       'servings': instance.servings,
       'prepMinutes': instance.prepMinutes,
       'cookMinutes': instance.cookMinutes,
@@ -114,6 +116,9 @@ _RecipeDraftStep _$RecipeDraftStepFromJson(Map<String, dynamic> json) =>
       localId: (json['localId'] as num).toInt(),
       text: json['text'] as String,
       timerSeconds: (json['timerSeconds'] as num?)?.toInt(),
+      kind:
+          $enumDecodeNullable(_$RecipeStepKindEnumMap, json['kind']) ??
+          RecipeStepKind.step,
     );
 
 Map<String, dynamic> _$RecipeDraftStepToJson(_RecipeDraftStep instance) =>
@@ -121,4 +126,11 @@ Map<String, dynamic> _$RecipeDraftStepToJson(_RecipeDraftStep instance) =>
       'localId': instance.localId,
       'text': instance.text,
       'timerSeconds': instance.timerSeconds,
+      'kind': _$RecipeStepKindEnumMap[instance.kind]!,
     };
+
+const _$RecipeStepKindEnumMap = {
+  RecipeStepKind.step: 'step',
+  RecipeStepKind.heading: 'heading',
+  RecipeStepKind.note: 'note',
+};

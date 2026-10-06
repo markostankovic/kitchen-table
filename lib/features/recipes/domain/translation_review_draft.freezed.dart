@@ -19,7 +19,7 @@ mixin _$TranslationReviewDraft {
  String get locale;/// The recipe's own language -- distinct from [locale], which is the
 /// language being reviewed. Used only to label the source side of the
 /// screen ("Original (Serbian)").
- String get sourceLocale; String get sourceTitle; String? get sourceDescription; List<RecipeStep> get sourceSteps; String get title; String? get description; List<RecipeStep> get steps;
+ String get sourceLocale; String get sourceTitle; String? get sourceDescription; String? get sourceNotes; List<RecipeStep> get sourceSteps; String get title; String? get description; String? get notes; List<RecipeStep> get steps;
 /// Create a copy of TranslationReviewDraft
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -33,20 +33,20 @@ $TranslationReviewDraftCopyWith<TranslationReviewDraft> get copyWith => _$Transl
 @override
 bool operator ==(Object other) {
   final _this = this as TranslationReviewDraft;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TranslationReviewDraft&&(identical(other.locale, _this.locale) || other.locale == _this.locale)&&(identical(other.sourceLocale, _this.sourceLocale) || other.sourceLocale == _this.sourceLocale)&&(identical(other.sourceTitle, _this.sourceTitle) || other.sourceTitle == _this.sourceTitle)&&(identical(other.sourceDescription, _this.sourceDescription) || other.sourceDescription == _this.sourceDescription)&&const DeepCollectionEquality().equals(other.sourceSteps, _this.sourceSteps)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.description, _this.description) || other.description == _this.description)&&const DeepCollectionEquality().equals(other.steps, _this.steps));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TranslationReviewDraft&&(identical(other.locale, _this.locale) || other.locale == _this.locale)&&(identical(other.sourceLocale, _this.sourceLocale) || other.sourceLocale == _this.sourceLocale)&&(identical(other.sourceTitle, _this.sourceTitle) || other.sourceTitle == _this.sourceTitle)&&(identical(other.sourceDescription, _this.sourceDescription) || other.sourceDescription == _this.sourceDescription)&&(identical(other.sourceNotes, _this.sourceNotes) || other.sourceNotes == _this.sourceNotes)&&const DeepCollectionEquality().equals(other.sourceSteps, _this.sourceSteps)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&const DeepCollectionEquality().equals(other.steps, _this.steps));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as TranslationReviewDraft;
-  return Object.hash(runtimeType,_this.locale,_this.sourceLocale,_this.sourceTitle,_this.sourceDescription,const DeepCollectionEquality().hash(_this.sourceSteps),_this.title,_this.description,const DeepCollectionEquality().hash(_this.steps));
+  return Object.hash(runtimeType,_this.locale,_this.sourceLocale,_this.sourceTitle,_this.sourceDescription,_this.sourceNotes,const DeepCollectionEquality().hash(_this.sourceSteps),_this.title,_this.description,_this.notes,const DeepCollectionEquality().hash(_this.steps));
 }
 
 @override
 String toString() {
   final _this = this as TranslationReviewDraft;
-  return 'TranslationReviewDraft(locale: ${_this.locale}, sourceLocale: ${_this.sourceLocale}, sourceTitle: ${_this.sourceTitle}, sourceDescription: ${_this.sourceDescription}, sourceSteps: ${_this.sourceSteps}, title: ${_this.title}, description: ${_this.description}, steps: ${_this.steps})';
+  return 'TranslationReviewDraft(locale: ${_this.locale}, sourceLocale: ${_this.sourceLocale}, sourceTitle: ${_this.sourceTitle}, sourceDescription: ${_this.sourceDescription}, sourceNotes: ${_this.sourceNotes}, sourceSteps: ${_this.sourceSteps}, title: ${_this.title}, description: ${_this.description}, notes: ${_this.notes}, steps: ${_this.steps})';
 }
 
 
@@ -57,7 +57,7 @@ abstract mixin class $TranslationReviewDraftCopyWith<$Res>  {
   factory $TranslationReviewDraftCopyWith(TranslationReviewDraft value, $Res Function(TranslationReviewDraft) _then) = _$TranslationReviewDraftCopyWithImpl;
 @useResult
 $Res call({
- String locale, String sourceLocale, String sourceTitle, String? sourceDescription, List<RecipeStep> sourceSteps, String title, String? description, List<RecipeStep> steps
+ String locale, String sourceLocale, String sourceTitle, String? sourceDescription, String? sourceNotes, List<RecipeStep> sourceSteps, String title, String? description, String? notes, List<RecipeStep> steps
 });
 
 
@@ -74,15 +74,17 @@ class _$TranslationReviewDraftCopyWithImpl<$Res>
 
 /// Create a copy of TranslationReviewDraft
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? locale = null,Object? sourceLocale = null,Object? sourceTitle = null,Object? sourceDescription = freezed,Object? sourceSteps = null,Object? title = null,Object? description = freezed,Object? steps = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? locale = null,Object? sourceLocale = null,Object? sourceTitle = null,Object? sourceDescription = freezed,Object? sourceNotes = freezed,Object? sourceSteps = null,Object? title = null,Object? description = freezed,Object? notes = freezed,Object? steps = null,}) {
   return _then(TranslationReviewDraft(
 locale: null == locale ? _self.locale : locale // ignore: cast_nullable_to_non_nullable
 as String,sourceLocale: null == sourceLocale ? _self.sourceLocale : sourceLocale // ignore: cast_nullable_to_non_nullable
 as String,sourceTitle: null == sourceTitle ? _self.sourceTitle : sourceTitle // ignore: cast_nullable_to_non_nullable
 as String,sourceDescription: freezed == sourceDescription ? _self.sourceDescription : sourceDescription // ignore: cast_nullable_to_non_nullable
+as String?,sourceNotes: freezed == sourceNotes ? _self.sourceNotes : sourceNotes // ignore: cast_nullable_to_non_nullable
 as String?,sourceSteps: null == sourceSteps ? _self.sourceSteps : sourceSteps // ignore: cast_nullable_to_non_nullable
 as List<RecipeStep>,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,steps: null == steps ? _self.steps : steps // ignore: cast_nullable_to_non_nullable
 as List<RecipeStep>,
   ));
@@ -169,10 +171,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String locale,  String sourceLocale,  String sourceTitle,  String? sourceDescription,  List<RecipeStep> sourceSteps,  String title,  String? description,  List<RecipeStep> steps)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String locale,  String sourceLocale,  String sourceTitle,  String? sourceDescription,  String? sourceNotes,  List<RecipeStep> sourceSteps,  String title,  String? description,  String? notes,  List<RecipeStep> steps)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TranslationReviewDraft() when $default != null:
-return $default(_that.locale,_that.sourceLocale,_that.sourceTitle,_that.sourceDescription,_that.sourceSteps,_that.title,_that.description,_that.steps);case _:
+return $default(_that.locale,_that.sourceLocale,_that.sourceTitle,_that.sourceDescription,_that.sourceNotes,_that.sourceSteps,_that.title,_that.description,_that.notes,_that.steps);case _:
   return orElse();
 
 }
@@ -190,10 +192,10 @@ return $default(_that.locale,_that.sourceLocale,_that.sourceTitle,_that.sourceDe
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String locale,  String sourceLocale,  String sourceTitle,  String? sourceDescription,  List<RecipeStep> sourceSteps,  String title,  String? description,  List<RecipeStep> steps)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String locale,  String sourceLocale,  String sourceTitle,  String? sourceDescription,  String? sourceNotes,  List<RecipeStep> sourceSteps,  String title,  String? description,  String? notes,  List<RecipeStep> steps)  $default,) {final _that = this;
 switch (_that) {
 case _TranslationReviewDraft():
-return $default(_that.locale,_that.sourceLocale,_that.sourceTitle,_that.sourceDescription,_that.sourceSteps,_that.title,_that.description,_that.steps);case _:
+return $default(_that.locale,_that.sourceLocale,_that.sourceTitle,_that.sourceDescription,_that.sourceNotes,_that.sourceSteps,_that.title,_that.description,_that.notes,_that.steps);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -210,10 +212,10 @@ return $default(_that.locale,_that.sourceLocale,_that.sourceTitle,_that.sourceDe
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String locale,  String sourceLocale,  String sourceTitle,  String? sourceDescription,  List<RecipeStep> sourceSteps,  String title,  String? description,  List<RecipeStep> steps)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String locale,  String sourceLocale,  String sourceTitle,  String? sourceDescription,  String? sourceNotes,  List<RecipeStep> sourceSteps,  String title,  String? description,  String? notes,  List<RecipeStep> steps)?  $default,) {final _that = this;
 switch (_that) {
 case _TranslationReviewDraft() when $default != null:
-return $default(_that.locale,_that.sourceLocale,_that.sourceTitle,_that.sourceDescription,_that.sourceSteps,_that.title,_that.description,_that.steps);case _:
+return $default(_that.locale,_that.sourceLocale,_that.sourceTitle,_that.sourceDescription,_that.sourceNotes,_that.sourceSteps,_that.title,_that.description,_that.notes,_that.steps);case _:
   return null;
 
 }
@@ -225,7 +227,7 @@ return $default(_that.locale,_that.sourceLocale,_that.sourceTitle,_that.sourceDe
 @JsonSerializable()
 
 class _TranslationReviewDraft extends TranslationReviewDraft {
-  const _TranslationReviewDraft({required this.locale, required this.sourceLocale, required this.sourceTitle, this.sourceDescription,  List<RecipeStep> sourceSteps = const <RecipeStep>[], required this.title, this.description,  List<RecipeStep> steps = const <RecipeStep>[]}): _sourceSteps = sourceSteps,_steps = steps,super._();
+  const _TranslationReviewDraft({required this.locale, required this.sourceLocale, required this.sourceTitle, this.sourceDescription, this.sourceNotes,  List<RecipeStep> sourceSteps = const <RecipeStep>[], required this.title, this.description, this.notes,  List<RecipeStep> steps = const <RecipeStep>[]}): _sourceSteps = sourceSteps,_steps = steps,super._();
   factory _TranslationReviewDraft.fromJson(Map<String, dynamic> json) => _$TranslationReviewDraftFromJson(json);
 
 @override final  String locale;
@@ -235,6 +237,7 @@ class _TranslationReviewDraft extends TranslationReviewDraft {
 @override final  String sourceLocale;
 @override final  String sourceTitle;
 @override final  String? sourceDescription;
+@override final  String? sourceNotes;
  final  List<RecipeStep> _sourceSteps;
 @override@JsonKey() List<RecipeStep> get sourceSteps {
   if (_sourceSteps is EqualUnmodifiableListView) return _sourceSteps;
@@ -244,6 +247,7 @@ class _TranslationReviewDraft extends TranslationReviewDraft {
 
 @override final  String title;
 @override final  String? description;
+@override final  String? notes;
  final  List<RecipeStep> _steps;
 @override@JsonKey() List<RecipeStep> get steps {
   if (_steps is EqualUnmodifiableListView) return _steps;
@@ -265,18 +269,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TranslationReviewDraft&&(identical(other.locale, locale) || other.locale == locale)&&(identical(other.sourceLocale, sourceLocale) || other.sourceLocale == sourceLocale)&&(identical(other.sourceTitle, sourceTitle) || other.sourceTitle == sourceTitle)&&(identical(other.sourceDescription, sourceDescription) || other.sourceDescription == sourceDescription)&&const DeepCollectionEquality().equals(other.sourceSteps, _sourceSteps)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.steps, _steps));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TranslationReviewDraft&&(identical(other.locale, locale) || other.locale == locale)&&(identical(other.sourceLocale, sourceLocale) || other.sourceLocale == sourceLocale)&&(identical(other.sourceTitle, sourceTitle) || other.sourceTitle == sourceTitle)&&(identical(other.sourceDescription, sourceDescription) || other.sourceDescription == sourceDescription)&&(identical(other.sourceNotes, sourceNotes) || other.sourceNotes == sourceNotes)&&const DeepCollectionEquality().equals(other.sourceSteps, _sourceSteps)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other.steps, _steps));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,locale,sourceLocale,sourceTitle,sourceDescription,const DeepCollectionEquality().hash(_sourceSteps),title,description,const DeepCollectionEquality().hash(_steps));
+    return Object.hash(runtimeType,locale,sourceLocale,sourceTitle,sourceDescription,sourceNotes,const DeepCollectionEquality().hash(_sourceSteps),title,description,notes,const DeepCollectionEquality().hash(_steps));
 }
 
 @override
 String toString() {
-    return 'TranslationReviewDraft(locale: $locale, sourceLocale: $sourceLocale, sourceTitle: $sourceTitle, sourceDescription: $sourceDescription, sourceSteps: $sourceSteps, title: $title, description: $description, steps: $steps)';
+    return 'TranslationReviewDraft(locale: $locale, sourceLocale: $sourceLocale, sourceTitle: $sourceTitle, sourceDescription: $sourceDescription, sourceNotes: $sourceNotes, sourceSteps: $sourceSteps, title: $title, description: $description, notes: $notes, steps: $steps)';
 }
 
 
@@ -287,7 +291,7 @@ abstract mixin class _$TranslationReviewDraftCopyWith<$Res> implements $Translat
   factory _$TranslationReviewDraftCopyWith(_TranslationReviewDraft value, $Res Function(_TranslationReviewDraft) _then) = __$TranslationReviewDraftCopyWithImpl;
 @override @useResult
 $Res call({
- String locale, String sourceLocale, String sourceTitle, String? sourceDescription, List<RecipeStep> sourceSteps, String title, String? description, List<RecipeStep> steps
+ String locale, String sourceLocale, String sourceTitle, String? sourceDescription, String? sourceNotes, List<RecipeStep> sourceSteps, String title, String? description, String? notes, List<RecipeStep> steps
 });
 
 
@@ -304,15 +308,17 @@ class __$TranslationReviewDraftCopyWithImpl<$Res>
 
 /// Create a copy of TranslationReviewDraft
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? locale = null,Object? sourceLocale = null,Object? sourceTitle = null,Object? sourceDescription = freezed,Object? sourceSteps = null,Object? title = null,Object? description = freezed,Object? steps = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? locale = null,Object? sourceLocale = null,Object? sourceTitle = null,Object? sourceDescription = freezed,Object? sourceNotes = freezed,Object? sourceSteps = null,Object? title = null,Object? description = freezed,Object? notes = freezed,Object? steps = null,}) {
   return _then(_TranslationReviewDraft(
 locale: null == locale ? _self.locale : locale // ignore: cast_nullable_to_non_nullable
 as String,sourceLocale: null == sourceLocale ? _self.sourceLocale : sourceLocale // ignore: cast_nullable_to_non_nullable
 as String,sourceTitle: null == sourceTitle ? _self.sourceTitle : sourceTitle // ignore: cast_nullable_to_non_nullable
 as String,sourceDescription: freezed == sourceDescription ? _self.sourceDescription : sourceDescription // ignore: cast_nullable_to_non_nullable
+as String?,sourceNotes: freezed == sourceNotes ? _self.sourceNotes : sourceNotes // ignore: cast_nullable_to_non_nullable
 as String?,sourceSteps: null == sourceSteps ? _self._sourceSteps : sourceSteps // ignore: cast_nullable_to_non_nullable
 as List<RecipeStep>,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,steps: null == steps ? _self._steps : steps // ignore: cast_nullable_to_non_nullable
 as List<RecipeStep>,
   ));

@@ -12,6 +12,7 @@ library;
 import '../../ingredients/domain/ingredient_match.dart';
 import '../../ingredients/domain/quantity.dart';
 import '../../recipes/domain/recipe_draft.dart';
+import '../../recipes/domain/recipe_step.dart';
 import 'parsed_recipe.dart';
 
 /// The lines whose match a human should look at before saving.
@@ -73,6 +74,7 @@ ImportReview draftFromParsed(ParsedRecipe parsed) {
         localId: index,
         text: step.text,
         timerSeconds: step.timerSeconds,
+        kind: _toStepKind(step.kind),
       ),
   ];
 
@@ -84,6 +86,7 @@ ImportReview draftFromParsed(ParsedRecipe parsed) {
       // two-step for this path).
       title: parsed.title,
       description: parsed.description,
+      notes: parsed.notes,
       servings: parsed.servings,
       prepMinutes: parsed.prepMinutes,
       cookMinutes: parsed.cookMinutes,
@@ -103,6 +106,14 @@ ImportReview draftFromParsed(ParsedRecipe parsed) {
 String _toLocale(ParsedLocale locale) => switch (locale) {
       ParsedLocale.SR => 'sr',
       ParsedLocale.EN => 'en',
+    };
+
+/// Null is a step: the model leaves kind out for an ordinary instruction, and
+/// an `import_jobs.result` written before D153 has none at all.
+RecipeStepKind _toStepKind(ParsedStepKind? kind) => switch (kind) {
+      null || ParsedStepKind.STEP => RecipeStepKind.step,
+      ParsedStepKind.HEADING => RecipeStepKind.heading,
+      ParsedStepKind.NOTE => RecipeStepKind.note,
     };
 
 /// D7's vocabulary, minus `manual`.

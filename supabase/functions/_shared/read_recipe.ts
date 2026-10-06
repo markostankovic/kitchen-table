@@ -63,6 +63,14 @@ separately by code that is better at it than you are.
 - If the ingredient list has headings ("Za fil", "For the sauce"), set each \
 line's section to the heading above it. Otherwise leave section null.
 - Steps are the method, one step per instruction, in the recipe's own language.
+- If the method has its own subheadings ("Za testo", "For the filling"), return \
+each as a step with kind "heading", in place, before the steps it covers. An \
+aside between steps that is not itself an instruction ("Testo može i dan \
+ranije.") is a step with kind "note". Every other step is kind "step".
+- A tips, notes, "Napomena" or "Saveti" section after the method goes in notes, \
+verbatim -- not into steps.
+- Keep list items in steps and notes as "- " or "1. " lines. Do not add bold or \
+italics the source does not have.
 - originalLocale is the language the recipe is WRITTEN in, not the language of \
 this instruction. Serbian in Latin or Cyrillic script is both "sr".
 - Set sourceAttribution when the text credits a book, author or site. Do not \
@@ -77,7 +85,7 @@ and produces a method nobody can follow.
 - An ingredient list set in a sidebar or a tinted box belongs to the recipe \
 beside it. So does a list under a subheading like "Za fil".
 - A headnote -- the paragraph of prose before the method, about where the dish \
-comes from -- is the description, not the first step.
+comes from -- is the description, not the first step, and never notes.
 - If the page holds more than one recipe, return the one the ingredient list \
 belongs to, not a merge of both.
 - Ignore page numbers, running heads, and captions on photographs of the \

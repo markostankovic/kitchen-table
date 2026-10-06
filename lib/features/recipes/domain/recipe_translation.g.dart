@@ -11,6 +11,7 @@ _RecipeTranslation _$RecipeTranslationFromJson(Map<String, dynamic> json) =>
       locale: json['locale'] as String,
       title: json['title'] as String,
       description: json['description'] as String?,
+      notes: json['notes'] as String?,
       steps:
           (json['steps'] as List<dynamic>?)
               ?.map((e) => RecipeStep.fromJson(e as Map<String, dynamic>))
@@ -28,6 +29,7 @@ Map<String, dynamic> _$RecipeTranslationToJson(_RecipeTranslation instance) =>
       'locale': instance.locale,
       'title': instance.title,
       'description': instance.description,
+      'notes': instance.notes,
       'steps': instance.steps,
       'isMachineGenerated': instance.isMachineGenerated,
       'reviewedBy': instance.reviewedBy,

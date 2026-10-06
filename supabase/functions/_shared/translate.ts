@@ -29,12 +29,19 @@ import { ModelTranslation, type ModelTranslationT } from "./schema.ts";
  *   position. That number is an alignment key the caller uses to match a
  *   translated line to its source, not a value the model is asked to derive
  *   -- `alignSteps` below validates it and refuses to guess past a mismatch.
+ * - Headings and notes inside the method are rows of the same list (D153).
+ *   Their kind is sent as a `[heading]` / `[note]` tag so a heading comes
+ *   back short, but the model never returns a kind -- structure is the
+ *   source's, and a translation is prose over it.
+ * - The markdown subset (`**`, `*`, `- `, `1. `) survives translation
+ *   untouched; slice 9 renders it, and a dropped marker is a silent loss.
  */
 export const TRANSLATE_SYSTEM_PROMPT = `You translate a recipe's title, \
 description and method into the language you are asked for. The ingredient \
 list is never given to you and is never translated here -- it renders from a \
 separate catalog that already knows both languages, so nothing about \
-ingredient lines is your job.
+ingredient lines is your job. A recipe may also carry notes, which you \
+translate too.
 
 Rules:
 - Translate naturally, in the register a cook writes in, not word-for-word. \
@@ -46,17 +53,25 @@ script the source used.
 per source step, and set its position to the SAME NUMBER the source step at \
 that position carries -- that number is how the translation is matched back \
 to its source, not a value you are free to renumber.
-- Do not invent detail the source does not have, and leave description null \
-if the source has none.`;
+- A step may start with a [heading] or [note] tag. The tag is context, not \
+text: translate the words after it and return them WITHOUT the tag, at the \
+same position. A heading is a short section title ("Za testo" -> "For the \
+dough"), so keep it short.
+- Keep the markers **, *, "- " and "1. " exactly where they are, translating \
+only the words between them. Do not add or remove any.
+- Do not invent detail the source does not have. Leave description null if \
+the source has none, and leave notes null if the source has none.`;
 
 export interface TranslationSourceStep {
   readonly position: number;
   readonly text: string;
+  readonly kind: "step" | "heading" | "note";
 }
 
 export interface TranslationSource {
   readonly title: string;
   readonly description: string | null;
+  readonly notes: string | null;
   readonly steps: readonly TranslationSourceStep[];
 }
 
@@ -64,7 +79,8 @@ function languageName(targetLocale: "sr" | "en"): string {
   return targetLocale === "sr" ? "Serbian (Latin script)" : "English";
 }
 
-function buildTranslationRequest(
+/** Exported for `translate_test.ts`; [translateRecipe] is its only caller. */
+export function buildTranslationRequest(
   source: TranslationSource,
   targetLocale: "sr" | "en",
 ): string {
@@ -74,9 +90,11 @@ function buildTranslationRequest(
     `Title: ${source.title}`,
   ];
   if (source.description) lines.push(`Description: ${source.description}`);
+  if (source.notes) lines.push(`Notes: ${source.notes}`);
   lines.push("Steps:");
   for (const step of source.steps) {
-    lines.push(`${step.position}. ${step.text}`);
+    const tag = step.kind === "step" ? "" : `[${step.kind}] `;
+    lines.push(`${step.position}. ${tag}${step.text}`);
   }
   return lines.join("\n");
 }
@@ -92,7 +110,7 @@ function buildTranslationRequest(
  * and [translateRecipe] is what turns the throw into a billed failure.
  */
 export function alignSteps(
-  source: readonly TranslationSourceStep[],
+  source: readonly Pick<TranslationSourceStep, "position">[],
   returned: readonly { position: number; text: string }[],
 ): { position: number; text: string }[] {
   const expected = source.map((s) => s.position).toSorted((a, b) => a - b);
@@ -113,6 +131,7 @@ export function alignSteps(
 export interface Translation {
   readonly title: string;
   readonly description: string | null;
+  readonly notes: string | null;
   readonly steps: { position: number; text: string }[];
 }
 
@@ -151,6 +170,7 @@ export async function translateRecipe(
     value: {
       title: result.value.title,
       description: result.value.description ?? null,
+      notes: result.value.notes ?? null,
       steps,
     },
     usage: result.usage,
