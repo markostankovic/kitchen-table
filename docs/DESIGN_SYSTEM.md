@@ -548,7 +548,15 @@ tabular figures, then the unit in `onSurfaceVariant` beside it (`½ kg`). It
 sizes to its content, so amounts line up on the right edge down a list. The
 name, in `onSurface`, takes what is left and wraps on the left. **No amount →
 name only**, with no gap reserved. Under the name, the `trailer` (note,
-`→ catalog name`, extra quantities, unmatched raw lines) in `bodySmall` muted.
+`→ catalog name`, unmatched raw lines) in `bodySmall` muted.
+
+**Further amounts stack** (`extraAmounts`): each one more `bodyLarge` line
+under the first in the same right-aligned column, no gap between, led by a
+`+ ` in `onSurfaceVariant` w400 (`480 ml` / `+ 300 g`) — a second unit family
+never merged into the first (D9). The canvas paints the `+` in `outline`; it
+is body text at `bodyLarge` beside primary text of the same size, and
+`outline` is never body text, so `onSurfaceVariant` wins. The row simply grows.
+Only the shopping list passes any.
 
 - **matched** — plain
 - **optional** — the `optionalLabel` (`opciono` / `optional`) inline after the
@@ -556,10 +564,20 @@ name only**, with no gap reserved. Under the name, the `trailer` (note,
   trailer
 - **unmatched** — rendered exactly as typed, with a 16dp dashed `unmatched`
   ring **inline after the name** (a `WidgetSpan`, `sm` before it; a small
-  `CustomPainter`, not a package). A word joiner (U+2060) sits before it so a
-  line can't break there and strand the ring alone on the next line. The PDF draws it at 14; 16 is the existing
+  `CustomPainter`, not a package). A word joiner (U+2060) sits before it,
+  but Flutter still breaks before a placeholder when the last word and the
+  ring overflow together, so the row also measures the name's last line and,
+  when the markers won't fit after it, turns the last space into a line
+  break: **a marker always travels with the last word**, never alone on a
+  line. The PDF draws it at 14; 16 is the existing
   `iconInMeta` and a token for 2dp is not worth it. Never `error`, never red —
   a line the catalog did not know is a supported outcome, not a fault
+- **name marker** (`nameMarker`) — a generic slot for one caller-built
+  widget inline after the name and optional label, before the ring: the same
+  word joiner and middle-aligned `WidgetSpan`, `xs` before it (a 16dp icon's
+  own ~2dp side bearing makes up the rest), in a fixed 16dp (`iconInMeta`)
+  box, so its width is known for the last-word measurement. The row gives it no meaning; only
+  the shopping list uses it, for the staple pin
 - **flagged** (import review only) — a 3px `reviewMarker` left edge painted
   as a **foreground** (it takes no layout) on a `surfaceContainerLow` tint.
   A flagged row is always inset (below), so the name clears the marker
@@ -746,18 +764,31 @@ locales differ: it is calm, and it is what makes D94 legible.
 
 **The document card.** `lg` below, one theme `Card` padded `lg`/`sm`,
 holding every to-buy item as an `IngredientLineRow`: the first quantity in
-the quantity column with its unit beside the name, any further unit family
-(never merged, D9) and every unmatched raw line in the trailer. Items are
+the amount column, any further unit family (never merged, D9) **stacked under
+it**, right-aligned, led by a muted `+`. The trailer holds every unmatched raw
+line; an unmatched item (raw text + ring) **with no amount** leads it with
+`Nije sabrano` / `Not added up` — chrome, the **reader's** locale, beside the
+ring whose tooltip is chrome too — saying why it has none. An unmatched item
+that parsed an amount (`1.67 kom`) shows the amount and no such line. Never
+`error`. Items are
 grouped and ordered by `groupByCategory`, with blocks `md` apart, a dashed divider
 under **every** row but the card's last, and **no category headings** — D105-amended: headings were noise when scanning a list
 in a shop, and the Garden mock that draws them was declined. Omitted when
-nothing is to buy. Long-press toggles a pantry staple (D13: the snapshot is
-not rewritten; the snackbar says it applies next time).
+nothing is to buy. Long-press toggles a pantry staple and regenerates the
+same list at once (D147 — a new snapshot, not an edit, so D13 stands).
 
 **The staples card.** `md` below, a second `Card` (`Clip.antiAlias`) holding
 an `ExpansionTile`, **collapsed**, with `const Border()` shapes so it draws no
-lines of its own: `Verovatno imate (N)` in `titleSmall`, the staples subtitle
-in `bodySmall` `onSurfaceVariant`, the same `IngredientLineRow`s inside.
+lines of its own: `Verovatno imate (N)` in `titleSmall` (the document's
+locale), then a subline in `bodySmall` `onSurfaceVariant` that **teaches the
+long-press**, in the **reader's** locale (an instruction, so chrome):
+collapsed `Dugo pritisnite stavku da je premestite ovde.` / `Long-press any
+item to move it here.`, expanded `Dugo pritisnite stavku da je vratite na
+listu.` / `Long-press an item to move it back.` The same `IngredientLineRow`s
+inside; every staple row carries a 16dp `push_pin_outlined` in `outline` as
+its name marker, tooltip `Uvek u Verovatno imate` / `Always in Probably have`
+(chrome). The pin is drawn from `isPantryStaple`, not from the card, so a
+one-off move here can later render without it.
 
 **The no-list state.** Under the range bar (and its range line), the carded
 `AppEmptyState(card: true)`: `shopping_basket_outlined`, `Još nema liste.`/

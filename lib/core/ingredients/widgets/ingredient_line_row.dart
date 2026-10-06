@@ -39,12 +39,34 @@ const double _dividerHeight = 1;
 /// `KitchenColors.unmatched`'s doc). The line renders exactly what the cook
 /// typed, which is a fine outcome; the marker is a quiet dashed ring in
 /// `outline`, inline after the name, and it is never red.
+///
+/// [nameMarker] is a generic slot for one more inline marker after the name
+/// (and after the optional label), drawn the same way as the ring: a word
+/// joiner, then a middle-aligned `WidgetSpan`, `xs` before it, in a 16dp
+/// (`iconInMeta`) box. The row does not know what it means -- the shopping
+/// list hands in its staple pin; the recipe detail and import review pass
+/// nothing.
+///
+/// **A marker never sits alone on a line.** The word joiner is not enough:
+/// Flutter breaks before a placeholder anyway when the last word and the
+/// marker together overflow (the 2026-10-06 walk, a ring on its own fourth
+/// line). So the row measures the name's last line, and when the markers
+/// will not fit after it, turns the last space into a line break -- the last
+/// word goes down with them. That is why the marker's box is fixed: its
+/// width has to be known before layout.
+///
+/// [extraAmounts] stack under the first amount in the same right-aligned
+/// column, each led by a `+` in `onSurfaceVariant` -- a second unit family
+/// that was never merged into the first (D9). Only the shopping list has
+/// more than one.
 class IngredientLineRow extends StatelessWidget {
   const IngredientLineRow({
     required this.quantity,
     required this.unit,
     required this.name,
     this.optionalLabel,
+    this.extraAmounts = const <({String? quantity, String? unit})>[],
+    this.nameMarker,
     this.trailer,
     this.isMatched = true,
     this.isFlagged = false,
@@ -69,8 +91,16 @@ class IngredientLineRow extends StatelessWidget {
   /// the name. `null` for a required line.
   final String? optionalLabel;
 
-  /// A second line under the name: the note, a `→ catalog name`, extra
-  /// quantities, unmatched raw lines.
+  /// Further amounts, each already formatted like [quantity] and [unit],
+  /// drawn one per line under the first. Empty for a single amount.
+  final List<({String? quantity, String? unit})> extraAmounts;
+
+  /// An inline marker after the name, optional label included. `null` draws
+  /// nothing.
+  final Widget? nameMarker;
+
+  /// A second line under the name: the note, a `→ catalog name`, unmatched
+  /// raw lines.
   final String? trailer;
 
   final bool isMatched;
@@ -111,13 +141,28 @@ class IngredientLineRow extends StatelessWidget {
     final String? optionalText = optionalLabel?.isEmpty ?? true
         ? null
         : optionalLabel;
-    final bool hasAmount = quantityText != null || unitText != null;
+    final List<({String? quantity, String? unit})> extras =
+        <({String? quantity, String? unit})>[
+          for (final ({String? quantity, String? unit}) a in extraAmounts)
+            if ((a.quantity?.isNotEmpty ?? false) ||
+                (a.unit?.isNotEmpty ?? false))
+              a,
+        ];
+    final bool hasAmount =
+        quantityText != null || unitText != null || extras.isNotEmpty;
     final TextStyle? reading = theme.textTheme.bodyLarge;
     final TextStyle? muted = theme.textTheme.bodySmall?.copyWith(
       color: scheme.onSurfaceVariant,
     );
 
     final bool padded = inset || isFlagged;
+
+    // What the markers take after the last word, gap included.
+    final double markersWidth =
+        (nameMarker != null ? AppSpacing.xs + AppSizes.iconInMeta : 0) +
+        (isMatched ? 0 : AppSpacing.sm + AppSizes.iconInMeta);
+    final TextStyle nameStyle = DefaultTextStyle.of(context).style
+        .merge(reading?.copyWith(color: scheme.onSurface));
 
     final Widget content = Container(
       // The divider takes the 1dp the old solid border took, so row heights
@@ -138,40 +183,77 @@ class IngredientLineRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text.rich(
-                  TextSpan(
-                    children: <InlineSpan>[
-                      TextSpan(text: name),
-                      if (optionalText != null)
-                        TextSpan(text: ' · $optionalText', style: muted),
-                      // A word joiner glues the ring to the last word: a
-                      // line may otherwise break before the placeholder and
-                      // strand the ring alone on the next line.
-                      if (!isMatched) const TextSpan(text: '\u2060'),
-                      if (!isMatched)
-                        WidgetSpan(
-                          alignment: PlaceholderAlignment.middle,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: AppSpacing.sm),
-                            child: Tooltip(
-                              message: unmatchedTooltip ?? '',
-                              // Keyed because `CustomPaint` is a common
-                              // enough internal for `find.byType` to be
-                              // useless against it -- `ratingStars`'
-                              // precedent, one screen over.
-                              child: CustomPaint(
-                                key: const Key('unmatchedMarker'),
-                                size: const Size.square(AppSizes.iconInMeta),
-                                painter: _DashedRingPainter(
-                                  color: kitchen.unmatched,
+                LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    final ({String name, String? optional}) lines =
+                        _keepMarkersWithLastWord(
+                          context: context,
+                          maxWidth: constraints.maxWidth,
+                          markersWidth: markersWidth,
+                          name: name,
+                          optional: optionalText == null
+                              ? null
+                              : ' · $optionalText',
+                          nameStyle: nameStyle,
+                          optionalStyle: muted,
+                        );
+                    return Text.rich(
+                      TextSpan(
+                        children: <InlineSpan>[
+                          TextSpan(text: lines.name),
+                          if (lines.optional != null)
+                            TextSpan(text: lines.optional, style: muted),
+                          // Same word joiner as the ring below, for the same
+                          // reason.
+                          if (nameMarker != null)
+                            const TextSpan(text: '\u2060'),
+                          if (nameMarker != null)
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: Padding(
+                                padding: const EdgeInsets.only(
+                                  left: AppSpacing.xs,
+                                ),
+                                child: SizedBox.square(
+                                  dimension: AppSizes.iconInMeta,
+                                  child: nameMarker,
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  style: reading?.copyWith(color: scheme.onSurface),
+                          // A word joiner glues the ring to the last word
+                          // where the line has room; where it has none,
+                          // `_keepMarkersWithLastWord` already moved the word.
+                          if (!isMatched) const TextSpan(text: '\u2060'),
+                          if (!isMatched)
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: Padding(
+                                padding: const EdgeInsets.only(
+                                  left: AppSpacing.sm,
+                                ),
+                                child: Tooltip(
+                                  message: unmatchedTooltip ?? '',
+                                  // Keyed because `CustomPaint` is a common
+                                  // enough internal for `find.byType` to be
+                                  // useless against it -- `ratingStars`'
+                                  // precedent, one screen over.
+                                  child: CustomPaint(
+                                    key: const Key('unmatchedMarker'),
+                                    size: const Size.square(
+                                      AppSizes.iconInMeta,
+                                    ),
+                                    painter: _DashedRingPainter(
+                                      color: kitchen.unmatched,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      style: nameStyle,
+                    );
+                  },
                 ),
                 if (trailerText != null && trailerText.isNotEmpty)
                   Text(trailerText, style: muted),
@@ -180,36 +262,37 @@ class IngredientLineRow extends StatelessWidget {
           ),
           if (hasAmount) ...<Widget>[
             const SizedBox(width: AppSpacing.xl),
-            Text.rich(
-              TextSpan(
-                children: <InlineSpan>[
-                  if (quantityText != null)
-                    TextSpan(
-                      text: quantityText,
-                      style: TextStyle(
-                        color: scheme.primary,
-                        fontWeight: FontWeight.w600,
-                        fontFeatures: const <FontFeature>[
-                          FontFeature.tabularFigures(),
-                        ],
-                      ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                if (quantityText != null || unitText != null)
+                  _amount(
+                    scheme: scheme,
+                    style: reading,
+                    quantity: quantityText,
+                    unit: unitText,
+                    key: const Key('ingredientAmount'),
+                  ),
+                // Every extra shares one finder key, so each sits under its
+                // own index key: siblings must not share a key.
+                for (int i = 0; i < extras.length; i++)
+                  KeyedSubtree(
+                    key: ValueKey<int>(i),
+                    child: _amount(
+                      scheme: scheme,
+                      style: reading,
+                      quantity: extras[i].quantity?.isEmpty ?? true
+                          ? null
+                          : extras[i].quantity,
+                      unit: extras[i].unit?.isEmpty ?? true
+                          ? null
+                          : extras[i].unit,
+                      key: const Key('ingredientExtraAmount'),
+                      plus: true,
                     ),
-                  if (quantityText != null && unitText != null)
-                    const TextSpan(text: ' '),
-                  if (unitText != null)
-                    TextSpan(
-                      text: unitText,
-                      style: TextStyle(
-                        color: scheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                ],
-              ),
-              key: const Key('ingredientAmount'),
-              style: reading,
-              softWrap: false,
-              textAlign: TextAlign.end,
+                  ),
+              ],
             ),
           ],
         ],
@@ -250,6 +333,93 @@ class IngredientLineRow extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+
+  /// [name] and [optional] as drawn: unchanged, or with the last space
+  /// turned into a line break when the markers ([markersWidth]) would not fit
+  /// after the last line -- see the class doc. A last line of one word has
+  /// no space to break at and is left alone; nothing better is possible.
+  static ({String name, String? optional}) _keepMarkersWithLastWord({
+    required BuildContext context,
+    required double maxWidth,
+    required double markersWidth,
+    required String name,
+    required String? optional,
+    required TextStyle nameStyle,
+    required TextStyle? optionalStyle,
+  }) {
+    if (markersWidth == 0 || !maxWidth.isFinite) {
+      return (name: name, optional: optional);
+    }
+    final TextPainter painter = TextPainter(
+      text: TextSpan(
+        style: nameStyle,
+        children: <InlineSpan>[
+          TextSpan(text: name),
+          if (optional != null) TextSpan(text: optional, style: optionalStyle),
+        ],
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      locale: Localizations.maybeLocaleOf(context),
+    )..layout(maxWidth: maxWidth);
+    final List<LineMetrics> metrics = painter.computeLineMetrics();
+    painter.dispose();
+    if (metrics.isEmpty || metrics.last.width + markersWidth <= maxWidth) {
+      return (name: name, optional: optional);
+    }
+
+    String breakLastSpace(String text, int at) =>
+        '${text.substring(0, at)}\n${text.substring(at + 1)}';
+    // The optional label's leading space is not a break worth taking: it
+    // would leave the name alone above ` · opciono`.
+    final int inOptional = optional?.lastIndexOf(' ') ?? -1;
+    if (optional != null && inOptional > 0) {
+      return (name: name, optional: breakLastSpace(optional, inOptional));
+    }
+    final int inName = name.lastIndexOf(' ');
+    if (inName < 0) return (name: name, optional: optional);
+    return (name: breakLastSpace(name, inName), optional: optional);
+  }
+
+  /// One amount line: the number in `primary` w600 with tabular figures, the
+  /// unit in `onSurfaceVariant` w400, never wrapping. [plus] leads it with a
+  /// `+` in `onSurfaceVariant` -- not the canvas's `outline`, which is never
+  /// body text (DESIGN_SYSTEM § Content and lines).
+  static Widget _amount({
+    required ColorScheme scheme,
+    required TextStyle? style,
+    required String? quantity,
+    required String? unit,
+    required Key key,
+    bool plus = false,
+  }) {
+    final TextStyle mutedSpan = TextStyle(
+      color: scheme.onSurfaceVariant,
+      fontWeight: FontWeight.w400,
+    );
+    return Text.rich(
+      TextSpan(
+        children: <InlineSpan>[
+          if (plus) TextSpan(text: '+ ', style: mutedSpan),
+          if (quantity != null)
+            TextSpan(
+              text: quantity,
+              style: TextStyle(
+                color: scheme.primary,
+                fontWeight: FontWeight.w600,
+                fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+              ),
+            ),
+          if (quantity != null && unit != null) const TextSpan(text: ' '),
+          if (unit != null) TextSpan(text: unit, style: mutedSpan),
+        ],
+      ),
+      key: key,
+      style: style,
+      softWrap: false,
+      textAlign: TextAlign.end,
     );
   }
 }

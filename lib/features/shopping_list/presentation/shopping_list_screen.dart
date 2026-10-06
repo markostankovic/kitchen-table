@@ -357,43 +357,11 @@ class _ListBody extends ConsumerWidget {
         if (toBuy.isNotEmpty && staples.isNotEmpty)
           const SizedBox(height: AppSpacing.md),
         if (staples.isNotEmpty)
-          // Collapsed, never hidden. Nothing is missing from the snapshot
-          // itself -- the pantry flag changes where a line appears, not
-          // whether it exists.
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: ExpansionTile(
-              shape: const Border(),
-              collapsedShape: const Border(),
-              tilePadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-              ),
-              childrenPadding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                0,
-                AppSpacing.lg,
-                AppSpacing.sm,
-              ),
-              title: Text(
-                bodyL10n.probablyHaveHeading(staples.length),
-                style: theme.textTheme.titleSmall,
-              ),
-              subtitle: Text(
-                bodyL10n.cupboardStaplesSubtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              children: <Widget>[
-                for (int i = 0; i < staples.length; i++)
-                  _ItemRow(
-                    item: staples[i],
-                    units: units,
-                    locale: list.locale,
-                    showDivider: i < staples.length - 1,
-                  ),
-              ],
-            ),
+          _StaplesCard(
+            staples: staples,
+            units: units,
+            locale: list.locale,
+            bodyL10n: bodyL10n,
           ),
       ],
     );
@@ -436,6 +404,84 @@ class _ListBody extends ConsumerWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// "Probably have": collapsed, never hidden. Nothing is missing from the
+/// snapshot itself -- the pantry flag changes where a line appears, not
+/// whether it exists.
+///
+/// Two locales, `_GeneratedAt`'s shape: the heading and its count are the
+/// document ([bodyL10n]); the subline teaches the long-press, which is an
+/// instruction to the reader, so it is chrome in the reader's locale. It
+/// says how to move an item *here* while collapsed and how to move one
+/// *back* once open -- which is why this is stateful.
+class _StaplesCard extends StatefulWidget {
+  const _StaplesCard({
+    required this.staples,
+    required this.units,
+    required this.locale,
+    required this.bodyL10n,
+  });
+
+  final List<ShoppingItem> staples;
+  final UnitCatalog units;
+
+  /// `list.locale`.
+  final String locale;
+
+  /// The snapshot's own `list.locale`, already resolved by `_ListBody`.
+  final AppLocalizations bodyL10n;
+
+  @override
+  State<_StaplesCard> createState() => _StaplesCardState();
+}
+
+class _StaplesCardState extends State<_StaplesCard> {
+  /// Mirrors the tile, which starts collapsed.
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final List<ShoppingItem> staples = widget.staples;
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        shape: const Border(),
+        collapsedShape: const Border(),
+        tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        childrenPadding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.sm,
+        ),
+        onExpansionChanged: (bool expanded) =>
+            setState(() => _expanded = expanded),
+        title: Text(
+          widget.bodyL10n.probablyHaveHeading(staples.length),
+          style: theme.textTheme.titleSmall,
+        ),
+        subtitle: Text(
+          _expanded ? l10n.staplesHintExpanded : l10n.staplesHintCollapsed,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        children: <Widget>[
+          for (int i = 0; i < staples.length; i++)
+            _ItemRow(
+              item: staples[i],
+              units: widget.units,
+              locale: widget.locale,
+              showDivider: i < staples.length - 1,
+            ),
+        ],
       ),
     );
   }
@@ -558,11 +604,21 @@ class _DocumentLanguageTag extends StatelessWidget {
 /// One shopping item as an `IngredientLineRow` (D53: this screen is its third
 /// consumer, fed primitives like the other two).
 ///
-/// The first quantity goes in the row's quantity column, its unit beside the
-/// name. Any further quantity -- a second unit family, never merged into the
-/// first (D9) -- goes in the trailer as `+ 300 g`, followed by each unmatched
-/// raw line on its own line. An item with no quantities at all shows only
-/// its name and raw lines, which is rule 3 working rather than failing.
+/// The first quantity goes in the row's amount column, its unit beside the
+/// number. Any further quantity -- a second unit family, never merged into
+/// the first (D9) -- stacks under it as `+ 300 g`, right-aligned. The trailer
+/// holds each unmatched raw line on its own line; an unmatched item with no
+/// amount leads it with `Not added up` -- chrome, the reader's locale,
+/// beside the ring whose tooltip is chrome too -- saying why it has none. An
+/// unmatched item that parsed an amount (`1.67 kom`) shows the amount and no
+/// such line: beside a number it read as a contradiction (the 2026-10-06
+/// walk). An item with no
+/// quantities at all shows only its name and raw lines, which is rule 3
+/// working rather than failing.
+///
+/// A pantry staple carries a `push_pin` after its name. It is drawn from
+/// `item.isPantryStaple`, not from which card the row sits in, so a one-off
+/// move into "Probably have" can later render without it.
 class _ItemRow extends ConsumerWidget {
   const _ItemRow({
     required this.item,
@@ -597,14 +653,9 @@ class _ItemRow extends ConsumerWidget {
         ? null
         : parts.first;
 
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     final String trailer = <String>[
-      if (parts.length > 1)
-        parts
-            .skip(1)
-            .map(
-              (({String number, String unit}) p) => '+ ${p.number} ${p.unit}',
-            )
-            .join(' '),
+      if (item.ingredientId == null && parts.isEmpty) l10n.notAddedUpTrailer,
       ...item.unmatchedLines,
     ].join('\n');
 
@@ -615,7 +666,23 @@ class _ItemRow extends ConsumerWidget {
       child: IngredientLineRow(
         quantity: first?.number,
         unit: first?.unit,
+        extraAmounts: <({String? quantity, String? unit})>[
+          for (final ({String number, String unit}) p in parts.skip(1))
+            (quantity: p.number, unit: p.unit),
+        ],
         name: item.displayName,
+        nameMarker: item.isPantryStaple
+            ? Tooltip(
+                // Chrome -- the reader's locale.
+                message: l10n.pantryStapleTooltip,
+                child: Icon(
+                  Icons.push_pin_outlined,
+                  key: const Key('stapleMarker'),
+                  size: AppSizes.iconInMeta,
+                  color: scheme.outline,
+                ),
+              )
+            : null,
         trailer: trailer.isEmpty ? null : trailer,
         isMatched: item.ingredientId != null,
         // Chrome -- the reader's locale, as on the recipe detail screen.

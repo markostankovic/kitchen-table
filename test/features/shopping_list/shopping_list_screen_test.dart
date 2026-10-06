@@ -379,10 +379,130 @@ void main() {
       ]),
     );
 
-    // The first family in the amount, the second in the trailer.
-    expect(find.text('480 ml'), findsOneWidget);
+    // The first family in the amount, the second stacked under it in the
+    // same right-aligned column -- nothing under the name.
+    final Finder first = find.byKey(const Key('ingredientAmount'));
+    final Finder extra = find.byKey(const Key('ingredientExtraAmount'));
+    expect(tester.widget<Text>(first).textSpan!.toPlainText(), '480 ml');
+    expect(tester.widget<Text>(extra).textSpan!.toPlainText(), '+ 300 g');
+    expect(tester.getTopRight(extra).dx, tester.getTopRight(first).dx);
+    expect(
+      tester.getTopLeft(extra).dy,
+      greaterThanOrEqualTo(tester.getBottomLeft(first).dy),
+    );
     expect(find.text('brašno'), findsOneWidget);
-    expect(find.text('+ 300 g'), findsOneWidget);
+    expect(find.textContaining('300'), findsOneWidget);
+  });
+
+  testWidgets(
+      'an unmatched item says Not added up, in the reader\'s locale, not the '
+      'list\'s', (tester) async {
+    // An `sr` list under the harness's English chrome.
+    await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[
+        _item('so', id: null, unmatched: <String>['so po ukusu']),
+      ]),
+    );
+
+    expect(find.text('Not added up\nso po ukusu'), findsOneWidget);
+    expect(find.textContaining('Nije sabrano'), findsNothing);
+  });
+
+  testWidgets(
+      'an unmatched item with an amount shows the amount, not Not added up',
+      (tester) async {
+    await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[
+        _item('1 manji koren peršuna',
+            id: null,
+            quantities: <ItemQuantity>[_q(2, UnitFamily.count, 'kom')]),
+      ]),
+    );
+
+    expect(find.text('2 kom'), findsOneWidget);
+    expect(find.byKey(const Key('unmatchedMarker')), findsOneWidget);
+    expect(find.textContaining('Not added up'), findsNothing);
+  });
+
+  testWidgets('a matched item has no Not added up trailer', (tester) async {
+    await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[
+        _item('brašno',
+            quantities: <ItemQuantity>[_q(500, UnitFamily.mass, 'g')]),
+      ]),
+    );
+
+    expect(find.textContaining('Not added up'), findsNothing);
+  });
+
+  testWidgets('a staple in Probably have carries the pin; a to-buy row does '
+      'not', (tester) async {
+    await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[
+        _item('brašno',
+            quantities: <ItemQuantity>[_q(500, UnitFamily.mass, 'g')]),
+        _item('so',
+            id: 'i-so',
+            staple: true,
+            quantities: <ItemQuantity>[_q(5, UnitFamily.mass, 'g')]),
+      ], locale: 'en'),
+    );
+    // The to-buy row is on screen; the staple is not yet.
+    expect(find.text('500 g'), findsOneWidget);
+    expect(find.byKey(const Key('stapleMarker')), findsNothing);
+
+    await tester.tap(find.text('Probably have (1)'));
+    await tester.pumpAndSettle();
+
+    // One pin: the staple's, not the to-buy row's.
+    final Finder pin = find.byKey(const Key('stapleMarker'));
+    expect(pin, findsOneWidget);
+    expect(
+      tester.widget<Icon>(pin).color,
+      AppTheme.light().colorScheme.outline,
+    );
+    expect(
+      find.ancestor(of: pin, matching: find.byType(Tooltip)),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<Tooltip>(
+            find.ancestor(of: pin, matching: find.byType(Tooltip)),
+          )
+          .message,
+      'Always in Probably have',
+    );
+  });
+
+  testWidgets(
+      'the Probably have subline teaches the long-press, collapsed then '
+      'expanded, in the reader\'s locale', (tester) async {
+    // An `sr` list under English chrome: the heading is the document's, the
+    // hint the reader's.
+    await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[
+        _item('so',
+            id: 'i-so',
+            staple: true,
+            quantities: <ItemQuantity>[_q(5, UnitFamily.mass, 'g')]),
+      ]),
+    );
+
+    expect(find.text('Verovatno imate (1)'), findsOneWidget);
+    expect(find.text('Long-press any item to move it here.'), findsOneWidget);
+    expect(find.text('Long-press an item to move it back.'), findsNothing);
+
+    await tester.tap(find.text('Verovatno imate (1)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Long-press an item to move it back.'), findsOneWidget);
+    expect(find.text('Long-press any item to move it here.'), findsNothing);
   });
 
   testWidgets('an unmatched line renders verbatim (rule 3)', (tester) async {

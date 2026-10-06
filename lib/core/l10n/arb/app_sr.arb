@@ -1127,9 +1127,21 @@
       }
     }
   },
-  "cupboardStaplesSubtitle": "Namirnice iz ostave",
-  "@cupboardStaplesSubtitle": {
-    "description": "Shopping list screen (part 6), the collapsed pantry-staples section's subtitle. Renders in list.locale, same as probablyHaveHeading."
+  "staplesHintCollapsed": "Dugo pritisnite stavku da je premestite ovde.",
+  "@staplesHintCollapsed": {
+    "description": "Shopping list screen, the Probably have card's subline while collapsed: teaches the long-press. Chrome -- the reader's locale, not list.locale, unlike the heading above it. Added by phase8-shopping-row-markers, replacing cupboardStaplesSubtitle."
+  },
+  "staplesHintExpanded": "Dugo pritisnite stavku da je vratite na listu.",
+  "@staplesHintExpanded": {
+    "description": "Shopping list screen, the Probably have card's subline while expanded: the long-press moves an item back. Chrome -- the reader's locale. Added by phase8-shopping-row-markers."
+  },
+  "notAddedUpTrailer": "Nije sabrano",
+  "@notAddedUpTrailer": {
+    "description": "Shopping list screen, the muted trailer under an unmatched item saying why it has no amount -- shown only when it has none. Chrome -- the reader's locale, like the unmatched ring's tooltip beside it. Never an error. Added by phase8-shopping-row-markers."
+  },
+  "pantryStapleTooltip": "Uvek u Verovatno imate",
+  "@pantryStapleTooltip": {
+    "description": "Shopping list screen, tooltip on the push-pin after a pantry staple's name. Chrome -- the reader's locale. Added by phase8-shopping-row-markers."
   },
   "generatedForRangeLine": "Generisano {generatedDate} za {from} – {to}",
   "@generatedForRangeLine": {

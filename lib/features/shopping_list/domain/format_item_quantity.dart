@@ -46,9 +46,9 @@ String formatItemQuantity(
 
 /// [formatItemQuantity] split in two: `('1.2', 'kg')`.
 ///
-/// The shopping list screen puts the number in `IngredientLineRow`'s quantity
-/// column and the unit beside the name (Phase 7 part 5), so it needs the
-/// halves; the clipboard export still wants the joined string. One scaling,
+/// The shopping list screen sets the number and the unit as separately
+/// styled spans in `IngredientLineRow`'s amount column (D127), so it needs
+/// the halves; the clipboard export still wants the joined string. One scaling,
 /// one number format -- [formatItemQuantity] is built on this, so the two
 /// cannot drift.
 ({String number, String unit}) formatItemQuantityParts(

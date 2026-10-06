@@ -457,4 +457,251 @@ void main() {
     expect(tester.getSize(row).height, 48);
     expect(tester.getBottomLeft(divider).dy, tester.getBottomLeft(row).dy);
   });
+
+  group('extraAmounts', () {
+    String plainOf(WidgetTester tester, Finder f) => tester
+        .widget<RichText>(find.descendant(of: f, matching: find.byType(RichText)))
+        .text
+        .toPlainText();
+
+    testWidgets('stack under the first amount, right edges aligned, each led '
+        'by a muted +', (WidgetTester tester) async {
+      final ThemeData theme = AppTheme.light();
+      await _pump(
+        tester,
+        const IngredientLineRow(
+          quantity: '480',
+          unit: 'ml',
+          extraAmounts: <({String? quantity, String? unit})>[
+            (quantity: '300', unit: 'g'),
+            (quantity: '2', unit: 'kom'),
+          ],
+          name: 'brašno',
+        ),
+      );
+
+      final Finder first = find.byKey(const Key('ingredientAmount'));
+      final Finder extras = find.byKey(const Key('ingredientExtraAmount'));
+      expect(plainOf(tester, first), '480 ml');
+      expect(extras, findsNWidgets(2));
+      expect(plainOf(tester, extras.at(0)), '+ 300 g');
+      expect(plainOf(tester, extras.at(1)), '+ 2 kom');
+
+      expect(
+        tester.getTopLeft(extras.at(0)).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(first).dy),
+      );
+      expect(
+        tester.getTopLeft(extras.at(1)).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(extras.at(0)).dy),
+      );
+      expect(tester.getTopRight(extras.at(0)).dx, tester.getTopRight(first).dx);
+      expect(tester.getTopRight(extras.at(1)).dx, tester.getTopRight(first).dx);
+
+      final TextSpan root =
+          tester
+                  .widget<RichText>(
+                    find.descendant(
+                      of: extras.at(0),
+                      matching: find.byType(RichText),
+                    ),
+                  )
+                  .text
+              as TextSpan;
+      final List<TextSpan> spans = <TextSpan>[];
+      root.visitChildren((InlineSpan s) {
+        if (s is TextSpan && s.text != null) spans.add(s);
+        return true;
+      });
+      final TextSpan plus = spans.firstWhere((TextSpan s) => s.text == '+ ');
+      final TextSpan number = spans.firstWhere((TextSpan s) => s.text == '300');
+      expect(plus.style?.color, theme.colorScheme.onSurfaceVariant);
+      expect(number.style?.color, theme.colorScheme.primary);
+      expect(number.style?.fontWeight, FontWeight.w600);
+    });
+
+    testWidgets('extras alone still render, with no first amount widget', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        const IngredientLineRow(
+          quantity: null,
+          unit: null,
+          extraAmounts: <({String? quantity, String? unit})>[
+            (quantity: '300', unit: 'g'),
+          ],
+          name: 'brašno',
+        ),
+      );
+
+      expect(find.byKey(const Key('ingredientAmount')), findsNothing);
+      expect(find.byKey(const Key('ingredientExtraAmount')), findsOneWidget);
+    });
+
+    testWidgets('none by default', (WidgetTester tester) async {
+      await _pump(
+        tester,
+        const IngredientLineRow(quantity: '1', unit: 'kg', name: 'brašno'),
+      );
+      expect(find.byKey(const Key('ingredientExtraAmount')), findsNothing);
+    });
+  });
+
+  group('nameMarker', () {
+    testWidgets('renders inline after the name, glued to it', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        const IngredientLineRow(
+          quantity: '1',
+          unit: 'kg',
+          name: 'so',
+          nameMarker: Icon(Icons.push_pin_outlined, key: Key('marker')),
+        ),
+      );
+
+      expect(find.byKey(const Key('marker')), findsOneWidget);
+      // The placeholder follows the name and a word joiner, as the ring does.
+      final String plain = tester
+          .widget<RichText>(
+            find
+                .descendant(
+                  of: find.textContaining('so'),
+                  matching: find.byType(RichText),
+                )
+                .first,
+          )
+          .text
+          .toPlainText();
+      expect(plain, 'so⁠￼');
+    });
+
+    testWidgets('nothing renders without it', (WidgetTester tester) async {
+      await _pump(
+        tester,
+        const IngredientLineRow(quantity: '1', unit: 'kg', name: 'so'),
+      );
+
+      final String plain = tester
+          .widget<RichText>(
+            find
+                .descendant(
+                  of: find.text('so'),
+                  matching: find.byType(RichText),
+                )
+                .first,
+          )
+          .text
+          .toPlainText();
+      expect(plain, 'so');
+    });
+  });
+
+  // The 2026-10-06 walk found the ring alone on a fourth line: the word
+  // joiner does not stop Flutter breaking before a placeholder when the last
+  // word and the ring together overflow. The test font sets every glyph one
+  // em (18dp at bodyLarge), so the widths below are exact.
+  group('a marker that would not fit takes the last word with it', () {
+    Future<void> pumpAt(WidgetTester tester, double width, Widget row) =>
+        tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.light(),
+            home: Scaffold(
+              body: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(width: width, child: row),
+              ),
+            ),
+          ),
+        );
+
+    String plainOfName(WidgetTester tester, String start) => tester
+        .widget<RichText>(
+          find
+              .descendant(
+                of: find.textContaining(start),
+                matching: find.byType(RichText),
+              )
+              .first,
+        )
+        .text
+        .toPlainText();
+
+    testWidgets('the ring', (WidgetTester tester) async {
+      // `aaaa bbbb` is 162dp; the ring needs `sm` + 16 = 24 more, and 170
+      // has room for the name but not both.
+      await pumpAt(
+        tester,
+        170,
+        const IngredientLineRow(
+          quantity: null,
+          unit: null,
+          name: 'aaaa bbbb',
+          isMatched: false,
+        ),
+      );
+
+      final Finder ring = find.byKey(const Key('unmatchedMarker'));
+      // On the second line beside `bbbb` (72dp, + 8 gap), not alone at its
+      // start.
+      expect(tester.getTopLeft(ring).dx, greaterThanOrEqualTo(72));
+      expect(plainOfName(tester, 'aaaa'), startsWith('aaaa\nbbbb'));
+    });
+
+    testWidgets('the name marker', (WidgetTester tester) async {
+      await pumpAt(
+        tester,
+        170,
+        const IngredientLineRow(
+          quantity: null,
+          unit: null,
+          name: 'aaaa bbbb',
+          nameMarker: Icon(Icons.push_pin_outlined, key: Key('marker')),
+        ),
+      );
+
+      final Finder marker = find.byKey(const Key('marker'));
+      expect(tester.getTopLeft(marker).dx, greaterThanOrEqualTo(72));
+      expect(plainOfName(tester, 'aaaa'), startsWith('aaaa\nbbbb'));
+    });
+
+    testWidgets('the optional label is the last word when it is there', (
+      WidgetTester tester,
+    ) async {
+      await pumpAt(
+        tester,
+        // `aaaa` at 18dp a glyph, ` · bb` at the label's 12: 132dp, with no
+        // room for the ring's 24 too.
+        140,
+        const IngredientLineRow(
+          quantity: null,
+          unit: null,
+          name: 'aaaa',
+          optionalLabel: 'bb',
+          isMatched: false,
+        ),
+      );
+
+      expect(plainOfName(tester, 'aaaa'), startsWith('aaaa ·\nbb'));
+    });
+
+    testWidgets('a name with room for its marker is left alone', (
+      WidgetTester tester,
+    ) async {
+      await pumpAt(
+        tester,
+        400,
+        const IngredientLineRow(
+          quantity: null,
+          unit: null,
+          name: 'aaaa bbbb',
+          isMatched: false,
+        ),
+      );
+
+      expect(plainOfName(tester, 'aaaa'), 'aaaa bbbb⁠￼');
+    });
+  });
 }

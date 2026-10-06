@@ -852,7 +852,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get cupboardStaplesSubtitle => 'Cupboard staples';
+  String get staplesHintCollapsed => 'Long-press any item to move it here.';
+
+  @override
+  String get staplesHintExpanded => 'Long-press an item to move it back.';
+
+  @override
+  String get notAddedUpTrailer => 'Not added up';
+
+  @override
+  String get pantryStapleTooltip => 'Always in Probably have';
 
   @override
   String generatedForRangeLine(String generatedDate, String from, String to) {

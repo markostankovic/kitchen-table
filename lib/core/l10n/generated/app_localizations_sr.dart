@@ -861,7 +861,18 @@ class AppLocalizationsSr extends AppLocalizations {
   }
 
   @override
-  String get cupboardStaplesSubtitle => 'Namirnice iz ostave';
+  String get staplesHintCollapsed =>
+      'Dugo pritisnite stavku da je premestite ovde.';
+
+  @override
+  String get staplesHintExpanded =>
+      'Dugo pritisnite stavku da je vratite na listu.';
+
+  @override
+  String get notAddedUpTrailer => 'Nije sabrano';
+
+  @override
+  String get pantryStapleTooltip => 'Uvek u Verovatno imate';
 
   @override
   String generatedForRangeLine(String generatedDate, String from, String to) {

@@ -1544,11 +1544,29 @@ abstract class AppLocalizations {
   /// **'Verovatno imate ({count})'**
   String probablyHaveHeading(int count);
 
-  /// Shopping list screen (part 6), the collapsed pantry-staples section's subtitle. Renders in list.locale, same as probablyHaveHeading.
+  /// Shopping list screen, the Probably have card's subline while collapsed: teaches the long-press. Chrome -- the reader's locale, not list.locale, unlike the heading above it. Added by phase8-shopping-row-markers, replacing cupboardStaplesSubtitle.
   ///
   /// In sr, this message translates to:
-  /// **'Namirnice iz ostave'**
-  String get cupboardStaplesSubtitle;
+  /// **'Dugo pritisnite stavku da je premestite ovde.'**
+  String get staplesHintCollapsed;
+
+  /// Shopping list screen, the Probably have card's subline while expanded: the long-press moves an item back. Chrome -- the reader's locale. Added by phase8-shopping-row-markers.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dugo pritisnite stavku da je vratite na listu.'**
+  String get staplesHintExpanded;
+
+  /// Shopping list screen, the muted trailer under an unmatched item saying why it has no amount -- shown only when it has none. Chrome -- the reader's locale, like the unmatched ring's tooltip beside it. Never an error. Added by phase8-shopping-row-markers.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nije sabrano'**
+  String get notAddedUpTrailer;
+
+  /// Shopping list screen, tooltip on the push-pin after a pantry staple's name. Chrome -- the reader's locale. Added by phase8-shopping-row-markers.
+  ///
+  /// In sr, this message translates to:
+  /// **'Uvek u Verovatno imate'**
+  String get pantryStapleTooltip;
 
   /// Shopping list screen (part 6), the snapshot's own provenance line. {generatedDate}/{from}/{to} are shortDateLabel(..., list.locale) results, composed rather than duplicated -- this whole line renders in list.locale (the two-locale rule), unlike the offline line beneath it (savedCopyOfflineMessage), which is the reader's own connectivity fact.
   ///
