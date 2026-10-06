@@ -29,7 +29,14 @@ import 'package:kitchen_table/features/shopping_list/presentation/shopping_list_
 class _Calls {
   int generated = 0;
   int regenerated = 0;
-  ({String ingredientId, bool? alwaysHave})? pantryPref;
+
+  /// Every `setPantryPref` call in order, so a pick and its Undo can be told
+  /// apart.
+  final List<({String ingredientId, bool? alwaysHave})> pantryPrefs =
+      <({String ingredientId, bool? alwaysHave})>[];
+
+  ({String ingredientId, bool? alwaysHave})? get pantryPref =>
+      pantryPrefs.isEmpty ? null : pantryPrefs.last;
 }
 
 /// Overridden through Riverpod rather than mocked -- no mocking package, so
@@ -42,6 +49,7 @@ class _StubList extends CurrentShoppingList {
     this.calls, {
     this.failure,
     this.regenerateFailure,
+    this.pantryPrefFailure,
     this.reloadOnRegenerate = false,
   });
 
@@ -52,6 +60,10 @@ class _StubList extends CurrentShoppingList {
   /// Fails `regenerateCurrent()` alone, so a long-press whose preference
   /// saved but whose regeneration did not can be told apart.
   final AppFailure? regenerateFailure;
+
+  /// Fails every `setPantryPref` after the first, so an Undo can fail while
+  /// the pick it undoes succeeded.
+  final AppFailure? pantryPrefFailure;
 
   /// Makes `regenerateCurrent()` bump the revision the way the real one
   /// does, so `build()` re-runs as a reload and takes a second to answer --
@@ -89,7 +101,9 @@ class _StubList extends CurrentShoppingList {
     required String ingredientId,
     required bool? alwaysHave,
   }) async {
-    calls.pantryPref = (ingredientId: ingredientId, alwaysHave: alwaysHave);
+    calls.pantryPrefs.add((ingredientId: ingredientId, alwaysHave: alwaysHave));
+    final AppFailure? f = pantryPrefFailure;
+    if (f != null && calls.pantryPrefs.length > 1) throw f;
   }
 
   @override
@@ -162,6 +176,7 @@ Future<_Calls> _pump(
   ShoppingList? initial,
   AppFailure? failure,
   AppFailure? regenerateFailure,
+  AppFailure? pantryPrefFailure,
   bool reloadOnRegenerate = false,
   Locale? locale,
   Reachability? networkStatus,
@@ -185,6 +200,7 @@ Future<_Calls> _pump(
               calls,
               failure: failure,
               regenerateFailure: regenerateFailure,
+              pantryPrefFailure: pantryPrefFailure,
               reloadOnRegenerate: reloadOnRegenerate,
             )),
         if (pinRange) shoppingRangeProvider.overrideWith(() => _PinnedRange()),
@@ -208,6 +224,18 @@ Future<_Calls> _pump(
   );
   await tester.pumpAndSettle();
   return calls;
+}
+
+/// Long-presses [target], lets the menu open at the finger, then picks its
+/// one item.
+Future<void> _pickFromMenu(
+  WidgetTester tester,
+  Finder target,
+  String menuItem,
+) async {
+  await tester.longPress(target);
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(MenuItemButton, menuItem));
 }
 
 void main() {
@@ -601,13 +629,14 @@ void main() {
     expect(find.text('Probably have (1)'), findsNothing);
   });
 
-  testWidgets('long-pressing an item records a pantry override', (tester) async {
+  testWidgets('long-pressing an item and picking the menu item records a '
+      'pantry override', (tester) async {
     final _Calls calls = await _pump(
       tester,
       initial: _list(<ShoppingItem>[_item('brašno', id: 'i-brasno')]),
     );
 
-    await tester.longPress(find.text('brašno'));
+    await _pickFromMenu(tester, find.text('brašno'), 'Always in Probably have');
     await tester.pumpAndSettle();
 
     expect(calls.pantryPref?.ingredientId, 'i-brasno');
@@ -615,6 +644,10 @@ void main() {
     // The same list is regenerated at once, so the item moves now (D147).
     expect(calls.regenerated, 1);
     expect(find.text('brašno moved to Probably have.'), findsOneWidget);
+    expect(find.widgetWithText(SnackBarAction, 'Undo'), findsOneWidget);
+    // The menu has closed and taken the pressed-row fill with it.
+    expect(find.byType(MenuItemButton), findsNothing);
+    expect(find.byKey(const Key('pressedRowFill')), findsNothing);
   });
 
   testWidgets(
@@ -642,7 +675,8 @@ void main() {
         tester.state<ScrollableState>(scrollable).position.pixels;
     expect(offset, greaterThan(0));
 
-    await tester.longPress(find.text('item 19'));
+    await _pickFromMenu(tester, find.text('item 19'), 'Always in Probably have');
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 10));
 
     // Mid-reload: the provider is loading again, the list is still there.
@@ -662,7 +696,7 @@ void main() {
       regenerateFailure: const NetworkFailure(),
     );
 
-    await tester.longPress(find.text('brašno'));
+    await _pickFromMenu(tester, find.text('brašno'), 'Always in Probably have');
     await tester.pumpAndSettle();
 
     expect(calls.pantryPref?.ingredientId, 'i-brasno');
@@ -673,7 +707,7 @@ void main() {
 
   testWidgets('an unmatched item cannot be given a pantry override',
       (tester) async {
-    // There is no ingredient id to hang the preference off.
+    // There is no ingredient id to hang the preference off, so no menu.
     final _Calls calls = await _pump(
       tester,
       initial: _list(<ShoppingItem>[_item('so po ukusu', id: null)]),
@@ -682,8 +716,124 @@ void main() {
     await tester.longPress(find.textContaining('so po ukusu'));
     await tester.pumpAndSettle();
 
+    expect(find.byType(MenuItemButton), findsNothing);
     expect(calls.pantryPref, isNull);
     expect(calls.regenerated, 0);
+  });
+
+  testWidgets('a to-buy row offers Always in Probably have; a Probably-have '
+      'row offers Always on the list', (tester) async {
+    await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[
+        _item('brašno', id: 'i-brasno'),
+        _item('sirće', id: 'i-sirce', staple: true),
+      ], locale: 'en'),
+    );
+
+    await tester.longPress(find.text('brašno'));
+    await tester.pumpAndSettle();
+    expect(find.byType(MenuItemButton), findsOneWidget);
+    expect(
+      find.widgetWithText(MenuItemButton, 'Always in Probably have'),
+      findsOneWidget,
+    );
+    // The pressed row holds the fill while its menu is open.
+    final Finder fill = find.byKey(const Key('pressedRowFill'));
+    expect(fill, findsOneWidget);
+    expect(
+      (tester.widget<DecoratedBox>(fill).decoration as BoxDecoration).color,
+      AppTheme.light().colorScheme.surfaceContainerHighest,
+    );
+    await tester.tapAt(Offset.zero);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Probably have (1)'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('sirće'));
+    await tester.pumpAndSettle();
+    expect(find.byType(MenuItemButton), findsOneWidget);
+    expect(
+      find.widgetWithText(MenuItemButton, 'Always on the list'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('dismissing the menu records nothing and regenerates nothing',
+      (tester) async {
+    final _Calls calls = await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[_item('brašno', id: 'i-brasno')]),
+    );
+
+    await tester.longPress(find.text('brašno'));
+    await tester.pumpAndSettle();
+    expect(find.byType(MenuItemButton), findsOneWidget);
+
+    await tester.tapAt(Offset.zero);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MenuItemButton), findsNothing);
+    expect(find.byKey(const Key('pressedRowFill')), findsNothing);
+    expect(calls.pantryPref, isNull);
+    expect(calls.regenerated, 0);
+  });
+
+  testWidgets('Undo records the opposite override and regenerates again, '
+      'with no second snackbar', (tester) async {
+    final _Calls calls = await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[
+        _item('sirće', id: 'i-sirce', staple: true),
+      ], locale: 'en'),
+    );
+
+    await tester.tap(find.text('Probably have (1)'));
+    await tester.pumpAndSettle();
+    await _pickFromMenu(tester, find.textContaining('sirće'), 'Always on the list');
+    await tester.pumpAndSettle();
+    expect(find.text('sirće is back on the list.'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(SnackBarAction, 'Undo'));
+    await tester.pumpAndSettle();
+
+    expect(calls.pantryPrefs, <({String ingredientId, bool? alwaysHave})>[
+      (ingredientId: 'i-sirce', alwaysHave: false),
+      (ingredientId: 'i-sirce', alwaysHave: true),
+    ]);
+    expect(calls.regenerated, 2);
+    expect(find.byType(SnackBar), findsNothing);
+  });
+
+  testWidgets('a failed Undo shows the failure snackbar', (tester) async {
+    final _Calls calls = await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[_item('brašno', id: 'i-brasno')]),
+      pantryPrefFailure: const NetworkFailure(),
+    );
+
+    await _pickFromMenu(tester, find.text('brašno'), 'Always in Probably have');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(SnackBarAction, 'Undo'));
+    await tester.pumpAndSettle();
+
+    expect(calls.pantryPrefs, hasLength(2));
+    // The Undo's write failed, so nothing was regenerated a second time.
+    expect(calls.regenerated, 1);
+    expect(find.text(AppLocalizationsEn().failureOffline), findsOneWidget);
+  });
+
+  testWidgets('the menu and Undo render in Serbian under sr', (tester) async {
+    await _pump(
+      tester,
+      initial: _list(<ShoppingItem>[_item('brašno', id: 'i-brasno')]),
+      locale: const Locale('sr'),
+    );
+
+    await _pickFromMenu(tester, find.text('brašno'), 'Uvek u Verovatno imate');
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(SnackBarAction, 'Poništi'), findsOneWidget);
   });
 
   testWidgets('regenerating is not offered before a list exists',

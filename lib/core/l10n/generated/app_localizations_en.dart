@@ -864,6 +864,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pantryStapleTooltip => 'Always in Probably have';
 
   @override
+  String get alwaysInProbablyHaveMenuItem => 'Always in Probably have';
+
+  @override
+  String get alwaysOnListMenuItem => 'Always on the list';
+
+  @override
+  String get undoSnackbarAction => 'Undo';
+
+  @override
   String generatedForRangeLine(String generatedDate, String from, String to) {
     return 'Generated $generatedDate for $from – $to';
   }

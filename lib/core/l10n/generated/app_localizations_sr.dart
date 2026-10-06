@@ -875,6 +875,15 @@ class AppLocalizationsSr extends AppLocalizations {
   String get pantryStapleTooltip => 'Uvek u Verovatno imate';
 
   @override
+  String get alwaysInProbablyHaveMenuItem => 'Uvek u Verovatno imate';
+
+  @override
+  String get alwaysOnListMenuItem => 'Uvek na listi';
+
+  @override
+  String get undoSnackbarAction => 'Poništi';
+
+  @override
   String generatedForRangeLine(String generatedDate, String from, String to) {
     return 'Generisano $generatedDate za $from – $to';
   }

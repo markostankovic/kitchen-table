@@ -1568,6 +1568,24 @@ abstract class AppLocalizations {
   /// **'Uvek u Verovatno imate'**
   String get pantryStapleTooltip;
 
+  /// Shopping list screen, phase8-shopping-long-press-menu. The one item in the long-press menu on a to-buy row; sets the permanent pantry preference. Chrome -- the reader's locale. Same words as pantryStapleTooltip on purpose: the item and the pin it produces read the same.
+  ///
+  /// In sr, this message translates to:
+  /// **'Uvek u Verovatno imate'**
+  String get alwaysInProbablyHaveMenuItem;
+
+  /// Shopping list screen, phase8-shopping-long-press-menu. The one item in the long-press menu on a Probably-have row; clears the pantry preference for good. Chrome -- the reader's locale.
+  ///
+  /// In sr, this message translates to:
+  /// **'Uvek na listi'**
+  String get alwaysOnListMenuItem;
+
+  /// Shopping list screen, phase8-shopping-long-press-menu. The action on the snackbar confirming a pantry move; writes the opposite preference and regenerates. Chrome -- the reader's locale. Its own key, not a reuse of clearFiltersChip.
+  ///
+  /// In sr, this message translates to:
+  /// **'Poništi'**
+  String get undoSnackbarAction;
+
   /// Shopping list screen (part 6), the snapshot's own provenance line. {generatedDate}/{from}/{to} are shortDateLabel(..., list.locale) results, composed rather than duplicated -- this whole line renders in list.locale (the two-locale rule), unlike the offline line beneath it (savedCopyOfflineMessage), which is the reader's own connectivity fact.
   ///
   /// In sr, this message translates to:

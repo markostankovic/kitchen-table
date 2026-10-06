@@ -774,8 +774,16 @@ that parsed an amount (`1.67 kom`) shows the amount and no such line. Never
 grouped and ordered by `groupByCategory`, with blocks `md` apart, a dashed divider
 under **every** row but the card's last, and **no category headings** — D105-amended: headings were noise when scanning a list
 in a shop, and the Garden mock that draws them was declined. Omitted when
-nothing is to buy. Long-press toggles a pantry staple and regenerates the
-same list at once (D147 — a new snapshot, not an edit, so D13 stands).
+nothing is to buy. Long-press opens a **one-item menu at the press point** —
+`Uvek u Verovatno imate` / `Always in Probably have` on a to-buy row, `Uvek
+na listi` / `Always on the list` on a Probably-have row; chrome, no icon.
+While it is open the pressed row holds a `surfaceContainerHighest` fill
+(radius `sm`, bleeding `md` past the row each side, drawn behind it so
+nothing shifts). Picking sets the permanent preference and regenerates the
+same list at once (D147 — a new snapshot, not an edit, so D13 stands). The
+confirmation snackbar carries `Poništi` / `Undo`, which writes the opposite
+preference and regenerates again, with no second snackbar. There is **no
+one-off move**: it would be per-item state on a snapshot (D13, D152).
 
 **The staples card.** `md` below, a second `Card` (`Clip.antiAlias`) holding
 an `ExpansionTile`, **collapsed**, with `const Border()` shapes so it draws no
@@ -787,8 +795,8 @@ item to move it here.`, expanded `Dugo pritisnite stavku da je vratite na
 listu.` / `Long-press an item to move it back.` The same `IngredientLineRow`s
 inside; every staple row carries a 16dp `push_pin_outlined` in `outline` as
 its name marker, tooltip `Uvek u Verovatno imate` / `Always in Probably have`
-(chrome). The pin is drawn from `isPantryStaple`, not from the card, so a
-one-off move here can later render without it.
+(chrome). The pin is drawn from `isPantryStaple`, not from the card; every
+Probably-have row is a staple, so every one carries it.
 
 **The no-list state.** Under the range bar (and its range line), the carded
 `AppEmptyState(card: true)`: `shopping_basket_outlined`, `Još nema liste.`/
@@ -916,7 +924,9 @@ Menus radius 16 at level 2. Menu items — `MenuItemButton` (`menuButtonTheme`)
 and `PopupMenuItem` (`popupMenuTheme`) alike — are `bodyMedium` w400 in
 `onSurface`. The recipe list's add menu keeps its leading `_outlined` icons,
 though the design's menu has no icon slot. Snackbars on `inverseSurface` with the action in
-`inversePrimary`. The offline banner on `offline` / `onOffline` — calm.
+`inversePrimary`. A snackbar that confirms a reversible change carries a `Poništi` /
+`Undo` `SnackBarAction`, its colour left to the theme (`inversePrimary`) —
+the first is the shopping list's pantry move. The offline banner on `offline` / `onOffline` — calm.
 
 ### Dialog
 

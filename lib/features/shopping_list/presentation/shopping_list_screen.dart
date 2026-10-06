@@ -9,6 +9,7 @@ import '../../../core/ingredients/widgets/ingredient_line_row.dart';
 import '../../../core/l10n/date_labels.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/net/network_status.dart';
+import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/kitchen_colors.dart';
@@ -617,9 +618,17 @@ class _DocumentLanguageTag extends StatelessWidget {
 /// working rather than failing.
 ///
 /// A pantry staple carries a `push_pin` after its name. It is drawn from
-/// `item.isPantryStaple`, not from which card the row sits in, so a one-off
-/// move into "Probably have" can later render without it.
-class _ItemRow extends ConsumerWidget {
+/// `item.isPantryStaple`, not from which card the row sits in; every
+/// "Probably have" row is a staple and so carries it -- there is no one-off
+/// move that could put a non-staple there (D13, phase8-shopping-long-press-menu).
+///
+/// Long-press on a matched item opens a one-item menu at the press point:
+/// "Always in Probably have" on a to-buy row, "Always on the list" on a
+/// staple. While it is open the row holds a `surfaceContainerHighest` fill
+/// that bleeds `AppSpacing.md` past it on each side, drawn behind the row so
+/// nothing shifts. Stateful for the menu's controller, the press position
+/// and that fill.
+class _ItemRow extends ConsumerStatefulWidget {
   const _ItemRow({
     required this.item,
     required this.units,
@@ -642,12 +651,27 @@ class _ItemRow extends ConsumerWidget {
   final bool showDivider;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ItemRow> createState() => _ItemRowState();
+}
+
+class _ItemRowState extends ConsumerState<_ItemRow> {
+  final MenuController _menu = MenuController();
+
+  /// Where the last pointer went down, in the row's own coordinates.
+  /// `InkWell.onLongPress` carries no position, so the menu opens here.
+  Offset? _pressPosition;
+
+  /// True while the menu is open; draws the pressed-row fill.
+  bool _menuOpen = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ShoppingItem item = widget.item;
     final AppLocalizations l10n = AppLocalizations.of(context);
     final List<({String number, String unit})> parts =
         <({String number, String unit})>[
           for (final ItemQuantity q in item.quantities)
-            formatItemQuantityParts(q, units, locale: locale),
+            formatItemQuantityParts(q, widget.units, locale: widget.locale),
         ];
     final ({String number, String unit})? first = parts.isEmpty
         ? null
@@ -659,81 +683,173 @@ class _ItemRow extends ConsumerWidget {
       ...item.unmatchedLines,
     ].join('\n');
 
-    return InkWell(
-      onLongPress: item.ingredientId == null
-          ? null
-          : () => _togglePantry(context, ref),
-      child: IngredientLineRow(
-        quantity: first?.number,
-        unit: first?.unit,
-        extraAmounts: <({String? quantity, String? unit})>[
-          for (final ({String number, String unit}) p in parts.skip(1))
-            (quantity: p.number, unit: p.unit),
-        ],
-        name: item.displayName,
-        nameMarker: item.isPantryStaple
-            ? Tooltip(
-                // Chrome -- the reader's locale.
-                message: l10n.pantryStapleTooltip,
-                child: Icon(
-                  Icons.push_pin_outlined,
-                  key: const Key('stapleMarker'),
-                  size: AppSizes.iconInMeta,
-                  color: scheme.outline,
+    final Widget row = IngredientLineRow(
+      quantity: first?.number,
+      unit: first?.unit,
+      extraAmounts: <({String? quantity, String? unit})>[
+        for (final ({String number, String unit}) p in parts.skip(1))
+          (quantity: p.number, unit: p.unit),
+      ],
+      name: item.displayName,
+      nameMarker: item.isPantryStaple
+          ? Tooltip(
+              // Chrome -- the reader's locale.
+              message: l10n.pantryStapleTooltip,
+              child: Icon(
+                Icons.push_pin_outlined,
+                key: const Key('stapleMarker'),
+                size: AppSizes.iconInMeta,
+                color: scheme.outline,
+              ),
+            )
+          : null,
+      trailer: trailer.isEmpty ? null : trailer,
+      isMatched: item.ingredientId != null,
+      // Chrome -- the reader's locale, as on the recipe detail screen.
+      unmatchedTooltip: l10n.ingredientNotMatchedTooltip,
+      showDivider: widget.showDivider,
+    );
+
+    if (item.ingredientId == null) return row;
+
+    return MenuAnchor(
+      controller: _menu,
+      consumeOutsideTap: true,
+      onOpen: () => setState(() => _menuOpen = true),
+      onClose: () {
+        if (mounted) setState(() => _menuOpen = false);
+      },
+      menuChildren: <Widget>[
+        // Chrome -- the reader's locale. Text-only, like every menu but the
+        // recipe list's add menu (DESIGN_SYSTEM.md § Menu).
+        MenuItemButton(
+          onPressed: () => _setStaple(
+            !item.isPantryStaple,
+            showConfirmation: true,
+          ),
+          child: Text(
+            item.isPantryStaple
+                ? l10n.alwaysOnListMenuItem
+                : l10n.alwaysInProbablyHaveMenuItem,
+          ),
+        ),
+      ],
+      builder: (BuildContext context, MenuController controller, Widget? _) =>
+          Listener(
+            onPointerDown: (PointerDownEvent e) =>
+                _pressPosition = e.localPosition,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: <Widget>[
+                if (_menuOpen)
+                  Positioned(
+                    left: -AppSpacing.md,
+                    right: -AppSpacing.md,
+                    top: 0,
+                    bottom: 0,
+                    child: DecoratedBox(
+                      key: const Key('pressedRowFill'),
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(AppRadii.sm),
+                      ),
+                    ),
+                  ),
+                InkWell(
+                  onLongPress: () => controller.open(position: _pressPosition),
+                  child: row,
                 ),
-              )
-            : null,
-        trailer: trailer.isEmpty ? null : trailer,
-        isMatched: item.ingredientId != null,
-        // Chrome -- the reader's locale, as on the recipe detail screen.
-        unmatchedTooltip: l10n.ingredientNotMatchedTooltip,
-        showDivider: showDivider,
-      ),
+              ],
+            ),
+          ),
     );
   }
 
-  /// Long-press moves an item in or out of "Probably have" for good.
+  /// The menu's pick, and Undo's: records the permanent pantry preference,
+  /// then regenerates the same list at once -- its own range and language,
+  /// not the range bar's or the reader's (D147). The result is a new
+  /// snapshot, not an edit to this one, so D13 stands; that is also why
+  /// there is no one-off "move to Probably have" -- it would be per-item
+  /// state on a snapshot. If the preference saved but the regeneration
+  /// failed, the failure snackbar is enough: the preference applies on the
+  /// next generation anyway.
   ///
-  /// Records the preference, then regenerates the same list at once -- its
-  /// own range and language, not the range bar's or the reader's (D147,
-  /// replacing the old "the snapshot is not rearranged" stance). The result
-  /// is a new snapshot, not an edit to this one, so D13 stands. If the
-  /// preference saved but the regeneration failed, the failure snackbar is
-  /// enough: the preference applies on the next generation anyway.
+  /// With [showConfirmation] (the menu pick) success shows a snackbar whose
+  /// `Undo` calls this again with the opposite boolean and no confirmation:
+  /// the row moving back is the confirmation. Undo writes `!alwaysHave`
+  /// rather than restoring "no override row" for a catalog-default staple --
+  /// the household override beats the catalog either way, so the list comes
+  /// out the same without an extra read.
   ///
   /// The confirmation is chrome -- the reader's locale -- even though
   /// `item.displayName` inside it is snapshot data, the same composition
   /// shape `MealPlanScreen`'s `leftoverEntryLabel` uses for a recipe title.
-  Future<void> _togglePantry(BuildContext context, WidgetRef ref) async {
-    final bool nowStaple = !item.isPantryStaple;
+  Future<void> _setStaple(
+    bool alwaysHave, {
+    required bool showConfirmation,
+  }) {
     // Taken before the awaits: the regeneration can move this row, or drop
     // it, before the method resumes, and a `context.mounted` check on the
-    // row would then swallow the snackbar. The messenger and the reader's
-    // locale belong to the screen, not the row.
-    final CurrentShoppingList notifier = ref.read(
-      currentShoppingListProvider.notifier,
-    );
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    try {
-      await notifier.setPantryPref(
-        ingredientId: item.ingredientId!,
-        alwaysHave: nowStaple,
-      );
-      await notifier.regenerateCurrent();
-    } on AppFailure catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.localized(l10n))));
-      return;
-    }
-
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          nowStaple
-              ? l10n.markedAsStapleSnackbar(item.displayName)
-              : l10n.willBeOnListSnackbar(item.displayName),
-        ),
-      ),
+    // row would then swallow the snackbar. Undo's closure runs later still,
+    // after the row is very likely gone. The notifier, the messenger and the
+    // reader's locale belong to the screen, not the row.
+    return _writeStaple(
+      notifier: ref.read(currentShoppingListProvider.notifier),
+      messenger: ScaffoldMessenger.of(context),
+      l10n: AppLocalizations.of(context),
+      ingredientId: widget.item.ingredientId!,
+      displayName: widget.item.displayName,
+      alwaysHave: alwaysHave,
+      showConfirmation: showConfirmation,
     );
   }
+}
+
+/// [_ItemRowState._setStaple]'s body, free of the row so Undo can run it
+/// after the row has been rebuilt away.
+Future<void> _writeStaple({
+  required CurrentShoppingList notifier,
+  required ScaffoldMessengerState messenger,
+  required AppLocalizations l10n,
+  required String ingredientId,
+  required String displayName,
+  required bool alwaysHave,
+  required bool showConfirmation,
+}) async {
+  try {
+    await notifier.setPantryPref(
+      ingredientId: ingredientId,
+      alwaysHave: alwaysHave,
+    );
+    await notifier.regenerateCurrent();
+  } on AppFailure catch (e) {
+    messenger.showSnackBar(SnackBar(content: Text(e.localized(l10n))));
+    return;
+  }
+  if (!showConfirmation) return;
+
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(
+        alwaysHave
+            ? l10n.markedAsStapleSnackbar(displayName)
+            : l10n.willBeOnListSnackbar(displayName),
+      ),
+      // A snackbar with an action persists by default in this Flutter;
+      // keep the usual 4 s auto-dismiss.
+      persist: false,
+      action: SnackBarAction(
+        label: l10n.undoSnackbarAction,
+        onPressed: () => _writeStaple(
+          notifier: notifier,
+          messenger: messenger,
+          l10n: l10n,
+          ingredientId: ingredientId,
+          displayName: displayName,
+          alwaysHave: !alwaysHave,
+          showConfirmation: false,
+        ),
+      ),
+    ),
+  );
 }
