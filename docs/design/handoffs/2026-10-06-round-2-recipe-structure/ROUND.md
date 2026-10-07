@@ -127,7 +127,7 @@ The rest are UI (`/plan-slice-ui`).
         the helper text.
       - In import review: a collapsed card after Method, with the first words
         of the note or `None found`.
-- [ ] `phase8-ingredient-sections`: ingredient section headings on recipe
+- [x] `phase8-ingredient-sections`: ingredient section headings on recipe
       detail. Files: `recipe_detail_screen.dart`, maybe
       `lib/core/ingredients/widgets/`. Bundle: canvas § A4 (A4·3).
       `recipe_ingredients.section` is already stored and carried through

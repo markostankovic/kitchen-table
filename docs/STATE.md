@@ -1,33 +1,28 @@
-# State — 2026-10-06
+# State — 2026-10-07
 
 **Branch:** `main`
-**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 6 —
-`phase8-recipe-end-note` (`6984595`): the recipe's end note (`Napomena` /
-`Notes`) on four screens (D155, rendering D153's `notes`).
+**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 7 —
+`phase8-ingredient-sections` (`233aaec`): ingredient section headings on
+recipe detail (D156).
 
-- **Detail.** A full-width themed card 32 below the method, outside the
-  timeline. Its header is `edit_note` + `Napomena`, and the body is in
-  `bodyLarge`. It shows the translation's note under a translated
-  reading. Nothing renders when the note is blank, and the source footer
-  is unchanged.
-- **Editor.** A `Napomena` section after the step add row. It holds one
-  growing field with the helper `Neobavezno. Serviranje, čuvanje,
-  varijacije, saveti.`
-- **Import review.** A collapsed Notes card under Method, with the first
-  words or `Nije pronađena`. It expands in place.
-- **Translation review.** An original-then-field pair after the steps,
-  shown only when the source has a note.
-- Markers (`- `, `**`) show literally until `phase8-rich-text-render`.
+- **Detail.** A heading opens each run of consecutive lines that share a
+  `section` (`Za testo`, `Za fil`). It is `titleSmall` in `primary` and
+  shows the section as the cook typed it. The gaps are `xl` above (`xs`
+  when the heading opens the list) and `xs` below. A group's last line
+  drops its dashed divider. A flat list is unchanged.
+- **One heading row.** The step heading's private row became
+  `_GroupHeading(text, top, bottom)` and serves both lists. Steps keep
+  their old gaps.
+- Client-only: no migration, no Edge Function, no l10n string.
 
-`dart analyze` is clean and `flutter test` passes 820/820. `make check` is
-green except the known `seed-check` (below); `make test-sql` passes.
-**Walked** on the emulator against hosted, all four combinations: clean on
-everything it reached. The note above a source footer was not reached, and
-that check is open in the walk list below.
+`dart analyze` is clean and `flutter test` passes 825/825. `make check` is
+green except the known `seed-check` (below); `make test-sql` and `make
+l10n-check` pass. **Walked** on the emulator against hosted, all four
+combinations: clean on everything it reached. A heading that wraps was not
+reached, and that check is open in the walk list below.
 
-**Hosted is current**: this slice is client-only. The walk left a reviewed
-English translation with a note on `Pita proba koraka`, and a new pasted
-recipe, `Palacinke`, in the household.
+**Hosted is current**: this slice is client-only. The walk left a new pasted
+recipe, `Proja sa sirom i pavlakom` (three sections), in the household.
 
 Still open, not this slice's:
 - right after a recipe save, the detail's well shows the placeholder (or
@@ -64,17 +59,21 @@ Still open, not this slice's:
   `premešteno` doesn't agree with the noun's gender (`hleb premešteno`);
 - the Serbian date-range picker header reads `28. sep to 4. okt`, with
   Material's English `to`;
-- ingredient notes are not translated (`po ukusu` under English);
+- ingredient notes are not translated (`po ukusu` under English), and
+  neither are ingredient section headings (`Za testo` under English). Both
+  need ingredient lines sent to `translate-recipe`, which is a schema and
+  function change (D156);
 - the recipe-delete confirm is a filled button;
 - the `List — offline`, `Review import`, `Household` and `Settings` frames
   in `docs/design/screens/` still show the old bordered card, until Claude
   Design updates them.
 
 **In flight:** none.
-**Next:** the round's slice 7, `phase8-ingredient-sections`
-(**/plan-slice-ui**): ingredient section headings on recipe detail
-(canvas § A4, A4·3). `recipe_ingredients.section` is already stored and
-carried through import and save, but nothing shows it yet.
+**Next:** the round's next slice, `phase8-ingredient-editor`
+(**/plan-slice-ui**): the recipe editor's ingredients and import review's
+lines (canvas § A4: A4·1, A4·2, A4·4). That slice is where the section
+heading would get its second user and move to
+`lib/core/ingredients/widgets/` (D156).
 
 The round's slices and their order are in
 `docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`. Phase 8
@@ -89,9 +88,9 @@ Smaller candidates still open from round `sync-design-initial`:
 - the recipe-delete confirm, the one filled destructive confirm left
   (§ Buttons says text in destructive). The open device-walk loops below
   still want one sitting with the Galaxy attached.
-**Latest decision:** D155
+**Latest decision:** D156
 
-**Nineteen device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Twenty device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -172,6 +171,9 @@ did not reach. The `phase8-recipe-end-note` walk (`/design-walk
 recipe-detail`, 2026-10-06, emulator, all four combinations, with the
 editor, import review and translation review) was clean on everything it
 reached, and opened a loop for the source-footer check it did not reach.
+The `phase8-ingredient-sections` walk (`/design-walk recipe-detail`,
+2026-10-07, emulator, all four combinations) was clean on everything it
+reached, and opened a loop for the wrapping check it did not reach.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
@@ -987,6 +989,35 @@ Oldest first:
 
   **Not seen on device (covered by the widget test):** translation review
   for a recipe without a note, where no pair should appear.
+- **Phase 8 round 2 slice 7** (`phase8-ingredient-sections`) — ingredient
+  section headings on recipe detail, and `_StepHeadingRow` generalised to
+  `_GroupHeading`. Walked on the **emulator** (2026-10-07, all four
+  combinations, hosted release build). One paste import (one hosted AI call)
+  made `Proja sa sirom i pavlakom`, with `Za testo` / `Za fil` / `Za preliv
+  od kiselog mleka i belog luka` sections. It is still in the household.
+  **Clean:**
+  - headings read as green `titleSmall`. Measured ink gaps at 2.625 px/dp:
+    about 23dp from a heading to its first line, about 49dp from the group
+    above, and about 22dp from `Sastojci` to the first heading. Allowing for
+    line-box leading, these match the planned 4+8, 24+8 and 8+4;
+  - no divider under the last line of each section or of the list;
+  - `Kajgana` (a flat list) looks exactly as before: no heading, and only
+    its last line drops the divider;
+  - contrast of `primary` on the surface: 6.05:1 in light and 10.66:1 in
+    dark;
+  - under `en` the headings stay Serbian (`Za testo`), as the slice
+    accepted. The rows show catalog English;
+  - `Pita proba koraka`'s step headings are unchanged after the refactor:
+    the first sits flush under `Koraci`, and `Fil` measures about 37dp of
+    ink above and 17dp below (the planned 32 and 12);
+  - with the phone in night mode the app stayed `Svetla`.
+
+  **Still open:**
+  - a section heading that **wraps** was not seen. `Za preliv od kiselog
+    mleka i belog luka` (39 characters) fits on one line at 411dp. The
+    editor cannot set sections yet, so this needs a longer name from a
+    paste import, or `phase8-ingredient-editor`'s walk. The heading is a
+    plain `Text` with no `maxLines`.
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind

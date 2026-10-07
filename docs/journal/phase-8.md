@@ -824,3 +824,76 @@ Function, no package.
     detail.
   - **Not reached:** the note above a source footer. Neither walk recipe
     has a source. This is left open in `docs/STATE.md`.
+
+### Round 2026-10-06, slice 7 — Ingredient section headings on recipe detail
+
+**Status: complete** (`233aaec`). Decisions taken during it: D156.
+
+The seventh slice of round `2026-10-06-round-2-recipe-structure`
+(`docs/design/handoffs/2026-10-06-round-2-recipe-structure/`), canvas § A4
+(A4·3, "Detail · ingredient sections"). `recipe_ingredients.section` was
+already stored and cached, and import and save already carried it, but
+detail ignored it. Planned with `/plan-slice` on 2026-10-06 and built in a
+fresh session on 2026-10-07. The work is client-only: no migration, no Edge
+Function, no l10n string, no package, and nothing outside `presentation/`.
+
+- **Recipe detail.** The ingredient `for` loop became `_ingredientRows`,
+  shaped like `_stepRows`. A `sectionAt(i)` helper returns the trimmed
+  section or null, and `startsGroup(i)` is "non-null and different from the
+  line before". A heading goes above the first line of each group, showing
+  the section as typed. `isLast` now means "end of the list, or the next
+  line starts a group", so a group's last line drops its dashed divider.
+  The gaps are `xs` below the heading, `xl` above it after a line, and `xs`
+  above it when it opens the list. `_ingredientRow` is unchanged apart from
+  its doc line.
+- **One heading row.** `_StepHeadingRow(step, isFirst)` became
+  `_GroupHeading(text, top, bottom)`. The step call site passes
+  `top: i == 0 ? 0 : sm, bottom: md`, which was its old behaviour. It is
+  still private: promoting it to `lib/core/ingredients/widgets/` waits for
+  `phase8-ingredient-editor`, where import review would be a second user.
+- **DESIGN_SYSTEM.md.** A "Sections" paragraph under § Ingredient lines.
+  § Steps and stats never named the private class, so it is unchanged.
+- **Tests (+5), in `recipe_screens_test`:**
+  - two sections, with headings in order and in `primary`;
+  - dividers `[true, false, true, false]` for a 2+2 list;
+  - a flat list has no `titleSmall`-`primary` text and only its last line
+    drops the divider;
+  - a leading unsectioned line has no heading, and its divider drops before
+    the section that follows;
+  - repeated adjacent sections (one with a trailing space) give one
+    heading.
+
+  An unmatched row's name ends in a U+2060 word joiner, so the position
+  finders use `find.textContaining(…, findRichText: true)`.
+
+**Differs from the plan.** Nothing in substance.
+
+**How it was verified.**
+- `dart analyze` clean; `flutter test` **825/825** (820 + 5). The function
+  tests passed (165).
+- `make check` failed only at `seed-check`, the known red since `c8be2bc`.
+  `make test-sql` and `make l10n-check` passed when run by hand.
+- **Walked** (`/design-walk recipe-detail`, 2026-10-07) on the
+  **emulator** in all four combinations, on a hosted release build:
+  - **Setup.** One paste import (one hosted AI call) made `Proja sa sirom i
+    pavlakom`, with `Za testo` / `Za fil` / `Za preliv od kiselog mleka i
+    belog luka` sections. The import put each heading on its lines.
+  - **Gaps.** Measured by pixel scan at 2.625 px/dp:
+    - about 23dp of ink from a heading to its first line;
+    - about 49dp of ink from a group's last line to the next heading;
+    - about 22dp of ink from `Sastojci` to the first heading.
+
+    Allowing for line-box leading, these match the planned 4+8, 24+8 and
+    8+4.
+  - **Dividers.** No divider under the last line of any section or of the
+    list.
+  - **Contrast.** `primary` on the surface: 6.05:1 in light and 10.66:1 in
+    dark.
+  - **English reading.** Under `en` the headings stay Serbian, as accepted,
+    and the rows show catalog English.
+  - **Regression.** `Kajgana` (a flat list) is unchanged. `Pita proba
+    koraka`'s step headings are unchanged: the first is flush, and `Fil`
+    measures about 37dp of ink above and 17dp below (the planned 32 and
+    12).
+  - **Not reached:** a heading that wraps. The 39-character name fits on
+    one line at 411dp. This is left open in `docs/STATE.md`.
