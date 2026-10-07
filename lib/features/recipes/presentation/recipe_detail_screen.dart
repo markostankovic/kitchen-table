@@ -542,12 +542,7 @@ class _Body extends ConsumerWidget {
                   ),
                 )
               else
-                for (int i = 0; i < detail.ingredients.length; i++)
-                  _ingredientRow(
-                    detail.ingredients[i],
-                    units,
-                    isLast: i == detail.ingredients.length - 1,
-                  ),
+                ..._ingredientRows(detail.ingredients, units),
               const SizedBox(height: AppSpacing.xl),
               AppSectionHeading(text: l10n.stepsHeading),
               if (detail.displaySteps.isEmpty)
@@ -577,6 +572,51 @@ class _Body extends ConsumerWidget {
     );
   }
 
+  /// The ingredient list, with a heading over each section.
+  ///
+  /// A section is a run of consecutive lines with the same `section`: every
+  /// line under a heading repeats it. A line gets a heading above it when its
+  /// trimmed `section` is non-empty and differs from the line before's (the
+  /// first line counts as differing). The heading shows the section as typed
+  /// and is never translated -- it is the cook's text, like a note.
+  ///
+  /// Lines before the first section render headingless at the top; a null
+  /// `section` after a named one just continues, with no "Other" heading
+  /// invented for it. Two non-adjacent groups of the same name each get a
+  /// heading. The last line of the list or of a section draws no divider.
+  /// A flat list comes out exactly as it did before sections rendered.
+  List<Widget> _ingredientRows(
+    List<RecipeIngredient> lines,
+    UnitCatalog units,
+  ) {
+    String? sectionAt(int i) {
+      if (i < 0 || i >= lines.length) return null;
+      final String? section = lines[i].section?.trim();
+      return section == null || section.isEmpty ? null : section;
+    }
+
+    bool startsGroup(int i) =>
+        sectionAt(i) != null && sectionAt(i) != sectionAt(i - 1);
+
+    return <Widget>[
+      for (int i = 0; i < lines.length; i++) ...<Widget>[
+        if (startsGroup(i))
+          _GroupHeading(
+            text: lines[i].section!,
+            // `AppSectionHeading` already ends in `sm`; a line above already
+            // ends in its own `sm` padding.
+            top: i == 0 ? AppSpacing.xs : AppSpacing.xl,
+            bottom: AppSpacing.xs,
+          ),
+        _ingredientRow(
+          lines[i],
+          units,
+          isLast: i == lines.length - 1 || startsGroup(i + 1),
+        ),
+      ],
+    ];
+  }
+
   /// The method, row by row: numbered steps, headings and notes (D153).
   ///
   /// Numbers count step-kind rows only and continue across headings, so
@@ -602,9 +642,10 @@ class _Body extends ConsumerWidget {
                 ? 0
                 : _connectorGap,
           ),
-          RecipeStepKind.heading => _StepHeadingRow(
-            step: steps[i],
-            isFirst: i == 0,
+          RecipeStepKind.heading => _GroupHeading(
+            text: steps[i].text,
+            top: i == 0 ? 0 : AppSpacing.sm,
+            bottom: AppSpacing.md,
           ),
           RecipeStepKind.note => _StepNoteRow(
             step: steps[i],
@@ -724,7 +765,8 @@ class _Body extends ConsumerWidget {
   /// note, so an optional line with a note already says so in the trailer;
   /// the inline `opciono` is only for one without.
   ///
-  /// The last line draws no divider under it (`Recipe@1x.png`).
+  /// The last line of the list or of a section draws no divider under it
+  /// (`Recipe@1x.png`).
   Widget _ingredientRow(
     RecipeIngredient line,
     UnitCatalog units, {
@@ -927,27 +969,33 @@ class _StepRow extends StatelessWidget {
   }
 }
 
-/// A heading that groups the steps after it ("Za testo", "Fil").
+/// A heading that groups the rows after it ("Za testo", "Fil"): a step
+/// heading in the method (D153), or an ingredient section's heading.
 ///
-/// Flush with the disc column, not the text column, so it reads as above the
-/// steps rather than one of them. The row above already ends in `xl`, so the
-/// `sm` on top puts it 32 below; first in the method, it takes none.
-class _StepHeadingRow extends StatelessWidget {
-  const _StepHeadingRow({required this.step, required this.isFirst});
+/// Both read the same, `titleSmall` in `primary`; only the gaps differ, and
+/// the caller passes them on top of whatever the neighbouring rows already
+/// pad. In the method it sits flush with the disc column, not the text
+/// column, so it reads as above the steps rather than one of them. The row
+/// above already ends in `xl`, so `sm` on top puts it 32 below; first in the
+/// method, it takes none.
+class _GroupHeading extends StatelessWidget {
+  const _GroupHeading({
+    required this.text,
+    required this.top,
+    required this.bottom,
+  });
 
-  final RecipeStep step;
-  final bool isFirst;
+  final String text;
+  final double top;
+  final double bottom;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return Padding(
-      padding: EdgeInsets.only(
-        top: isFirst ? 0 : AppSpacing.sm,
-        bottom: AppSpacing.md,
-      ),
+      padding: EdgeInsets.only(top: top, bottom: bottom),
       child: Text(
-        step.text,
+        text,
         style: theme.textTheme.titleSmall?.copyWith(
           color: theme.colorScheme.primary,
         ),

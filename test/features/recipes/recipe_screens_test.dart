@@ -18,6 +18,7 @@ import 'package:kitchen_table/features/ingredients/domain/quantity.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit_catalog.dart';
 import 'package:kitchen_table/core/ingredients/ingredient_catalog_providers.dart';
+import 'package:kitchen_table/core/ingredients/widgets/ingredient_line_row.dart';
 import 'package:kitchen_table/features/meal_plan/domain/meal_slot.dart';
 import 'package:kitchen_table/features/recipes/application/recipe_providers.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe.dart';
@@ -134,6 +135,14 @@ final RecipeDetail _detail = RecipeDetail(
     RecipeStep(position: 0, text: 'Zagrej rernu.'),
   ],
 );
+
+/// Two sections of two unmatched lines each: rendered as typed (rule 3).
+const List<RecipeIngredient> _sectionedLines = <RecipeIngredient>[
+  RecipeIngredient(position: 0, rawText: 'brašno', section: 'Za testo'),
+  RecipeIngredient(position: 1, rawText: 'jaja', section: 'Za testo'),
+  RecipeIngredient(position: 2, rawText: 'sir', section: 'Za fil'),
+  RecipeIngredient(position: 3, rawText: 'pavlaka', section: 'Za fil'),
+];
 
 Future<void> _pumpList(
   WidgetTester tester, {
@@ -1224,6 +1233,114 @@ void main() {
       await _pumpDetail(tester, _detail.copyWith(readingLocale: 'en'));
 
       expect(find.text('for 8 servings'), findsOneWidget);
+    });
+
+    // Phase 8 round 2: ingredient section headings (A4·3).
+    testWidgets('sections get a primary heading above their first line',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(ingredients: _sectionedLines),
+      );
+
+      expect(find.text('Za testo'), findsOneWidget);
+      expect(find.text('Za fil'), findsOneWidget);
+      double top(String text) =>
+          tester.getTopLeft(find.textContaining(text, findRichText: true)).dy;
+      expect(top('Za testo'), lessThan(top('brašno')));
+      expect(top('brašno'), lessThan(top('jaja')));
+      expect(top('jaja'), lessThan(top('Za fil')));
+      expect(top('Za fil'), lessThan(top('sir')));
+
+      final BuildContext context = tester.element(find.text('Za testo'));
+      final Color primary = Theme.of(context).colorScheme.primary;
+      expect(tester.widget<Text>(find.text('Za testo')).style?.color, primary);
+      expect(tester.widget<Text>(find.text('Za fil')).style?.color, primary);
+    });
+
+    testWidgets('a section\'s last line draws no divider',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(ingredients: _sectionedLines),
+      );
+
+      expect(
+        tester
+            .widgetList<IngredientLineRow>(
+              find.byType(IngredientLineRow, skipOffstage: false),
+            )
+            .map((IngredientLineRow row) => row.showDivider),
+        <bool>[true, false, true, false],
+      );
+    });
+
+    testWidgets('a flat list gets no section heading and one closing line',
+        (WidgetTester tester) async {
+      await _pumpDetail(tester, _detail);
+
+      final BuildContext context = tester.element(find.byType(Scaffold));
+      final ThemeData theme = Theme.of(context);
+      final Iterable<Text> headings = tester
+          .widgetList<Text>(find.byType(Text, skipOffstage: false))
+          .where(
+            (Text t) =>
+                t.style?.color == theme.colorScheme.primary &&
+                t.style?.fontSize == theme.textTheme.titleSmall?.fontSize &&
+                t.style?.fontWeight == theme.textTheme.titleSmall?.fontWeight,
+          );
+      expect(headings, isEmpty);
+      expect(
+        tester
+            .widgetList<IngredientLineRow>(
+              find.byType(IngredientLineRow, skipOffstage: false),
+            )
+            .map((IngredientLineRow row) => row.showDivider),
+        <bool>[true, true, false],
+      );
+    });
+
+    testWidgets('lines before the first section have no heading',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          ingredients: const <RecipeIngredient>[
+            RecipeIngredient(position: 0, rawText: 'so'),
+            RecipeIngredient(position: 1, rawText: 'sir', section: 'Za fil'),
+          ],
+        ),
+      );
+
+      double top(String text) =>
+          tester.getTopLeft(find.textContaining(text, findRichText: true)).dy;
+      expect(find.text('Za fil'), findsOneWidget);
+      expect(top('so'), lessThan(top('Za fil')));
+      expect(top('Za fil'), lessThan(top('sir')));
+      expect(
+        tester
+            .widgetList<IngredientLineRow>(
+              find.byType(IngredientLineRow, skipOffstage: false),
+            )
+            .map((IngredientLineRow row) => row.showDivider),
+        <bool>[false, false],
+      );
+    });
+
+    testWidgets('a run of lines in one section gets one heading',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          ingredients: const <RecipeIngredient>[
+            RecipeIngredient(position: 0, rawText: 'brašno', section: 'Za testo'),
+            RecipeIngredient(position: 1, rawText: 'jaja', section: 'Za testo '),
+            RecipeIngredient(position: 2, rawText: 'mleko', section: 'Za testo'),
+          ],
+        ),
+      );
+
+      expect(find.textContaining('Za testo'), findsOneWidget);
     });
 
     testWidgets('no servings, no trailer on the Ingredients heading',

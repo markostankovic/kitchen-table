@@ -621,6 +621,17 @@ list omits it too (`Recipe@1x.png`). Every other row keeps it, including the
 last of a block followed by a gap: a divider missing mid-card reads as
 uneven spacing, not as a break.
 
+**Sections** (recipe detail). A section heading opens each run of consecutive
+lines sharing a `section` (`Za testo`, `Za fil`), in `titleSmall` `primary` —
+the same look as a step heading (§ Steps and stats), from the same private
+row. It sits `xl` above (`xs` when it opens the list, on top of the
+`AppSectionHeading`'s `sm`) and `xs` below, both on top of the row's own `sm`
+padding: 24 to the group above, 12 to its own first line, 12 under
+`Sastojci`. A section's last line drops its divider, just as the list's last
+line does. The heading is the cook's text as typed and is not translated.
+Lines before the first section sit headingless at the top, and a flat list
+renders exactly as it did before sections showed.
+
 ### Steps and stats
 
 A step number, in `labelLarge` `onPrimaryContainer`, sits in a 28dp
