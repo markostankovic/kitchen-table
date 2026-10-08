@@ -93,4 +93,78 @@ void main() {
       expect(parseRichRuns(''), isEmpty);
     });
   });
+
+  group('scanRichInline', () {
+    RichInlineMatch bold(int start, int end) => RichInlineMatch(
+      start: start,
+      end: end,
+      contentStart: start + 2,
+      contentEnd: end - 2,
+      style: RichRunStyle.bold,
+    );
+    RichInlineMatch italic(int start, int end) => RichInlineMatch(
+      start: start,
+      end: end,
+      contentStart: start + 1,
+      contentEnd: end - 1,
+      style: RichRunStyle.italic,
+    );
+
+    final List<(String, String, List<RichInlineMatch>)> cases =
+        <(String, String, List<RichInlineMatch>)>[
+          ('plain', 'Zagrej rernu.', <RichInlineMatch>[]),
+          ('empty', '', <RichInlineMatch>[]),
+          ('bold', 'a **bb** c', <RichInlineMatch>[bold(2, 8)]),
+          ('italic', 'a *bb* c', <RichInlineMatch>[italic(2, 6)]),
+          (
+            'adjacent runs',
+            '**a***b*',
+            <RichInlineMatch>[bold(0, 5), italic(5, 8)],
+          ),
+          ('an unmatched marker', 'a **b', <RichInlineMatch>[]),
+          ('an unmatched *', '2 * 3', <RichInlineMatch>[]),
+          (
+            'no nesting: one bold match',
+            '**a *b* c**',
+            <RichInlineMatch>[bold(0, 11)],
+          ),
+          // An empty bold pair is a stray italic `*`, which is why the
+          // toolbar never leaves one behind.
+          ('****', '****', <RichInlineMatch>[italic(0, 3)]),
+        ];
+
+    for (final (String name, String input, List<RichInlineMatch> expected)
+        in cases) {
+      test(name, () => expect(scanRichInline(input), expected));
+    }
+  });
+
+  group('matchRichListMarker', () {
+    test('a bullet', () {
+      expect(
+        matchRichListMarker('- x'),
+        (length: 2, ordered: false, number: null),
+      );
+    });
+
+    test('a number, kept as typed', () {
+      expect(
+        matchRichListMarker('12. x'),
+        (length: 4, ordered: true, number: 12),
+      );
+    });
+
+    test('an empty item is still an item', () {
+      expect(
+        matchRichListMarker('- '),
+        (length: 2, ordered: false, number: null),
+      );
+    });
+
+    test('anything else is not', () {
+      for (final String line in <String>['-x', '  - x', '* x', '1.x', 'a']) {
+        expect(matchRichListMarker(line), isNull, reason: line);
+      }
+    });
+  });
 }

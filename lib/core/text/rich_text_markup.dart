@@ -15,8 +15,10 @@
 ///   An unmatched `*` or `**` stays literal.
 ///
 /// Parsing is total: any string parses, and the worst case is literal
-/// markers in plain runs. `AppRichText` renders the result; the editing
-/// toolbar reuses [parseRichRuns].
+/// markers in plain runs. `AppRichText` renders the result. The recipe
+/// editor's formatting toolbar and styled fields (D166) use the
+/// offset-carrying [scanRichInline] and [matchRichListMarker], so the three
+/// regexes have one definition each.
 ///
 /// Pure Dart. No Flutter imports (CLAUDE.md rule 7).
 library;
@@ -124,19 +126,96 @@ List<RichBlock> parseRichText(String text) {
   return blocks;
 }
 
+/// One inline match in a line, by offset. [start] and [end] include the
+/// markers; [contentStart] and [contentEnd] are what sits between them.
+final class RichInlineMatch {
+  const RichInlineMatch({
+    required this.start,
+    required this.end,
+    required this.contentStart,
+    required this.contentEnd,
+    required this.style,
+  });
+
+  final int start;
+  final int end;
+  final int contentStart;
+  final int contentEnd;
+
+  /// [RichRunStyle.bold] or [RichRunStyle.italic], never plain.
+  final RichRunStyle style;
+
+  @override
+  bool operator ==(Object other) =>
+      other is RichInlineMatch &&
+      other.start == start &&
+      other.end == end &&
+      other.contentStart == contentStart &&
+      other.contentEnd == contentEnd &&
+      other.style == style;
+
+  @override
+  int get hashCode =>
+      Object.hash(start, end, contentStart, contentEnd, style);
+
+  @override
+  String toString() =>
+      'RichInlineMatch(${style.name}, $start-$end, content '
+      '$contentStart-$contentEnd)';
+}
+
+/// Every inline match in one line, left to right, by offset: `**…**` bold,
+/// `*…*` italic, no nesting. The gaps between matches are plain.
+List<RichInlineMatch> scanRichInline(String line) => <RichInlineMatch>[
+  for (final RegExpMatch match in _inline.allMatches(line))
+    if (match[1] != null)
+      RichInlineMatch(
+        start: match.start,
+        end: match.end,
+        contentStart: match.start + 2,
+        contentEnd: match.end - 2,
+        style: RichRunStyle.bold,
+      )
+    else
+      RichInlineMatch(
+        start: match.start,
+        end: match.end,
+        contentStart: match.start + 1,
+        contentEnd: match.end - 1,
+        style: RichRunStyle.italic,
+      ),
+];
+
+/// The column-0 list marker [line] starts with, if it is an item: its
+/// length (`- ` is 2, `12. ` is 4), whether it is numbered, and the number
+/// as typed (null for a bullet, or for digits too long for an int).
+({int length, bool ordered, int? number})? matchRichListMarker(String line) {
+  if (_bullet.hasMatch(line)) {
+    return (length: 2, ordered: false, number: null);
+  }
+  final RegExpMatch? numbered = _numbered.firstMatch(line);
+  if (numbered == null) return null;
+  return (
+    length: numbered[1]!.length + 2,
+    ordered: true,
+    number: int.tryParse(numbered[1]!),
+  );
+}
+
 /// Splits one line into inline runs: `**…**` bold, `*…*` italic, the gaps
 /// plain. No nesting; an unmatched marker stays literal.
 List<RichRun> parseRichRuns(String line) {
   final List<RichRun> runs = <RichRun>[];
   int last = 0;
-  for (final RegExpMatch match in _inline.allMatches(line)) {
+  for (final RichInlineMatch match in scanRichInline(line)) {
     if (match.start > last) {
       runs.add(RichRun(line.substring(last, match.start), RichRunStyle.plain));
     }
     runs.add(
-      match[1] != null
-          ? RichRun(match[1]!, RichRunStyle.bold)
-          : RichRun(match[2]!, RichRunStyle.italic),
+      RichRun(
+        line.substring(match.contentStart, match.contentEnd),
+        match.style,
+      ),
     );
     last = match.end;
   }

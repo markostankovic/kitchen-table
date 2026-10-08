@@ -1453,5 +1453,25 @@
   "ingredientSectionHint": "Za testo",
   "@ingredientSectionHint": {
     "description": "Ingredient section heading field, an example of a section name. Looked up by the RECIPE's own language (widget.locale via lookupAppLocalizations), never the reader's chrome locale, like ingredientLineHint."
+  },
+  "formatBoldTooltip": "Podebljano",
+  "@formatBoldTooltip": {
+    "description": "Recipe editor formatting toolbar (Phase 8, D166), the bold toggle."
+  },
+  "formatItalicTooltip": "Kurziv",
+  "@formatItalicTooltip": {
+    "description": "Recipe editor formatting toolbar (Phase 8, D166), the italic toggle."
+  },
+  "formatBulletListTooltip": "Lista sa tačkama",
+  "@formatBulletListTooltip": {
+    "description": "Recipe editor formatting toolbar (Phase 8, D166), the bulleted list toggle."
+  },
+  "formatNumberedListTooltip": "Numerisana lista",
+  "@formatNumberedListTooltip": {
+    "description": "Recipe editor formatting toolbar (Phase 8, D166), the numbered list toggle."
+  },
+  "hideKeyboardTooltip": "Sakrij tastaturu",
+  "@hideKeyboardTooltip": {
+    "description": "Recipe editor formatting toolbar (Phase 8, D166), the button at the end that hides the keyboard (and the toolbar with it)."
   }
 }

@@ -331,5 +331,10 @@
   "importNotesNoneFound": "None found",
   "addSectionButton": "Add section",
   "sectionRemovedSnackbar": "Section removed.",
-  "ingredientSectionHint": "For the dough"
+  "ingredientSectionHint": "For the dough",
+  "formatBoldTooltip": "Bold",
+  "formatItalicTooltip": "Italic",
+  "formatBulletListTooltip": "Bulleted list",
+  "formatNumberedListTooltip": "Numbered list",
+  "hideKeyboardTooltip": "Hide keyboard"
 }

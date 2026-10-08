@@ -1097,4 +1097,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ingredientSectionHint => 'For the dough';
+
+  @override
+  String get formatBoldTooltip => 'Bold';
+
+  @override
+  String get formatItalicTooltip => 'Italic';
+
+  @override
+  String get formatBulletListTooltip => 'Bulleted list';
+
+  @override
+  String get formatNumberedListTooltip => 'Numbered list';
+
+  @override
+  String get hideKeyboardTooltip => 'Hide keyboard';
 }

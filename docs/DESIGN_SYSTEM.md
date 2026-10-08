@@ -429,6 +429,29 @@ the bottom by `SliverFillRemaining(hasScrollBody: false)` and a `Spacer`
 (D137). The padding goes inside `SliverFillRemaining`, not in a trailing
 `SliverPadding`, which would push the bottom air below the fold.
 
+### Formatting toolbar
+
+`AppFormattingToolbar` sits right on the keyboard while a formattable field
+(§ Inputs) has focus **and** the keyboard is up — focus alone, after a back
+gesture drops the keyboard, is not enough. The editor sits inside the app
+shell's Scaffold, which takes the keyboard's inset out of everything below
+it, so the editor reads the keyboard off the view (`View.of`), not
+`MediaQuery`. While it shows, the toolbar takes the save bar's place as the
+editor's `bottomNavigationBar`, which already ends at the keyboard's top, so
+it sits flush on the keyboard with no `SafeArea`. The save bar is back once
+the keyboard goes. 48 tall on `surfaceContainer`, the nav bar's colour, which
+is fine here: the keyboard covers the nav bar while it shows. A 1dp `outlineVariant` hairline on top, as on
+`AppActionBar`. `xs` padding at each end and `xs` between buttons:
+`format_bold`, `format_italic`, `format_list_bulleted`,
+`format_list_numbered`, then a `Spacer` and `keyboard_hide`. Each button is a
+48×48 cell with a 24 icon in `onSurfaceVariant`; the active toggle sits on a
+40×32 stadium `secondaryContainer` pill, icon `onSecondaryContainer` (the 40
+and 32 are private consts, not tokens). Bold is disabled while the selection
+is inside italic and vice versa — there is no nesting. In the field, Enter in
+a list item continues the list and Enter on an empty item ends it. The call
+site wraps it in a `TextFieldTapRegion` so a tap never counts as outside the
+field. Tooltips come in localized; the core widget imports no l10n.
+
 ### Cards
 
 `KitchenColors.card`, no hairline, radius 12, elevation 0, no surface tint. The
@@ -503,6 +526,16 @@ a centred 48dp `menu_book_outlined` in `outline`; filled, the page with
 The tonal Camera / Gallery `Wrap` (`sm` apart, centred) sits *below* the well
 in both states, `md` under it; then `xl`, then Read. Private to
 `import_photo_screen.dart`, not shared with the editor's well.
+
+**A formattable field** (the editor's description, step, note and end note,
+D166) is still `bodyMedium`. Its styled spans derive from that style and
+only ever change weight, slant or colour — **never the font size or letter
+spacing**, which would walk the caret off its character. Each one is a
+private `_FormattableField` in the editor that owns a
+`RichTextEditingController` and a `FocusNode`; in a step row it is keyed by
+the row's local id, so it follows the row across a drag and is disposed with
+it. It reports text from a controller listener, because the toolbar's edits
+are programmatic and `onChanged` never fires for them.
 
 **A step field is labelled** `Korak N` / `Step N` with `AppFieldLabel` above
 its row, indented past the grip, not hinted: a hint vanishes once the cook
@@ -757,7 +790,14 @@ formatting subset through `AppRichText` (D165). The subset, and nothing else:
 `**bold**`, `*italic*`, `- ` bullet lists and `1. ` numbered lists. No `#`
 headings (a stray `#` is text), links, code, `_`, `+`/`*` bullets or indented
 sub-lists. **Titles, headings and ingredient lines are never formatted.**
-Editing stays raw text.
+
+**Editing shows styled markup in place (D166).** Four editor fields — the
+description, a step's text, a note's text and the end note — draw the subset
+as it is typed: bold content w600, italic content italic, both in the field's
+`onSurface`, and the `**` / `*` / `- ` / `12. ` markers dimmed to
+`onSurfaceVariant`. The markers stay visible; nothing is hidden, and no span
+changes size. The stored text is unchanged — still exactly the subset above.
+The formatting toolbar (§ Formatting toolbar) edits it.
 
 - **Bold is w600, never w700** — w700 marks a recipe's name (D134), and bold
   body text must not read as a title. Italic is true italic. Both keep the
@@ -1132,6 +1172,8 @@ lives, below.
 | `AppSectionHeading` | `core/widgets/app_section_heading.dart` |
 | `AppFieldLabel` | `core/widgets/app_field_label.dart` |
 | `AppActionBar` | `core/widgets/app_action_bar.dart` |
+| `AppFormattingToolbar` | `core/widgets/app_formatting_toolbar.dart` |
+| `RichTextEditingController` / `RichListFormatter` | `core/widgets/rich_text_editing_controller.dart` |
 | `RecipeCard` | `core/recipes/widgets/recipe_card.dart` |
 | `IngredientLineRow` | `core/ingredients/widgets/ingredient_line_row.dart` |
 | `IngredientLinesEditor` | `core/ingredients/widgets/ingredient_lines_editor.dart` |
@@ -1151,8 +1193,10 @@ lives, below.
 `for 8 servings` beside Ingredients). Without it the heading is unchanged.
 
 `AppRichText(text, style:)` renders § Rich text. Its parser is
-`core/text/rich_text_markup.dart` — pure Dart, and `parseRichRuns` is public
-for the formatting toolbar to reuse.
+`core/text/rich_text_markup.dart` — pure Dart. Its `scanRichInline` (inline
+matches by offset) and `matchRichListMarker` are public for the formatting
+toolbar and the styled editor fields, whose editing rules are the pure
+functions in `core/text/rich_text_editing.dart` (D166).
 
 `AppMonogramTile(circular: true)` is a person (member, profile); the square
 is a thing (recipe).

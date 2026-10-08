@@ -1,6 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,6 +19,8 @@ import '../../../core/theme/kitchen_colors.dart';
 import '../../../core/widgets/app_action_bar.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_field_label.dart';
+import '../../../core/widgets/app_formatting_toolbar.dart';
+import '../../../core/widgets/rich_text_editing_controller.dart';
 import '../../../core/widgets/app_section_heading.dart';
 import '../application/recipe_editor.dart';
 import '../domain/recipe.dart';
@@ -37,8 +38,7 @@ import '../domain/recipe_step.dart';
 /// `raw_text` stores; quantity, unit and a matched ingredient are worked out
 /// from it and are all allowed to come back empty (rule 3). The list is the
 /// shared [IngredientLinesEditor], the same one import review uses -- see it
-/// for the open line, fast entry and the suggestion pill. Steps are plain
-/// text.
+/// for the open line, fast entry and the suggestion pill.
 ///
 /// Text fields are seeded with `initialValue` and report through `onChanged`
 /// rather than each owning a `TextEditingController`, which is a departure
@@ -48,6 +48,15 @@ import '../domain/recipe_step.dart';
 /// straight across a drag -- for no gain. The draft is the single source of
 /// truth either way. (The one open ingredient line does own a controller:
 /// only one is ever open, so it has no list lifecycle to keep straight.)
+///
+/// The four formattable fields -- description, a step's text, a note's text
+/// and the end note -- do own one each (D166): a [RichTextEditingController]
+/// that draws the D165 markup styled in place and takes the formatting
+/// toolbar's edits. Each lives inside a private stateful field, and a step
+/// row's field is keyed by the row's local id, so its lifecycle is the
+/// row's and there is still no list bookkeeping. The toolbar sits on the
+/// keyboard while one of them has focus; titles, tags, headings and
+/// ingredient lines are never formatted (D165 #6).
 class RecipeEditScreen extends ConsumerStatefulWidget {
   const RecipeEditScreen({this.recipeId, super.key});
 
@@ -57,11 +66,17 @@ class RecipeEditScreen extends ConsumerStatefulWidget {
   ConsumerState<RecipeEditScreen> createState() => _RecipeEditScreenState();
 }
 
-class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
+class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen>
+    with WidgetsBindingObserver {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
   bool _saving = false;
   bool _translating = false;
+
+  /// The focused formattable field's controller, which the formatting
+  /// toolbar drives; null while none has focus.
+  final ValueNotifier<RichTextEditingController?> _activeFormatting =
+      ValueNotifier<RichTextEditingController?>(null);
 
   /// Either an already-localized string -- image_picker's own platform
   /// exception, outside the [FailureCode] mechanism entirely -- or an
@@ -80,6 +95,29 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
   static const int _quality = 85;
 
   bool get _isNew => widget.recipeId == null;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// The keyboard coming up or going down: [build] reads it off the view.
+  @override
+  void didChangeMetrics() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // Children are disposed first; one that was focused may still be
+    // pointed at, and nothing listens any more.
+    _activeFormatting
+      ..value = null
+      ..dispose();
+    super.dispose();
+  }
 
   RecipeEditor get _editor =>
       ref.read(recipeEditorProvider(widget.recipeId).notifier);
@@ -202,6 +240,11 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<RecipeDraft> draft =
         ref.watch(recipeEditorProvider(widget.recipeId));
+    // Read off the view, not MediaQuery: this screen sits inside the app
+    // shell's Scaffold, which has already taken the keyboard's inset out of
+    // everything below it. A back gesture that drops the keyboard but keeps
+    // focus takes the toolbar with it.
+    final bool keyboardUp = View.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -224,7 +267,39 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
             AppErrorView(message: localizedErrorMessage(e, l10n)),
         data: (RecipeDraft d) => _buildForm(d, l10n),
       ),
-      bottomNavigationBar: draft.hasValue ? _buildSaveBar(l10n) : null,
+      // While a formattable field is being typed in, the toolbar takes the
+      // save bar's place. The shell's Scaffold already ends this one at the
+      // keyboard's top, so it sits right on the keyboard; the save bar is
+      // back once the keyboard goes. The padding is the inset this
+      // Scaffold's own MediaQuery still carries, which is none inside the
+      // shell.
+      bottomNavigationBar: !draft.hasValue
+          ? null
+          : ValueListenableBuilder<RichTextEditingController?>(
+              valueListenable: _activeFormatting,
+              builder: (BuildContext context,
+                      RichTextEditingController? controller, _) =>
+                  controller == null || !keyboardUp
+                  ? _buildSaveBar(l10n)
+                  : Padding(
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.viewInsetsOf(context).bottom,
+                      ),
+                      child: TextFieldTapRegion(
+                        child: AppFormattingToolbar(
+                          controller: controller,
+                          onHideKeyboard: () =>
+                              FocusScope.of(context).unfocus(),
+                          boldTooltip: l10n.formatBoldTooltip,
+                          italicTooltip: l10n.formatItalicTooltip,
+                          bulletListTooltip: l10n.formatBulletListTooltip,
+                          numberedListTooltip:
+                              l10n.formatNumberedListTooltip,
+                          hideKeyboardTooltip: l10n.hideKeyboardTooltip,
+                        ),
+                      ),
+                    ),
+            ),
     );
   }
 
@@ -264,11 +339,11 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
           const SizedBox(height: AppSpacing.lg),
           AppFieldLabel(text: l10n.descriptionLabel),
           const SizedBox(height: AppSpacing.sm),
-          TextFormField(
+          _FormattableField(
             initialValue: draft.description ?? '',
-            textCapitalization: TextCapitalization.sentences,
             maxLines: 3,
             style: fieldStyle,
+            activeFormatting: _activeFormatting,
             onChanged: _editor.setDescription,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -409,6 +484,9 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
                     RecipeStepKind.note => Icons.sticky_note_2_outlined,
                   },
                   maxLines: step.kind == RecipeStepKind.heading ? 1 : 3,
+                  // Headings are never formatted (D165 #6).
+                  formattable: step.kind != RecipeStepKind.heading,
+                  activeFormatting: _activeFormatting,
                   onChanged: (String value) =>
                       _editor.setStepText(step.localId, value),
                   onRemove: step.kind == RecipeStepKind.heading
@@ -447,9 +525,8 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
           ),
           const SizedBox(height: AppSpacing.xl),
           AppSectionHeading(text: l10n.recipeNotesHeading),
-          TextFormField(
+          _FormattableField(
             initialValue: draft.notes ?? '',
-            textCapitalization: TextCapitalization.sentences,
             keyboardType: TextInputType.multiline,
             minLines: 3,
             // Grows with its content: an end note can run to paragraphs.
@@ -458,6 +535,7 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
             decoration: InputDecoration(
               helperText: l10n.recipeNotesHelperText,
             ),
+            activeFormatting: _activeFormatting,
             onChanged: _editor.setNotes,
           ),
         ],
@@ -673,6 +751,8 @@ class _EditableRow extends StatelessWidget {
     required this.onChanged,
     required this.onRemove,
     required this.removeTooltip,
+    required this.formattable,
+    required this.activeFormatting,
     this.labelIcon,
     this.maxLines = 1,
     super.key,
@@ -686,6 +766,11 @@ class _EditableRow extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final VoidCallback onRemove;
   final String removeTooltip;
+
+  /// A step's or note's text takes the formatting toolbar; a heading's
+  /// doesn't.
+  final bool formattable;
+  final ValueNotifier<RichTextEditingController?> activeFormatting;
 
   @override
   Widget build(BuildContext context) {
@@ -731,13 +816,21 @@ class _EditableRow extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: TextFormField(
-                  initialValue: initialValue,
-                  maxLines: maxLines,
-                  textCapitalization: TextCapitalization.sentences,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  onChanged: onChanged,
-                ),
+                child: formattable
+                    ? _FormattableField(
+                        initialValue: initialValue,
+                        maxLines: maxLines,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        activeFormatting: activeFormatting,
+                        onChanged: onChanged,
+                      )
+                    : TextFormField(
+                        initialValue: initialValue,
+                        maxLines: maxLines,
+                        textCapitalization: TextCapitalization.sentences,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        onChanged: onChanged,
+                      ),
               ),
               IconButton(
                 tooltip: removeTooltip,
@@ -748,6 +841,112 @@ class _EditableRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A text field that shows the D165 markup styled in place and takes the
+/// formatting toolbar while it has focus (D166).
+///
+/// It owns its [RichTextEditingController] and [FocusNode]; inside a step
+/// row, the row's key carries both across a drag and disposes them with the
+/// row. Focus points [activeFormatting] at the controller; losing it drops
+/// any still-empty bold or italic pair and lets go.
+///
+/// The toolbar's edits are programmatic, and `TextFormField.onChanged` never
+/// fires for those, so the text is reported from a controller listener
+/// instead -- every change exactly once, typed or tapped.
+class _FormattableField extends StatefulWidget {
+  const _FormattableField({
+    required this.initialValue,
+    required this.onChanged,
+    required this.activeFormatting,
+    required this.style,
+    this.maxLines = 1,
+    this.minLines,
+    this.keyboardType,
+    this.decoration = const InputDecoration(),
+  });
+
+  final String initialValue;
+  final ValueChanged<String> onChanged;
+  final ValueNotifier<RichTextEditingController?> activeFormatting;
+  final TextStyle? style;
+  final int? maxLines;
+  final int? minLines;
+  final TextInputType? keyboardType;
+  final InputDecoration decoration;
+
+  @override
+  State<_FormattableField> createState() => _FormattableFieldState();
+}
+
+class _FormattableFieldState extends State<_FormattableField> {
+  late final RichTextEditingController _controller =
+      RichTextEditingController(text: widget.initialValue);
+  final FocusNode _focusNode = FocusNode();
+  late String _reported = widget.initialValue;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_report);
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _focusNode
+      ..removeListener(_onFocusChange)
+      ..dispose();
+    _controller.removeListener(_report);
+    final RichTextEditingController controller = _controller;
+    final ValueNotifier<RichTextEditingController?> active =
+        widget.activeFormatting;
+    if (active.value == controller) {
+      // The tree is locked while it is torn down, so the toolbar lets go of
+      // this controller after the frame, and only then is it disposed. The
+      // screen's own dispose clears the notifier first if it goes too.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (active.value == controller) active.value = null;
+        controller.dispose();
+      });
+    } else {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _report() {
+    final String text = _controller.text;
+    if (text == _reported) return;
+    _reported = text;
+    widget.onChanged(text);
+  }
+
+  void _onFocusChange() {
+    if (_focusNode.hasFocus) {
+      widget.activeFormatting.value = _controller;
+    } else {
+      _controller.dropPendingPair();
+      if (widget.activeFormatting.value == _controller) {
+        widget.activeFormatting.value = null;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: _controller,
+      focusNode: _focusNode,
+      inputFormatters: <TextInputFormatter>[RichListFormatter()],
+      maxLines: widget.maxLines,
+      minLines: widget.minLines,
+      keyboardType: widget.keyboardType,
+      textCapitalization: TextCapitalization.sentences,
+      style: widget.style,
+      decoration: widget.decoration,
     );
   }
 }

@@ -1945,6 +1945,36 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Za testo'**
   String get ingredientSectionHint;
+
+  /// Recipe editor formatting toolbar (Phase 8, D166), the bold toggle.
+  ///
+  /// In sr, this message translates to:
+  /// **'Podebljano'**
+  String get formatBoldTooltip;
+
+  /// Recipe editor formatting toolbar (Phase 8, D166), the italic toggle.
+  ///
+  /// In sr, this message translates to:
+  /// **'Kurziv'**
+  String get formatItalicTooltip;
+
+  /// Recipe editor formatting toolbar (Phase 8, D166), the bulleted list toggle.
+  ///
+  /// In sr, this message translates to:
+  /// **'Lista sa tačkama'**
+  String get formatBulletListTooltip;
+
+  /// Recipe editor formatting toolbar (Phase 8, D166), the numbered list toggle.
+  ///
+  /// In sr, this message translates to:
+  /// **'Numerisana lista'**
+  String get formatNumberedListTooltip;
+
+  /// Recipe editor formatting toolbar (Phase 8, D166), the button at the end that hides the keyboard (and the toolbar with it).
+  ///
+  /// In sr, this message translates to:
+  /// **'Sakrij tastaturu'**
+  String get hideKeyboardTooltip;
 }
 
 class _AppLocalizationsDelegate

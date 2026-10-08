@@ -1112,4 +1112,19 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get ingredientSectionHint => 'Za testo';
+
+  @override
+  String get formatBoldTooltip => 'Podebljano';
+
+  @override
+  String get formatItalicTooltip => 'Kurziv';
+
+  @override
+  String get formatBulletListTooltip => 'Lista sa tačkama';
+
+  @override
+  String get formatNumberedListTooltip => 'Numerisana lista';
+
+  @override
+  String get hideKeyboardTooltip => 'Sakrij tastaturu';
 }

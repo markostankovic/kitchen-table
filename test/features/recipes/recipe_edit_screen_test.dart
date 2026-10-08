@@ -6,6 +6,7 @@ import 'package:kitchen_table/core/images/recipe_image_cache.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/theme/app_theme.dart';
+import 'package:kitchen_table/core/widgets/app_formatting_toolbar.dart';
 import 'package:kitchen_table/features/recipes/application/recipe_editor.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_detail.dart';
@@ -66,6 +67,9 @@ Future<void> _pump(
   // does not build what is below the fold. Without this the ingredient and
   // step lists simply are not there to find.
   Size surface = const Size(1200, 3000),
+  // Inside the app shell's Scaffold, as on a device: that one takes the
+  // keyboard's inset out of everything below it.
+  bool inShell = false,
 }) async {
   tester.view.physicalSize = surface;
   tester.view.devicePixelRatio = 1;
@@ -84,7 +88,12 @@ Future<void> _pump(
         locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: appSupportedLocales,
-        home: RecipeEditScreen(recipeId: recipeId),
+        home: inShell
+            ? Scaffold(
+                body: RecipeEditScreen(recipeId: recipeId),
+                bottomNavigationBar: const SizedBox(height: 80),
+              )
+            : RecipeEditScreen(recipeId: recipeId),
       ),
     ),
   );
@@ -507,6 +516,158 @@ void main() {
         expect(field.style!.fontFamily, isNot('Literata'));
         expect(field.style!.fontSize, theme.textTheme.bodyMedium!.fontSize);
       }
+    });
+  });
+
+  group('the formatting toolbar (D166)', () {
+    const RecipeDraft draft = RecipeDraft(
+      title: 'Knedle',
+      description: 'Sa šljivama.',
+      notes: 'Čuva se.',
+      steps: <RecipeDraftStep>[
+        RecipeDraftStep(localId: 0, text: 'Testo', kind: RecipeStepKind.heading),
+        RecipeDraftStep(localId: 1, text: 'Umesiti testo.'),
+        RecipeDraftStep(localId: 2, text: 'Pazi.', kind: RecipeStepKind.note),
+      ],
+    );
+
+    /// The keyboard is up for the whole test; whether the toolbar shows
+    /// then depends on what has focus.
+    Future<void> pumpWithKeyboard(
+      WidgetTester tester, {
+      bool inShell = false,
+    }) async {
+      await _pump(tester, draft: draft, inShell: inShell);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpAndSettle();
+    }
+
+    Finder field(String text) => find.ancestor(
+      of: find.byWidgetPredicate(
+        (Widget w) => w is EditableText && w.controller.text == text,
+      ),
+      matching: find.byType(TextField),
+    );
+
+    Future<void> focus(WidgetTester tester, Finder finder) async {
+      await tester.ensureVisible(finder);
+      await tester.showKeyboard(finder);
+      await tester.pumpAndSettle();
+    }
+
+    final Finder toolbar = find.byType(AppFormattingToolbar);
+
+    testWidgets('is hidden while nothing has focus', (
+      WidgetTester tester,
+    ) async {
+      await pumpWithKeyboard(tester);
+      expect(toolbar, findsNothing);
+    });
+
+    testWidgets('is hidden for the title, the tags and a heading', (
+      WidgetTester tester,
+    ) async {
+      await pumpWithKeyboard(tester);
+      for (final Finder finder in <Finder>[
+        field('Knedle'),
+        find.widgetWithText(TextField, 'Separated by commas'),
+        field('Testo'),
+      ]) {
+        await focus(tester, finder);
+        expect(toolbar, findsNothing, reason: finder.toString());
+      }
+    });
+
+    testWidgets('shows for the description, a step, a note and the end note',
+        (WidgetTester tester) async {
+      await pumpWithKeyboard(tester);
+      for (final String text in <String>[
+        'Sa šljivama.',
+        'Umesiti testo.',
+        'Pazi.',
+        'Čuva se.',
+      ]) {
+        await focus(tester, field(text));
+        expect(toolbar, findsOneWidget, reason: text);
+      }
+    });
+
+    testWidgets('does not show without the keyboard', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, draft: draft);
+      await focus(tester, field('Umesiti testo.'));
+      expect(toolbar, findsNothing);
+    });
+
+    testWidgets('bold on a selected word reaches the draft, and the field '
+        'keeps focus and selection', (WidgetTester tester) async {
+      await pumpWithKeyboard(tester);
+      final Finder step = field('Umesiti testo.');
+      await focus(tester, step);
+      final EditableText editable = tester.widget<EditableText>(
+        find.descendant(of: step, matching: find.byType(EditableText)),
+      );
+      editable.controller.selection = const TextSelection(
+        baseOffset: 8,
+        extentOffset: 13,
+      );
+      await tester.pump();
+
+      await tester.tap(find.byTooltip('Bold'));
+      await tester.pumpAndSettle();
+
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(RecipeEditScreen)),
+      );
+      expect(
+        container
+            .read(recipeEditorProvider(null))
+            .value!
+            .steps
+            .firstWhere((RecipeDraftStep s) => s.localId == 1)
+            .text,
+        'Umesiti **testo**.',
+      );
+      expect(editable.focusNode.hasFocus, isTrue);
+      expect(
+        editable.controller.selection,
+        const TextSelection(baseOffset: 10, extentOffset: 15),
+      );
+      expect(toolbar, findsOneWidget);
+    });
+
+    testWidgets('inside the app shell it still shows, sits on the keyboard '
+        'in place of the save bar, and the save bar comes back', (
+      WidgetTester tester,
+    ) async {
+      await pumpWithKeyboard(tester, inShell: true);
+      await focus(tester, field('Umesiti testo.'));
+
+      expect(toolbar, findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Save'), findsNothing);
+      // The shell ends at the keyboard's top (3000 - 300).
+      expect(tester.getBottomLeft(toolbar).dy, 2700);
+
+      await tester.tap(find.byTooltip('Hide keyboard'));
+      await tester.pumpAndSettle();
+
+      expect(toolbar, findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Save'), findsOneWidget);
+    });
+
+    testWidgets('hide-keyboard takes the toolbar away', (
+      WidgetTester tester,
+    ) async {
+      await pumpWithKeyboard(tester);
+      await focus(tester, field('Sa šljivama.'));
+      expect(toolbar, findsOneWidget);
+
+      await tester.tap(find.byTooltip('Hide keyboard'));
+      await tester.pumpAndSettle();
+
+      expect(toolbar, findsNothing);
     });
   });
 }
