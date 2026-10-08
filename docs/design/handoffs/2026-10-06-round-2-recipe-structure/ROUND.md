@@ -168,7 +168,7 @@ The rest are UI (`/plan-slice-ui`).
       - **Shipped 2026-10-08** (D162–D164). The top of the list is a drop
         boundary for a section only when no headingless block is there
         (found on the walk).
-- [ ] `phase8-rich-text-render`: description, steps, step notes and end
+- [x] `phase8-rich-text-render`: description, steps, step notes and end
       note, on detail and on the translation review. Files: a new
       `lib/core/widgets/` rich-text widget, `recipe_detail_screen.dart`.
       Bundle: canvas § A3 (A3·1), `bundle/RichText.dc.html`.
@@ -179,6 +179,8 @@ The rest are UI (`/plan-slice-ui`).
       - **No new package.** The subset is small enough for a hand-written
         parser like `RichText.dc.html`'s. Stray `#` in imported text just
         renders as text.
+      - **Shipped 2026-10-08** (D165). The number column widens per list to
+        fit `10.`; one paragraph per non-blank line, as the prototype does.
 - [ ] `phase8-rich-text-toolbar`: formatting toolbar in the editor. Files:
       `recipe_edit_screen.dart`, a new `lib/core/widgets/` toolbar.
       Bundle: canvas § A3 (A3·2).

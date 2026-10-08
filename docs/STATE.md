@@ -1,38 +1,35 @@
 # State — 2026-10-08
 
 **Branch:** `main`
-**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 9 —
-`phase8-ingredient-sections-edit` (`4caf168`): ingredient sections can be
-added, renamed, dragged and removed with Undo, in the recipe editor and
-import review (D162–D164).
+**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 10 —
+`phase8-rich-text-render` (`e98692d`): recipe text renders the light
+formatting subset — `**bold**`, `*italic*`, `- ` and `1. ` lists — wherever
+it is read (D165).
 
-- **Headings are list items (D162).** A pure
-  `core/ingredients/widgets/ingredient_list_layout.dart` lays the list out
-  (`LineItem` / `HeadingItem`) and resolves drops. Amends D157 #4.
-- **Drag (D163).** A dropped line takes the heading above it. A heading has a
-  grip (long-press in review) and carries its run, lifted at level 3, to a
-  group boundary only. A section can never land above a headingless top
-  block.
-- **Edit (D164).** `RecipeDraft.setSections` / `moveLine` / `moveLines`.
-  Tapping a heading opens it in the open line's box. ✕ joins its lines to the
-  group above with `Odeljak je uklonjen.` + Undo. **Add section** sits beside
-  Add ingredient.
-- Client-only: no migration, no Edge Function. Three new l10n keys.
+- **Parser.** `core/text/rich_text_markup.dart`, pure Dart: one paragraph
+  per non-blank line, blank lines collapse, no nesting, numbers as typed.
+  `parseRichRuns` is public for the toolbar slice.
+- **Renderer.** `AppRichText` in `core/widgets/`: bold w600 (never w700,
+  D134), true italic, `onSurfaceVariant` markers, the numbered column
+  widened per list to fit `10.`, `md` between blocks and `xs` between items.
+- **Where.** Recipe detail's description, step text, step notes and end note
+  (amends D155 #6); the translation review's originals for those. Titles,
+  headings and ingredient lines stay plain; editing stays raw text.
+- Client-only: no migration, no Edge Function, no package, no l10n keys.
 
-`dart analyze` is clean and `flutter test` passes 883/883. `make check` is
-green except the known `seed-check`; `make test-sql` and `make l10n-check`
-pass. **Walked** on the emulator against hosted, all four combinations, at
-360dp, both surfaces (`recipe-editor`, `import-review`). Two defects (the run
-proxy off the finger; a section dropped at the top taking in the headingless
-lines) were found, fixed and re-walked. It opened no loop.
+`dart analyze` is clean and `flutter test` passes 916/916. `make check` is
+green except the known `seed-check`; `make test-sql`, the function tests and
+`make l10n-check` pass. **Walked** on the emulator against hosted, all four
+combinations (`/design-walk recipe-detail`, with the translation review in
+English light and dark). It was clean and opened no loop.
 
-**Hosted is current**: this slice is client-only. The import-review walk's
-paste import was discarded, and no alias was written. The editor walk
-**saved a throwaway recipe**, `Setnja odeljci TEST` (below).
+**Hosted is current**: this slice is client-only. The walk's throwaway
+`Knedle WALK TEST` took one hosted translate call and was soft-deleted.
 
 Still open:
 - **a throwaway recipe on hosted**: `Setnja odeljci TEST`, saved by the
-  `phase8-ingredient-sections-edit` editor walk. It wants deleting (the
+  `phase8-ingredient-sections-edit` editor walk (the rich-text walk's
+  `Knedle WALK TEST` was soft-deleted). It wants deleting (the
   app's own soft delete), which is Marko's call;
 - a snackbar with Undo sits over the screen's bottom action bar (the
   editor's Sačuvaj; review's Sačuvaj recept / Odbaci). A tap meant for Undo
@@ -84,15 +81,19 @@ Still open:
   neither are ingredient section headings (`Za testo` under English). Both
   need ingredient lines sent to `translate-recipe`, which is a schema and
   function change (D156);
+- import review's Notes subline shows the note's first words raw, so `**`
+  and `*` can show there (D165 Consequences);
 - the recipe-delete confirm is a filled button;
 - the `List — offline`, `Review import`, `Household` and `Settings` frames
   in `docs/design/screens/` still show the old bordered card, until Claude
   Design updates them.
 
 **In flight:** none.
-**Next:** `phase8-rich-text-render` (**/plan-slice-ui**): description,
-steps, step notes and end note rendered as rich text on detail and the
-translation review, with no new package. Then `phase8-rich-text-toolbar`.
+**Next:** `phase8-rich-text-toolbar` (**/plan-slice-ui**), the formatting
+toolbar in the editor. It is **blocked on Marko's WYSIWYG decision** (ROUND
+§ Out of scope). The default without a package is a
+`TextEditingController.buildTextSpan` that styles runs in place and dims the
+markers, reusing `parseRichRuns`.
 
 The round's slices and their order are in
 `docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`. Phase 8
@@ -107,7 +108,7 @@ Smaller candidates still open from round `sync-design-initial`:
 - the recipe-delete confirm, the one filled destructive confirm left
   (§ Buttons says text in destructive). The open device-walk loops below
   still want one sitting with the Galaxy attached.
-**Latest decision:** D164
+**Latest decision:** D165
 
 **Twenty device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -204,6 +205,13 @@ The `phase8-ingredient-sections-edit` walks (`/design-walk recipe-editor`
 and `/design-walk import-review`, 2026-10-08, emulator, all four
 combinations, 360dp) found two defects, both fixed and re-walked the same
 sitting, and opened no loop.
+The `phase8-rich-text-render` walk (`/design-walk recipe-detail`, 2026-10-08,
+emulator, all four combinations, with the translation review in en/light and
+en/dark) was clean and opened no loop. It used a throwaway `Knedle WALK TEST`
+recipe holding the canvas samples and a step whose numbered list reaches
+`10.`. The recipe took one hosted translate call and was soft-deleted
+afterwards. `adb input` cannot type `š`/`ž`, so its Serbian text is
+ASCII-only.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk

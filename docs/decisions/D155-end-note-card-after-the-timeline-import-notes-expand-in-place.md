@@ -1,5 +1,5 @@
 # D155 — The end note is a card after the timeline; import review's Notes expands in place
-**Status:** active
+**Status:** active; #6 superseded by D165 (the end note renders through `AppRichText`)
 **Touches:** lib/features/recipes/presentation/recipe_detail_screen.dart, lib/features/recipes/presentation/recipe_edit_screen.dart, lib/features/import/presentation/import_review_screen.dart, lib/features/recipes/presentation/translation_review_screen.dart, lib/core/l10n/arb/app_sr.arb, docs/DESIGN_SYSTEM.md
 
 **Decided.** Round `2026-10-06-round-2-recipe-structure`, canvas § A2, 2026-10-06:
@@ -23,7 +23,8 @@
    `None found`.
 6. **The note renders as plain `Text`** behind a private
    `_RecipeNotesCard` until `phase8-rich-text-render` swaps in the
-   renderer. Until then, markdown markers show literally.
+   renderer. Until then, markdown markers show literally. Done by D165
+   (`phase8-rich-text-render`): the card frame is unchanged.
 
 **Why.**
 - Making up the 32 from the existing `xl` keeps a recipe with no note

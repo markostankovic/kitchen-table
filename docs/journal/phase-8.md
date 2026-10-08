@@ -1126,3 +1126,76 @@ Edge Function, no package, and three new l10n keys (`addSectionButton`,
 - **Minor, not fixed:** in review, light only, about 4px of dark shows
   behind the run proxy's rounded top-left corner when the drag starts on a
   long-press. The editor's proxy is clean. Cause not traced.
+
+### Round 2026-10-06, slice 10 — Rich text rendered: bold, italic, bullet and numbered lists
+
+**Status: complete** (`e98692d`). Decisions taken during it: D165. Amends
+D155 #6.
+
+The tenth slice of round `2026-10-06-round-2-recipe-structure`
+(`docs/design/handoffs/2026-10-06-round-2-recipe-structure/`), canvas § A3
+(A3·1), `bundle/RichText.dc.html`. Planned with `/plan-slice-ui`, built and
+walked on 2026-10-08. Client-only: no migration, no Edge Function, no
+package, no l10n keys.
+
+- **Parser (D165 #1–4).** `lib/core/text/rich_text_markup.dart`, pure Dart:
+  `parseRichText` → sealed `RichParagraph` / `RichList(ordered, items)`,
+  and a public `parseRichRuns` for the toolbar slice. One paragraph per
+  non-blank line, blank lines collapse, no nesting, numbers as typed.
+- **Renderer (D165 #5).** `AppRichText(text, style:)` in
+  `lib/core/widgets/app_rich_text.dart`: each paragraph and item is a
+  `Text.rich`, bold w600, true italic, `onSurfaceVariant` markers (6dp
+  disc in a 20 column; numbers baseline-aligned in tabular figures, the
+  column widened per list to fit `10.`), `md` between blocks and `xs`
+  between items. No `LayoutBuilder`.
+- **Call sites (D165 #6).** Recipe detail's description, `_StepRow`,
+  `_StepNoteRow` and `_RecipeNotesCard` now use it. The translation review's
+  `_OriginalText` takes `rich:`, on for description, step/note and notes
+  originals, off for the title and a heading.
+- **DESIGN_SYSTEM.md:** new § Rich text; § Steps and stats, § Inputs (the
+  original panel) and § The shared widgets updated.
+- **Tests:** `rich_text_markup_test` (24: the canvas samples and every
+  rule), `app_rich_text_test` (7: w600 not w700, italic, marker colour,
+  `md`/`xs` gaps and the 20 indent, the disc's inset and centring, `10.`
+  widening shared by every item, `IntrinsicHeight`), and one case each in
+  `recipe_screens_test` and `translation_review_screen_test` (formatted
+  text loses its asterisks; a heading and the title keep them). No existing
+  `find.text` expectation needed changing.
+
+**Differs from the plan.**
+- The number column is measured in `DefaultTextStyle.of(context).style
+  .merge(numberStyle)`, not the bare style. The drawn `Text` inherits the
+  ambient letter spacing, so the bare style measured `10.` 0.75 short and
+  the widget test caught the marker touching its column edge.
+- `AppRichText` takes a non-null `TextStyle`; call sites use `!` on the
+  theme's style, the plan's first option.
+
+**How it was verified.**
+- `dart analyze` clean; `flutter test` **916/916**. `make check` green
+  except the known `seed-check` (run with `-k`, so the targets after it
+  ran too); `make test-sql`, the function tests and `make l10n-check` pass.
+- **Walked** on the **emulator** in all four combinations
+  (`/design-walk recipe-detail`, hosted release build via
+  `make install-emulator`, 411dp wide), on a throwaway `Knedle WALK TEST`
+  holding the canvas description, a step with the bullet list, a note with
+  `*italic*`, a heading `**Za testo**`, a Serbian step whose numbered list
+  reaches `10.`, and the numbered end note:
+  - bold reads heavier than body but lighter than the w700 title; italic
+    slants;
+  - discs centre on the first line, wrapped item lines hang under the item
+    text, and the timeline stays clear; `10.` clears its text and 1–9 share
+    its indent; spacing between steps and inside the end-note card looked
+    unchanged;
+  - in dark, markers read on the ground, the step-note panel and the
+    end-note card;
+  - the heading shows its asterisks;
+  - **translation review** (en/light and en/dark, after one hosted
+    translate call): description, step, note and end-note originals render
+    formatted; the title and the heading's original don't; the fields are
+    raw. The model kept the markers, so the English detail renders
+    formatted too.
+  - `adb input` cannot type `š`/`ž`, so the Serbian text was ASCII-only, and
+    the `10.` item lost its tail while typing (seen in the editor before
+    saving). Neither is an app defect.
+  - The recipe was soft-deleted afterwards; settings went back to `Srpski`
+    / `Svetla`. The walk opened no loop.
