@@ -167,4 +167,20 @@ void main() {
       }
     });
   });
+
+  group('richPlainText', () {
+    final List<(String, String, String)> cases = <(String, String, String)>[
+      ('empty input', '', ''),
+      ('bold and italic', '**Poslužite** *toplo*', 'Poslužite toplo'),
+      ('bullet markers', '- a\n- b', 'a\nb'),
+      ('a numbered marker', '3. x', 'x'),
+      ('a lone star stays', 'a * b', 'a * b'),
+      ('an indented dash is not an item', ' - x', ' - x'),
+      ('an unmatched pair stays', '**a', '**a'),
+      ('CRLF becomes LF', 'a\r\n- *b*', 'a\nb'),
+    ];
+    for (final (String name, String input, String expected) in cases) {
+      test(name, () => expect(richPlainText(input), expected));
+    }
+  });
 }

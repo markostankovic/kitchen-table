@@ -452,6 +452,14 @@ a list item continues the list and Enter on an empty item ends it. The call
 site wraps it in a `TextFieldTapRegion` so a tap never counts as outside the
 field. Tooltips come in localized; the core widget imports no l10n.
 
+Import review uses it the same way (D167). It also sits inside the shell, so
+it too reads the keyboard off `View.of`. There the toolbar replaces the
+review's `AppActionBar`, the last child of the body Column. That Column
+already ends at the keyboard's top, so the toolbar needs no inset padding.
+Method and Notes keep their fields alive while collapsed (`maintainState`),
+so collapsing either card lets go of focus held inside it. Otherwise the
+toolbar would stay on the keyboard for a field nobody can see.
+
 ### Cards
 
 `KitchenColors.card`, no hairline, radius 12, elevation 0, no surface tint. The
@@ -528,13 +536,14 @@ in both states, `md` under it; then `xl`, then Read. Private to
 `import_photo_screen.dart`, not shared with the editor's well.
 
 **A formattable field** (the editor's description, step, note and end note,
-D166) is still `bodyMedium`. Its styled spans derive from that style and
-only ever change weight, slant or colour — **never the font size or letter
-spacing**, which would walk the caret off its character. Each one is a
-private `_FormattableField` in the editor that owns a
-`RichTextEditingController` and a `FocusNode`; in a step row it is keyed by
-the row's local id, so it follows the row across a drag and is disposed with
-it. It reports text from a controller listener, because the toolbar's edits
+and import review's step, note and Notes fields; D166, D167) is still
+`bodyMedium`. Its styled spans derive from that style and only ever change
+weight, slant or colour — **never the font size or letter spacing**, which
+would walk the caret off its character. Each one is an `AppFormattableField`
+(`core/widgets/`) that owns a `RichTextEditingController` and a `FocusNode`;
+in a step row it is keyed by the row's local id, so it follows the row
+across a drag and is disposed with it. A heading field stays a plain
+`TextFormField`. It reports text from a controller listener, because the toolbar's edits
 are programmatic and `onChanged` never fires for them.
 
 **A step field is labelled** `Korak N` / `Step N` with `AppFieldLabel` above
@@ -792,12 +801,15 @@ headings (a stray `#` is text), links, code, `_`, `+`/`*` bullets or indented
 sub-lists. **Titles, headings and ingredient lines are never formatted.**
 
 **Editing shows styled markup in place (D166).** Four editor fields — the
-description, a step's text, a note's text and the end note — draw the subset
+description, a step's text, a note's text and the end note — and import
+review's step, note and end-note fields (D167) draw the subset
 as it is typed: bold content w600, italic content italic, both in the field's
 `onSurface`, and the `**` / `*` / `- ` / `12. ` markers dimmed to
 `onSurfaceVariant`. The markers stay visible; nothing is hidden, and no span
 changes size. The stored text is unchanged — still exactly the subset above.
-The formatting toolbar (§ Formatting toolbar) edits it.
+The formatting toolbar (§ Formatting toolbar) edits it. Import review's
+collapsed Notes subline shows `richPlainText` of the note, its markers
+stripped, rather than the raw markup.
 
 - **Bold is w600, never w700** — w700 marks a recipe's name (D134), and bold
   body text must not read as a title. Italic is true italic. Both keep the
@@ -1173,6 +1185,7 @@ lives, below.
 | `AppFieldLabel` | `core/widgets/app_field_label.dart` |
 | `AppActionBar` | `core/widgets/app_action_bar.dart` |
 | `AppFormattingToolbar` | `core/widgets/app_formatting_toolbar.dart` |
+| `AppFormattableField` | `core/widgets/app_formattable_field.dart` |
 | `RichTextEditingController` / `RichListFormatter` | `core/widgets/rich_text_editing_controller.dart` |
 | `RecipeCard` | `core/recipes/widgets/recipe_card.dart` |
 | `IngredientLineRow` | `core/ingredients/widgets/ingredient_line_row.dart` |
@@ -1195,7 +1208,9 @@ lives, below.
 `AppRichText(text, style:)` renders § Rich text. Its parser is
 `core/text/rich_text_markup.dart` — pure Dart. Its `scanRichInline` (inline
 matches by offset) and `matchRichListMarker` are public for the formatting
-toolbar and the styled editor fields, whose editing rules are the pure
+toolbar and the styled editor fields, and `richPlainText` (the text with its
+markers stripped) is for a one-line preview, such as import review's Notes
+subline. The styled fields' editing rules are the pure
 functions in `core/text/rich_text_editing.dart` (D166).
 
 `AppMonogramTile(circular: true)` is a person (member, profile); the square

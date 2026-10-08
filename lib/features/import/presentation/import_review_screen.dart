@@ -7,6 +7,7 @@ import '../../../core/ingredients/ingredient_catalog_providers.dart';
 import '../../../core/ingredients/widgets/ingredient_lines_editor.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/text/rich_text_markup.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -15,7 +16,10 @@ import '../../../core/widgets/app_action_bar.dart';
 import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_field_label.dart';
+import '../../../core/widgets/app_formattable_field.dart';
+import '../../../core/widgets/app_formatting_toolbar.dart';
 import '../../../core/widgets/app_section_heading.dart';
+import '../../../core/widgets/rich_text_editing_controller.dart';
 import '../../ingredients/domain/ingredient_line_parser.dart';
 import '../../ingredients/domain/unit_catalog.dart';
 import '../../recipes/domain/recipe_draft.dart';
@@ -245,10 +249,39 @@ class _ReviewBody extends ConsumerStatefulWidget {
   ConsumerState<_ReviewBody> createState() => _ReviewBodyState();
 }
 
-class _ReviewBodyState extends ConsumerState<_ReviewBody> {
+class _ReviewBodyState extends ConsumerState<_ReviewBody>
+    with WidgetsBindingObserver {
   bool _saving = false;
   bool _discarding = false;
   AppFailure? _failure;
+
+  /// The focused formattable field's controller, which the formatting
+  /// toolbar drives; null while none has focus.
+  final ValueNotifier<RichTextEditingController?> _activeFormatting =
+      ValueNotifier<RichTextEditingController?>(null);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// The keyboard coming up or going down: [build] reads it off the view.
+  @override
+  void didChangeMetrics() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // Children are disposed first; one that was focused may still be
+    // pointed at, and nothing listens any more.
+    _activeFormatting
+      ..value = null
+      ..dispose();
+    super.dispose();
+  }
 
   ImportConfirm get _confirm =>
       ref.read(importConfirmProvider(widget.jobId).notifier);
@@ -344,6 +377,10 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
     );
     final IngredientLineParser? parser = ref.watch(lineParserProvider).value;
     final UnitCatalog? units = ref.watch(unitCatalogProvider).value;
+    // Read off the view, not MediaQuery: this screen sits inside the app
+    // shell's Scaffold, which has already taken the keyboard's inset out of
+    // everything below it.
+    final bool keyboardUp = View.of(context).viewInsets.bottom > 0;
 
     return review.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -360,7 +397,29 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
               l10n,
             ),
           ),
-          _buildActionBar(l10n),
+          // While a formattable field is being typed in, the toolbar takes
+          // the action bar's place. This Column already ends at the
+          // keyboard's top -- the shell's Scaffold, or outside it the
+          // review's own, sees to that -- so unlike the editor's it needs no
+          // inset padding.
+          ValueListenableBuilder<RichTextEditingController?>(
+            valueListenable: _activeFormatting,
+            builder: (BuildContext context,
+                    RichTextEditingController? controller, _) =>
+                controller == null || !keyboardUp
+                ? _buildActionBar(l10n)
+                : TextFieldTapRegion(
+                    child: AppFormattingToolbar(
+                      controller: controller,
+                      onHideKeyboard: () => FocusScope.of(context).unfocus(),
+                      boldTooltip: l10n.formatBoldTooltip,
+                      italicTooltip: l10n.formatItalicTooltip,
+                      bulletListTooltip: l10n.formatBulletListTooltip,
+                      numberedListTooltip: l10n.formatNumberedListTooltip,
+                      hideKeyboardTooltip: l10n.hideKeyboardTooltip,
+                    ),
+                  ),
+          ),
         ],
       ),
     );
@@ -426,12 +485,14 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
           l10n: l10n,
           onStepChanged: _confirm.setStepText,
           onAddStep: _confirm.addStep,
+          activeFormatting: _activeFormatting,
         ),
         const SizedBox(height: AppSpacing.md),
         _NotesCard(
           notes: draft.notes,
           l10n: l10n,
           onChanged: _confirm.setNotes,
+          activeFormatting: _activeFormatting,
         ),
       ],
     );
@@ -548,6 +609,23 @@ class _Summary extends StatelessWidget {
   }
 }
 
+/// A collapsed card keeps its fields alive (`maintainState`), focus
+/// included, and a step or note still focused would leave the formatting
+/// toolbar on the keyboard for text nobody can see. So collapsing [card]
+/// lets go of focus held inside it -- and only there, so collapsing Method
+/// leaves a focused end note alone.
+void _unfocusWithin(BuildContext card) {
+  final FocusNode? focused = FocusManager.instance.primaryFocus;
+  final BuildContext? at = focused?.context;
+  if (at == null) return;
+  bool inside = false;
+  at.visitAncestorElements((Element e) {
+    inside = identical(e, card);
+    return !inside;
+  });
+  if (inside) focused!.unfocus();
+}
+
 /// Method, collapsed on open and expanded in place. The steps are rarely
 /// what an import gets wrong, so they wait behind a tap -- and there is no
 /// route, which is why the trailing icon is `expand_more` and not a chevron.
@@ -557,12 +635,14 @@ class _MethodCard extends StatelessWidget {
     required this.l10n,
     required this.onStepChanged,
     required this.onAddStep,
+    required this.activeFormatting,
   });
 
   final List<RecipeDraftStep> steps;
   final AppLocalizations l10n;
   final void Function(int localId, String text) onStepChanged;
   final VoidCallback onAddStep;
+  final ValueNotifier<RichTextEditingController?> activeFormatting;
 
   @override
   Widget build(BuildContext context) {
@@ -575,6 +655,9 @@ class _MethodCard extends StatelessWidget {
         collapsedShape: const Border(),
         initiallyExpanded: false,
         maintainState: true,
+        onExpansionChanged: (bool open) {
+          if (!open) _unfocusWithin(context);
+        },
         tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         childrenPadding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
@@ -602,29 +685,40 @@ class _MethodCard extends StatelessWidget {
             Padding(
               key: ValueKey<int>(step.localId),
               padding: EdgeInsets.only(top: index == 0 ? 0 : AppSpacing.sm),
-              child: TextFormField(
-                initialValue: step.text,
-                maxLines: null,
-                style: theme.textTheme.bodyMedium,
-                // A kind icon, so an imported heading or note doesn't read
-                // as one more step. A step's field stays bare.
-                decoration: switch (step.kind) {
-                  RecipeStepKind.step => const InputDecoration(),
-                  RecipeStepKind.heading => InputDecoration(
+              // A kind icon, so an imported heading or note doesn't read as
+              // one more step; a step's field stays bare. A heading is never
+              // formatted (D165 #6), so it alone stays a plain field.
+              child: switch (step.kind) {
+                RecipeStepKind.heading => TextFormField(
+                  initialValue: step.text,
+                  maxLines: null,
+                  style: theme.textTheme.bodyMedium,
+                  decoration: InputDecoration(
                     prefixIcon: Icon(
                       Icons.title,
                       color: theme.colorScheme.outline,
                     ),
                   ),
-                  RecipeStepKind.note => InputDecoration(
-                    prefixIcon: Icon(
-                      Icons.sticky_note_2_outlined,
-                      color: theme.colorScheme.outline,
-                    ),
+                  onChanged: (String v) => onStepChanged(step.localId, v),
+                ),
+                RecipeStepKind.step || RecipeStepKind.note =>
+                  AppFormattableField(
+                    initialValue: step.text,
+                    maxLines: null,
+                    keyboardType: TextInputType.multiline,
+                    style: theme.textTheme.bodyMedium,
+                    decoration: step.kind == RecipeStepKind.note
+                        ? InputDecoration(
+                            prefixIcon: Icon(
+                              Icons.sticky_note_2_outlined,
+                              color: theme.colorScheme.outline,
+                            ),
+                          )
+                        : const InputDecoration(),
+                    activeFormatting: activeFormatting,
+                    onChanged: (String v) => onStepChanged(step.localId, v),
                   ),
-                },
-                onChanged: (String v) => onStepChanged(step.localId, v),
-              ),
+              },
             ),
           Align(
             alignment: Alignment.centerLeft,
@@ -643,23 +737,25 @@ class _MethodCard extends StatelessWidget {
 /// The recipe's end note (D153), the same collapsed card as Method and for
 /// the same reason: it expands in place, so `expand_more`, no chevron, no
 /// route. The subline is the note's first words, rebuilt from the draft as
-/// the cook types.
+/// the cook types, with the D165 markup taken out ([richPlainText]).
 class _NotesCard extends StatelessWidget {
   const _NotesCard({
     required this.notes,
     required this.l10n,
     required this.onChanged,
+    required this.activeFormatting,
   });
 
   final String? notes;
   final AppLocalizations l10n;
   final ValueChanged<String> onChanged;
+  final ValueNotifier<RichTextEditingController?> activeFormatting;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final String summary =
-        (notes ?? '').trim().replaceAll(RegExp(r'\s+'), ' ');
+        richPlainText(notes ?? '').trim().replaceAll(RegExp(r'\s+'), ' ');
     return Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
@@ -668,6 +764,9 @@ class _NotesCard extends StatelessWidget {
         collapsedShape: const Border(),
         initiallyExpanded: false,
         maintainState: true,
+        onExpansionChanged: (bool open) {
+          if (!open) _unfocusWithin(context);
+        },
         tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         childrenPadding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
@@ -691,13 +790,13 @@ class _NotesCard extends StatelessWidget {
           ),
         ),
         children: <Widget>[
-          TextFormField(
+          AppFormattableField(
             initialValue: notes ?? '',
-            textCapitalization: TextCapitalization.sentences,
             keyboardType: TextInputType.multiline,
             minLines: 3,
             maxLines: null,
             style: theme.textTheme.bodyMedium,
+            activeFormatting: activeFormatting,
             onChanged: onChanged,
           ),
         ],

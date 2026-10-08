@@ -224,3 +224,20 @@ List<RichRun> parseRichRuns(String line) {
   }
   return runs;
 }
+
+/// [text] with its markup taken out, for a one-line preview: each line's
+/// column-0 list marker dropped and its inline runs joined, the lines joined
+/// with `\n`. What [parseRichText] would draw, minus the drawing; an
+/// unmatched marker stays literal, as it does there. The caller collapses
+/// whitespace if it wants one line.
+String richPlainText(String text) => text
+    .replaceAll('\r\n', '\n')
+    .replaceAll('\r', '\n')
+    .split('\n')
+    .map((String line) {
+      final int marker = matchRichListMarker(line)?.length ?? 0;
+      return parseRichRuns(
+        line.substring(marker),
+      ).map((RichRun run) => run.text).join();
+    })
+    .join('\n');

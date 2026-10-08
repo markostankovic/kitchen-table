@@ -18,6 +18,7 @@ import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
 import 'package:kitchen_table/core/router/routes.dart';
 import 'package:kitchen_table/core/theme/app_theme.dart';
 import 'package:kitchen_table/core/widgets/app_empty_state.dart';
+import 'package:kitchen_table/core/widgets/app_formatting_toolbar.dart';
 import 'package:kitchen_table/features/import/application/import_confirm.dart';
 import 'package:kitchen_table/features/import/application/import_providers.dart';
 import 'package:kitchen_table/features/import/data/import_repository.dart';
@@ -28,6 +29,7 @@ import 'package:kitchen_table/features/ingredients/domain/ingredient_line_parser
 import 'package:kitchen_table/features/ingredients/domain/ingredient_match.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit_catalog.dart';
+import 'package:kitchen_table/features/recipes/domain/recipe_draft.dart';
 
 const String _jobId = 'job-1';
 
@@ -99,6 +101,9 @@ Future<void> _pump(
   // not build what is below the fold.
   Size surface = const Size(1200, 3000),
   _FakeImportRepo? repo,
+  // Inside the app shell's Scaffold, as on a device: that one takes the
+  // keyboard's inset out of everything below it.
+  bool inShell = false,
 }) async {
   tester.view.physicalSize = surface;
   tester.view.devicePixelRatio = 1;
@@ -110,7 +115,12 @@ Future<void> _pump(
     routes: <RouteBase>[
       GoRoute(
         path: '/review',
-        builder: (_, _) => const ImportReviewScreen(jobId: _jobId),
+        builder: (_, _) => inShell
+            ? const Scaffold(
+                body: ImportReviewScreen(jobId: _jobId),
+                bottomNavigationBar: SizedBox(height: 80),
+              )
+            : const ImportReviewScreen(jobId: _jobId),
       ),
       GoRoute(
         path: RecipesRoute.path,
@@ -526,8 +536,8 @@ void main() {
       ),
     );
 
-    // Whitespace collapsed to one line.
-    expect(find.text('Čuva se - tri dana u frižideru'), findsOneWidget);
+    // Whitespace collapsed to one line, the list marker taken out.
+    expect(find.text('Čuva se tri dana u frižideru'), findsOneWidget);
 
     await tester.tap(find.text('Notes'));
     await tester.pumpAndSettle();
@@ -557,5 +567,201 @@ void main() {
       container.read(importConfirmProvider(_jobId)).value!.draft.notes,
       'Najbolja sutradan.',
     );
+  });
+
+  group('the formatting toolbar (D166)', () {
+    ImportJob job() => _job(
+      ImportJobStatus.needsReview,
+      result: _parsed().copyWith(
+        notes: 'Čuva se.',
+        steps: const <ParsedStep>[
+          ParsedStep(text: 'Za testo', kind: ParsedStepKind.HEADING),
+          ParsedStep(text: 'Zagrejati rernu.'),
+          ParsedStep(text: 'Pazi.', kind: ParsedStepKind.NOTE),
+        ],
+      ),
+    );
+
+    /// Method and Notes open, with the keyboard up for the whole test;
+    /// whether the toolbar shows then depends on what has focus.
+    Future<void> pumpWithKeyboard(
+      WidgetTester tester, {
+      bool inShell = false,
+      bool keyboard = true,
+    }) async {
+      await _pump(tester, job(), inShell: inShell);
+      if (keyboard) {
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        addTearDown(tester.view.resetViewInsets);
+      }
+      await tester.tap(find.text('Method'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Notes'));
+      await tester.pumpAndSettle();
+    }
+
+    Finder field(String text) => find.ancestor(
+      of: find.byWidgetPredicate(
+        (Widget w) => w is EditableText && w.controller.text == text,
+      ),
+      matching: find.byType(TextField),
+    );
+
+    Future<void> focus(WidgetTester tester, Finder finder) async {
+      await tester.ensureVisible(finder);
+      await tester.showKeyboard(finder);
+      await tester.pumpAndSettle();
+    }
+
+    final Finder toolbar = find.byType(AppFormattingToolbar);
+    final Finder save = find.widgetWithText(FilledButton, 'Save recipe');
+
+    String? draftText(WidgetTester tester, String start) {
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(ImportReviewScreen)),
+      );
+      return container
+          .read(importConfirmProvider(_jobId))
+          .value!
+          .draft
+          .steps
+          .map((RecipeDraftStep s) => s.text)
+          .firstWhere((String t) => t.contains(start));
+    }
+
+    testWidgets('is hidden while nothing has focus', (
+      WidgetTester tester,
+    ) async {
+      await pumpWithKeyboard(tester);
+      expect(toolbar, findsNothing);
+      expect(save, findsOneWidget);
+    });
+
+    testWidgets('shows for a step, a note row and the end note, in place of '
+        'the action bar', (WidgetTester tester) async {
+      await pumpWithKeyboard(tester);
+      for (final String text in <String>[
+        'Zagrejati rernu.',
+        'Pazi.',
+        'Čuva se.',
+      ]) {
+        await focus(tester, field(text));
+        expect(toolbar, findsOneWidget, reason: text);
+        expect(save, findsNothing, reason: text);
+      }
+    });
+
+    testWidgets('is hidden for a heading and the title', (
+      WidgetTester tester,
+    ) async {
+      await pumpWithKeyboard(tester);
+      for (final String text in <String>['Za testo', 'Šargarepa torta']) {
+        await focus(tester, field(text));
+        expect(toolbar, findsNothing, reason: text);
+      }
+    });
+
+    testWidgets('does not show without the keyboard', (
+      WidgetTester tester,
+    ) async {
+      await pumpWithKeyboard(tester, keyboard: false);
+      await focus(tester, field('Zagrejati rernu.'));
+      expect(toolbar, findsNothing);
+      expect(save, findsOneWidget);
+    });
+
+    testWidgets('hide-keyboard brings the action bar back', (
+      WidgetTester tester,
+    ) async {
+      await pumpWithKeyboard(tester);
+      await focus(tester, field('Čuva se.'));
+      expect(toolbar, findsOneWidget);
+
+      await tester.tap(find.byTooltip('Hide keyboard'));
+      await tester.pumpAndSettle();
+
+      expect(toolbar, findsNothing);
+      expect(save, findsOneWidget);
+    });
+
+    testWidgets('bold on a selected word reaches the draft', (
+      WidgetTester tester,
+    ) async {
+      await pumpWithKeyboard(tester);
+      final Finder step = field('Zagrejati rernu.');
+      await focus(tester, step);
+      final EditableText editable = tester.widget<EditableText>(
+        find.descendant(of: step, matching: find.byType(EditableText)),
+      );
+      editable.controller.selection = const TextSelection(
+        baseOffset: 10,
+        extentOffset: 15,
+      );
+      await tester.pump();
+
+      await tester.tap(find.byTooltip('Bold'));
+      await tester.pumpAndSettle();
+
+      expect(draftText(tester, 'Zagrejati'), 'Zagrejati **rernu**.');
+      expect(editable.focusNode.hasFocus, isTrue);
+      expect(toolbar, findsOneWidget);
+    });
+
+    testWidgets('collapsing Method lets go of a focused step, and the '
+        'action bar comes back', (WidgetTester tester) async {
+      await pumpWithKeyboard(tester);
+      await focus(tester, field('Zagrejati rernu.'));
+      expect(toolbar, findsOneWidget);
+
+      await tester.tap(find.text('Method'));
+      await tester.pumpAndSettle();
+
+      expect(toolbar, findsNothing);
+      expect(save, findsOneWidget);
+    });
+
+    testWidgets('collapsing Method leaves a focused end note alone', (
+      WidgetTester tester,
+    ) async {
+      await pumpWithKeyboard(tester);
+      await focus(tester, field('Čuva se.'));
+
+      await tester.tap(find.text('Method'));
+      await tester.pumpAndSettle();
+
+      expect(toolbar, findsOneWidget);
+    });
+
+    testWidgets('inside the app shell it sits on the keyboard in place of the '
+        'action bar, and the action bar comes back', (
+      WidgetTester tester,
+    ) async {
+      await pumpWithKeyboard(tester, inShell: true);
+      await focus(tester, field('Zagrejati rernu.'));
+
+      expect(toolbar, findsOneWidget);
+      expect(save, findsNothing);
+      // The shell ends at the keyboard's top (3000 - 300).
+      expect(tester.getBottomLeft(toolbar).dy, 2700);
+
+      await tester.tap(find.byTooltip('Hide keyboard'));
+      await tester.pumpAndSettle();
+
+      expect(toolbar, findsNothing);
+      expect(save, findsOneWidget);
+    });
+
+    testWidgets('a found note with markup has a plain subline', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        _job(
+          ImportJobStatus.needsReview,
+          result: _parsed().copyWith(notes: '**Poslužite** *toplo*'),
+        ),
+      );
+      expect(find.text('Poslužite toplo'), findsOneWidget);
+    });
   });
 }
