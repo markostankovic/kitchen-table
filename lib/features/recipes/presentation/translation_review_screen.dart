@@ -13,6 +13,7 @@ import '../../../core/widgets/app_action_bar.dart';
 import '../../../core/widgets/app_badge.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_field_label.dart';
+import '../../../core/widgets/app_rich_text.dart';
 import '../application/translation_reviewer.dart';
 import '../domain/recipe_step.dart';
 import '../domain/translation_review_draft.dart';
@@ -155,6 +156,7 @@ class _TranslationReviewScreenState
             _OriginalText(
               label: originalLabel,
               text: draft.sourceDescription!,
+              rich: true,
             ),
             const SizedBox(height: AppSpacing.sm),
             TextFormField(
@@ -187,7 +189,12 @@ class _TranslationReviewScreenState
               },
             ),
             const SizedBox(height: AppSpacing.sm),
-            _OriginalText(label: originalLabel, text: source.text),
+            // A heading is a title: never formatted (D165).
+            _OriginalText(
+              label: originalLabel,
+              text: source.text,
+              rich: source.kind != RecipeStepKind.heading,
+            ),
             const SizedBox(height: AppSpacing.sm),
             TextFormField(
               key: ValueKey<int>(translated.position),
@@ -203,7 +210,11 @@ class _TranslationReviewScreenState
             const SizedBox(height: AppSpacing.lg),
             AppFieldLabel(text: l10n.recipeNotesHeading),
             const SizedBox(height: AppSpacing.sm),
-            _OriginalText(label: originalLabel, text: draft.sourceNotes!),
+            _OriginalText(
+              label: originalLabel,
+              text: draft.sourceNotes!,
+              rich: true,
+            ),
             const SizedBox(height: AppSpacing.sm),
             // No validator: a blank note saves as null (D153).
             TextFormField(
@@ -240,16 +251,27 @@ class _TranslationReviewScreenState
 
 /// The recipe's own text for one field, read-only -- reference, not
 /// something to be typed over.
+///
+/// [rich] renders the formatting subset (D165) -- description, step and note
+/// text, the end note. A title or a heading stays plain.
 class _OriginalText extends StatelessWidget {
-  const _OriginalText({required this.label, required this.text});
+  const _OriginalText({
+    required this.label,
+    required this.text,
+    this.rich = false,
+  });
 
   final String label;
   final String text;
+  final bool rich;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final KitchenColors kitchen = theme.extension<KitchenColors>()!;
+    final TextStyle bodyStyle = theme.textTheme.bodyMedium!.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
     // The ring is part of docLanguage's own definition: without it, the dark
     // fill is invisible against the dark ground.
     return Container(
@@ -272,11 +294,10 @@ class _OriginalText extends StatelessWidget {
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text(
-            text,
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
+          if (rich)
+            AppRichText(text, style: bodyStyle)
+          else
+            Text(text, style: bodyStyle),
         ],
       ),
     );

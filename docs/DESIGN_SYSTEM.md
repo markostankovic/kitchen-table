@@ -522,7 +522,10 @@ without one. A dragged row lifts to level 3 (§ Elevation); the gap
 (D84): `docLanguage` with a 1dp `outlineVariant` ring, radius `sm`, padded
 `md`/`sm`. The ring is not optional: dark `docLanguage` on the dark ground is
 invisible without it. Inside, the `Original (…)` label in `labelMedium`, `xs`,
-then the text in `bodyMedium`, both `onSurfaceVariant`.
+then the text in `bodyMedium`, both `onSurfaceVariant`. The description,
+step/note and end-note originals render the formatting subset (§ Rich text);
+the title and a heading's original stay plain, and the fields below are raw
+text.
 
 ### Chips
 
@@ -704,7 +707,9 @@ unnamed new one simply goes.
 
 A step number, in `labelLarge` `onPrimaryContainer`, sits in a 28dp
 `todayContainer` disc; `lg` (16) to the step itself in `bodyLarge` (sans
-18/28, w400 — no bold); `xl` (24) between steps.
+18/28, w400 — no bold); `xl` (24) between steps. Step text renders the
+formatting subset (§ Rich text); a list hangs from the text column, clear of
+the disc and the line.
 
 **The steps are a timeline.** A 2dp `stepConnector` line runs down the disc
 column from one disc to the next, stopping 4dp short of both. The 24dp gap
@@ -721,7 +726,8 @@ the disc column, `sm` top (32 effective after the row above's `xl`; 0 when it
 is first) and `md` bottom. **A note** is an un-numbered aside: `bodyMedium`
 `onSurfaceVariant` on a `KitchenColors.card` panel, radius `sm`, padded
 `sm`/`md`, in the text column (the disc column stays, empty), `xl` below. A
-warning reads the same — never red.
+warning reads the same — never red. A note's text renders the subset at
+14/20; a heading never does.
 
 **The line breaks at a heading and runs past a note.** A step draws its line
 only when a step or note follows, running straight into a note's segment. A
@@ -732,8 +738,8 @@ heading or at the end its line stops level with the panel's bottom.
 (radius 12, padded `lg`), full width, outside the timeline, `xxl` (32) below
 the last step — `sm` on top of the last row's own `xl`. Its header is
 `edit_note` at 20 (`iconInButton`) in `onSurfaceVariant`, `sm`, then
-`Napomena` in `titleMedium`; then `sm`, then the body in `bodyLarge`, plain
-text until the rich-text slice. An empty note renders nothing at all — no
+`Napomena` in `titleMedium`; then `sm`, then the body in `bodyLarge`,
+rendered by `AppRichText` (D165). An empty note renders nothing at all — no
 heading, no gap — and the source footer follows unchanged either way.
 
 The servings / prep / cook /
@@ -742,6 +748,34 @@ rating strip puts labels in `bodyMedium` `onSurfaceVariant` above values in
 columns (the mock's left edge, not centred), with `lg` inside the
 `outlineVariant` hairlines. The columns abut with no gap between them, so five
 16dp stars still fit a quarter of a 360dp screen.
+
+### Rich text
+
+Recipe text that is *read* — the description, step and note text, the end
+note, and their originals on the translation review — renders a light
+formatting subset through `AppRichText` (D165). The subset, and nothing else:
+`**bold**`, `*italic*`, `- ` bullet lists and `1. ` numbered lists. No `#`
+headings (a stray `#` is text), links, code, `_`, `+`/`*` bullets or indented
+sub-lists. **Titles, headings and ingredient lines are never formatted.**
+Editing stays raw text.
+
+- **Bold is w600, never w700** — w700 marks a recipe's name (D134), and bold
+  body text must not read as a title. Italic is true italic. Both keep the
+  base style's colour; the caller picks the role (`bodyLarge` for steps and
+  the end note, `bodyMedium` `onSurfaceVariant` for the description, a note
+  and the originals).
+- **One paragraph per non-blank line.** A single newline and a blank line
+  read the same; several blank lines collapse. `md` (12) between blocks, `xs`
+  (4) between items in a list, nothing above the first block or below the
+  last — the caller's gaps stay the caller's.
+- **Bullets** are a 6dp `onSurfaceVariant` disc, inset `xs` in a 20 marker
+  column, centred on the item's first line.
+- **Numbers** are `onSurfaceVariant` tabular figures, as typed (`3.` stays
+  `3.` — never renumbered), on the item text's baseline. A numbered list
+  widens its column to fit its widest marker plus `xs` (`10.` in `bodyLarge`),
+  shared by every item.
+- Wrapped item lines hang under the item text, not the marker. The 20 and the
+  6 are private consts in `app_rich_text.dart`, not tokens.
 
 ### Recipe card
 
@@ -1091,6 +1125,7 @@ lives, below.
 | `AppMetaRow` / `AppMetaItem` | `core/widgets/app_meta_row.dart` |
 | `AppMonogramTile` | `core/widgets/app_monogram_tile.dart` |
 | `AppStatStrip` / `AppStatColumn` | `core/widgets/app_stat_strip.dart` |
+| `AppRichText` | `core/widgets/app_rich_text.dart` |
 | `AppSearchField` | `core/widgets/app_search_field.dart` |
 | `AppEmptyState` | `core/widgets/app_empty_state.dart` |
 | `AppErrorView` | `core/widgets/app_error_view.dart` |
@@ -1114,6 +1149,10 @@ lives, below.
 `AppSectionHeading` takes an optional `trailing` string, in `bodyMedium`
 `onSurfaceVariant`, baseline-aligned at the right (the recipe detail's
 `for 8 servings` beside Ingredients). Without it the heading is unchanged.
+
+`AppRichText(text, style:)` renders § Rich text. Its parser is
+`core/text/rich_text_markup.dart` — pure Dart, and `parseRichRuns` is public
+for the formatting toolbar to reuse.
 
 `AppMonogramTile(circular: true)` is a person (member, profile); the square
 is a thing (recipe).

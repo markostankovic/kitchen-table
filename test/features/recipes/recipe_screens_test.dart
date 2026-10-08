@@ -1010,6 +1010,39 @@ void main() {
       );
     }
 
+    testWidgets('steps, notes and the end note render the formatting subset; '
+        'a heading stays literal (D165)', (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(
+          recipe: _torta.copyWith(notes: 'Čuva se **tri** dana.'),
+          steps: const <RecipeStep>[
+            RecipeStep(
+              position: 0,
+              text: '**Za testo**',
+              kind: RecipeStepKind.heading,
+            ),
+            RecipeStep(position: 1, text: 'Umuti **jaja**.'),
+            RecipeStep(
+              position: 2,
+              text: 'Testo je *meko*.',
+              kind: RecipeStepKind.note,
+            ),
+          ],
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Čuva se tri dana.'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      expect(find.text('Umuti jaja.', skipOffstage: false), findsOneWidget);
+      expect(find.text('Testo je meko.', skipOffstage: false), findsOneWidget);
+      expect(find.text('Čuva se **tri** dana.'), findsNothing);
+      expect(find.text('**Za testo**', skipOffstage: false), findsOneWidget);
+    });
+
     testWidgets('a translated recipe shows the translation\'s end note', (
       WidgetTester tester,
     ) async {

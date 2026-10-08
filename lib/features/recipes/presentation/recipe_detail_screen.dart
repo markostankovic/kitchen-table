@@ -23,6 +23,7 @@ import '../../../core/theme/kitchen_colors.dart';
 import '../../../core/theme/kitchen_type.dart';
 import '../../../core/widgets/app_badge.dart';
 import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/app_rich_text.dart';
 import '../../../core/widgets/app_section_heading.dart';
 import '../../../core/widgets/app_stat_strip.dart';
 import '../../ingredients/domain/unit_catalog.dart';
@@ -500,9 +501,9 @@ class _Body extends ConsumerWidget {
               ),
               if (description != null && description.isNotEmpty) ...<Widget>[
                 const SizedBox(height: AppSpacing.sm),
-                Text(
+                AppRichText(
                   description,
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  style: theme.textTheme.bodyMedium!.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -961,7 +962,7 @@ class _StepRow extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-              child: Text(step.text, style: theme.textTheme.bodyLarge),
+              child: AppRichText(step.text, style: theme.textTheme.bodyLarge!),
             ),
           ),
         ],
@@ -1024,9 +1025,9 @@ class _StepNoteRow extends StatelessWidget {
                   color: kitchen.card,
                   borderRadius: BorderRadius.circular(AppRadii.sm),
                 ),
-                child: Text(
+                child: AppRichText(
                   step.text,
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  style: theme.textTheme.bodyMedium!.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -1041,8 +1042,8 @@ class _StepNoteRow extends StatelessWidget {
 
 /// The recipe's end note (D153), a full-width card after the timeline.
 ///
-/// The body is plain `Text` for now: `phase8-rich-text-render` swaps it for
-/// the markdown-subset renderer, so the markers show literally until then.
+/// The body renders the light-formatting subset through `AppRichText`
+/// (D165): bold, italic, bullet and numbered lists.
 class _RecipeNotesCard extends StatelessWidget {
   const _RecipeNotesCard({required this.notes, required this.l10n});
 
@@ -1078,7 +1079,7 @@ class _RecipeNotesCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
-              Text(notes, style: theme.textTheme.bodyLarge),
+              AppRichText(notes, style: theme.textTheme.bodyLarge!),
             ],
           ),
         ),

@@ -176,6 +176,37 @@ void main() {
     expect(find.text('Step 4'), findsNothing);
   });
 
+  testWidgets('originals render the formatting subset, except the title and '
+      'a heading (D165)', (WidgetTester tester) async {
+    await _pump(
+      tester,
+      draft: _draft.copyWith(
+        sourceTitle: '**Torta**',
+        sourceDescription: 'Vlažna **torta**.',
+        sourceSteps: const <RecipeStep>[
+          RecipeStep(
+            position: 0,
+            text: '**Za testo**',
+            kind: RecipeStepKind.heading,
+          ),
+          RecipeStep(position: 1, text: '*Umutiti* sastojke.'),
+        ],
+        steps: const <RecipeStep>[
+          RecipeStep(position: 0, text: 'For the dough'),
+          RecipeStep(position: 1, text: 'Mix the ingredients.'),
+        ],
+        sourceNotes: 'Čuva se **tri** dana.',
+        notes: 'Keeps three days.',
+      ),
+    );
+
+    expect(find.text('Vlažna torta.'), findsOneWidget);
+    expect(find.text('Umutiti sastojke.'), findsOneWidget);
+    expect(find.text('Čuva se tri dana.'), findsOneWidget);
+    expect(find.text('**Torta**'), findsOneWidget);
+    expect(find.text('**Za testo**'), findsOneWidget);
+  });
+
   testWidgets('a translation with no description shows no description field',
       (WidgetTester tester) async {
     final TranslationReviewDraft withoutDescription = TranslationReviewDraft(
