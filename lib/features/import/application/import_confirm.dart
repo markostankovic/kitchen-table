@@ -75,8 +75,12 @@ class ImportConfirm extends _$ImportConfirm {
       _update((RecipeDraft d) => d.removeLine(localId));
   void replaceLine(RecipeDraftLine line) =>
       _update((RecipeDraft d) => d.replaceLine(line));
-  void reorderLines(int oldIndex, int newIndex) =>
-      _update((RecipeDraft d) => d.reorderLines(oldIndex, newIndex));
+  void moveLine(int oldIndex, int newIndex, String? section) => _update(
+      (RecipeDraft d) => d.moveLine(oldIndex, newIndex, section: section));
+  void moveLines(int start, int end, int newIndex) =>
+      _update((RecipeDraft d) => d.moveLines(start, end, newIndex));
+  void setSections(Map<int, String?> sectionByLocalId) =>
+      _update((RecipeDraft d) => d.setSections(sectionByLocalId));
   void addStep() => _update((RecipeDraft d) => d.addStep());
   void removeStep(int localId) =>
       _update((RecipeDraft d) => d.removeStep(localId));

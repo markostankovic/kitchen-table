@@ -662,8 +662,8 @@ list omits it too (`Recipe@1x.png`). Every other row keeps it, including the
 last of a block followed by a gap: a divider missing mid-card reads as
 uneven spacing, not as a break.
 
-**Sections** (recipe detail; read-only in the recipe editor and import
-review for now). A section heading opens each run of consecutive
+**Sections** (recipe detail, the recipe editor and import review). A
+section heading opens each run of consecutive
 lines sharing a `section` (`Za testo`, `Za fil`), in `titleSmall` `primary` —
 the same look as a step heading (§ Steps and stats), from the same
 `RecipeGroupHeading`. It sits `xl` above (`xs` when it opens the list, on top of the
@@ -674,8 +674,31 @@ line does. The heading is the cook's text as typed and is not translated.
 Lines before the first section sit headingless at the top, and a flat list
 renders exactly as it did before sections showed. In the editor the heading
 is indented past the grip column (`grip` + `xs`) to line up with the row
-text, and in import review `md`, matching the inset rows. Adding, renaming,
-dragging and removing sections is the next slice.
+text, and in import review `md`, matching the inset rows.
+
+Editing them, in both: the heading is its own list item. In the editor it
+has a grip (`dragHandle`, `grip` + `xs`) centred on its text line, with the
+top gap outside the grip row; in import review it drags on long-press, as
+its rows do. The tap target takes in the top gap, so mid-list it is about
+48 tall. Tapping a heading opens it, through the same one-thing-open rule as
+a line: the open line's box (`surfaceContainerHighest`, radius `sm`, padded
+`md`, a 2dp `primary` focus border as a foreground) holding one borderless
+`titleSmall` `primary` field, hinted `Za testo` / `For the dough` in the
+**recipe's** locale, as `[grip] [box] [✕ 48]`, top-aligned (no grip and
+inset `md` in review). Each keystroke renames every line of the run. **Add
+section** (`Icons.title`, a text button) sits beside Add ingredient in a
+`Wrap` with `xs` spacing, so the two wrap rather than overflow in Serbian at
+360dp; it opens an unnamed heading over a new blank line, and Next goes into
+that line. A line dropped anywhere takes the section of the heading above
+it, or none above the first. A dragged heading carries its run: the run
+closes up while it is in the air, the proxy shows the heading and its rows
+lifted at level 3 on `surfaceContainerHigh`, and the drop snaps to the
+nearest group boundary (ties going down), so it never splits another group;
+it never lands above a headingless top block, which would read as its own.
+The open heading's ✕ joins its lines to the group above — nothing moves or
+is deleted — with `Odeljak je uklonjen.` / `Section removed.` and Undo
+(4 s, `persist: false`); a heading closed blank counts as removed, and an
+unnamed new one simply goes.
 
 ### Steps and stats
 

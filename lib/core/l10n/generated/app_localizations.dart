@@ -1927,6 +1927,24 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Nije pronađena'**
   String get importNotesNoneFound;
+
+  /// Ingredient list (recipe editor and import review), the button beside addIngredientButton that starts a new section: a heading being named over a new blank line.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaj odeljak'**
+  String get addSectionButton;
+
+  /// Ingredient list (recipe editor and import review), the snackbar after removing an ingredient section heading -- its lines join the group above; offers undoSnackbarAction to put it back.
+  ///
+  /// In sr, this message translates to:
+  /// **'Odeljak je uklonjen.'**
+  String get sectionRemovedSnackbar;
+
+  /// Ingredient section heading field, an example of a section name. Looked up by the RECIPE's own language (widget.locale via lookupAppLocalizations), never the reader's chrome locale, like ingredientLineHint.
+  ///
+  /// In sr, this message translates to:
+  /// **'Za testo'**
+  String get ingredientSectionHint;
 }
 
 class _AppLocalizationsDelegate

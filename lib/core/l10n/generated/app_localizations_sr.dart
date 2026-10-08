@@ -1103,4 +1103,13 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get importNotesNoneFound => 'Nije pronađena';
+
+  @override
+  String get addSectionButton => 'Dodaj odeljak';
+
+  @override
+  String get sectionRemovedSnackbar => 'Odeljak je uklonjen.';
+
+  @override
+  String get ingredientSectionHint => 'Za testo';
 }

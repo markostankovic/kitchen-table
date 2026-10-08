@@ -269,6 +269,52 @@ abstract class RecipeDraft with _$RecipeDraft {
         lines: _reordered<RecipeDraftLine>(lines, oldIndex, newIndex),
       );
 
+  /// [reorderLines], with the moved line taking [section] -- the section of
+  /// the heading it was dropped under, or null above the first one. Only the
+  /// moved line's section changes. Indices as [_reordered] takes them.
+  RecipeDraft moveLine(int oldIndex, int newIndex, {required String? section}) {
+    final List<RecipeDraftLine> next = List<RecipeDraftLine>.of(lines);
+    final RecipeDraftLine moved = next.removeAt(oldIndex);
+    next.insert(newIndex, moved.copyWith(section: _blankAsNull(section)));
+    return copyWith(lines: List<RecipeDraftLine>.unmodifiable(next));
+  }
+
+  /// Moves the block of lines `[start, end)` -- a section heading's run --
+  /// so that it sits before the line that was at [newIndex];
+  /// `newIndex == lines.length` appends. A [newIndex] inside `[start, end]`
+  /// would leave the block where it is, and returns this draft.
+  ///
+  /// Every line keeps its own section: a run moves as a whole, so its
+  /// heading moves with it.
+  RecipeDraft moveLines(int start, int end, int newIndex) {
+    if (newIndex >= start && newIndex <= end) return this;
+    final List<RecipeDraftLine> block = lines.sublist(start, end);
+    final List<RecipeDraftLine> next = List<RecipeDraftLine>.of(lines)
+      ..removeRange(start, end);
+    next.insertAll(newIndex < start ? newIndex : newIndex - block.length, block);
+    return copyWith(lines: List<RecipeDraftLine>.unmodifiable(next));
+  }
+
+  /// Sets each listed line's `section`, by `localId`. The one operation
+  /// behind a section's rename (every line of the run to the new name), its
+  /// removal (every line of the run to the section above) and the Undo of
+  /// that (every line back to its own).
+  ///
+  /// A blank or whitespace-only value is stored as null. Anything else is
+  /// stored as given, so a name being typed keeps its trailing space;
+  /// [RecipeDraftLine.toIngredient] trims it on the way out. Ids that are no
+  /// longer in the list are ignored.
+  RecipeDraft setSections(Map<int, String?> sectionByLocalId) => copyWith(
+        lines: lines
+            .map((RecipeDraftLine line) =>
+                sectionByLocalId.containsKey(line.localId)
+                    ? line.copyWith(
+                        section: _blankAsNull(sectionByLocalId[line.localId]),
+                      )
+                    : line)
+            .toList(growable: false),
+      );
+
   RecipeDraft addStep({RecipeStepKind kind = RecipeStepKind.step}) =>
       copyWith(
         steps: <RecipeDraftStep>[
@@ -334,6 +380,9 @@ abstract class RecipeDraft with _$RecipeDraft {
   /// is already adjusted for the dragged child being lifted out, so this is a
   /// plain remove-and-insert. The older `onReorder` callback did not adjust it
   /// and is deprecated; do not reintroduce an off-by-one here to suit it.
+  static String? _blankAsNull(String? value) =>
+      value == null || value.trim().isEmpty ? null : value;
+
   static List<T> _reordered<T>(List<T> items, int oldIndex, int newIndex) {
     final List<T> next = List<T>.of(items);
     next.insert(newIndex, next.removeAt(oldIndex));
@@ -396,7 +445,9 @@ abstract class RecipeDraftLine with _$RecipeDraftLine {
   RecipeIngredient toIngredient({required int position}) => RecipeIngredient(
         position: position,
         rawText: rawText.trim(),
-        section: section,
+        // Trimmed here, not as it is typed: `Fil ` mid-word is a name still
+        // being written.
+        section: section?.trim().isEmpty ?? true ? null : section!.trim(),
         ingredientId: ingredientId,
         displayName: displayName,
         quantity: quantity,

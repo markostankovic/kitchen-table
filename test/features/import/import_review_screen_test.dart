@@ -440,7 +440,8 @@ void main() {
 
     await tester.tap(find.text('Method'));
     await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.title), findsOneWidget);
+    // The heading's, and the ingredient list's Add section.
+    expect(find.byIcon(Icons.title), findsNWidgets(2));
     expect(find.byIcon(Icons.sticky_note_2_outlined), findsOneWidget);
   });
 

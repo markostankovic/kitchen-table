@@ -1088,4 +1088,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importNotesNoneFound => 'None found';
+
+  @override
+  String get addSectionButton => 'Add section';
+
+  @override
+  String get sectionRemovedSnackbar => 'Section removed.';
+
+  @override
+  String get ingredientSectionHint => 'For the dough';
 }

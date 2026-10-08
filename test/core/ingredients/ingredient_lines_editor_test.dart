@@ -94,7 +94,12 @@ class _HarnessState extends State<_Harness> {
               flagged: const <int>{},
               onReplace: (RecipeDraftLine l) => _set(_draft.replaceLine(l)),
               onRemove: (int id) => _set(_draft.removeLine(id)),
-              onReorder: (int a, int b) => _set(_draft.reorderLines(a, b)),
+              onMoveLine: (int a, int b, String? section) =>
+                  _set(_draft.moveLine(a, b, section: section)),
+              onMoveRun: (int start, int end, int to) =>
+                  _set(_draft.moveLines(start, end, to)),
+              onSetSections: (Map<int, String?> m) =>
+                  _set(_draft.setSections(m)),
               onInsertAfter: (int id) {
                 _set(_draft.insertLineAfter(id));
                 final int at = _draft.lines
@@ -418,5 +423,207 @@ void main() {
       tester.widget<IngredientLineRow>(find.byType(IngredientLineRow)).inset,
       isTrue,
     );
+  });
+
+  group('sections', () {
+    Finder headingField() => find.descendant(
+          of: find.byKey(const Key('ingredientSectionBox')),
+          matching: find.byType(EditableText),
+        );
+
+    List<String?> sections() =>
+        _draft.lines.map((RecipeDraftLine l) => l.section).toList();
+
+    testWidgets('Add section, a name and Next leave the cursor in a blank '
+        'line in that section', (WidgetTester tester) async {
+      await _pump(tester, <RecipeDraftLine>[_line(0, 'brašno')]);
+
+      await tester.tap(find.text('Add section'));
+      await tester.pumpAndSettle();
+
+      expect(headingField(), findsOneWidget);
+      expect(
+        tester.widget<EditableText>(headingField()).focusNode.hasFocus,
+        isTrue,
+      );
+      // The blank line under it shows open, unfocused.
+      expect(_open(tester).line.localId, _draft.lines.last.localId);
+
+      await tester.enterText(headingField(), 'Za fil');
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pumpAndSettle();
+
+      expect(_texts(), <String>['brašno', '']);
+      expect(sections(), <String?>[null, 'Za fil']);
+      expect(headingField(), findsNothing);
+      expect(
+        tester
+            .widgetList<RecipeGroupHeading>(find.byType(RecipeGroupHeading))
+            .map((RecipeGroupHeading h) => h.text),
+        <String>['Za fil'],
+      );
+      expect(_open(tester).line.localId, _draft.lines.last.localId);
+      expect(_editable(tester).focusNode.hasFocus, isTrue);
+
+      // Fast entry carries on inside the section (D159).
+      await tester.enterText(find.byType(EditableText), 'šećer');
+      // A frame between the keystroke and Next, as on a device.
+      await tester.pump();
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pumpAndSettle();
+      expect(sections(), <String?>[null, 'Za fil', 'Za fil']);
+    });
+
+    testWidgets('tapping a heading opens it, and one thing is open at a time',
+        (WidgetTester tester) async {
+      await _pump(tester, <RecipeDraftLine>[
+        _line(0, 'brašno', section: 'Za testo'),
+        _line(1, 'so'),
+        _line(2, 'šećer', section: 'Fil'),
+      ]);
+
+      await tester.tap(find.byType(IngredientLineRow).first);
+      await tester.pumpAndSettle();
+      expect(_field, findsOneWidget);
+
+      await tester.tap(find.text('Za testo'));
+      await tester.pumpAndSettle();
+      expect(_field, findsNothing);
+      expect(headingField(), findsOneWidget);
+
+      // Every line of the run follows a rename, the null continuation too.
+      await tester.enterText(headingField(), 'Kore');
+      await tester.pump();
+      expect(sections(), <String?>['Kore', 'Kore', 'Fil']);
+
+      await tester.tap(find.byType(IngredientLineRow).last);
+      await tester.pumpAndSettle();
+      expect(headingField(), findsNothing);
+      expect(_open(tester).line.localId, 2);
+    });
+
+    testWidgets('✕ on a heading joins its lines to the group above, and Undo '
+        'restores them', (WidgetTester tester) async {
+      await _pump(tester, <RecipeDraftLine>[
+        _line(0, 'brašno', section: 'Za testo'),
+        _line(1, 'so'),
+        _line(2, 'šećer', section: 'Fil'),
+        _line(3, 'orasi', section: 'Fil'),
+      ]);
+
+      await tester.tap(find.text('Fil'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+        of: find.ancestor(
+          of: find.byKey(const Key('ingredientSectionBox')),
+          matching: find.byType(Row),
+        ),
+        matching: find.byIcon(Icons.close),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(_texts(), <String>['brašno', 'so', 'šećer', 'orasi']);
+      expect(sections(), <String?>['Za testo', null, 'Za testo', 'Za testo']);
+      expect(find.text('Section removed.'), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(sections(), <String?>['Za testo', null, 'Fil', 'Fil']);
+    });
+
+    testWidgets('a heading closed blank is removed, and Undo brings back its '
+        'old name', (WidgetTester tester) async {
+      await _pump(tester, <RecipeDraftLine>[
+        _line(0, 'brašno'),
+        _line(1, 'šećer', section: 'Fil'),
+      ]);
+
+      await tester.tap(find.text('Fil'));
+      await tester.pumpAndSettle();
+      await tester.enterText(headingField(), '');
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pumpAndSettle();
+
+      expect(sections(), <String?>[null, null]);
+      expect(find.text('Section removed.'), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      expect(sections(), <String?>[null, 'Fil']);
+    });
+
+    testWidgets('closing a blank new heading shows no snackbar', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, <RecipeDraftLine>[_line(0, 'brašno')]);
+
+      await tester.tap(find.text('Add section'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(IngredientLineRow));
+      await tester.pumpAndSettle();
+
+      expect(headingField(), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
+      // The blank line under it followed the blank-line rule.
+      expect(_texts(), <String>['brašno']);
+    });
+
+    testWidgets('a dragged heading lifts with its rows, under the finger', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, <RecipeDraftLine>[
+        _line(0, 'brašno'),
+        _line(1, 'šećer', section: 'Fil'),
+        _line(2, 'orasi', section: 'Fil'),
+      ]);
+      final Finder grip = find.byKey(const Key('ingredientSectionGrip'));
+      final Offset start = tester.getCenter(grip);
+
+      final TestGesture gesture = await tester.startGesture(start);
+      await gesture.moveBy(const Offset(0, -20));
+      await tester.pump();
+      await gesture.moveBy(const Offset(0, -10));
+      await tester.pumpAndSettle();
+
+      // The proxy: the lifted Material holding the heading and its rows.
+      final Finder proxy = find.byWidgetPredicate(
+        (Widget w) => w is Material && w.elevation == 3,
+      );
+      expect(proxy, findsOneWidget);
+      expect(
+        find.descendant(of: proxy, matching: find.text('Fil')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: proxy, matching: find.byType(IngredientLineRow)),
+        findsNWidgets(2),
+      );
+      // Its grip stays by the finger -- within the drag's slop -- rather
+      // than thrown off-screen, as a second OverflowBox once did.
+      final Offset lifted = tester.getCenter(
+        find.descendant(of: proxy, matching: grip),
+      );
+      expect((lifted.dy - (start.dy - 30)).abs(), lessThan(24));
+      expect((lifted.dx - start.dx).abs(), lessThan(2));
+      expect(tester.takeException(), isNull);
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the editor gives a heading a grip; review does not', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, <RecipeDraftLine>[_line(0, 'brašno', section: 'F')]);
+      expect(find.byKey(const Key('ingredientSectionGrip')), findsOneWidget);
+
+      await _pump(
+        tester,
+        <RecipeDraftLine>[_line(0, 'brašno', section: 'F')],
+        review: true,
+      );
+      expect(find.byKey(const Key('ingredientSectionGrip')), findsNothing);
+    });
   });
 }

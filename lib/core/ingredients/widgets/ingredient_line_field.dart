@@ -215,6 +215,10 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
     if (widget.line.rawText != _controller.text) {
       _controller.text = widget.line.rawText;
     }
+    // A blank line is built open before anyone opens it -- Add section's,
+    // under its heading -- so `autofocus` alone, read once, would never
+    // reach it when Next on the heading opens it.
+    if (widget.autofocus && !oldWidget.autofocus) _focus.requestFocus();
   }
 
   @override

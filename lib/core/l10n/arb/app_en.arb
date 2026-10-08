@@ -328,5 +328,8 @@
   "headingRemovedSnackbar": "Heading removed.",
   "recipeNotesHeading": "Notes",
   "recipeNotesHelperText": "Optional. Serving, storage, variations, tips.",
-  "importNotesNoneFound": "None found"
+  "importNotesNoneFound": "None found",
+  "addSectionButton": "Add section",
+  "sectionRemovedSnackbar": "Section removed.",
+  "ingredientSectionHint": "For the dough"
 }

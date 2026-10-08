@@ -159,7 +159,8 @@ void main() {
       expect(find.text('Step 1'), findsOneWidget);
       expect(find.text('Step 2'), findsOneWidget);
       expect(find.text('Step 4'), findsNothing);
-      expect(find.byIcon(Icons.title), findsNWidgets(2)); // label + button
+      // Label + button, and the ingredient list's Add section.
+      expect(find.byIcon(Icons.title), findsNWidgets(3));
       expect(find.byIcon(Icons.sticky_note_2_outlined), findsNWidgets(2));
       // The label beside its icon, not just the add button.
       expect(find.text('Heading'), findsNWidgets(2));

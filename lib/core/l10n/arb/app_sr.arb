@@ -1441,5 +1441,17 @@
   "importNotesNoneFound": "Nije pronađena",
   "@importNotesNoneFound": {
     "description": "Import review, the collapsed Notes card's subline when no end note was found in the source. Feminine, agreeing with 'Napomena'."
+  },
+  "addSectionButton": "Dodaj odeljak",
+  "@addSectionButton": {
+    "description": "Ingredient list (recipe editor and import review), the button beside addIngredientButton that starts a new section: a heading being named over a new blank line."
+  },
+  "sectionRemovedSnackbar": "Odeljak je uklonjen.",
+  "@sectionRemovedSnackbar": {
+    "description": "Ingredient list (recipe editor and import review), the snackbar after removing an ingredient section heading -- its lines join the group above; offers undoSnackbarAction to put it back."
+  },
+  "ingredientSectionHint": "Za testo",
+  "@ingredientSectionHint": {
+    "description": "Ingredient section heading field, an example of a section name. Looked up by the RECIPE's own language (widget.locale via lookupAppLocalizations), never the reader's chrome locale, like ingredientLineHint."
   }
 }

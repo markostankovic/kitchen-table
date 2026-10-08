@@ -432,6 +432,136 @@ void main() {
     });
   });
 
+  group('editing sections', () {
+    // a, b in Testo; c continues it with no section of its own (D156); d, e
+    // in Fil.
+    RecipeDraft sectioned() => const RecipeDraft(
+          lines: <RecipeDraftLine>[
+            RecipeDraftLine(localId: 0, rawText: 'a', section: 'Testo'),
+            RecipeDraftLine(localId: 1, rawText: 'b', section: 'Testo'),
+            RecipeDraftLine(localId: 2, rawText: 'c'),
+            RecipeDraftLine(localId: 3, rawText: 'd', section: 'Fil'),
+            RecipeDraftLine(localId: 4, rawText: 'e', section: 'Fil'),
+          ],
+        );
+
+    List<String?> sections(RecipeDraft d) =>
+        d.lines.map((RecipeDraftLine l) => l.section).toList();
+    List<String> texts(RecipeDraft d) =>
+        d.lines.map((RecipeDraftLine l) => l.rawText).toList();
+
+    test('a rename writes every line of the run, the null continuation too',
+        () {
+      final RecipeDraft draft = sectioned()
+          .setSections(<int, String?>{0: 'Kore', 1: 'Kore', 2: 'Kore'});
+
+      expect(sections(draft), <String?>['Kore', 'Kore', 'Kore', 'Fil', 'Fil']);
+    });
+
+    test('a blank name is stored as null, a name being typed as typed', () {
+      final RecipeDraft draft =
+          sectioned().setSections(<int, String?>{0: '  ', 1: 'Fil '});
+
+      expect(sections(draft), <String?>[null, 'Fil ', null, 'Fil', 'Fil']);
+    });
+
+    test('removing the first section leaves its lines headingless', () {
+      final RecipeDraft draft = sectioned()
+          .setSections(<int, String?>{0: null, 1: null, 2: null});
+
+      expect(sections(draft), <String?>[null, null, null, 'Fil', 'Fil']);
+    });
+
+    test('removing a middle section joins its lines to the group above', () {
+      // The line above Fil's heading is c, whose own section is null but
+      // which reads as Testo: the editor passes the group's name, so the
+      // run joins Testo rather than becoming a null continuation.
+      final RecipeDraft draft =
+          sectioned().setSections(<int, String?>{3: 'Testo', 4: 'Testo'});
+
+      expect(texts(draft), <String>['a', 'b', 'c', 'd', 'e']);
+      expect(sections(draft),
+          <String?>['Testo', 'Testo', null, 'Testo', 'Testo']);
+    });
+
+    test('Undo restores a mixed map, ignoring ids that have gone', () {
+      final RecipeDraft removed = sectioned()
+          .setSections(<int, String?>{0: null, 1: null, 2: null})
+          .removeLine(1);
+
+      final RecipeDraft undone = removed.setSections(
+        <int, String?>{0: 'Testo', 1: 'Testo', 2: null},
+      );
+
+      expect(texts(undone), <String>['a', 'c', 'd', 'e']);
+      expect(sections(undone), <String?>['Testo', null, 'Fil', 'Fil']);
+    });
+
+    test('a line moved into a group takes its section', () {
+      // a dropped between Fil's heading and d.
+      final RecipeDraft draft = sectioned().moveLine(0, 2, section: 'Fil');
+
+      expect(texts(draft), <String>['b', 'c', 'a', 'd', 'e']);
+      expect(sections(draft), <String?>['Testo', null, 'Fil', 'Fil', 'Fil']);
+    });
+
+    test('a line moved above the first heading takes null', () {
+      final RecipeDraft draft = sectioned().moveLine(4, 0, section: null);
+
+      expect(texts(draft), <String>['e', 'a', 'b', 'c', 'd']);
+      expect(sections(draft),
+          <String?>[null, 'Testo', 'Testo', null, 'Fil']);
+    });
+
+    test('a run moves up, keeping its sections', () {
+      final RecipeDraft draft = sectioned().moveLines(3, 5, 0);
+
+      expect(texts(draft), <String>['d', 'e', 'a', 'b', 'c']);
+      expect(sections(draft),
+          <String?>['Fil', 'Fil', 'Testo', 'Testo', null]);
+    });
+
+    test('a run moves down', () {
+      final RecipeDraft draft = sectioned().moveLines(0, 3, 5);
+
+      expect(texts(draft), <String>['d', 'e', 'a', 'b', 'c']);
+    });
+
+    test('a run moved onto itself is a no-op', () {
+      final RecipeDraft draft = sectioned();
+
+      expect(identical(draft.moveLines(0, 3, 0), draft), isTrue);
+      expect(identical(draft.moveLines(0, 3, 3), draft), isTrue);
+      expect(identical(draft.moveLines(3, 5, 4), draft), isTrue);
+    });
+
+    test('a run moves to the end', () {
+      final RecipeDraft draft = const RecipeDraft(
+        lines: <RecipeDraftLine>[
+          RecipeDraftLine(localId: 0, rawText: 'a', section: 'Testo'),
+          RecipeDraftLine(localId: 1, rawText: 'b', section: 'Fil'),
+          RecipeDraftLine(localId: 2, rawText: 'c', section: 'Krem'),
+        ],
+      ).moveLines(0, 1, 3);
+
+      expect(texts(draft), <String>['b', 'c', 'a']);
+    });
+
+    test('a saved section is trimmed, and a blank one saves as null', () {
+      final RecipeDraft draft = const RecipeDraft(
+        lines: <RecipeDraftLine>[
+          RecipeDraftLine(localId: 0, rawText: 'a', section: 'Fil '),
+          RecipeDraftLine(localId: 1, rawText: 'b', section: '  '),
+        ],
+      );
+
+      expect(
+        draft.toIngredients().map((RecipeIngredient l) => l.section),
+        <String?>['Fil', null],
+      );
+    });
+  });
+
   group('canTranslateInto -- the one definition D85 depends on', () {
     test('false when the target is the recipe\'s own original locale', () {
       expect(
