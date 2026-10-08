@@ -1325,3 +1325,104 @@ migration, no Edge Function, no package; five new l10n keys.
     the toolbar while a step kept focus.
   - The recipe was soft-deleted; the Galaxy went back to English / Dark,
     where it started. The walk opened no loop.
+
+### Phase 8 — The formatting toolbar in import review
+
+**Status: complete** (`10de5cd`). Decisions taken during it: D167.
+
+A follow-on to round `2026-10-06-round-2-recipe-structure`'s slice 11, which
+D166 #8 named, but not a slice in that round's `ROUND.md`. Planned with
+`/plan-slice`, then built, walked and closed on 2026-10-08. Client-only: no
+migration, no Edge Function, no package and no new l10n key. It reuses the
+five toolbar tooltips. The translation review stays out of scope.
+
+- **Promotion (D167 #1).** The editor's `_FormattableField` moved unchanged
+  to `lib/core/widgets/app_formattable_field.dart` as `AppFormattableField`,
+  and its doc comment was made generic. The editor imports it at its three
+  call sites. `recipe_edit_screen_test` passed without changes.
+- **Import review (D167 #2–4).** `_ReviewBodyState` holds the
+  `ValueNotifier<RichTextEditingController?>`, observes metrics and reads
+  the keyboard off `View.of`. The body Column's last child is a
+  `ValueListenableBuilder`. It shows `TextFieldTapRegion(AppFormattingToolbar)`
+  while a formattable field has focus with the keyboard up, and
+  `_buildActionBar` otherwise, with no inset padding. Method's step and note
+  rows and the Notes card use `AppFormattableField`. Steps are now
+  `multiline`. Heading rows keep their plain `TextFormField` and `title`
+  icon. The rows stay keyed `ValueKey<int>(step.localId)`.
+- **`richPlainText` (D167 #5).** A new pure function in
+  `rich_text_markup.dart`. It drops each line's column-0 marker
+  (`matchRichListMarker`) and joins the line's `parseRichRuns` texts. The
+  Notes subline uses it before its whitespace collapse.
+- **DESIGN_SYSTEM.md:** § Formatting toolbar (import review, no inset
+  padding, collapse lets go of focus), § Inputs "A formattable field",
+  § Rich text (the review's fields, the plain subline), and § The shared
+  widgets (the `AppFormattableField` row, `richPlainText` beside the scan
+  functions).
+- **Tests:**
+  - `rich_text_markup_test`: a `richPlainText` table (+8 cases, including
+    an indented ` - x`, an unmatched `**a` and CRLF).
+  - `app_formattable_field_test` (new, 3 cases): focus sets and clears the
+    notifier; typed and programmatic edits are each reported once; blur
+    drops an empty pair.
+  - `import_review_screen_test` gained `_pump(inShell:)` and a
+    `'the formatting toolbar (D166)'` group of 10 cases:
+    - hidden with no focus, for a heading and the title, and without the
+      keyboard;
+    - shown for a step, a note row and the end note, with Save recipe gone;
+    - hide-keyboard brings the action bar back;
+    - Bold reaches `ImportConfirm`'s draft;
+    - collapsing Method lets go of a focused step, but leaves a focused end
+      note alone;
+    - inside a shell Scaffold the toolbar's bottom is at the keyboard's top;
+    - a `**Poslužite** *toplo*` note's subline reads plain.
+
+    One existing expectation changed with the subline:
+    `Čuva se - tri dana…` now reads `Čuva se tri dana…`.
+
+**Differs from the plan.**
+- **Collapsing a card with focus inside (D167 #4).** The plan left this as
+  "note it or fix it". A widget test showed the toolbar stranded:
+  `ExpansionTile` with `maintainState` only puts a collapsed body
+  `Offstage`, which keeps focus. `onExpansionChanged(false)` now unfocuses
+  the primary focus when it sits inside that card. The plan didn't name the
+  helper (`_unfocusWithin`).
+- **The keyboard read needs `didChangeMetrics`.** `View.of` does not rebuild
+  the screen when the inset changes, so `_ReviewBodyState` mixes in
+  `WidgetsBindingObserver`, as the editor does. The slice file named only
+  the `View.of` read.
+- Heading rows switch on `step.kind` rather than sharing one decoration
+  `switch`, so the plain field and the formattable one stay separate.
+
+**How it was verified.**
+- `dart analyze` and `check_layers` are clean. `flutter test` passes
+  **1026/1026**. `make check` is green except the known `seed-check`;
+  `make test-sql`, the function tests and `make l10n-check` pass.
+- **Walked** on the **physical Galaxy** (SM-S931B) with the hosted release
+  build, all four combinations (`/design-walk import-review`). It used a
+  pasted text import with two headings, four steps, a note row and an end
+  note. The model titled it `pogaca`, dropping the `Toolbar WALK TEST`
+  prefix.
+  - **sr/light:**
+    - A step shows the toolbar flush on the keyboard, with no gap and no
+      double bar. A heading brings `Odbaci ovaj uvoz` / `Sačuvaj recept`
+      back. The note row shows the toolbar.
+    - Bold on a double-tapped `glatko` gives w600 with dimmed `**`.
+    - In the end note, `topla` was italicized. A `- ` list continued on
+      Enter and ended on the second Enter.
+    - Collapsing Method with a step focused dropped focus, the keyboard and
+      the toolbar, and brought the action bar back.
+    - The collapsed Notes subline read `Napomene: Najbolja je topla. Cuva
+      se …`, with no `*`.
+  - **sr/dark:** The hairline reads on the `surfaceContainer` fill. The
+    active B pill reads, and italic is disabled inside bold. Markers and
+    content are distinct. `Sakrij tastaturu` brings the action bar back.
+  - **en/light:** the note row's toolbar has the English tooltips.
+  - **en/dark:**
+    - The `outline` kind icons read, and so does the bullet pill on a `- `
+      line.
+    - Hide keyboard, then Save recipe, saved the recipe. Its detail
+      rendered `glatko` bold, `topla` italic and a real bullet list
+      (D165).
+  - Nothing truncated, wrapped badly or overflowed in Serbian.
+  - The recipe was soft-deleted, and the Galaxy went back to English / Dark,
+    where it started. The walk opened no loop.

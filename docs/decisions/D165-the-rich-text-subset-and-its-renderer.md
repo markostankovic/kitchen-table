@@ -55,5 +55,6 @@
 **Consequences.** Amends D155 #6: the end note body is `AppRichText`, not
 plain `Text`. Text with a single `\n` that used to render as one paragraph
 with a line break now renders as two paragraphs 12 apart. Import review's
-Notes subline still shows raw `**`. Nothing server-side parses markup; the
+Notes subline showed raw `**` until D167, which strips it with
+`richPlainText`. Nothing server-side parses markup; the
 translate call was seen to keep the markers.

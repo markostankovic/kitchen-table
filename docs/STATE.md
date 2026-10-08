@@ -1,53 +1,48 @@
 # State — 2026-10-08
 
 **Branch:** `main`
-**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 11 —
-`phase8-rich-text-toolbar` (`00dc92f`). This was the round's last slice, so
-**the round is complete**. The recipe editor's description, step text, note
-text and end note show the D165 markup styled in place, and a formatting
-toolbar sits on the keyboard while one of them is typed in (D166).
+**Last shipped:** `phase8-import-review-toolbar` (`10de5cd`), a follow-on to
+round `2026-10-06-round-2-recipe-structure` that isn't one of its slices.
+Import review's Method step and note rows and its Notes card now show the
+D165 markup styled in place and take the formatting toolbar. The toolbar
+replaces the review's action bar while one of them is typed in (D167).
 
-- **WYSIWYG, decided.** Styled markup, no package (Marko, 2026-10-08). The
-  stored text is still exactly the D165 subset. Bold content is w600 and
-  italic is italic; `**` / `*` / `- ` / `12. ` stay visible, dimmed to
-  `onSurfaceVariant`.
-- **Logic.** Pure Dart in `core/text/rich_text_editing.dart`, built on
-  `rich_text_markup.dart`'s new `scanRichInline` / `matchRichListMarker`
-  (`parseRichRuns` now runs on the scan; the parser accepts what it did
-  before). Bold and italic exclude each other. A caret in a word wraps the
-  word. An empty pair removes itself. Enter continues or ends a list.
-- **Widgets.** `RichTextEditingController` / `RichListFormatter` and
-  `AppFormattingToolbar` in `core/widgets/`. The bar is 48 tall on
-  `surfaceContainer` with a hairline; the active toggle sits on a
-  `secondaryContainer` pill.
-- **Placement, found on the walk.** The editor is inside the shell's
-  Scaffold, which strips the keyboard inset, so the editor reads the
-  keyboard off `View.of`. The toolbar replaces the save bar while it shows.
-- Client-only: no migration, no Edge Function, no package. Five new l10n
-  keys.
+- **Promoted.** The editor's private `_FormattableField` is now
+  `AppFormattableField` in `core/widgets/`, moved unchanged. The editor's
+  tests passed without changes.
+- **Placement.** Review sits inside the shell, so it reads the keyboard off
+  `View.of` (plus `didChangeMetrics`). The toolbar is the body Column's last
+  child in place of `AppActionBar`, with no inset padding. Heading rows
+  stay plain.
+- **Collapse lets go of focus.** Method and Notes keep their fields alive
+  (`maintainState`), so a focused step stranded the toolbar when its card
+  collapsed. Collapsing a card now unfocuses focus held inside it, and only
+  there. A widget test found this; the walk confirmed it.
+- **Notes subline.** It is `richPlainText` (new, pure, built on the
+  existing scan), so it no longer shows `**` / `*` / `- `.
+- Client-only: no migration, no Edge Function, no package, no new l10n key.
 
-`dart analyze` is clean and `flutter test` passes 1005/1005. `make check` is
+`dart analyze` is clean and `flutter test` passes 1026/1026. `make check` is
 green except the known `seed-check`; `make test-sql`, the function tests and
 `make l10n-check` pass. **Walked** on the **physical Galaxy** against hosted,
-all four combinations (`/design-walk recipe-editor`). The first run found
-that the toolbar never showed on a device. That was fixed and the whole
-walk was redone. It was clean and opened no loop.
+all four combinations (`/design-walk import-review`). The walk was clean and
+opened no loop.
 
 **Hosted is current**: this slice is client-only. The walk's throwaway
-`Toolbar WALK TEST` was soft-deleted.
+`pogaca` was soft-deleted.
 
 Still open:
 - **a throwaway recipe on hosted**: `Setnja odeljci TEST`, saved by the
   `phase8-ingredient-sections-edit` editor walk (later walks' throwaways
   were soft-deleted). It wants deleting (the app's own soft delete), which
   is Marko's call;
-- **the formatting toolbar's next adopters**: import review's step and notes
-  fields, and the translation review's editable fields, are still raw text
-  (D166 #8). `AppFormattingToolbar` and `RichTextEditingController` are in
-  `core/widgets/` for them. Import review sits inside the shell too, so it
-  needs the same `View.of` keyboard read and save-bar swap as the editor;
-- while the formatting toolbar shows, the save bar is out of reach. Saving
-  means hiding the keyboard first (D166 Consequences);
+- **the formatting toolbar's last adopter**: the translation review's
+  editable fields are still raw text. `AppFormattableField`,
+  `AppFormattingToolbar` and `RichTextEditingController` are in
+  `core/widgets/` for it (D167);
+- while the formatting toolbar shows, the editor's save bar and import
+  review's action bar are out of reach. Saving means hiding the keyboard
+  first (D166 Consequences, D167);
 - a snackbar with Undo sits over the screen's bottom action bar (the
   editor's Sačuvaj; review's Sačuvaj recept / Odbaci). A tap meant for Undo
   that lands just after the 4 s auto-dismiss presses the button under it;
@@ -99,8 +94,6 @@ Still open:
   neither are ingredient section headings (`Za testo` under English). Both
   need ingredient lines sent to `translate-recipe`, which is a schema and
   function change (D156);
-- import review's Notes subline shows the note's first words raw, so `**`
-  and `*` can show there (D165 Consequences);
 - the recipe-delete confirm is a filled button;
 - the `List — offline`, `Review import`, `Household` and `Settings` frames
   in `docs/design/screens/` still show the old bordered card, until Claude
@@ -110,8 +103,8 @@ Still open:
 **Next:** no slice is planned. Round `2026-10-06-round-2-recipe-structure`
 is done (`docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`,
 every box ticked). The candidates, for Marko to pick from:
-- the formatting toolbar in import review (and then the translation
-  review). It is the obvious follow-up, a small `/plan-slice-ui`;
+- the formatting toolbar in the translation review, the last raw formatting
+  surface. It is a small `/plan-slice-ui` on D167's pattern;
 - Phase 8 part 4 (real thumbnails), which stays optional, "only if part 2 is
   not enough on the device";
 - the smaller candidates still open from round `sync-design-initial`:
@@ -124,7 +117,7 @@ every box ticked). The candidates, for Marko to pick from:
 
 The open device-walk loops below still want one sitting with the Galaxy
 attached; it was attached for this slice's walk.
-**Latest decision:** D166
+**Latest decision:** D167
 
 **Twenty device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB

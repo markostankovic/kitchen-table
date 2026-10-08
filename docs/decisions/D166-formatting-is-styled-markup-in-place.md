@@ -29,7 +29,8 @@
    item drops the marker and ends the list.
 7. **Where.** Only the editor's description, step text, note text and end
    note (never titles, tags, headings or ingredient lines, D165 #6). Each is
-   a private `_FormattableField` that owns its controller and `FocusNode`.
+   a private `_FormattableField` (since D167, `AppFormattableField` in
+   `core/widgets/`) that owns its controller and `FocusNode`.
    In a step row it is keyed by the row's local id, which amends the
    editor's "fields don't own controllers" note: the key carries the
    lifecycle, so there is no list bookkeeping. The toolbar shows when one
@@ -38,7 +39,7 @@
    which removes the inset. While the toolbar shows, it takes the save
    bar's `bottomNavigationBar` slot, flush on the keyboard.
 8. `AppFormattingToolbar` lives in `core/widgets/`. Import review's step and
-   notes fields are the second consumer.
+   notes fields are the second consumer (adopted in D167).
 
 **Why.**
 - Rule 8, and a rich-text package (`flutter_quill`, `super_editor`,
