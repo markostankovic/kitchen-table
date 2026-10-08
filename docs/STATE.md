@@ -1,30 +1,47 @@
-# State — 2026-10-07
+# State — 2026-10-08
 
 **Branch:** `main`
-**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 7 —
-`phase8-ingredient-sections` (`233aaec`): ingredient section headings on
-recipe detail (D156).
+**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 8 —
+`phase8-ingredient-editor` (`2761b8f`): ingredient lines as rows in the
+recipe editor and import review, one open line with a live preview, fast
+entry and the suggestion pill (D157–D161).
 
-- **Detail.** A heading opens each run of consecutive lines that share a
-  `section` (`Za testo`, `Za fil`). It is `titleSmall` in `primary` and
-  shows the section as the cook typed it. The gaps are `xl` above (`xs`
-  when the heading opens the list) and `xs` below. A group's last line
-  drops its dashed divider. A flat list is unchanged.
-- **One heading row.** The step heading's private row became
-  `_GroupHeading(text, top, bottom)` and serves both lists. Steps keep
-  their old gaps.
-- Client-only: no migration, no Edge Function, no l10n string.
+- **One shared list (D157).** `IngredientLinesEditor`
+  (`core/ingredients/widgets/`) serves the editor (grip, no inset) and
+  import review (inset, long-press, `→ catalog`, flagged tint). Section
+  headings show read-only in both.
+- **The open line (D158).** One box: `bodyLarge` text, and a live
+  `bodyMedium` preview under it (`→ brašno · prosejano   2 šolja`) that
+  opens the picker. The match chip is gone.
+- **Fast entry (D159).** Next commits the line and opens a blank one after
+  it, in its section. Next on a blank line ends the burst. Backspace on an
+  empty line moves up. Import review's Done is gone.
+- **The pill (D160).** A 32dp mustard `✓ šećer?` + `Dodirni za potvrdu`
+  that confirms in one tap (manual, with the alias written back). Closed
+  rows search only when unmatched and never auto-accept. Auto-accept now
+  ignores answers that arrive after the name has changed (a pre-existing
+  race the walk found).
+- **`RecipeGroupHeading` (D161)** is now public in `core/recipes/widgets/`.
+  `AppSizes.tag = 32`. One new l10n key.
+- Client-only: no migration, no Edge Function.
 
-`dart analyze` is clean and `flutter test` passes 825/825. `make check` is
-green except the known `seed-check` (below); `make test-sql` and `make
-l10n-check` pass. **Walked** on the emulator against hosted, all four
-combinations: clean on everything it reached. A heading that wraps was not
-reached, and that check is open in the walk list below.
+`dart analyze` is clean and `flutter test` passes 850/850. `make check` is
+green except the known `seed-check`; `make test-sql` and `make l10n-check`
+pass. **Walked** on the emulator against hosted, all four combinations,
+both surfaces (`recipe-editor`, `import-review`). Three defects were found,
+fixed and re-walked. The flagged tint under the new list and Backspace on
+iOS were not reached and are open in the walk list below. The walk also
+closed slice 7's wrapping-heading check.
 
-**Hosted is current**: this slice is client-only. The walk left a new pasted
-recipe, `Proja sa sirom i pavlakom` (three sections), in the household.
+**Hosted is current**: this slice is client-only. The import-review walk's
+paste import was discarded. The editor walk saved nothing, but it did leave
+one alias (below).
 
-Still open, not this slice's:
+Still open:
+- **a junk global alias on hosted**: `seceraa → šećer`, written when the
+  editor walk confirmed a pill on a typo (D8, D160). It wants removing from
+  `ingredient_aliases`, which is Marko's call. Nothing in the app can unlink
+  an alias;
 - right after a recipe save, the detail's well shows the placeholder (or
   the previous photo) for about 8–15 s, until the signed detail arrives. The
   new path has never been cached and the first emission is unsigned. It was
@@ -69,11 +86,12 @@ Still open, not this slice's:
   Design updates them.
 
 **In flight:** none.
-**Next:** the round's next slice, `phase8-ingredient-editor`
-(**/plan-slice-ui**): the recipe editor's ingredients and import review's
-lines (canvas § A4: A4·1, A4·2, A4·4). That slice is where the section
-heading would get its second user and move to
-`lib/core/ingredients/widgets/` (D156).
+**Next:** `phase8-ingredient-sections-edit` (**/plan-slice-ui**), split off
+this slice at planning. It covers "Add section", a grip on the heading, a
+heading that drags its lines, a line dropped into a group taking that
+section, and rename and remove with Undo. It needs section operations on
+`RecipeDraft`. After it, the round goes on to `phase8-rich-text-render` and
+`phase8-rich-text-toolbar`.
 
 The round's slices and their order are in
 `docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`. Phase 8
@@ -88,7 +106,7 @@ Smaller candidates still open from round `sync-design-initial`:
 - the recipe-delete confirm, the one filled destructive confirm left
   (§ Buttons says text in destructive). The open device-walk loops below
   still want one sitting with the Galaxy attached.
-**Latest decision:** D156
+**Latest decision:** D161
 
 **Twenty device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -174,6 +192,13 @@ reached, and opened a loop for the source-footer check it did not reach.
 The `phase8-ingredient-sections` walk (`/design-walk recipe-detail`,
 2026-10-07, emulator, all four combinations) was clean on everything it
 reached, and opened a loop for the wrapping check it did not reach.
+The `phase8-ingredient-editor` walk (`/design-walk recipe-editor`,
+2026-10-08, emulator, all four combinations) found three defects, all fixed
+and re-walked the same sitting. It opened a loop for import review, which it
+did not walk, and for the iOS Backspace check. The same day's
+`/design-walk import-review` (emulator, all four combinations, one paste
+import, discarded) was clean. It closed slice 7's wrapping-heading loop and
+the import-review half of slice 8's.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
@@ -989,8 +1014,10 @@ Oldest first:
 
   **Not seen on device (covered by the widget test):** translation review
   for a recipe without a note, where no pair should appear.
-- **Phase 8 round 2 slice 7** (`phase8-ingredient-sections`) — ingredient
-  section headings on recipe detail, and `_StepHeadingRow` generalised to
+- ~~**Phase 8 round 2 slice 7**~~ (`phase8-ingredient-sections`) — **closed
+  by the `phase8-ingredient-editor` import-review walk (2026-10-08)**, where
+  a 63-character section heading wrapped cleanly onto two lines (below).
+  Ingredient section headings on recipe detail, and `_StepHeadingRow` generalised to
   `_GroupHeading`. Walked on the **emulator** (2026-10-07, all four
   combinations, hosted release build). One paste import (one hosted AI call)
   made `Proja sa sirom i pavlakom`, with `Za testo` / `Za fil` / `Za preliv
@@ -1017,7 +1044,76 @@ Oldest first:
     mleka i belog luka` (39 characters) fits on one line at 411dp. The
     editor cannot set sections yet, so this needs a longer name from a
     paste import, or `phase8-ingredient-editor`'s walk. The heading is a
-    plain `Text` with no `maxLines`.
+    plain `Text` with no `maxLines`. The `phase8-ingredient-editor` walk
+    (2026-10-08) did not reach it either: in the editor, indented past the
+    grip, the same 39-character heading still fits on one line at 411dp.
+    **Seen 2026-10-08** in import review: `Za premaz od jajeta, mleka i
+    susama koji se stavlja pre pecenja:` (63 characters) wraps at a word onto
+    two lines, flush with the inset row text, with the heading gaps intact,
+    in all four combinations. Heading contrast in dark is 10.66:1.
+- **Phase 8 round 2 slice 8** (`phase8-ingredient-editor`) — ingredient lines
+  as rows, one open line with a live preview, fast entry and the suggestion
+  pill. The recipe editor was walked on the **emulator** (2026-10-08, all four
+  combinations, hosted release build) on `Proja sa sirom i pavlakom`. Nothing
+  was saved.
+  **Found and fixed the same sitting** (each re-walked):
+  - the open line drew a second focus ring inside its box, with about 40dp of
+    gap above the preview. `InputDecoration.collapsed` sets only `border`, so
+    the theme's `focusedBorder` and 52dp `constraints` came through. The field
+    is now bare;
+  - a search that went out during a typing pause (`secera`) auto-accepted
+    onto a line whose name had since changed. This came from the old field's
+    logic, unchanged. A test then showed the late answer could also write the
+    older text back over newer keystrokes. Auto-accept now requires the
+    controller's current text and parsed name to match the query;
+  - the preview wrapped `· No` / `match` across lines. Status words and the
+    `·` after each separator now use non-breaking spaces.
+  **Clean:**
+  - a saved recipe opens with every line a closed row and section headings
+    indented to the text. Each group's last line drops its divider;
+  - a tap opens the box with the keyboard up. The preview updates as you type
+    (`→ brašno · prosejano   2 šolja`);
+  - Next three times types three lines, each inserted under the last and in
+    its section, with the keyboard staying up. Next on the blank fourth line
+    removes it and closes the keyboard;
+  - Backspace on an empty line with the **Android soft keyboard's own** key
+    removes it and opens the line above, caret at the end. Repeated, it
+    chains up through lines;
+  - the pill on open and closed rows: `šećer?` + `Dodirni za potvrdu` on one
+    line at 411dp. Tapping it matched the line and the pill went away. The
+    preview opens the picker (`Koji sastojak je „seceraa”?`);
+  - contrast: the pill is 7.63:1 in dark (`#5B4300` / `#FFE5B9`) and 12.0:1
+    in light, the preview is 8.0:1 in dark, and the hint is 11.6:1 in dark;
+  - `en`: chrome follows the reader (`Tap to confirm`, `· No match`), while
+    catalog names and units stay Serbian (D86);
+  - a new recipe's only blank line renders open and unfocused, with no
+    keyboard.
+
+  **Side effect on hosted:** confirming the pill on the typo `seceraa` wrote
+  a global alias `seceraa → šećer` (D8, by design). A second `seceraa` line
+  then auto-accepted. It is junk in the shared catalog and wants removing.
+
+  **Import review, walked 2026-10-08** (emulator, all four combinations).
+  One paste import (one hosted AI call), `Pogaca sa susamom`, was
+  **discarded**, with no pill confirmed and no alias written. **Clean:**
+  - read-only inset rows with `→ catalog` trailers and no `Done` anywhere.
+    The long section heading wraps cleanly (slice 7's check);
+  - a line changed to `susammm` closes as an unmatched row: dashed ring
+    (6.13:1 in dark), `Nije povezano sa sastojkom` / `Not matched to an
+    ingredient` (11.64:1 in dark), and the `susam?` pill inset `md` with
+    `Dodirni za potvrdu` / `Tap to confirm`. At the list's end the row has no
+    divider;
+  - long-press drag still works (`kurkume` moved above `jaje`, and the
+    heading moved with the new first line). The lifted row looks right;
+  - Next on an open line opens a blank one, and Next on that closes it and
+    the keyboard;
+  - with the phone in night mode the app stayed `Svetla`.
+
+  **Still open:**
+  - the **flagged** tint and 3px marker under the new list: this import
+    matched 8 of 8, all auto-accepted, so nothing was flagged. The row
+    widget is unchanged (`IngredientLineRow`), so the risk is low;
+  - Backspace on an empty line on **iOS** (unverified, no device).
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind

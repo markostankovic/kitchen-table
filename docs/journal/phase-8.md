@@ -897,3 +897,133 @@ Function, no l10n string, no package, and nothing outside `presentation/`.
     12).
   - **Not reached:** a heading that wraps. The 39-character name fits on
     one line at 411dp. This is left open in `docs/STATE.md`.
+
+### Round 2026-10-06, slice 8 — Ingredient lines as rows, one open line, fast entry and the suggestion pill
+
+**Status: complete** (`2761b8f`). Decisions taken during it: D157, D158,
+D159, D160, D161.
+
+The eighth slice of round `2026-10-06-round-2-recipe-structure`
+(`docs/design/handoffs/2026-10-06-round-2-recipe-structure/`), canvas § A4
+(A4·1, A4·2, A4·4). Planned with `/plan-slice` on 2026-10-07. While
+planning, the ROUND.md entry was **split with Marko**: adding, renaming,
+dragging and removing sections need new `RecipeDraft` operations, so they
+moved to a new slice, `phase8-ingredient-sections-edit`. Here headings only
+display. Built in a fresh session the same day and walked on 2026-10-08.
+The work is client-only: no migration, no Edge Function, no package, and
+one new l10n key.
+
+- **One shared list (D157).** `IngredientLinesEditor`
+  (`core/ingredients/widgets/`) replaces the editor's
+  `ReorderableListView` of fields and import review's `_lineRow` /
+  `_openLineId` / `_addLine` block. It has two styles: the editor's (grip,
+  no inset, note trailer) and review's (inset, long-press, `→ catalog`
+  trailers, `flagged` tint). A section heading rides inside its first
+  line's child.
+- **The open line (D158).** `IngredientLineField` was redesigned as one
+  box: `bodyLarge` text on top and a `bodyMedium` preview row under it
+  (`→ brašno · prosejano   2 šolja`) that opens the picker. The matching
+  logic is unchanged apart from the walk fix below. `IngredientMatchChip`
+  and its test are deleted.
+- **Fast entry (D159).** Next commits the line and opens a blank one after
+  it, in the same section (`RecipeDraft.insertLineAfter`, on
+  `RecipeEditor` and `ImportConfirm`). Next on a blank line ends the burst.
+  Backspace on an empty line moves up, caret at the end. There is no Done.
+- **The pill (D160).** A new `IngredientSuggestionPill` and
+  `AppSizes.tag = 32`. Tapping it confirms through
+  `confirmIngredientMatch`, the one path shared with the picker. Closed
+  rows search only when unmatched and never auto-accept. New key:
+  `ingredientSuggestionConfirmHint` (`Dodirni za potvrdu` / `Tap to
+  confirm`). The ARB descriptions of `ingredientNoMatchLabel` and
+  `ingredientSuggestionLabel` were corrected to say they follow the
+  reader, as the code already did (D86).
+- **The heading (D161).** `RecipeGroupHeading` moved to
+  `core/recipes/widgets/` and is used by recipe detail and the shared list.
+- **`IngredientLineDivider`.** The row's dashed divider is now also a
+  public widget in `ingredient_line_row.dart`, so the pill can sit above
+  it. `IngredientLineRow`'s API is unchanged.
+- **DESIGN_SYSTEM.md.** Updated § Inputs (the exception), § Ingredient
+  lines (open line, fast entry, pill, sections in the editor), § Import
+  review, § Size and motion and § Token map (`tag`), the shared-widgets
+  table, and § Steps and stats.
+- **Tests:** a new `ingredient_lines_editor_test` (14),
+  `recipe_group_heading_test` (1) and three `insertLineAfter` tests. The
+  field test is rewritten for the box (18, including the bare-field,
+  stale-search and unbroken-status-word tests the walk added). The
+  edit-screen and import-review tests are updated, and nothing taps Done
+  any more.
+
+**Differs from the plan.**
+- The plan did not cover these:
+  - the field's `onFocused` callback, so a blank line rendered open is
+    adopted when typed into;
+  - the public divider;
+  - `ingredientSearchName`, shared by closed rows and the open line so
+    opening a row reuses its search.
+- No external `focusNode` parameter. The field owns its node and uses
+  `autofocus`.
+- `AppSizes.tag` was merged into D160 rather than given its own decision.
+- **Three defects found on the walk**, all fixed and re-walked the same
+  sitting:
+  1. The open line drew a second focus ring inside the box, with about
+     40dp of gap above the preview. `InputDecoration.collapsed` sets only
+     `border`, so the theme's `focusedBorder` and 52dp `constraints` came
+     through. The field is now fully bare.
+  2. A search sent during a typing pause (`secera`) auto-accepted onto a
+     line whose name had changed (`secerazzz brasnaa`). The widget test then
+     showed a worse case: the late answer could write the older text back
+     over newer keystrokes, because `widget.line` was a frame behind. This
+     was **pre-existing**, carried over unchanged from the old field.
+     Auto-accept now requires the controller text to equal `rawText` and
+     its parsed name to equal the query. The test was checked to fail
+     without the guard.
+  3. The preview wrapped `· No` / `match`. Status words now use
+     non-breaking spaces.
+- During the build session, a first-pass bug was caught by its own test:
+  switching `foregroundDecoration` between null and set changed the
+  `Container`'s subtree, which rebuilt the `TextField` and re-ran
+  autofocus.
+
+**How it was verified.**
+- `dart analyze` clean; `flutter test` **850/850**. The function tests
+  passed (165), and so did `make test-sql`.
+- `make check` was red only at `seed-check`, the known red since
+  `c8be2bc`. `make l10n-check` passed once the generated files were
+  committed.
+- **Walked** on the **emulator** in all four combinations, on a hosted
+  release build (`make install-emulator`):
+  - **`/design-walk recipe-editor`**, on `Proja sa sirom i pavlakom`.
+    Nothing was saved.
+    - It opens as closed rows, with headings indented to the text and no
+      divider on a group's last line.
+    - A tap opens the box with the keyboard up, and the preview updates
+      live.
+    - Next ×3 types three lines in their section with the keyboard staying
+      up. Next on the blank fourth line removes it and the keyboard closes
+      (`mInputShown=false`).
+    - Backspace with the soft keyboard's own key removes the empty line
+      and reopens the one above with the caret at the end. It chains up
+      through lines.
+    - The pill confirms the match. The preview opens the picker (`Koji
+      sastojak je „seceraa”?`).
+    - Contrast: the pill is 7.63:1 in dark (`#5B4300` / `#FFE5B9`) and
+      12.0:1 in light, and the preview is 8.0:1 in dark.
+    - `en` shows English chrome and Serbian catalog names and units (D86).
+    - A new recipe's blank line is open, unfocused, with no keyboard.
+  - **`/design-walk import-review`**. One paste import (one hosted AI
+    call) made `Pogaca sa susamom`, which was **discarded**.
+    - Inset read-only rows, and no Done.
+    - A **63-character section heading wraps cleanly** onto two lines,
+      which closes slice 7's open check.
+    - An unmatched `susammm` row has the ring (6.13:1 in dark), `Nije
+      povezano sa sastojkom` (11.64:1), and an inset `susam?` pill.
+    - Long-press drag still works, and the heading moves to the new first
+      line.
+    - Next opens and closes a blank line.
+    - With the phone in night mode the app stays `Svetla`.
+  - **Not reached:** the flagged tint under the new list (the import was
+    8 of 8 auto-accepted), and Backspace on **iOS** (no device). Both are
+    open in `docs/STATE.md`.
+- **Side effect on hosted.** Confirming the pill on the typo `seceraa`
+  wrote a global alias `seceraa → šećer` (D8, by design). It wants
+  removing. Marko's call.

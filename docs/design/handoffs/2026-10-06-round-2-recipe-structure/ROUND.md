@@ -42,9 +42,9 @@ lines already explains.
 
 ## Token map additions
 
-- `--size-tag` → `AppSizes.tag` (32). This is proposed, not added yet. A4's
-  suggestion pill is the first thing in the app to draw at tag height, so the
-  ingredient-editor slice adds the constant and replaces this map row's "none".
+- `--size-tag` → `AppSizes.tag` (32). **Added** by `phase8-ingredient-editor`
+  (D160): A4's suggestion pill is the first thing in the app drawn at tag
+  height. DESIGN_SYSTEM.md's Token map row no longer says "none".
 
 Private constants, not tokens:
 - the list marker column (20) and the bullet disc (6) in the rich-text widget;
@@ -133,7 +133,7 @@ The rest are UI (`/plan-slice-ui`).
       `recipe_ingredients.section` is already stored and carried through
       import and save, but nothing shows it. The heading is `titleSmall` in
       `primary`, 24 above and 4 below.
-- [ ] `phase8-ingredient-editor`: Recipe editor ingredients and import review
+- [x] `phase8-ingredient-editor`: Recipe editor ingredients and import review
       lines. Files: `recipe_edit_screen.dart`,
       `lib/core/ingredients/widgets/ingredient_line_field.dart`,
       `import_review_screen.dart`, `lib/core/theme/app_sizes.dart` (`tag`).
@@ -150,6 +150,21 @@ The rest are UI (`/plan-slice-ui`).
         not to.
       - This is big. If the planner finds more than about 6 decisions, split
         it into editor and import review.
+      - **Split at planning (2026-10-07, with Marko):** section editing moved
+        to `phase8-ingredient-sections-edit` below. This slice shipped
+        read-only headings (D157–D161).
+- [ ] `phase8-ingredient-sections-edit` (`/plan-slice-ui`): editing
+      ingredient sections. Files: `recipe_draft.dart` (section operations,
+      pure and tested), `lib/core/ingredients/widgets/ingredient_lines_editor.dart`,
+      `recipe_editor.dart` and `import_confirm.dart`. Bundle: canvas § A4
+      (A4·4).
+      - "Add section" next to "Add ingredient" (`Icons.title`).
+      - A grip on the heading. A heading drags its run of lines with it.
+      - A line dropped into a group takes that group's section. Until this
+        ships, a line dragged across a heading keeps its own section, and
+        D156's run rule can show an extra heading.
+      - Rename a section, and remove it with Undo (like `Naslov je
+        uklonjen.`).
 - [ ] `phase8-rich-text-render`: description, steps, step notes and end
       note, on detail and on the translation review. Files: a new
       `lib/core/widgets/` rich-text widget, `recipe_detail_screen.dart`.

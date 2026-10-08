@@ -1,5 +1,5 @@
 # D156 — Ingredient sections are runs of equal `section`, under the step heading's row
-**Status:** active
+**Status:** active — #4 amended by D161: the heading is public `RecipeGroupHeading` in `core/recipes/widgets/`, not private, and not in `core/ingredients/`
 **Touches:** lib/features/recipes/presentation/recipe_detail_screen.dart, docs/DESIGN_SYSTEM.md
 
 **Decided.** Round `2026-10-06-round-2-recipe-structure`, canvas § A4·3, 2026-10-07:
