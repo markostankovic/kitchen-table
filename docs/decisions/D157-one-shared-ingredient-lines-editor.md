@@ -1,5 +1,5 @@
 # D157 — One shared ingredient list for the editor and import review
-**Status:** active
+**Status:** active; #4 superseded by D162 (headings are their own list items)
 **Touches:** lib/core/ingredients/widgets/ingredient_lines_editor.dart, lib/features/recipes/presentation/recipe_edit_screen.dart, lib/features/import/presentation/import_review_screen.dart, docs/DESIGN_SYSTEM.md
 
 **Decided.** Round `2026-10-06-round-2-recipe-structure`, canvas § A4·1/A4·2/A4·4, 2026-10-07:
@@ -36,4 +36,5 @@
 
 **Consequences.** A line dragged across a heading keeps its own `section`,
 so D156's run rule can show an extra heading until
-`phase8-ingredient-sections-edit`.
+`phase8-ingredient-sections-edit`. Resolved there: a dropped line takes the
+heading above it (D163 #1).

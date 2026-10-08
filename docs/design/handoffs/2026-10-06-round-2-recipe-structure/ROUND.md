@@ -153,7 +153,7 @@ The rest are UI (`/plan-slice-ui`).
       - **Split at planning (2026-10-07, with Marko):** section editing moved
         to `phase8-ingredient-sections-edit` below. This slice shipped
         read-only headings (D157–D161).
-- [ ] `phase8-ingredient-sections-edit` (`/plan-slice-ui`): editing
+- [x] `phase8-ingredient-sections-edit` (`/plan-slice-ui`): editing
       ingredient sections. Files: `recipe_draft.dart` (section operations,
       pure and tested), `lib/core/ingredients/widgets/ingredient_lines_editor.dart`,
       `recipe_editor.dart` and `import_confirm.dart`. Bundle: canvas § A4
@@ -165,6 +165,9 @@ The rest are UI (`/plan-slice-ui`).
         D156's run rule can show an extra heading.
       - Rename a section, and remove it with Undo (like `Naslov je
         uklonjen.`).
+      - **Shipped 2026-10-08** (D162–D164). The top of the list is a drop
+        boundary for a section only when no headingless block is there
+        (found on the walk).
 - [ ] `phase8-rich-text-render`: description, steps, step notes and end
       note, on detail and on the translation review. Files: a new
       `lib/core/widgets/` rich-text widget, `recipe_detail_screen.dart`.

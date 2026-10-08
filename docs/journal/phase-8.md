@@ -1027,3 +1027,102 @@ one new l10n key.
 - **Side effect on hosted.** Confirming the pill on the typo `seceraa`
   wrote a global alias `seceraa → šećer` (D8, by design). It wants
   removing. Marko's call.
+
+### Round 2026-10-06, slice 9 — Editing ingredient sections: add, rename, drag, remove with Undo
+
+**Status: complete** (`4caf168`). Decisions taken during it: D162, D163,
+D164. Amends D157 #4.
+
+The ninth slice of round `2026-10-06-round-2-recipe-structure`
+(`docs/design/handoffs/2026-10-06-round-2-recipe-structure/`), canvas § A4
+(A4·4), split off slice 8 at its planning. Planned with `/plan-slice-ui`,
+built and walked on 2026-10-08. The work is client-only: no migration, no
+Edge Function, no package, and three new l10n keys (`addSectionButton`,
+`sectionRemovedSnackbar`, `ingredientSectionHint`).
+
+- **Headings as list items (D162).** A new pure
+  `ingredient_list_layout.dart` lays the list out as `LineItem` /
+  `HeadingItem(start, end, section)` and resolves drops. `IngredientLinesEditor`
+  takes `onMoveLine`, `onMoveRun` and `onSetSections` instead of `onReorder`.
+- **Drag (D163).** A dropped line takes the heading above it. A heading has
+  a grip (long-press in review), collapses its run while in the air, lifts
+  as heading + rows at level 3, and lands only on a group boundary.
+- **Rename, remove, Add section (D164).** `RecipeDraft.setSections`,
+  `moveLine` and `moveLines` are new and pure, and `toIngredient` trims the
+  section. Both notifiers delegate them. Tapping a heading opens it in the
+  open line's box with a `titleSmall` field. ✕ joins the run to the group
+  above with `Odeljak je uklonjen.` + Undo. Add section opens a heading
+  over a new blank line, and Next enters it.
+- **DESIGN_SYSTEM.md** § Ingredient lines: the Sections paragraph is
+  rewritten for editing; the "next slice" sentence is gone.
+- **Tests:** `ingredient_list_layout_test` (14), 12 new `recipe_draft_test`
+  cases, and 7 new `ingredient_lines_editor_test` cases (Add section → Next,
+  open/one-at-a-time and rename, ✕ + Undo, blank-close + Undo, blank new
+  heading with no snackbar, grip by style, and a held heading drag whose
+  proxy must stay by the finger). Two screen tests count one more
+  `Icons.title`, Add section's.
+
+**Differs from the plan.**
+- `IngredientLineField` changed, though it was not listed: it requests focus
+  when `autofocus` turns on. Add section's blank line is already built open,
+  so `autofocus` alone never reached it on Next.
+- The layout parameter is `openHeadingLineId`, not `pendingHeadingLineId`:
+  it forces a heading for any open heading, renamed ones too. The open
+  heading also holds its run's ids and typed name in state (D164 #3). The
+  first because a rename passing through the next group's name would
+  otherwise swallow it; the second because `widget.lines` lags a frame when
+  Next follows a keystroke, which a widget test caught.
+- Remove takes the **group's** name above, not the literal line above's
+  section, which may be a null continuation.
+- **Two defects found on the editor walk**, both fixed and re-walked the
+  same sitting:
+  1. The run proxy sat clipped at the top edge of the screen instead of
+     under the finger. An `OverflowBox` of our own, inside Flutter's
+     unbounded one, sized itself to infinite height. Removed; a new widget
+     test holds a heading drag and fails on the old code with layout
+     exceptions.
+  2. A section dropped at the very top took in the headingless lines below
+     it (D156 reads them as its continuation); a second drag then collapsed
+     the whole list as its run. The top is now a boundary only when no
+     headingless block is there (D163 #5).
+- The planned fallback for the zero-height run was not needed.
+
+**How it was verified.**
+- `dart analyze` clean; `flutter test` **883/883**. `make check` green except
+  the known `seed-check`; `make test-sql` and the function tests pass;
+  `make l10n-check` passes with the generated files committed.
+- **Walked** on the **emulator** in all four combinations, hosted release
+  build (`make install-emulator`), at 360dp (`wm density 480`, reset after):
+  - **`/design-walk recipe-editor`**, on a new throwaway recipe `Setnja
+    odeljci TEST` (**saved on hosted**, not deleted).
+    - `Dodaj sastojak` + `Dodaj odeljak` fit on one line at 360dp.
+    - Add section, `Za fil`, Next: the heading shows and the keyboard moves
+      to the blank line under it; Next, Next fills the section.
+    - A line dragged under `Za fil` joins it; dragged back above, it leaves.
+    - After the fixes, a heading dragged by its grip lifts with its row under
+      the finger. Dropped inside the top block it snaps to the block's end;
+      dropped mid-group with a tie it goes to the group's end.
+    - Rename to `Za punjenje` moves every line; saved, reopened and detail
+      all show it.
+    - ✕ joins the lines above with the snackbar; Undo restores the heading
+      (tapped within 1 s — two slower taps landed after the 4 s auto-dismiss
+      and hit Sačuvaj, which saved the throwaway).
+    - Dark: the open heading's box and the lifted proxy both have an edge;
+      the unnamed heading's hint `Za testo` (recipe locale) reads in
+      `onSurfaceVariant`, and closing it blank shows no snackbar.
+  - **`/design-walk import-review`**, one paste import (one hosted AI call),
+    `Pita sa jabukama TEST`, **discarded**.
+    - Inset gripless headings; the open heading inset `md` with no grip;
+      the rename from `Za fil:` to `Za fil` worked.
+    - Long-press drags a heading (the run moved to the top) and a line (out
+      of its group to the headingless top).
+    - ✕ joins `Za testo`'s lines to `Za fil` with the snackbar. Undo was not
+      tapped here: the snackbar covers Sačuvaj recept / Odbaci, and the
+      editor already proved the path.
+    - Add section in dark, `Fil` + `cimet` by fast entry; the proxy has an
+      edge in dark.
+  - No pill was confirmed and no alias written. Settings went back to
+    `Srpski` / `Svetla`.
+- **Minor, not fixed:** in review, light only, about 4px of dark shows
+  behind the run proxy's rounded top-left corner when the drag starts on a
+  long-press. The editor's proxy is clean. Cause not traced.
