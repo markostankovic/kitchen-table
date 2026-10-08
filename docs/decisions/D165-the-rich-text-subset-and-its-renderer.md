@@ -29,7 +29,8 @@
 6. **Where it applies:** detail's description, step text, step notes and
    end note; the translation review's originals for those (`rich: true`).
    Titles, headings and ingredient lines are never formatted. Editing stays
-   raw text.
+   raw text. *(Amended by D166: the editor's four formattable fields show
+   the markup styled in place; the stored text is unchanged.)*
 7. **Placement.** The parser is pure Dart in `core/text/` (beside
    `TextNormalizer`); `parseRichRuns` is public for the toolbar slice. The
    renderer is `AppRichText` in `core/widgets/`, though only `recipes` uses

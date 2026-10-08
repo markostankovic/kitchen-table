@@ -1199,3 +1199,129 @@ package, no l10n keys.
     saving). Neither is an app defect.
   - The recipe was soft-deleted afterwards; settings went back to `Srpski`
     / `Svetla`. The walk opened no loop.
+
+### Round 2026-10-06, slice 11 — Formatting toolbar and styled markup in the recipe editor
+
+**Status: complete** (`00dc92f`). Decisions taken during it: D166. Closes
+round `2026-10-06-round-2-recipe-structure`.
+
+The eleventh and last slice of round `2026-10-06-round-2-recipe-structure`
+(`docs/design/handoffs/2026-10-06-round-2-recipe-structure/`), canvas § A3
+(A3·2 light, A3·3 dark). Marko resolved the round's WYSIWYG question on
+2026-10-08: styled markup in place, no package. Planned with
+`/plan-slice-ui`, built, walked and closed on 2026-10-08. Client-only: no
+migration, no Edge Function, no package; five new l10n keys.
+
+- **Scan (D165 unchanged).** `rich_text_markup.dart` gains
+  `scanRichInline(line)` (each match's `start` / `end` / `contentStart` /
+  `contentEnd` / style) and `matchRichListMarker(line)` (length, ordered,
+  number). `parseRichRuns` is rebuilt on the scan, so the inline regex and
+  the two line regexes still have one definition each. What the parser
+  accepts did not change; every existing test passes untouched.
+- **Editing rules (D166 #3–6).** New `lib/core/text/rich_text_editing.dart`,
+  pure Dart on plain ints: `richFormatState`, `toggleInline`, `toggleList`,
+  `continueListOnNewline`, `dropEmptyPair`, plus `richSegments` (the text
+  cut into marker / bold / italic / plain stretches, which the controller
+  draws). A small private edit applier maps the selection through every
+  insertion and removal.
+- **Controller (D166 #2).** `RichTextEditingController` in
+  `core/widgets/rich_text_editing_controller.dart`: `buildTextSpan` draws
+  `richSegments` (bold w600, italic, markers `onSurfaceVariant`, no size or
+  spacing change) and keeps the IME's composing underline by splitting
+  spans at its edges; `toggleBold/Italic/Bullet/Numbered`; the pending
+  empty pair; `formatState`. `RichListFormatter` wraps
+  `continueListOnNewline` for Enter.
+- **Toolbar.** `AppFormattingToolbar` in `core/widgets/`: 48 tall on
+  `surfaceContainer`, 1dp `outlineVariant` hairline, `xs` padding and gaps,
+  four 48×48 toggles and hide-keyboard after a `Spacer`; the active toggle
+  on a 40×32 stadium `secondaryContainer` pill (private consts), icon
+  `onSecondaryContainer`. Tooltips come in as strings.
+- **Editor.** A private `_FormattableField` owns a controller and a
+  `FocusNode` for the description, step text, note text and end note;
+  heading rows keep a plain `TextFormField`. Focus points a
+  `ValueNotifier<RichTextEditingController?>` at the controller, and a
+  controller listener reports text (the toolbar's edits are programmatic,
+  so `onChanged` would miss them). The toolbar replaces the save bar in
+  `bottomNavigationBar` while a formattable field has focus and the
+  keyboard is up (D166 #7).
+- **l10n:** `formatBoldTooltip`, `formatItalicTooltip`,
+  `formatBulletListTooltip`, `formatNumberedListTooltip`,
+  `hideKeyboardTooltip` (sr `Podebljano`, `Kurziv`, `Lista sa tačkama`,
+  `Numerisana lista`, `Sakrij tastaturu`).
+- **DESIGN_SYSTEM.md:** § Rich text (editing is styled markup), § Inputs
+  (formattable fields), a new § Formatting toolbar after § Action bar, and
+  § The shared widgets.
+- **Tests:** `rich_text_markup_test` (+13: scan offsets including `****`
+  and `**a *b* c**`, the marker matcher), `rich_text_editing_test` (new,
+  54: a table per rule — `šeć|er` wrapped, numbering after `3. x`, Enter on
+  an empty `- `, Enter mid-item), `rich_text_editing_controller_test` (new:
+  `toPlainText() == text` with and without composing, w600 not w700,
+  marker colour, no size change, underline inside bold, the pending pair),
+  `app_formatting_toolbar_test` (new: five tooltips, pill colour/shape/size,
+  italic disabled in bold, wrap on tap, list toggle, hide callback), and
+  seven cases in `recipe_edit_screen_test` (hidden with no focus, for title,
+  tags and a heading, and without the keyboard; shown for the four fields;
+  bold reaches the draft with focus and selection kept; inside a shell
+  Scaffold; hide-keyboard).
+
+**Differs from the plan.**
+- **Placement (found on the walk).** The plan put the toolbar at the end of
+  the Scaffold body, gated on `MediaQuery.viewInsetsOf(context)`. On the
+  Galaxy it never showed: the editor is a route inside the shell's
+  `StatefulShellRoute`, whose Scaffold resizes for the keyboard and strips
+  the inset from everything below it, so the editor always read 0. The
+  same nesting is why the save bar sits *on* the keyboard rather than
+  under it, which the plan's placement had assumed. The editor now reads
+  the keyboard off `View.of(context)`, rebuilds on `didChangeMetrics`, and
+  the toolbar takes the save bar's slot (D166 #7). A regression test pumps
+  the editor inside an outer Scaffold. The widget tests had pumped it bare,
+  which is how this got past them.
+- Unwrapping needs an **overlap**, not a touch: selecting `foo` in
+  `**x**foo` and tapping bold bolds `foo` rather than unbolding `x`. A
+  collapsed caret touching the markers still counts as inside.
+- While an empty pair waits, `formatState` reports its style (an empty
+  `****` scans as italic) and the controller dims the whole pair; tapping
+  the same toggle again removes it.
+- A focused field removed from the tree hands the notifier back and
+  disposes its controller after the frame (the tree is locked during
+  teardown).
+- Multi-line wraps and list toggles keep the selection on the same
+  characters rather than inside the new markers; a single wrapped part
+  still selects exactly its content.
+- `richSegments` lives in `rich_text_editing.dart`, which the plan didn't
+  name.
+
+**How it was verified.**
+- `dart analyze` clean; `flutter test` **1005/1005**. `make check` (with
+  `-k`) green except the known `seed-check`; `make test-sql` (20 files),
+  the function tests (165) and `make l10n-check` pass.
+- **Walked** on the **physical Galaxy** (SM-S931B), hosted release build,
+  all four combinations (`/design-walk recipe-editor`). The emulator was
+  tried first: its Gboard only floats, gives the app no inset, and the
+  toolbar correctly stayed hidden, so the walk moved to the Galaxy. The
+  first Galaxy run found the placement defect above; it was fixed and the
+  whole walk redone on the new build. On a throwaway `Toolbar WALK TEST`:
+  - **sr/light:** no toolbar on the title or a heading; it shows on the
+    description, a step, a note and the end note, flush on the keyboard
+    with its hairline, and the save bar gone. Selecting `krompira` and
+    tapping B: w600, dimmed `**`, pill lit, selection kept on the content;
+    B again unbolds. A caret inside `Voda` wraps the word and keeps the
+    caret; italic is disabled there. `- ` + Enter continues and Enter on
+    the empty item ends the list; `1. ` continues `2.` `3.`. Hide-keyboard
+    drops keyboard and toolbar and brings the save bar back. Saved, the
+    detail renders all of it through `AppRichText`. Serbian tooltips read
+    in full, including `Sakrij tastaturu` at the right edge.
+  - **sr/dark:** pill icon 7.6:1 on its pill, dimmed markers and inactive
+    icons above 10:1, disabled italic 3.1:1 (Material's default). The
+    hairline reads. `Numerisana lista` fits.
+  - **en/light:** the bullet pill lights on a `- ` line, and the toggle
+    strips and restores the marker. **en/dark:** bold and numbered pills
+    read; the `Hide keyboard` tooltip is unclipped.
+  - Gboard's own keys typed inside a bold run kept it bold. This Galaxy's
+    Gboard draws no composing underline in any field (the plain title
+    shows none either), so the underline-in-bold case rests on the
+    controller test.
+  - Seen, not fixed: the heading's `Naslov je uklonjen.` snackbar covered
+    the toolbar while a step kept focus.
+  - The recipe was soft-deleted; the Galaxy went back to English / Dark,
+    where it started. The walk opened no loop.

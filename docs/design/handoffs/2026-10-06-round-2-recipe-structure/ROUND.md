@@ -181,7 +181,7 @@ The rest are UI (`/plan-slice-ui`).
         renders as text.
       - **Shipped 2026-10-08** (D165). The number column widens per list to
         fit `10.`; one paragraph per non-blank line, as the prototype does.
-- [ ] `phase8-rich-text-toolbar`: formatting toolbar in the editor. Files:
+- [x] `phase8-rich-text-toolbar`: formatting toolbar in the editor. Files:
       `recipe_edit_screen.dart`, a new `lib/core/widgets/` toolbar.
       Bundle: canvas § A3 (A3·2).
       - A 48dp bar on `surfaceContainer` with a hairline on top, shown only
@@ -191,6 +191,10 @@ The rest are UI (`/plan-slice-ui`).
       - Typing `- ` or `1. ` starts a list.
       - **Blocked on a decision (see Out of scope):** the canvas asks for
         WYSIWYG editing.
+      - **Shipped 2026-10-08** (D166). Styled markup in place, no package.
+        The toolbar takes the save bar's slot while it shows, because the
+        shell's Scaffold strips the keyboard inset (found on the Galaxy
+        walk). Import review and the translation review adopt it later.
 
 ## Out of scope
 
@@ -205,6 +209,8 @@ The rest are UI (`/plan-slice-ui`).
     runs in place and dims the `**` / `*` markers. The toolbar inserts and
     removes markers.
   - Marko decides before that slice is planned.
+  - **Decided 2026-10-08 (D166):** the default, styled markup with no
+    package. The `**` stays visible, dimmed.
 - **The A2·3 import review frame draws Ingredients, Method and Notes as rows
   with `chevron_right`.** DESIGN_SYSTEM.md § Import review says Method
   expands in place, "no route, so no chevron", and A4·4 keeps ingredients

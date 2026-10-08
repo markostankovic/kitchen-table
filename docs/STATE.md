@@ -1,41 +1,59 @@
 # State — 2026-10-08
 
 **Branch:** `main`
-**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 10 —
-`phase8-rich-text-render` (`e98692d`): recipe text renders the light
-formatting subset — `**bold**`, `*italic*`, `- ` and `1. ` lists — wherever
-it is read (D165).
+**Last shipped:** round `2026-10-06-round-2-recipe-structure`, slice 11 —
+`phase8-rich-text-toolbar` (`00dc92f`). This was the round's last slice, so
+**the round is complete**. The recipe editor's description, step text, note
+text and end note show the D165 markup styled in place, and a formatting
+toolbar sits on the keyboard while one of them is typed in (D166).
 
-- **Parser.** `core/text/rich_text_markup.dart`, pure Dart: one paragraph
-  per non-blank line, blank lines collapse, no nesting, numbers as typed.
-  `parseRichRuns` is public for the toolbar slice.
-- **Renderer.** `AppRichText` in `core/widgets/`: bold w600 (never w700,
-  D134), true italic, `onSurfaceVariant` markers, the numbered column
-  widened per list to fit `10.`, `md` between blocks and `xs` between items.
-- **Where.** Recipe detail's description, step text, step notes and end note
-  (amends D155 #6); the translation review's originals for those. Titles,
-  headings and ingredient lines stay plain; editing stays raw text.
-- Client-only: no migration, no Edge Function, no package, no l10n keys.
+- **WYSIWYG, decided.** Styled markup, no package (Marko, 2026-10-08). The
+  stored text is still exactly the D165 subset. Bold content is w600 and
+  italic is italic; `**` / `*` / `- ` / `12. ` stay visible, dimmed to
+  `onSurfaceVariant`.
+- **Logic.** Pure Dart in `core/text/rich_text_editing.dart`, built on
+  `rich_text_markup.dart`'s new `scanRichInline` / `matchRichListMarker`
+  (`parseRichRuns` now runs on the scan; the parser accepts what it did
+  before). Bold and italic exclude each other. A caret in a word wraps the
+  word. An empty pair removes itself. Enter continues or ends a list.
+- **Widgets.** `RichTextEditingController` / `RichListFormatter` and
+  `AppFormattingToolbar` in `core/widgets/`. The bar is 48 tall on
+  `surfaceContainer` with a hairline; the active toggle sits on a
+  `secondaryContainer` pill.
+- **Placement, found on the walk.** The editor is inside the shell's
+  Scaffold, which strips the keyboard inset, so the editor reads the
+  keyboard off `View.of`. The toolbar replaces the save bar while it shows.
+- Client-only: no migration, no Edge Function, no package. Five new l10n
+  keys.
 
-`dart analyze` is clean and `flutter test` passes 916/916. `make check` is
+`dart analyze` is clean and `flutter test` passes 1005/1005. `make check` is
 green except the known `seed-check`; `make test-sql`, the function tests and
-`make l10n-check` pass. **Walked** on the emulator against hosted, all four
-combinations (`/design-walk recipe-detail`, with the translation review in
-English light and dark). It was clean and opened no loop.
+`make l10n-check` pass. **Walked** on the **physical Galaxy** against hosted,
+all four combinations (`/design-walk recipe-editor`). The first run found
+that the toolbar never showed on a device. That was fixed and the whole
+walk was redone. It was clean and opened no loop.
 
 **Hosted is current**: this slice is client-only. The walk's throwaway
-`Knedle WALK TEST` took one hosted translate call and was soft-deleted.
+`Toolbar WALK TEST` was soft-deleted.
 
 Still open:
 - **a throwaway recipe on hosted**: `Setnja odeljci TEST`, saved by the
-  `phase8-ingredient-sections-edit` editor walk (the rich-text walk's
-  `Knedle WALK TEST` was soft-deleted). It wants deleting (the
-  app's own soft delete), which is Marko's call;
+  `phase8-ingredient-sections-edit` editor walk (later walks' throwaways
+  were soft-deleted). It wants deleting (the app's own soft delete), which
+  is Marko's call;
+- **the formatting toolbar's next adopters**: import review's step and notes
+  fields, and the translation review's editable fields, are still raw text
+  (D166 #8). `AppFormattingToolbar` and `RichTextEditingController` are in
+  `core/widgets/` for them. Import review sits inside the shell too, so it
+  needs the same `View.of` keyboard read and save-bar swap as the editor;
+- while the formatting toolbar shows, the save bar is out of reach. Saving
+  means hiding the keyboard first (D166 Consequences);
 - a snackbar with Undo sits over the screen's bottom action bar (the
   editor's Sačuvaj; review's Sačuvaj recept / Odbaci). A tap meant for Undo
   that lands just after the 4 s auto-dismiss presses the button under it;
   the walk saved its throwaway twice that way. Step headings have the same
-  layout;
+  layout. With the formatting toolbar up, the heading's Undo snackbar
+  covers the toolbar instead;
 - in import review, light only, about 4px of dark shows behind a dragged
   section's proxy at its rounded top-left corner when the drag starts on a
   long-press. The editor's proxy is clean. Cause not traced;
@@ -89,26 +107,24 @@ Still open:
   Design updates them.
 
 **In flight:** none.
-**Next:** `phase8-rich-text-toolbar` (**/plan-slice-ui**), the formatting
-toolbar in the editor. It is **blocked on Marko's WYSIWYG decision** (ROUND
-§ Out of scope). The default without a package is a
-`TextEditingController.buildTextSpan` that styles runs in place and dims the
-markers, reusing `parseRichRuns`.
+**Next:** no slice is planned. Round `2026-10-06-round-2-recipe-structure`
+is done (`docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`,
+every box ticked). The candidates, for Marko to pick from:
+- the formatting toolbar in import review (and then the translation
+  review). It is the obvious follow-up, a small `/plan-slice-ui`;
+- Phase 8 part 4 (real thumbnails), which stays optional, "only if part 2 is
+  not enough on the device";
+- the smaller candidates still open from round `sync-design-initial`:
+  - the offline banner gap (`AppShell`, every tab);
+  - part 16's add-menu edge, fixed on its own (the shopping long-press
+    menu's edge with it);
+  - the dark menu-over-card edge (theme-level, wants a decision);
+  - the recipe-delete confirm, the one filled destructive confirm left
+    (§ Buttons says text in destructive).
 
-The round's slices and their order are in
-`docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`. Phase 8
-part 4 (real thumbnails) stays optional, "only if part 2 is not enough on
-the device".
-
-Smaller candidates still open from round `sync-design-initial`:
-- the offline banner gap (`AppShell`, every tab);
-- part 16's add-menu edge, fixed on its own (the shopping long-press
-  menu's edge with it);
-- the dark menu-over-card edge (theme-level, wants a decision);
-- the recipe-delete confirm, the one filled destructive confirm left
-  (§ Buttons says text in destructive). The open device-walk loops below
-  still want one sitting with the Galaxy attached.
-**Latest decision:** D165
+The open device-walk loops below still want one sitting with the Galaxy
+attached; it was attached for this slice's walk.
+**Latest decision:** D166
 
 **Twenty device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -212,6 +228,13 @@ recipe holding the canvas samples and a step whose numbered list reaches
 `10.`. The recipe took one hosted translate call and was soft-deleted
 afterwards. `adb input` cannot type `š`/`ž`, so its Serbian text is
 ASCII-only.
+The `phase8-rich-text-toolbar` walk (`/design-walk recipe-editor`,
+2026-10-08, **physical Galaxy**, all four combinations) found one defect:
+the toolbar never showed inside the shell. It was fixed and re-walked the
+same sitting, so it opened no loop. The emulator can't reach this surface:
+its Gboard floats and gives the app no keyboard inset. The Galaxy's Gboard
+draws no composing underline in any field, so that check rests on the
+controller test.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
