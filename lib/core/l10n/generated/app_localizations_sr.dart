@@ -420,6 +420,9 @@ class AppLocalizationsSr extends AppLocalizations {
   }
 
   @override
+  String get ingredientSuggestionConfirmHint => 'Dodirni za potvrdu';
+
+  @override
   String ingredientPickerQuestion(String query) {
     return 'Koji sastojak je „$query”?';
   }

@@ -221,6 +221,26 @@ abstract class RecipeDraft with _$RecipeDraft {
         ],
       );
 
+  /// A blank line directly after [localId], for the editor's fast entry:
+  /// Enter on a line commits it and opens the next one under it.
+  ///
+  /// The new line takes [localId]'s `section`, so typing on inside a section
+  /// stays in it (D156's runs). An id that is not in the list appends, like
+  /// [addLine]. The id is fresh from [_nextLineId], for the reason given
+  /// there.
+  RecipeDraft insertLineAfter(int localId) {
+    final int at =
+        lines.indexWhere((RecipeDraftLine line) => line.localId == localId);
+    final RecipeDraftLine blank = RecipeDraftLine(
+      localId: _nextLineId,
+      rawText: '',
+      section: at < 0 ? null : lines[at].section,
+    );
+    final List<RecipeDraftLine> next = List<RecipeDraftLine>.of(lines)
+      ..insert(at < 0 ? lines.length : at + 1, blank);
+    return copyWith(lines: List<RecipeDraftLine>.unmodifiable(next));
+  }
+
   RecipeDraft removeLine(int localId) => copyWith(
         lines: lines
             .where((RecipeDraftLine line) => line.localId != localId)

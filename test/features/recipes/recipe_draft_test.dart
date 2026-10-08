@@ -136,6 +136,44 @@ void main() {
       expect(ids.toSet().length, ids.length);
     });
 
+    test('insertLineAfter puts a blank line right after the id, in its '
+        'section, with a fresh id', () {
+      final RecipeDraft draft = RecipeDraft(
+        lines: const <RecipeDraftLine>[
+          RecipeDraftLine(localId: 0, rawText: 'a', section: 'Za testo'),
+          RecipeDraftLine(localId: 4, rawText: 'b', section: 'Za testo'),
+          RecipeDraftLine(localId: 2, rawText: 'c', section: 'Fil'),
+        ],
+      ).insertLineAfter(0);
+
+      expect(draft.lines.map((RecipeDraftLine l) => l.rawText),
+          <String>['a', '', 'b', 'c']);
+      final RecipeDraftLine inserted = draft.lines[1];
+      // Typing on inside a section stays in it (D156's runs).
+      expect(inserted.section, 'Za testo');
+      // Above the high-water mark, not the list length.
+      expect(inserted.localId, 5);
+    });
+
+    test('insertLineAfter after the last line, or a line with no section',
+        () {
+      final RecipeDraft draft =
+          _withLines(<String>['a', 'b']).insertLineAfter(1);
+
+      expect(draft.lines.map((RecipeDraftLine l) => l.rawText),
+          <String>['a', 'b', '']);
+      expect(draft.lines.last.section, isNull);
+    });
+
+    test('insertLineAfter an unknown id appends, like addLine', () {
+      final RecipeDraft draft =
+          _withLines(<String>['a', 'b']).insertLineAfter(99);
+
+      expect(draft.lines.map((RecipeDraftLine l) => l.rawText),
+          <String>['a', 'b', '']);
+      expect(draft.lines.last.localId, 2);
+    });
+
     test('replacing a line leaves its neighbours alone', () {
       final RecipeDraft draft = _withLines(<String>['a', 'b', 'c']);
 

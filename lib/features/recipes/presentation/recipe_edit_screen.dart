@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
+import '../../../core/ingredients/ingredient_catalog_providers.dart';
+import '../../../core/ingredients/widgets/ingredient_lines_editor.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/l10n/language_labels.dart';
 import '../../../core/recipes/widgets/recipe_photo.dart';
@@ -24,17 +26,19 @@ import '../domain/recipe.dart';
 import '../domain/recipe_draft.dart';
 import '../domain/recipe_image_upload.dart';
 import '../domain/recipe_step.dart';
-import '../../../core/ingredients/widgets/ingredient_line_field.dart';
 
 /// Create or edit one recipe.
 ///
 /// The same screen for both: [recipeId] is null for a recipe that does not
 /// exist yet, and that null is also the editor provider's family key.
 ///
-/// Ingredient lines are raw-text-first. The field holds exactly what the cook
-/// typed and that is what `raw_text` stores; quantity, unit and a matched
-/// ingredient are worked out from it and are all allowed to come back empty
-/// (rule 3). See [IngredientLineField] for how. Steps are plain text.
+/// Ingredient lines are raw-text-first. They read as rows and open one at a
+/// time into a field holding exactly what the cook typed, which is what
+/// `raw_text` stores; quantity, unit and a matched ingredient are worked out
+/// from it and are all allowed to come back empty (rule 3). The list is the
+/// shared [IngredientLinesEditor], the same one import review uses -- see it
+/// for the open line, fast entry and the suggestion pill. Steps are plain
+/// text.
 ///
 /// Text fields are seeded with `initialValue` and report through `onChanged`
 /// rather than each owning a `TextEditingController`, which is a departure
@@ -42,7 +46,8 @@ import '../../../core/ingredients/widgets/ingredient_line_field.dart';
 /// list the user adds to, removes from and reorders, and a controller per row
 /// would need a lifecycle -- created on insert, disposed on delete, kept
 /// straight across a drag -- for no gain. The draft is the single source of
-/// truth either way.
+/// truth either way. (The one open ingredient line does own a controller:
+/// only one is ever open, so it has no list lifecycle to keep straight.)
 class RecipeEditScreen extends ConsumerStatefulWidget {
   const RecipeEditScreen({this.recipeId, super.key});
 
@@ -78,6 +83,25 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
 
   RecipeEditor get _editor =>
       ref.read(recipeEditorProvider(widget.recipeId).notifier);
+
+  /// The new line's id, read back from the draft for the list to open.
+  int _insertLineAfter(int localId) {
+    _editor.insertLineAfter(localId);
+    final List<RecipeDraftLine> lines =
+        ref.read(recipeEditorProvider(widget.recipeId)).value?.lines ??
+        const <RecipeDraftLine>[];
+    final int at =
+        lines.indexWhere((RecipeDraftLine l) => l.localId == localId);
+    return at < 0 || at + 1 >= lines.length
+        ? lines.last.localId
+        : lines[at + 1].localId;
+  }
+
+  int _addLine() {
+    _editor.addLine();
+    return ref.read(recipeEditorProvider(widget.recipeId)).value!.lines.last
+        .localId;
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -336,31 +360,16 @@ class _RecipeEditScreenState extends ConsumerState<RecipeEditScreen> {
           ),
           const SizedBox(height: AppSpacing.xl),
           AppSectionHeading(text: l10n.ingredientsHeading),
-          ReorderableListView(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            buildDefaultDragHandles: false,
-            onReorderItem: _editor.reorderLines,
-            children: <Widget>[
-              for (final (int index, RecipeDraftLine line)
-                  in draft.lines.indexed)
-                IngredientLineField(
-                  key: ValueKey<int>(line.localId),
-                  index: index,
-                  line: line,
-                  locale: draft.originalLocale,
-                  onChanged: _editor.replaceLine,
-                  onRemove: () => _editor.removeLine(line.localId),
-                ),
-            ],
-          ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: _editor.addLine,
-              icon: const Icon(Icons.add),
-              label: Text(l10n.addIngredientButton),
-            ),
+          IngredientLinesEditor(
+            lines: draft.lines,
+            locale: draft.originalLocale,
+            units: ref.watch(unitCatalogProvider).value,
+            parser: ref.watch(lineParserProvider).value,
+            onReplace: _editor.replaceLine,
+            onRemove: _editor.removeLine,
+            onReorder: _editor.reorderLines,
+            onInsertAfter: _insertLineAfter,
+            onAdd: _addLine,
           ),
           const SizedBox(height: AppSpacing.xl),
           AppSectionHeading(text: l10n.stepsHeading),

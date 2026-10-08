@@ -414,6 +414,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get ingredientSuggestionConfirmHint => 'Tap to confirm';
+
+  @override
   String ingredientPickerQuestion(String query) {
     return 'Which ingredient is “$query”?';
   }

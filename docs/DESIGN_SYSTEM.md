@@ -251,7 +251,8 @@ number in the table.
 | `button` | 48 | all buttons — the sign-in button is `signInButton` |
 | `signInButton` | 52 | the sign-in screen's Google button (outlined, neutral) |
 | `field` | 52 | filled text field, search |
-| `chip` | 40 | filter chips — 32 for input tags |
+| `chip` | 40 | filter chips |
+| `tag` | 32 | an input/tag chip and the ingredient suggestion pill — a drawing; a tappable one keeps a 48 hit area |
 | `appBar` | 64 | top app bar |
 | `nav` | 80 | `NavigationBar` |
 | `icon` / `iconInButton` / `iconInMeta` | 24 / 20 / 16 | actions · inside buttons · in meta lines |
@@ -259,7 +260,7 @@ number in the table.
 | `stepDisc` | 28 | the step-number disc on a recipe — one `bodyLarge` line, so it centres on the first line with no offset |
 | `avatar` | 40 | a person's monogram circle — member, profile |
 | `emptyStateIcon` | 48 | `AppEmptyState`'s icon |
-| `grip` | 20 | the drag-indicator glyph on a meal-plan entry |
+| `grip` | 20 | the drag-indicator glyph on a meal-plan entry and the editor's ingredient and step rows |
 | `gripColumn` | 40 | the trailing column that glyph is centred in |
 | `signInIllustration` | 176 | the sign-in screen's painted recipe card, as a width (176 × 139) |
 | `lockup` | 48 | the sign-in screen's logo lockup, as a height |
@@ -319,7 +320,7 @@ above own them.
 | `--radius-xs`, `-sm`, `-md`, `-lg`, `-xl` | `AppRadii.xs`, `.sm`, `.md`, `.lg`, `.xl` |
 | `--radius-full` | `StadiumBorder()` (§ Shape) |
 | `--size-target`, `-button`, `-button-signin`, `-field`, `-chip`, `-app-bar`, `-nav-bar`, `-thumb`, `-step-disc` | `AppSizes.target`, `.button`, `.signInButton`, `.field`, `.chip`, `.appBar`, `.nav`, `.thumb`, `.stepDisc` |
-| `--size-tag` | none: 32, noted on `AppSizes.chip`. No code draws a tag yet |
+| `--size-tag` | `AppSizes.tag` (32) — first drawn by the ingredient suggestion pill |
 | `--icon-action`, `--icon-button`, `--icon-meta` | `AppSizes.icon`, `.iconInButton`, `.iconInMeta` |
 | `--duration-short`, `--duration-medium` | `AppDurations.short`, `.medium` |
 | `--ease-emphasized` (`cubic-bezier(0.2,0,0,1)`, M3's CSS fallback) | `AppDurations.emphasized` (`Curves.easeInOutCubicEmphasized`) |
@@ -458,6 +459,11 @@ part 9a the reason is size, not face (`bodyLarge` is sans now too). The hint hal
 `inputDecorationTheme`; the typed half **cannot be themed**, so every
 `TextField` passes `style: bodyMedium` at its call site. Forgetting it is
 exactly the defect part 2's walk found in the search box.
+
+**One exception: the ingredient editor's open line types in `bodyLarge`**
+(D158). The open line *is* the row being edited — the closed row above it is
+`bodyLarge` 18/28 — and dropping to 14 on tap would make the line jump. Its
+hint is `bodyLarge` too. Every other field keeps `bodyMedium`.
 
 **The label is `AppFieldLabel`** (`titleSmall`, no padding of its own). The
 call site writes the gaps: `sm` from label to field, `lg` from a field to the
@@ -607,13 +613,48 @@ with ` · `. An unmatched line's trailer leads with `Nije povezano sa sastojkom`
 the same way, in the row's muted `bodySmall`. It stays unflagged and is never
 red: an unmatched line is a supported outcome (rule 3).
 
-**The match chip under a field being typed** (`IngredientMatchChip`) follows
-two people. Its **status words** — `No match` / `Nema poklapanja`, and the
-`{name}?` wrapper of a suggestion — are chrome and follow the **reader**. The
-amount, the unit names inside it, the suggested catalog name and the field's
-hint follow the **recipe** (D86). Unmatched and suggested chips set their label
-in `onSurfaceVariant` and their `help_outline` icon in `outline` — `outline`
-is never text.
+**Being edited** (`IngredientLinesEditor`, the recipe editor and import
+review). Every line is the closed row above; tapping one **opens** it — one at
+a time — into **the open line** (`IngredientLineField`, A4·2): `[grip]
+[box] [✕ 48]`, top-aligned, the grip `md` from the top. The box is
+`surfaceContainerHighest`, radius `sm`, padded `md`, with a 2dp `primary`
+border only while focused (painted as a foreground, so focus does not move
+the text). Inside it: the raw text, borderless, in `bodyLarge` (§ Inputs'
+one exception) with `ingredientLineHint` in the recipe's language; then
+`xs` and, once there is text, **the preview row** in `bodyMedium`
+`onSurfaceVariant` — `→ <catalog name, or the parsed name, or the whole
+line>`, ` · <note>`, ` · opciono` when optional with no note, and
+` · Nema poklapanja` when unmatched with nothing to suggest; then `md` and the
+amount on the right as one non-wrapping `Text.rich` (number `primary` w600
+tabular, unit muted). The whole preview row is an `InkWell` that opens the
+picker: "choose another". Under the box, nothing — no Done; rows sit `sm`
+apart.
+
+**Fast entry** (D159). The keyboard's **Next** on a line commits it and opens
+a blank line directly under it, in the same section, with the keyboard still
+up. Next on a blank line closes and removes it — that ends a burst.
+**Backspace on an empty line** removes it and opens the line above, caret at
+the end (Android's key event; iOS unverified). A line closes when another
+opens, on Next, or on ✕; a blank line that closes is removed unless it is the
+only line. A new recipe's lone blank line renders open but unfocused.
+
+**The suggestion pill** (`IngredientSuggestionPill`, A4·1) sits under any
+unmatched, non-blank line — closed or open — when the search has a
+candidate, `sm` under the text and above the divider, so it belongs to its
+line. 32dp (`tag`) stadium in `secondaryContainer`: a `check` (18) in
+`onSecondaryContainer`, `xs`, `{name}?` in `labelLarge`
+`onSecondaryContainer`, padded `sm` left and `md` right, with a 48 hit area;
+then `sm` and `Dodirni za potvrdu` / `Tap to confirm` in `bodySmall`
+`onSurfaceVariant`, in a `Wrap` so the hint drops under the pill at 360dp.
+**Tapping it confirms** — `manual`, confidence 1, and the alias written back
+(D7, D8) — with no picker. A closed row searches only when unmatched, and
+**never auto-accepts**: only typing in the open line can, so opening a saved
+recipe changes nothing.
+
+These follow two people (D86). **Status words** — `Nema poklapanja`, the
+`{name}?` wrapper, `Dodirni za potvrdu`, ` · opciono` — are chrome and follow
+the **reader**. The amount, the unit names, the suggested catalog name and
+the field's hint follow the **recipe**.
 
 Rows take `showDivider`: the last row of a card omits its divider, so the
 card's own edge does the separating, and the last line of the recipe detail's
@@ -621,16 +662,20 @@ list omits it too (`Recipe@1x.png`). Every other row keeps it, including the
 last of a block followed by a gap: a divider missing mid-card reads as
 uneven spacing, not as a break.
 
-**Sections** (recipe detail). A section heading opens each run of consecutive
+**Sections** (recipe detail; read-only in the recipe editor and import
+review for now). A section heading opens each run of consecutive
 lines sharing a `section` (`Za testo`, `Za fil`), in `titleSmall` `primary` —
-the same look as a step heading (§ Steps and stats), from the same private
-row. It sits `xl` above (`xs` when it opens the list, on top of the
+the same look as a step heading (§ Steps and stats), from the same
+`RecipeGroupHeading`. It sits `xl` above (`xs` when it opens the list, on top of the
 `AppSectionHeading`'s `sm`) and `xs` below, both on top of the row's own `sm`
 padding: 24 to the group above, 12 to its own first line, 12 under
 `Sastojci`. A section's last line drops its divider, just as the list's last
 line does. The heading is the cook's text as typed and is not translated.
 Lines before the first section sit headingless at the top, and a flat list
-renders exactly as it did before sections showed.
+renders exactly as it did before sections showed. In the editor the heading
+is indented past the grip column (`grip` + `xs`) to line up with the row
+text, and in import review `md`, matching the inset rows. Adding, renaming,
+dragging and removing sections is the next slice.
 
 ### Steps and stats
 
@@ -648,7 +693,7 @@ step, so a single step draws none. The 2 and the 4 are private consts in
 **Numbering counts steps only** and continues across headings (1–4 under
 `Za testo`, 5–7 under `Fil`) — never `position + 1`.
 
-**A heading** groups the steps after it: `titleSmall` in `primary`, flush with
+**A heading** (`RecipeGroupHeading`) groups the steps after it: `titleSmall` in `primary`, flush with
 the disc column, `sm` top (32 effective after the row above's `xl`; 0 when it
 is first) and `md` bottom. **A note** is an un-numbered aside: `bodyMedium`
 `onSurfaceVariant` on a `KitchenColors.card` panel, radius `sm`, padded
@@ -882,11 +927,12 @@ text.
 **The title field.** Its label above it in `titleSmall`, `sm` gap, the field
 from the theme with `bodyMedium` typed text; no local border.
 
-**Ingredient lines.** Read-only `IngredientLineRow`s. **Tap opens one** in
-place into the unchanged `IngredientLineField`, with a right-aligned `Done` /
-`Gotovo` `TextButton` under it; opening another closes it (one open at a
-time). A blank line always renders open, and Add ingredient opens the line it
-adds by id. Long-press drags. Flagged means matched without auto-accept — an
+**Ingredient lines.** The shared `IngredientLinesEditor` in its review style
+(§ Ingredient lines): read-only `IngredientLineRow`s, every one inset, no
+grip. **Tap opens one** in place into the open line, with its live preview,
+fast entry and the suggestion pill; opening another closes it (one open at a
+time). There is no `Done` any more (D159). A blank line always renders open,
+and Add ingredient opens the line it adds. Long-press drags. Flagged means matched without auto-accept — an
 unmatched line is **not** flagged, it gets the dashed ring.
 
 **Method.** A theme `Card` holding a collapsed `ExpansionTile` (`const
@@ -1030,6 +1076,8 @@ lives, below.
 | `AppActionBar` | `core/widgets/app_action_bar.dart` |
 | `RecipeCard` | `core/recipes/widgets/recipe_card.dart` |
 | `IngredientLineRow` | `core/ingredients/widgets/ingredient_line_row.dart` |
+| `IngredientLinesEditor` | `core/ingredients/widgets/ingredient_lines_editor.dart` |
+| `RecipeGroupHeading` | `core/recipes/widgets/recipe_group_heading.dart` |
 
 `AppBadge` has two looks, both 24 tall, radius `xs`, the label in
 `labelMedium` `onSurfaceVariant`:
@@ -1052,6 +1100,13 @@ and a `RecipeDraftLine` carry the same five facts under different types, and
 strings are what let the detail screen and the import review screen share one
 row. `AppStatColumn`'s value is a `Widget` for the same reason: one column on a
 recipe is five stars.
+
+`IngredientLinesEditor` is the ingredient list being edited, in the recipe
+editor and import review. It takes the lines, the recipe's locale, units,
+parser and callbacks, plus `review` (import review's inset, gripless rows with
+`→ catalog name` trailers) and `flagged` (the ids to tint); it owns only which
+line is open. `RecipeGroupHeading` is shared by step headings and ingredient
+sections — one look, the caller passes the gaps.
 
 ---
 

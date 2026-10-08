@@ -69,6 +69,8 @@ class ImportConfirm extends _$ImportConfirm {
   void setServings(int? value) =>
       _update((RecipeDraft d) => d.copyWith(servings: value));
   void addLine() => _update((RecipeDraft d) => d.addLine());
+  void insertLineAfter(int localId) =>
+      _update((RecipeDraft d) => d.insertLineAfter(localId));
   void removeLine(int localId) =>
       _update((RecipeDraft d) => d.removeLine(localId));
   void replaceLine(RecipeDraftLine line) =>

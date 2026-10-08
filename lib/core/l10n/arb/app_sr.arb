@@ -531,11 +531,11 @@
 
   "ingredientNoMatchLabel": "Nema poklapanja",
   "@ingredientNoMatchLabel": {
-    "description": "Ingredient match chip, shown when the search found nothing. Looked up by the recipe's own language, on ingredientLineHint's own precedent -- this chip sits beside catalog names that are never in the reader's chrome locale either."
+    "description": "Ingredient editor's open line, appended to the live preview when the search found nothing and has nothing to suggest. Status words are chrome, so they follow the reader's locale (D86); the catalog names beside them follow the recipe's."
   },
   "ingredientSuggestionLabel": "{name}?",
   "@ingredientSuggestionLabel": {
-    "description": "Ingredient match chip, offering a candidate that did not clear the auto-accept bar -- tapping opens the picker. Same locale rule as ingredientNoMatchLabel.",
+    "description": "Ingredient suggestion pill under an unmatched line, offering a candidate that did not clear the auto-accept bar -- tapping it confirms the match. The {name}? wrapper follows the reader, the name inside it the recipe (D86).",
     "placeholders": {
       "name": {
         "type": "String"
@@ -543,9 +543,14 @@
     }
   },
 
+  "ingredientSuggestionConfirmHint": "Dodirni za potvrdu",
+  "@ingredientSuggestionConfirmHint": {
+    "description": "Beside the ingredient suggestion pill: tapping the pill confirms the suggested match as the cook's own (manual). Reader's locale, like the pill's wrapper."
+  },
+
   "ingredientPickerQuestion": "Koji sastojak je „{query}”?",
   "@ingredientPickerQuestion": {
-    "description": "Ingredient picker sheet, the title asking which catalog entry a typed word means. Locale rule: the recipe's own language (widget.locale), same as ingredientNoMatchLabel -- this sheet is opened from the match chip.",
+    "description": "Ingredient picker sheet, the title asking which catalog entry a typed word means. Locale rule: the recipe's own language (widget.locale), same as ingredientNoMatchLabel -- this sheet is opened from the open line's preview.",
     "placeholders": {
       "query": {
         "type": "String"

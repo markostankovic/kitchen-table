@@ -788,19 +788,25 @@ abstract class AppLocalizations {
   /// **'2 šolje glatkog brašna'**
   String get ingredientLineHint;
 
-  /// Ingredient match chip, shown when the search found nothing. Looked up by the recipe's own language, on ingredientLineHint's own precedent -- this chip sits beside catalog names that are never in the reader's chrome locale either.
+  /// Ingredient editor's open line, appended to the live preview when the search found nothing and has nothing to suggest. Status words are chrome, so they follow the reader's locale (D86); the catalog names beside them follow the recipe's.
   ///
   /// In sr, this message translates to:
   /// **'Nema poklapanja'**
   String get ingredientNoMatchLabel;
 
-  /// Ingredient match chip, offering a candidate that did not clear the auto-accept bar -- tapping opens the picker. Same locale rule as ingredientNoMatchLabel.
+  /// Ingredient suggestion pill under an unmatched line, offering a candidate that did not clear the auto-accept bar -- tapping it confirms the match. The {name}? wrapper follows the reader, the name inside it the recipe (D86).
   ///
   /// In sr, this message translates to:
   /// **'{name}?'**
   String ingredientSuggestionLabel(String name);
 
-  /// Ingredient picker sheet, the title asking which catalog entry a typed word means. Locale rule: the recipe's own language (widget.locale), same as ingredientNoMatchLabel -- this sheet is opened from the match chip.
+  /// Beside the ingredient suggestion pill: tapping the pill confirms the suggested match as the cook's own (manual). Reader's locale, like the pill's wrapper.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodirni za potvrdu'**
+  String get ingredientSuggestionConfirmHint;
+
+  /// Ingredient picker sheet, the title asking which catalog entry a typed word means. Locale rule: the recipe's own language (widget.locale), same as ingredientNoMatchLabel -- this sheet is opened from the open line's preview.
   ///
   /// In sr, this message translates to:
   /// **'Koji sastojak je „{query}”?'**

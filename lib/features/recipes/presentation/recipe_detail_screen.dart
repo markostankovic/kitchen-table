@@ -11,6 +11,7 @@ import '../../../core/l10n/language_labels.dart';
 import '../../../core/l10n/meal_slot_labels.dart';
 import '../../../core/meal_plan/meal_plan_writer.dart';
 import '../../../core/meal_plan/widgets/meal_slot_picker_sheet.dart';
+import '../../../core/recipes/widgets/recipe_group_heading.dart';
 import '../../../core/recipes/widgets/recipe_photo.dart';
 import '../../../core/refresh/data_revision.dart';
 import '../../../core/router/routes.dart';
@@ -601,7 +602,7 @@ class _Body extends ConsumerWidget {
     return <Widget>[
       for (int i = 0; i < lines.length; i++) ...<Widget>[
         if (startsGroup(i))
-          _GroupHeading(
+          RecipeGroupHeading(
             text: lines[i].section!,
             // `AppSectionHeading` already ends in `sm`; a line above already
             // ends in its own `sm` padding.
@@ -642,7 +643,7 @@ class _Body extends ConsumerWidget {
                 ? 0
                 : _connectorGap,
           ),
-          RecipeStepKind.heading => _GroupHeading(
+          RecipeStepKind.heading => RecipeGroupHeading(
             text: steps[i].text,
             top: i == 0 ? 0 : AppSpacing.sm,
             bottom: AppSpacing.md,
@@ -964,41 +965,6 @@ class _StepRow extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// A heading that groups the rows after it ("Za testo", "Fil"): a step
-/// heading in the method (D153), or an ingredient section's heading.
-///
-/// Both read the same, `titleSmall` in `primary`; only the gaps differ, and
-/// the caller passes them on top of whatever the neighbouring rows already
-/// pad. In the method it sits flush with the disc column, not the text
-/// column, so it reads as above the steps rather than one of them. The row
-/// above already ends in `xl`, so `sm` on top puts it 32 below; first in the
-/// method, it takes none.
-class _GroupHeading extends StatelessWidget {
-  const _GroupHeading({
-    required this.text,
-    required this.top,
-    required this.bottom,
-  });
-
-  final String text;
-  final double top;
-  final double bottom;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.only(top: top, bottom: bottom),
-      child: Text(
-        text,
-        style: theme.textTheme.titleSmall?.copyWith(
-          color: theme.colorScheme.primary,
-        ),
       ),
     );
   }

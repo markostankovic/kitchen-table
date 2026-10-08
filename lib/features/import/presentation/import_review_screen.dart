@@ -4,9 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
-import '../../../core/ingredients/widgets/ingredient_line_field.dart';
-import '../../../core/ingredients/widgets/ingredient_line_row.dart';
-import '../../../core/ingredients/widgets/quantity_format.dart';
+import '../../../core/ingredients/widgets/ingredient_lines_editor.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_radii.dart';
@@ -36,7 +34,10 @@ import '../domain/import_job.dart';
 /// one tap away. Editing the odd line out is the exception, not the workflow.
 ///
 /// So the lines are read-only rows, and tapping one opens it into the editor
-/// in place -- one at a time (D123).
+/// in place -- one at a time (D123). The list is the shared
+/// [IngredientLinesEditor] in its review style, the same one the recipe
+/// editor uses; there is no Done button any more (D159) -- a line closes when
+/// another opens, on the keyboard's Next, or on ✕.
 ///
 /// One screen serves three states, because the job it is watching moves
 /// through them: waiting, failed, and ready to review.
@@ -249,10 +250,6 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
   bool _discarding = false;
   AppFailure? _failure;
 
-  /// The one line open in the editor, if any. A single id is what keeps it to
-  /// one at a time: opening a line closes the last.
-  int? _openLineId;
-
   ImportConfirm get _confirm =>
       ref.read(importConfirmProvider(widget.jobId).notifier);
 
@@ -276,18 +273,28 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
     }
   }
 
-  /// Adds a line and opens it. The id has to be tracked: a line held open only
-  /// by being blank closes on its first keystroke, mid-typing (found on the
-  /// device walk).
-  void _addLine() {
+  /// The new line's id, read back from the draft for the list to open.
+  int _insertLineAfter(int localId) {
+    _confirm.insertLineAfter(localId);
+    final List<RecipeDraftLine> lines =
+        ref.read(importConfirmProvider(widget.jobId)).value?.draft.lines ??
+        const <RecipeDraftLine>[];
+    final int at =
+        lines.indexWhere((RecipeDraftLine l) => l.localId == localId);
+    return at < 0 || at + 1 >= lines.length
+        ? lines.last.localId
+        : lines[at + 1].localId;
+  }
+
+  int _addLine() {
     _confirm.addLine();
-    final List<RecipeDraftLine>? lines = ref
+    return ref
         .read(importConfirmProvider(widget.jobId))
-        .value
-        ?.draft
-        .lines;
-    if (lines == null || lines.isEmpty) return;
-    setState(() => _openLineId = lines.last.localId);
+        .value!
+        .draft
+        .lines
+        .last
+        .localId;
   }
 
   /// `_FailedState._dismiss`, behind a confirm: a successful review has a
@@ -398,66 +405,18 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
         ),
         const SizedBox(height: AppSpacing.xl),
         AppSectionHeading(text: l10n.ingredientsHeading),
-        // The same scaffolding as the recipe editor, and it has to stay the
-        // same: IngredientLineField emits a ReorderableDragStartListener, so
-        // it asserts outside a ReorderableListView, and it supplies its own
-        // handle, so the default ones are off. The closed rows sit in it too,
-        // dragged by long-press.
-        ReorderableListView(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          buildDefaultDragHandles: false,
-          onReorderItem: _confirm.reorderLines,
-          children: <Widget>[
-            for (final (int index, RecipeDraftLine line) in draft.lines.indexed)
-              // A blank line has nothing to read, so it is always open.
-              if (line.localId == _openLineId || line.rawText.trim().isEmpty)
-                Column(
-                  key: ValueKey<int>(line.localId),
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    IngredientLineField(
-                      index: index,
-                      line: line,
-                      locale: draft.originalLocale,
-                      onChanged: _confirm.replaceLine,
-                      onRemove: () => _confirm.removeLine(line.localId),
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () => setState(() => _openLineId = null),
-                        child: Text(l10n.doneButton),
-                      ),
-                    ),
-                  ],
-                )
-              else
-                ReorderableDelayedDragStartListener(
-                  key: ValueKey<int>(line.localId),
-                  index: index,
-                  child: InkWell(
-                    onTap: () => setState(() => _openLineId = line.localId),
-                    child: _lineRow(
-                      line,
-                      draft,
-                      parser,
-                      units,
-                      l10n,
-                      isFlagged: attention.contains(line.localId),
-                      showDivider: index != draft.lines.length - 1,
-                    ),
-                  ),
-                ),
-          ],
-        ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: _addLine,
-            icon: const Icon(Icons.add),
-            label: Text(l10n.addIngredientButton),
-          ),
+        IngredientLinesEditor(
+          lines: draft.lines,
+          locale: draft.originalLocale,
+          units: units,
+          parser: parser,
+          onReplace: _confirm.replaceLine,
+          onRemove: _confirm.removeLine,
+          onReorder: _confirm.reorderLines,
+          onInsertAfter: _insertLineAfter,
+          onAdd: _addLine,
+          review: true,
+          flagged: attention,
         ),
         const SizedBox(height: AppSpacing.xl),
         _MethodCard(
@@ -473,57 +432,6 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody> {
           onChanged: _confirm.setNotes,
         ),
       ],
-    );
-  }
-
-  /// One closed line, in the shared row -- `recipe_detail_screen`'s
-  /// `_ingredientRow`, with three differences. The unit is spelled in the
-  /// **recipe's** locale, because this is the source document under review,
-  /// not a reading. The name is the local parse of the raw text, since a
-  /// draft line has no resolved name. And a matched line's trailer leads with
-  /// `→ <catalog name>`, which is what the cook is here to check.
-  Widget _lineRow(
-    RecipeDraftLine line,
-    RecipeDraft draft,
-    IngredientLineParser? parser,
-    UnitCatalog? units,
-    AppLocalizations l10n, {
-    required bool isFlagged,
-    required bool showDivider,
-  }) {
-    final String? parsedName = units == null
-        ? null
-        : parser?.parse(line.rawText).name;
-    // Rule 3: with no usable parse, the whole line shows as typed, with no
-    // quantity or unit beside it to double up.
-    final bool whole = parsedName == null || parsedName.trim().isEmpty;
-
-    final String trailer = <String>[
-      if (line.isMatched && line.displayName != null) '→ ${line.displayName}',
-      // The ring's tooltip string doubles as the unmatched line's trailer.
-      if (!line.isMatched) l10n.ingredientNotMatchedTooltip,
-      if (line.note != null) line.note!,
-    ].join(' · ');
-
-    return IngredientLineRow(
-      quantity: whole || line.quantity == null
-          ? null
-          : formatQuantity(line.quantity!),
-      unit: whole || line.unitCode == null
-          ? null
-          : units!.displayName(line.unitCode!, locale: draft.originalLocale),
-      name: whole ? line.rawText : parsedName,
-      // The parser moves the optional marker into the note, so a line with a
-      // note already says it; the inline `opciono` is for one without.
-      optionalLabel: line.isOptional && line.note == null
-          ? l10n.ingredientOptionalTrailer
-          : null,
-      trailer: trailer.isEmpty ? null : trailer,
-      isMatched: line.isMatched,
-      isFlagged: isFlagged,
-      inset: true,
-      unmatchedTooltip: l10n.ingredientNotMatchedTooltip,
-      showDivider: showDivider,
     );
   }
 

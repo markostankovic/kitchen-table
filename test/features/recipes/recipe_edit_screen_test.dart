@@ -120,6 +120,15 @@ void main() {
       // One ingredient row and one step row to start with.
       expect(find.byIcon(Icons.drag_indicator), findsNWidgets(2));
 
+      // A blank line that closes is removed (D159), so the first line needs
+      // something in it to survive the new one opening.
+      await tester.enterText(
+        find.widgetWithText(TextField, '2 šolje glatkog brašna'),
+        'so',
+      );
+      // A frame for the typed text to reach the list, as one always does
+      // between a keystroke and a tap on a device.
+      await tester.pump();
       await tester.tap(find.widgetWithText(TextButton, 'Add ingredient'));
       await tester.pumpAndSettle();
 
@@ -246,8 +255,11 @@ void main() {
       expect(find.text('Edit recipe'), findsOneWidget);
       expect(find.text('Šargarepa torta'), findsOneWidget);
       expect(find.text('8'), findsOneWidget);
-      expect(find.text('200 g šargarepe'), findsOneWidget);
-      expect(find.text('so po ukusu'), findsOneWidget);
+      // Closed rows, read like the recipe: the ring after an unmatched name
+      // is an inline span, so the text is matched by containment.
+      expect(find.textContaining('200 g šargarepe'), findsOneWidget);
+      expect(find.textContaining('so po ukusu'), findsOneWidget);
+      expect(find.byType(TextField).evaluate().length, 8);
       expect(find.text('Zagrej rernu.'), findsOneWidget);
     });
 
@@ -273,12 +285,14 @@ void main() {
         draft: RecipeDraft.fromDetail(_detail),
       );
 
-      // The first Remove button belongs to the first ingredient line.
+      // Lines open one at a time; the open one's ✕ removes it.
+      await tester.tap(find.textContaining('200 g šargarepe'));
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithIcon(IconButton, Icons.close).first);
       await tester.pumpAndSettle();
 
-      expect(find.text('200 g šargarepe'), findsNothing);
-      expect(find.text('so po ukusu'), findsOneWidget);
+      expect(find.textContaining('200 g šargarepe'), findsNothing);
+      expect(find.textContaining('so po ukusu'), findsOneWidget);
       expect(find.text('Zagrej rernu.'), findsOneWidget);
     });
 
@@ -483,9 +497,10 @@ void main() {
       final ThemeData theme = AppTheme.light();
       final Iterable<TextField> fields =
           tester.widgetList<TextField>(find.byType(TextField));
-      // Title, description, three numbers, tags, two lines, one step, the
-      // end note.
-      expect(fields, hasLength(10));
+      // Title, description, three numbers, tags, one step, the end note. The
+      // two ingredient lines are closed rows; an open one types in bodyLarge
+      // (D158), the one exception, and ingredient_line_field_test covers it.
+      expect(fields, hasLength(8));
       for (final TextField field in fields) {
         expect(field.style, isNotNull);
         expect(field.style!.fontFamily, isNot('Literata'));

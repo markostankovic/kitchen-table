@@ -129,6 +129,7 @@
 
   "ingredientNoMatchLabel": "No match",
   "ingredientSuggestionLabel": "{name}?",
+  "ingredientSuggestionConfirmHint": "Tap to confirm",
 
   "ingredientPickerQuestion": "Which ingredient is “{query}”?",
   "ingredientPickerNoMatches": "Nothing in the catalog matches.",

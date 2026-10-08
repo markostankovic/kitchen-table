@@ -320,17 +320,7 @@ class IngredientLineRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           content,
-          if (showDivider)
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: padded ? AppSpacing.md : 0,
-              ),
-              child: CustomPaint(
-                key: const Key('ingredientDivider'),
-                size: const Size.fromHeight(_dividerHeight),
-                painter: _DashedLinePainter(color: kitchen.dividerDash),
-              ),
-            ),
+          if (showDivider) IngredientLineDivider(inset: padded),
         ],
       ),
     );
@@ -420,6 +410,32 @@ class IngredientLineRow extends StatelessWidget {
       style: style,
       softWrap: false,
       textAlign: TextAlign.end,
+    );
+  }
+}
+
+/// The dashed divider under an [IngredientLineRow], on its own.
+///
+/// The row draws it itself; this is public for the one caller that has to put
+/// something between a row and its divider -- the ingredient lines editor's
+/// suggestion pill, which belongs to its line and so sits above the dashes.
+/// Such a caller passes `showDivider: false` to the row and draws this under
+/// the extra. [inset] matches the row's own.
+class IngredientLineDivider extends StatelessWidget {
+  const IngredientLineDivider({this.inset = false, super.key});
+
+  final bool inset;
+
+  @override
+  Widget build(BuildContext context) {
+    final KitchenColors kitchen = Theme.of(context).extension<KitchenColors>()!;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: inset ? AppSpacing.md : 0),
+      child: CustomPaint(
+        key: const Key('ingredientDivider'),
+        size: const Size.fromHeight(_dividerHeight),
+        painter: _DashedLinePainter(color: kitchen.dividerDash),
+      ),
     );
   }
 }

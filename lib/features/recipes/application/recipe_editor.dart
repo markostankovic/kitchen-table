@@ -109,6 +109,9 @@ class RecipeEditor extends _$RecipeEditor {
 
   void addLine() => _update((RecipeDraft d) => d.addLine());
 
+  void insertLineAfter(int localId) =>
+      _update((RecipeDraft d) => d.insertLineAfter(localId));
+
   void removeLine(int localId) =>
       _update((RecipeDraft d) => d.removeLine(localId));
 

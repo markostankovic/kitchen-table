@@ -27,6 +27,10 @@ abstract final class AppSizes {
   /// not held to [target].
   static const double chip = 40;
 
+  /// An input/tag chip and the ingredient suggestion pill. Not held to
+  /// [target] as a drawing; a tappable one keeps a 48dp hit area.
+  static const double tag = 32;
+
   /// The top app bar.
   static const double appBar = 64;
 

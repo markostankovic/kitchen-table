@@ -356,15 +356,31 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(IngredientLineField), findsOneWidget);
 
-    await tester.tap(find.text('Done'));
-    await tester.pumpAndSettle();
-    expect(find.byType(IngredientLineField), findsNothing);
-
-    await tester.tap(find.byType(IngredientLineRow).at(0));
-    await tester.pumpAndSettle();
+    // There is no Done any more (D159): tapping another row closes this one
+    // and opens that.
+    expect(find.text('Done'), findsNothing);
     await tester.tap(find.byType(IngredientLineRow).at(1));
     await tester.pumpAndSettle();
     expect(find.byType(IngredientLineField), findsOneWidget);
+    expect(
+      tester
+          .widget<IngredientLineField>(find.byType(IngredientLineField))
+          .index,
+      2,
+    );
+
+    // Next on a line commits it and opens a blank one straight under it.
+    await tester.testTextInput.receiveAction(TextInputAction.next);
+    await tester.pumpAndSettle();
+    final IngredientLineField opened =
+        tester.widget<IngredientLineField>(find.byType(IngredientLineField));
+    expect(opened.index, 3);
+    expect(opened.line.rawText, isEmpty);
+
+    // Next on that blank line closes it, and it goes.
+    await tester.testTextInput.receiveAction(TextInputAction.next);
+    await tester.pumpAndSettle();
+    expect(find.byType(IngredientLineField), findsNothing);
   });
 
   testWidgets('Add ingredient opens a blank line', (WidgetTester tester) async {

@@ -60,7 +60,7 @@ class _IngredientPickerSheet extends ConsumerWidget {
         ref.watch(ingredientMatchesProvider(query, locale: locale));
     // The recipe's own language, not the reader's chrome locale -- this
     // sheet is opened from the match chip, which already follows that rule
-    // (ingredient_line_field.dart, ingredient_match_chip.dart).
+    // (ingredient_line_field.dart, ingredient_lines_editor.dart).
     final AppLocalizations sheetL10n = lookupAppLocalizations(Locale(locale));
 
     return SafeArea(
