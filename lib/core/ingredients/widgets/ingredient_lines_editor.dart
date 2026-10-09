@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' show lerpDouble;
 
+import 'package:flutter/gestures.dart' show kTouchSlop;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -414,21 +415,67 @@ class _IngredientLinesEditorState extends State<IngredientLinesEditor> {
     final RecipeDraftLine line = widget.lines[index];
     // A blank line has nothing to read, so it is always open.
     if (line.localId == _openLineId || line.rawText.trim().isEmpty) {
-      return IngredientLineField(
-        index: item,
-        line: line,
-        locale: widget.locale,
-        autofocus: line.localId == _focusLineId,
-        onChanged: widget.onReplace,
-        onRemove: () => _remove(line.localId),
-        onSubmitted: (String text) => _submitted(line, text),
-        onBackspaceWhenEmpty: () => _backspaceWhenEmpty(index),
-        onFocused: () {
-          if (_openLineId != line.localId) _open(line.localId);
+      return _closesOnTapOutside(
+        onClose: () {
+          if (_openLineId == line.localId) _open(null);
         },
+        child: IngredientLineField(
+          index: item,
+          line: line,
+          locale: widget.locale,
+          autofocus: line.localId == _focusLineId,
+          onChanged: widget.onReplace,
+          onRemove: () => _remove(line.localId),
+          onSubmitted: (String text) => _submitted(line, text),
+          onBackspaceWhenEmpty: () => _backspaceWhenEmpty(index),
+          onFocused: () {
+            if (_openLineId != line.localId) _open(line.localId);
+          },
+        ),
       );
     }
     return _closedRow(item, line, showDivider: showDivider);
+  }
+
+  /// Where the last tap outside the open line or heading went down.
+  Offset? _outsideDown;
+
+  /// The open line or heading closes on a tap outside it, or when another
+  /// field takes the focus -- a way out that is not ✕, which removes. What
+  /// was typed is already in the draft and stays.
+  ///
+  /// A text-field tap region, so the field's own handles and copy/paste
+  /// menu count as inside; another text field does too, which is why focus
+  /// moving away closes it as well. A drag is a scroll, not a tap, and a
+  /// sheet over the screen -- the picker -- is neither: [TapRegion] already
+  /// ignores taps while its route is covered, and the focus check does the
+  /// same.
+  Widget _closesOnTapOutside({
+    required VoidCallback onClose,
+    required Widget child,
+  }) {
+    return TextFieldTapRegion(
+      onTapOutside: (PointerDownEvent event) => _outsideDown = event.position,
+      onTapUpOutside: (PointerUpEvent event) {
+        final Offset? down = _outsideDown;
+        _outsideDown = null;
+        if (down == null || (event.position - down).distance > kTouchSlop) {
+          return;
+        }
+        FocusManager.instance.primaryFocus?.unfocus();
+        onClose();
+      },
+      child: Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        onFocusChange: (bool focused) {
+          if (!focused && (ModalRoute.isCurrentOf(context) ?? true)) {
+            onClose();
+          }
+        },
+        child: child,
+      ),
+    );
   }
 
   Widget _closedRow(
@@ -484,17 +531,26 @@ class _IngredientLinesEditorState extends State<IngredientLinesEditor> {
     final Key key = ValueKey<String>('section-$firstId');
 
     if (firstId == _headingLineId) {
-      return _OpenHeading(
+      return KeyedSubtree(
         key: key,
-        index: item,
-        text: lines[heading.start].section ?? '',
-        locale: widget.locale,
-        review: widget.review,
-        top: top,
-        autofocus: true,
-        onChanged: _headingChanged,
-        onSubmitted: _headingSubmitted,
-        onRemove: () => _closeHeading(remove: true),
+        // Not `_open(null)`: that would also drop Add section's blank line
+        // under the heading, and the section with it.
+        child: _closesOnTapOutside(
+          onClose: () {
+            if (_headingLineId == firstId) _closeHeading();
+          },
+          child: _OpenHeading(
+            index: item,
+            text: lines[heading.start].section ?? '',
+            locale: widget.locale,
+            review: widget.review,
+            top: top,
+            autofocus: true,
+            onChanged: _headingChanged,
+            onSubmitted: _headingSubmitted,
+            onRemove: () => _closeHeading(remove: true),
+          ),
+        ),
       );
     }
 
@@ -633,7 +689,6 @@ class _OpenHeading extends StatefulWidget {
     required this.onChanged,
     required this.onSubmitted,
     required this.onRemove,
-    super.key,
   });
 
   final int index;
@@ -668,6 +723,13 @@ class _OpenHeadingState extends State<_OpenHeading> {
       ),
     );
     _focus = FocusNode()..addListener(_onFocusChanged);
+    // As on the open line: `autofocus` defers to a field that already has
+    // focus elsewhere on the screen.
+    if (widget.autofocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _focus.requestFocus();
+      });
+    }
   }
 
   @override

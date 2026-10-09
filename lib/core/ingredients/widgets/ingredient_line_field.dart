@@ -202,6 +202,14 @@ class _IngredientLineFieldState extends ConsumerState<IngredientLineField> {
       ),
     );
     _focus = FocusNode(onKeyEvent: _onKey)..addListener(_onFocusChanged);
+    // `autofocus` only takes focus when nothing else has it; a line opened
+    // by a tap while another field (the end note, say) holds focus must
+    // still take it from that field.
+    if (widget.autofocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _focus.requestFocus();
+      });
+    }
     if (!widget.line.isMatched && text.trim().isNotEmpty) {
       _query = ingredientSearchName(text, ref.read(lineParserProvider).value);
     }

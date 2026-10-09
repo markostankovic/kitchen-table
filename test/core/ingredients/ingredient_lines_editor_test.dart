@@ -61,10 +61,18 @@ class _FakeCatalog implements IngredientRepository {
 
 /// Holds the draft the way both screens' notifiers do.
 class _Harness extends StatefulWidget {
-  const _Harness({required this.initial, required this.review});
+  const _Harness({
+    required this.initial,
+    required this.review,
+    this.withOtherField = false,
+  });
 
   final RecipeDraft initial;
   final bool review;
+
+  /// A text field and a plain label above the list: the rest of the screen,
+  /// for focus to sit in and for taps to land outside the open line.
+  final bool withOtherField;
 
   @override
   State<_Harness> createState() => _HarnessState();
@@ -85,6 +93,13 @@ class _HarnessState extends State<_Harness> {
   Widget build(BuildContext context) => Scaffold(
         body: ListView(
           children: <Widget>[
+            if (widget.withOtherField) ...<Widget>[
+              const TextField(key: Key('otherField')),
+              const SizedBox(
+                height: 80,
+                child: Text('outside', key: Key('outside')),
+              ),
+            ],
             IngredientLinesEditor(
               lines: _draft.lines,
               locale: 'sr',
@@ -122,6 +137,7 @@ Future<_FakeCatalog> _pump(
   WidgetTester tester,
   List<RecipeDraftLine> lines, {
   bool review = false,
+  bool withOtherField = false,
   Map<String, List<IngredientMatch>> matches =
       const <String, List<IngredientMatch>>{},
 }) async {
@@ -148,6 +164,7 @@ Future<_FakeCatalog> _pump(
         home: _Harness(
           initial: RecipeDraft(lines: lines),
           review: review,
+          withOtherField: withOtherField,
         ),
       ),
     ),
@@ -176,8 +193,16 @@ Finder get _field => find.byType(IngredientLineField);
 IngredientLineField _open(WidgetTester tester) =>
     tester.widget<IngredientLineField>(_field);
 
-EditableText _editable(WidgetTester tester) =>
-    tester.widget<EditableText>(find.byType(EditableText));
+EditableText _editable(WidgetTester tester) => tester.widget<EditableText>(
+      find.descendant(of: _field, matching: find.byType(EditableText)),
+    );
+
+EditableText _other(WidgetTester tester) => tester.widget<EditableText>(
+      find.descendant(
+        of: find.byKey(const Key('otherField')),
+        matching: find.byType(EditableText),
+      ),
+    );
 
 List<String> _texts() =>
     _draft.lines.map((RecipeDraftLine l) => l.rawText).toList();
@@ -423,6 +448,145 @@ void main() {
       tester.widget<IngredientLineRow>(find.byType(IngredientLineRow)).inset,
       isTrue,
     );
+  });
+
+  group('closing without ✕', () {
+    testWidgets('a tap outside closes the open line and keeps its text', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, withOtherField: true, <RecipeDraftLine>[
+        _line(0, 'brašno'),
+        _line(1, 'so'),
+      ]);
+      await tester.tap(find.byType(IngredientLineRow).first);
+      await tester.pumpAndSettle();
+      await tester.enterText(_field, '200 g brašna');
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('outside')));
+      await tester.pumpAndSettle();
+
+      expect(_field, findsNothing);
+      expect(_texts(), <String>['200 g brašna', 'so']);
+      expect(tester.testTextInput.isVisible, isFalse);
+    });
+
+    testWidgets('a blank line closed by a tap outside is removed', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, withOtherField: true, <RecipeDraftLine>[
+        _line(0, 'brašno'),
+      ]);
+      await tester.tap(find.text('Add ingredient'));
+      await tester.pumpAndSettle();
+      expect(_texts(), <String>['brašno', '']);
+
+      await tester.tap(find.byKey(const Key('outside')));
+      await tester.pumpAndSettle();
+
+      expect(_texts(), <String>['brašno']);
+      expect(_field, findsNothing);
+    });
+
+    testWidgets('a drag outside is a scroll and leaves the line open', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, withOtherField: true, <RecipeDraftLine>[
+        _line(0, 'brašno'),
+      ]);
+      await tester.tap(find.byType(IngredientLineRow).first);
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.byKey(const Key('outside')), const Offset(0, -40));
+      await tester.pumpAndSettle();
+
+      expect(_field, findsOneWidget);
+    });
+
+    testWidgets('another field taking focus closes the open line', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, withOtherField: true, <RecipeDraftLine>[
+        _line(0, 'brašno'),
+      ]);
+      await tester.tap(find.byType(IngredientLineRow).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('otherField')));
+      await tester.pumpAndSettle();
+
+      expect(_field, findsNothing);
+      expect(_other(tester).focusNode.hasFocus, isTrue);
+    });
+
+    testWidgets('a tap on a row takes the focus from another field', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, withOtherField: true, <RecipeDraftLine>[
+        _line(0, 'brašno'),
+      ]);
+      await tester.tap(find.byKey(const Key('otherField')));
+      await tester.pumpAndSettle();
+      expect(_other(tester).focusNode.hasFocus, isTrue);
+
+      await tester.tap(find.byType(IngredientLineRow).first);
+      await tester.pumpAndSettle();
+
+      expect(_editable(tester).focusNode.hasFocus, isTrue);
+      expect(_other(tester).focusNode.hasFocus, isFalse);
+    });
+
+    testWidgets('the picker over the line does not close it', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, withOtherField: true, <RecipeDraftLine>[
+        _line(0, 'brašno'),
+      ]);
+      await tester.tap(find.byType(IngredientLineRow).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('ingredientLinePreview')));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      await tester.tap(find.byType(BottomSheet));
+      await tester.pumpAndSettle();
+      expect(_field, findsOneWidget);
+
+      // The barrier dismisses the sheet; that tap is not the line's either.
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(_field, findsOneWidget);
+    });
+
+    testWidgets('a tap outside closes an open heading and keeps its name', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, withOtherField: true, <RecipeDraftLine>[
+        _line(0, 'brašno', section: 'Za testo'),
+      ]);
+      await tester.tap(find.text('Za testo'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byType(IngredientLinesEditor),
+          matching: find.byType(EditableText),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const Key('outside')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(IngredientLinesEditor),
+          matching: find.byType(EditableText),
+        ),
+        findsNothing,
+      );
+      expect(_draft.lines.single.section, 'Za testo');
+    });
   });
 
   group('sections', () {
