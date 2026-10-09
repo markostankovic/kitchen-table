@@ -69,6 +69,11 @@ dependencies:
   # `signIn()` at all. Contained inside `auth/data/` like `supabase_flutter`
   # (`tool/check_layers.dart`).
   google_sign_in: ^7.2.0
+  # Hashes the Google sign-in nonce (`auth_repository.dart`): iOS's SDK always
+  # puts one in the ID token, and GoTrue needs the raw value to match it. Was
+  # already in the lockfile transitively; taken directly under rule 8, asked
+  # for and approved.
+  crypto: ^3.0.7
   # Phase 8 part 2: recipe photos cached on disk, keyed by Storage object
   # path rather than by signed URL, so a re-signed URL is still a hit. A new
   # dependency under rule 8, asked for and approved. `flutter_cache_manager`

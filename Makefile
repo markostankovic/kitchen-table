@@ -7,7 +7,7 @@ DART_DEFINE := --dart-define-from-file=env/local.json
 .PHONY: help gen watch lint lint-functions test test-functions test-sql seed \
 	seed-check l10n-check db-reset db-start db-stop db-push config-push \
 	types check functions-serve functions-deploy run run-android run-hosted \
-	install-hosted install-emulator icons
+	install-hosted install-emulator run-ios-sim icons
 
 help:
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -140,6 +140,18 @@ install-emulator: ## Build a release APK against hosted with the dev login, inst
 	flutter build apk --release --dart-define-from-file=env/hosted.json \
 		--dart-define-from-file=env/dev_login.json
 	@PATH="$$HOME/Library/Android/sdk/platform-tools:$$PATH" adb -e install -r build/app/outputs/flutter-apk/app-release.apk
+
+# The iOS Simulator runs debug builds only -- Flutter has no release or profile
+# mode for it -- so this is the one hosted run that is not a release build.
+# Unlike the Android emulator it can run the real Google sign-in. Boots
+# IOS_SIM (override: make run-ios-sim IOS_SIM="iPhone Air") if it isn't up.
+IOS_SIM ?= iPhone 17
+run-ios-sim: ## Debug build against hosted Supabase on the iOS Simulator
+	@udid=$$(xcrun simctl list devices available | grep -F "    $(IOS_SIM) (" | head -1 | grep -oE '[0-9A-F-]{36}'); \
+	if [ -z "$$udid" ]; then echo "No available simulator named '$(IOS_SIM)'"; exit 1; fi; \
+	xcrun simctl boot "$$udid" 2>/dev/null || true; \
+	open -a Simulator; \
+	flutter run -d "$$udid" --dart-define-from-file=env/hosted.json
 
 types: ## Regenerate Dart models from the Zod schemas
 	@# docs/ARCHITECTURE.md, "Type flow". schema.ts is the source of truth for

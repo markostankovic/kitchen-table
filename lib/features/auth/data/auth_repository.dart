@@ -6,7 +6,11 @@
 /// `AuthException` is (`tool/check_layers.dart`).
 library;
 
+import 'dart:convert' show utf8;
 import 'dart:io' show Platform;
+import 'dart:math' show Random;
+
+import 'package:crypto/crypto.dart' show sha256;
 
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -35,6 +39,15 @@ class AuthRepository {
   /// frame, and a warm start that restores a stored session never wakes the
   /// native SDK at all.
   static bool _googleInitialized = false;
+
+  /// The raw nonce whose SHA-256 went to [GoogleSignIn.initialize].
+  ///
+  /// iOS's Google SDK always writes a nonce into the ID token, and GoTrue
+  /// rejects a token carrying one unless `signInWithIdToken` is handed the raw
+  /// value to hash and compare. Android's flow has none of its own, but takes
+  /// the same one, so both platforms run the same check. Per process, not per
+  /// attempt: `initialize()` is one-shot and is the only place a nonce goes in.
+  static String? _googleNonce;
 
   /// The current user, synchronously.
   ///
@@ -93,6 +106,7 @@ class AuthRepository {
           final AuthResponse response = await _client.auth.signInWithIdToken(
             provider: OAuthProvider.google,
             idToken: idToken,
+            nonce: _googleNonce,
           );
           return _toAppUser(response.user);
         } on GoogleSignInException catch (e) {
@@ -111,10 +125,15 @@ class AuthRepository {
   /// here. iOS additionally needs its own `clientId`.
   Future<void> _ensureGoogleInitialized() async {
     if (_googleInitialized) return;
+    final Random random = Random.secure();
+    final String rawNonce = List<String>.generate(
+        32, (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
     await GoogleSignIn.instance.initialize(
       serverClientId: GoogleAuth.serverClientId,
       clientId: Platform.isIOS ? GoogleAuth.iosClientId : null,
+      nonce: sha256.convert(utf8.encode(rawNonce)).toString(),
     );
+    _googleNonce = rawNonce;
     _googleInitialized = true;
   }
 
