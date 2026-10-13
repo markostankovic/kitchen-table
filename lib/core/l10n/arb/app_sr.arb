@@ -228,7 +228,7 @@
   },
   "failureInviteAlreadyUsed": "Taj kod je već iskorišćen.",
   "@failureInviteAlreadyUsed": {
-    "description": "Failure vocabulary (D92), FailureCode.inviteAlreadyUsed -- the invite_already_used and already_in_household Edge Function slugs."
+    "description": "Failure vocabulary (D92), FailureCode.inviteAlreadyUsed -- the invite_already_used Edge Function slug."
   },
   "failureInviteExpired": "Taj kod je istekao.",
   "@failureInviteExpired": {

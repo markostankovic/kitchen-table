@@ -14,6 +14,11 @@ import 'cache_guard.dart';
 /// The key the app's Light/Dark choice is stored under (`light` or `dark`).
 const String themeModeKey = 'theme_mode';
 
+/// The key [userId]'s selected household id is stored under on this device
+/// (D169) -- per user, so a second account on the same phone never inherits
+/// it.
+String selectedHouseholdKey(String userId) => 'selected_household.$userId';
+
 class DevicePreferenceStore {
   const DevicePreferenceStore(this._db);
 

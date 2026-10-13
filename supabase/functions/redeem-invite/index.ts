@@ -29,8 +29,9 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
 
   const nowIso = new Date().toISOString();
 
-  // What the caller is already a member of. Drives both the idempotent-retry
-  // case and the single-household rule below.
+  // What the caller is already a member of. Drives the idempotent-retry
+  // cases below. Membership of another household is no bar to joining this
+  // one (multi-household-b): the client picks which household it shows.
   const { data: memberships, error: membershipError } = await service
     .from("household_members")
     .select("household_id")
@@ -75,8 +76,8 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
   // drop the row on a deleted household and report "that code is not valid",
   // which is the wrong story. delete_household()'s own revocation sweep
   // handles the ordinary case, and no new code can be minted for a deleted
-  // household (create-invite resolves the household from a membership that no
-  // longer exists), so this guard exists for exactly one narrow race: a code
+  // household (create-invite checks membership of the household it is named,
+  // and that membership no longer exists), so this guard exists for exactly one narrow race: a code
   // peeked or claimed in the instant before the delete commits, whose
   // membership insert would otherwise land in a deleted household.
   const { data: live, error: liveError } = await service
@@ -108,18 +109,6 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
         householdName: await householdName(householdId),
         alreadyMember: true,
       });
-    }
-
-    // The app has no notion of an active household -- fetchCurrent() returns
-    // the first membership -- so a second one would silently decide which
-    // household you see by creation order. Reject rather than half-support it.
-    if (memberOf.size > 0) {
-      throw new HttpError(
-        409,
-        "already_in_household",
-        "This account is already in a household. Sign in with a different " +
-          "account to join this one.",
-      );
     }
   }
 

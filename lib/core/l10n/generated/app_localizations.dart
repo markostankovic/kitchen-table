@@ -398,7 +398,7 @@ abstract class AppLocalizations {
   /// **'Taj kod nije važeći.'**
   String get failureInviteNotFound;
 
-  /// Failure vocabulary (D92), FailureCode.inviteAlreadyUsed -- the invite_already_used and already_in_household Edge Function slugs.
+  /// Failure vocabulary (D92), FailureCode.inviteAlreadyUsed -- the invite_already_used Edge Function slug.
   ///
   /// In sr, this message translates to:
   /// **'Taj kod je već iskorišćen.'**

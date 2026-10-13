@@ -1,5 +1,5 @@
 /**
- * Caller identity and household resolution.
+ * Caller identity and household membership.
  *
  * Every invite function runs TWO clients, and the distinction matters:
  *
@@ -79,39 +79,6 @@ export async function requireCaller(req: Request): Promise<string> {
   return data.user.id;
 }
 
-/**
- * The caller's oldest household, or null if they are in none.
- *
- * Legacy fallback for clients that send no `householdId` (D168): an APK
- * installed before the explicit id keeps working. Only [requireHousehold]
- * calls it. Delete in slice B (`multi-household-b`), once every client sends
- * the id.
- *
- * Ordered by the membership's own created_at, whereas
- * HouseholdRepository.fetchCurrent() orders by the household's. The two agree
- * as long as a user is only ever in one household, which redeem-invite
- * enforces by rejecting a second.
- */
-export async function resolveHousehold(
-  service: SupabaseClient,
-  userId: string,
-): Promise<{ householdId: string; role: HouseholdRole } | null> {
-  const { data, error } = await service
-    .from("household_members")
-    .select("household_id, role")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw error;
-  if (!data) return null;
-  return {
-    householdId: data.household_id as string,
-    role: data.role as HouseholdRole,
-  };
-}
-
 /** The caller's role in [householdId], or a 403. */
 export async function assertMember(
   service: SupabaseClient,
@@ -147,8 +114,10 @@ const UUID_SHAPE =
  * what holds it to that. Call it before any quota check, job row or read
  * keyed on the id -- the service client has no RLS behind it (D31).
  *
- * A body with no `householdId` falls back to [resolveHousehold] (legacy, see
- * there). A body WITH one never falls back: a non-member gets the 403.
+ * There is no fallback: a body without `householdId` is the same 400 as a
+ * malformed one. The legacy "oldest membership" path D168 kept for older
+ * APKs is gone (multi-household-b), so D168 is complete. A non-member gets
+ * the 403.
  */
 export async function requireHousehold(
   service: SupabaseClient,
@@ -156,18 +125,6 @@ export async function requireHousehold(
   body: Record<string, unknown>,
 ): Promise<{ householdId: string; role: HouseholdRole }> {
   const requested = body.householdId;
-
-  if (requested === undefined) {
-    const membership = await resolveHousehold(service, userId);
-    if (!membership) {
-      throw new HttpError(
-        404,
-        "no_household",
-        "You are not in a household yet.",
-      );
-    }
-    return membership;
-  }
 
   if (typeof requested !== "string" || !UUID_SHAPE.test(requested)) {
     throw new HttpError(

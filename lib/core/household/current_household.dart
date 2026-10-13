@@ -9,9 +9,10 @@
 /// Derived from `currentHouseholdProvider` rather than a new
 /// `households`-table query: that provider is already `keepAlive` and already
 /// the one definition of "which household" (`HouseholdRepository.fetchCurrent`
-/// -- oldest undeleted household the caller belongs to). A repository-level
-/// helper here would have meant a second definition of that tiebreak, in a
-/// second place, and a Postgres round trip on every write this id feeds.
+/// -- the household selected on this device, else the oldest, D169). A
+/// repository-level helper here would have meant a second definition of that
+/// tiebreak, in a second place, and a Postgres round trip on every write this
+/// id feeds.
 /// Riverpod's own caching means deriving it costs nothing extra.
 ///
 /// Only the id is exposed here, not `currentHouseholdProvider` itself: the id

@@ -21,6 +21,7 @@
 /// half. This class only orchestrates the two.
 library;
 
+import '../../../core/db/device_preferences.dart';
 import '../../../core/error/app_failure.dart';
 import '../domain/household.dart';
 import '../domain/household_invite.dart';
@@ -30,14 +31,14 @@ import 'local_household_datasource.dart';
 import 'remote_household_datasource.dart';
 
 class HouseholdRepository {
-  const HouseholdRepository(this._remote, this._local);
+  const HouseholdRepository(this._remote, this._local, this._preferences);
 
   final RemoteHouseholdDataSource _remote;
   final LocalHouseholdDataSource _local;
+  final DevicePreferenceStore _preferences;
 
   /// Households the caller belongs to, excluding soft-deleted ones, oldest
-  /// first -- the network-only list, used by [fetchCurrent] and by nothing
-  /// else today.
+  /// first -- the network-only list.
   Future<List<Household>> fetchMine() async {
     final List<Map<String, dynamic>> rows = await _remote.fetchMineRows();
     return rows.map(householdFromWire).toList();
@@ -45,10 +46,11 @@ class HouseholdRepository {
 
   /// The caller's current household, or null if they have none yet.
   ///
-  /// Multi-household support is not on the roadmap; until it is, "current"
-  /// means the first one they joined -- the same tiebreak [fetchMine]
-  /// documents, preserved here by caching the DECIDED row rather than the
-  /// row set (D88).
+  /// "Current" is the household [userId] last [select]ed on this device, if
+  /// they are still in it; otherwise the oldest, the same order [fetchMine]
+  /// documents (D169). A stale selection -- a household since left or
+  /// deleted -- needs no cleanup: it simply matches no row. The DECIDED row
+  /// is what gets cached, not the row set (D88).
   ///
   /// Network-first with a cache fallback (D70's shape, D88): on success the
   /// chosen row is written through (or the cache cleared, if the caller
@@ -76,14 +78,34 @@ class HouseholdRepository {
         await _local.clearCurrent(userId);
         return null;
       }
-      await _local.writeCurrent(userId, rows.first);
-      return householdFromWire(rows.first);
+      final String? selected =
+          await _preferences.read(selectedHouseholdKey(userId));
+      final Map<String, dynamic> current = rows.firstWhere(
+        (Map<String, dynamic> row) => row['id'] == selected,
+        orElse: () => rows.first,
+      );
+      await _local.writeCurrent(userId, current);
+      return householdFromWire(current);
     } on NetworkFailure {
       onUnreachable?.call();
       final Map<String, dynamic>? cached = await _local.readCurrent(userId);
       if (cached == null) rethrow;
       return householdFromWire(cached);
     }
+  }
+
+  /// Makes [householdId] [userId]'s current household on this device (D169).
+  ///
+  /// Clears [userId]'s cached current-household row too, on [create]'s own
+  /// reasoning (D88): the cached row is the OLD household, so a network blip
+  /// on the confirming re-fetch must surface as an error rather than silently
+  /// serve the household being switched away from.
+  Future<void> select({
+    required String userId,
+    required String householdId,
+  }) async {
+    await _preferences.write(selectedHouseholdKey(userId), householdId);
+    await _local.clearCurrent(userId);
   }
 
   /// Creates a household and the caller's owner membership, atomically.
@@ -110,13 +132,14 @@ class HouseholdRepository {
   Future<HouseholdInvite> createInvite(String householdId) =>
       _remote.createInvite(householdId);
 
-  /// Joins the household behind [code].
+  /// Joins the household behind [code], and returns its id.
   ///
   /// Clears the cached current-household row on success, on [create]'s own
   /// reasoning (D88).
-  Future<void> redeemInvite(String code) async {
-    await _remote.redeemInvite(code);
+  Future<String> redeemInvite(String code) async {
+    final String id = await _remote.redeemInvite(code);
     await _local.clearAll();
+    return id;
   }
 
   /// Renames a household.
@@ -131,19 +154,19 @@ class HouseholdRepository {
   Future<void> rename(String id, String name) =>
       _remote.rename(id, name.trim());
 
-  /// Removes [userId] from the caller's household. Owner-only, enforced by
-  /// the RPC.
-  Future<void> removeMember(String userId) => _remote.removeMember(userId);
+  /// Removes [userId] from [householdId]. Owner-only, enforced by the RPC.
+  Future<void> removeMember(String householdId, String userId) =>
+      _remote.removeMember(householdId, userId);
 
-  /// Caller leaves their own household.
+  /// Caller leaves [householdId].
   ///
   /// Clears the cached current-household row on success, on [create] and
   /// [redeemInvite]'s own reasoning (D88) -- this is precisely the case that
   /// reasoning describes: without the clear, a network blip on the confirming
   /// re-fetch could let [fetchCurrent]'s cache fallback resurrect the
   /// household the caller just left.
-  Future<void> leaveHousehold() async {
-    await _remote.leaveHousehold();
+  Future<void> leaveHousehold(String householdId) async {
+    await _remote.leaveHousehold(householdId);
     await _local.clearAll();
   }
 
@@ -151,15 +174,15 @@ class HouseholdRepository {
   Future<void> revokeInvite(String inviteId) =>
       _remote.revokeInvite(inviteId);
 
-  /// Deletes the caller's own household. Owner-only, enforced by the RPC.
+  /// Deletes [householdId]. Owner-only, enforced by the RPC.
   ///
   /// Clears the cached current-household row on success, on [create],
   /// [redeemInvite] and [leaveHousehold]'s own reasoning (D88): without the
   /// clear, a network blip on the confirming re-fetch could let
   /// [fetchCurrent]'s cache fallback resurrect the household the caller just
   /// deleted.
-  Future<void> deleteHousehold() async {
-    await _remote.deleteHousehold();
+  Future<void> deleteHousehold(String householdId) async {
+    await _remote.deleteHousehold(householdId);
     await _local.clearAll();
   }
 }

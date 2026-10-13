@@ -80,7 +80,7 @@ final class RecipeEditorProvider
   }
 }
 
-String _$recipeEditorHash() => r'b83e38246adff70c96e3919bf8befb4e7929c276';
+String _$recipeEditorHash() => r'fa5451393c1ad26fc872e4c900ccc454acd3860b';
 
 /// The recipe editor's state and the save that ends it.
 ///

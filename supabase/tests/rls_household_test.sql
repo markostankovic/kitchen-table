@@ -25,6 +25,7 @@ declare
   hid       uuid;
   hid2      uuid;
   hid3      uuid;
+  hid4      uuid;
   invite2   uuid;
   n         int;
   failures  int := 0;
@@ -232,7 +233,7 @@ begin
     json_build_object('sub', user_b, 'role', 'authenticated')::text, true);
   got_error := false;
   begin
-    perform remove_household_member(user_a);
+    perform remove_household_member(hid, user_a);
   exception when others then
     got_error := true;
   end;
@@ -248,7 +249,7 @@ begin
     json_build_object('sub', user_a, 'role', 'authenticated')::text, true);
   got_error := false;
   begin
-    perform remove_household_member(user_a);
+    perform remove_household_member(hid, user_a);
   exception when others then
     got_error := true;
   end;
@@ -258,7 +259,7 @@ begin
   end if;
 
   -- The owner can remove an adult.
-  perform remove_household_member(user_b);
+  perform remove_household_member(hid, user_b);
   select count(*) into n
     from household_members where household_id = hid and user_id = user_b;
   if n <> 0 then
@@ -272,7 +273,7 @@ begin
   -- may not leave" into this single check.
   got_error := false;
   begin
-    perform leave_household();
+    perform leave_household(hid);
   exception when others then
     got_error := true;
   end;
@@ -290,7 +291,7 @@ begin
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims',
     json_build_object('sub', user_b, 'role', 'authenticated')::text, true);
-  perform leave_household();
+  perform leave_household(hid);
   select count(*) into n
     from household_members where household_id = hid and user_id = user_b;
   if n <> 0 then
@@ -303,7 +304,7 @@ begin
     json_build_object('sub', user_c, 'role', 'authenticated')::text, true);
   got_error := false;
   begin
-    perform remove_household_member(user_a);
+    perform remove_household_member(hid, user_a);
   exception when others then
     got_error := true;
   end;
@@ -314,7 +315,7 @@ begin
 
   got_error := false;
   begin
-    perform leave_household();
+    perform leave_household(hid);
   exception when others then
     got_error := true;
   end;
@@ -349,7 +350,7 @@ begin
     json_build_object('sub', user_c, 'role', 'authenticated')::text, true);
   got_error := false;
   begin
-    perform delete_household();
+    perform delete_household(hid2);
   exception when others then
     got_error := true;
   end;
@@ -365,7 +366,7 @@ begin
     json_build_object('sub', user_e, 'role', 'authenticated')::text, true);
   got_error := false;
   begin
-    perform delete_household();
+    perform delete_household(hid2);
   exception when others then
     got_error := true;
   end;
@@ -380,7 +381,7 @@ begin
   -- (see the migration's own comment).
   perform set_config('request.jwt.claims',
     json_build_object('sub', user_d, 'role', 'authenticated')::text, true);
-  perform delete_household();
+  perform delete_household(hid2);
 
   perform set_config('role', 'postgres', true);
 
@@ -425,6 +426,125 @@ begin
     raise warning
       'ex-owner D could not create_household() after deleting their own -- '
       'delete_household is a trap, not a real exit';
+  end if;
+
+  ---------------------------------------------------------------------------
+  -- multi-household-b: the RPCs act on the household they are given
+  ---------------------------------------------------------------------------
+  -- C is an adult of X (hid3, D's live household) and the owner of Y (hid4).
+  -- The membership in X is the older one, so the old `order by created_at
+  -- limit 1` lookup would have picked X for every call below.
+  perform set_config('role', 'postgres', true);
+  insert into household_members (household_id, user_id, role)
+  values (hid3, user_c, 'adult');
+
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_c, 'role', 'authenticated')::text, true);
+  select create_household('Second Household') into hid4;
+
+  -- A non-member (E, in no household since hid2 was deleted) can call none
+  -- of the three on X.
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_e, 'role', 'authenticated')::text, true);
+  got_error := false;
+  begin
+    perform remove_household_member(hid3, user_c);
+  exception when others then
+    got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'non-member E was able to remove a member of X';
+  end if;
+
+  got_error := false;
+  begin
+    perform leave_household(hid3);
+  exception when others then
+    got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'non-member E was able to leave X';
+  end if;
+
+  got_error := false;
+  begin
+    perform delete_household(hid3);
+  exception when others then
+    got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'non-member E was able to delete X';
+  end if;
+
+  -- C owns Y, but that does not make C an owner of X.
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_c, 'role', 'authenticated')::text, true);
+  got_error := false;
+  begin
+    perform delete_household(hid3);
+  exception when others then
+    got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'C (adult of X, owner of Y) was able to delete X';
+  end if;
+
+  -- Leaving X removes only the X row.
+  perform leave_household(hid3);
+  perform set_config('role', 'postgres', true);
+  select count(*) into n
+    from household_members where household_id = hid3 and user_id = user_c;
+  if n <> 0 then
+    failures := failures + 1;
+    raise warning 'C could not leave X';
+  end if;
+  select count(*) into n
+    from household_members where household_id = hid4 and user_id = user_c
+      and role = 'owner';
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'leaving X took C''s membership of Y with it';
+  end if;
+  select count(*) into n
+    from households where id = hid4 and deleted_at is null;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'leaving X touched household Y';
+  end if;
+
+  -- Rejoin X, then delete Y: only Y is stamped, and the X membership
+  -- survives.
+  insert into household_members (household_id, user_id, role)
+  values (hid3, user_c, 'adult');
+
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', user_c, 'role', 'authenticated')::text, true);
+  perform delete_household(hid4);
+
+  perform set_config('role', 'postgres', true);
+  select count(*) into n
+    from households where id = hid4 and deleted_at is not null;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'delete_household(Y) did not stamp Y';
+  end if;
+  select count(*) into n
+    from households where id = hid3 and deleted_at is null;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'delete_household(Y) stamped X too';
+  end if;
+  select count(*) into n
+    from household_members where household_id = hid3 and user_id = user_c;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'delete_household(Y) took C''s membership of X with it';
   end if;
 
   ---------------------------------------------------------------------------

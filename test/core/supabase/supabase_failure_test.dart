@@ -50,7 +50,6 @@ void main() {
       'invite_not_found': (NotFoundFailure, FailureCode.inviteNotFound),
       'recipe_not_found': (NotFoundFailure, FailureCode.recipeNotFound),
       'invite_already_used': (ConflictFailure, FailureCode.inviteAlreadyUsed),
-      'already_in_household': (ConflictFailure, FailureCode.inviteAlreadyUsed),
       'invite_expired': (ValidationFailure, FailureCode.inviteExpired),
       'invalid_code': (ValidationFailure, FailureCode.codeNotAccepted),
       'invalid_body': (ValidationFailure, FailureCode.codeNotAccepted),

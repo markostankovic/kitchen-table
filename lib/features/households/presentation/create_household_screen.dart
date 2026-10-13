@@ -44,11 +44,12 @@ class _CreateHouseholdScreenState extends ConsumerState<CreateHouseholdScreen> {
     });
 
     try {
-      await ref.read(householdRepositoryProvider).create(_name.text.trim());
-      // Refetch so the router's redirect sees the new household and lets the
-      // user out of onboarding.
-      ref.invalidate(currentHouseholdProvider);
-      await ref.read(currentHouseholdProvider.future);
+      final String id = await ref
+          .read(householdRepositoryProvider)
+          .create(_name.text.trim());
+      // Switch to it, which re-reads, so the router's redirect sees the new
+      // household and lets the user out of onboarding.
+      await ref.read(currentHouseholdProvider.notifier).switchTo(id);
     } on AppFailure catch (e) {
       if (!mounted) return;
       setState(() => _failure = e);

@@ -87,8 +87,9 @@ export async function readJsonBody(
 /**
  * The request body as an object, where sending no body at all is allowed and
  * reads as `{}`. For functions that took no body before `householdId` (D168):
- * an older client still sends none. A body that IS sent gets [readJsonBody]'s
- * checks.
+ * an older client that still sends none gets [requireHousehold]'s 400
+ * `invalid_household`, not a 400 `invalid_body`. A body that IS sent gets
+ * [readJsonBody]'s checks.
  */
 export async function readOptionalJsonBody(
   req: Request,

@@ -123,11 +123,12 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
     }
   }
 
-  /// Confirms, then removes [member] from the household. Owner-only -- the
+  /// Confirms, then removes [member] from [h]. Owner-only -- the
   /// affordance that calls this does not exist on any other row, so the RPC's
   /// own guard is a backstop for a stale list, not something this dialog
   /// expects to hit.
   Future<void> _removeMember(
+    Household h,
     HouseholdMember member,
     AppLocalizations l10n,
   ) async {
@@ -154,7 +155,9 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
     if (confirmed != true) return;
 
     try {
-      await ref.read(householdRepositoryProvider).removeMember(member.userId);
+      await ref
+          .read(householdRepositoryProvider)
+          .removeMember(h.id, member.userId);
       ref.invalidate(householdMembersProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -166,9 +169,9 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
     }
   }
 
-  /// Confirms, then has the caller leave the household. Only reachable by an
-  /// adult -- the owner never sees this affordance.
-  Future<void> _leave(AppLocalizations l10n) async {
+  /// Confirms, then has the caller leave [h]. Only reachable by an adult --
+  /// the owner never sees this affordance.
+  Future<void> _leave(Household h, AppLocalizations l10n) async {
     final KitchenColors kitchen = Theme.of(context).extension<KitchenColors>()!;
     final bool? confirmed = await showDialog<bool>(
       context: context,
@@ -192,7 +195,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
     if (confirmed != true) return;
 
     try {
-      await ref.read(householdRepositoryProvider).leaveHousehold();
+      await ref.read(householdRepositoryProvider).leaveHousehold(h.id);
       ref.invalidate(currentHouseholdProvider);
       // Resolves to null; app_router.dart's ref.listen bumps the refresh
       // notifier and the redirect sends us to CreateHouseholdRoute. No new
@@ -235,7 +238,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
     if (confirmed != true) return;
 
     try {
-      await ref.read(householdRepositoryProvider).deleteHousehold();
+      await ref.read(householdRepositoryProvider).deleteHousehold(h.id);
       ref.invalidate(currentHouseholdProvider);
       // Resolves to null; app_router.dart's ref.listen bumps the refresh
       // notifier and the redirect sends us to CreateHouseholdRoute. No new
@@ -333,7 +336,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
                     ),
                     child: AppSectionHeading(text: l10n.membersSectionTitle),
                   ),
-                  ..._members(l10n),
+                  ..._members(h, l10n),
                   const SizedBox(height: AppSpacing.xl),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -420,7 +423,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
       HouseholdRole.adult => (
         Icons.logout,
         l10n.leaveHouseholdButton,
-        () => _leave(l10n),
+        () => _leave(h, l10n),
       ),
     };
     return <Widget>[
@@ -444,7 +447,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
     ];
   }
 
-  List<Widget> _members(AppLocalizations l10n) {
+  List<Widget> _members(Household h, AppLocalizations l10n) {
     final String? myUserId = ref.watch(currentUserIdProvider).value;
     final bool iAmOwner = _myRole() == HouseholdRole.owner;
 
@@ -457,7 +460,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
           ],
           data: (List<HouseholdMember> members) => <Widget>[
             for (final HouseholdMember m in members) ...<Widget>[
-              _memberRow(m, myUserId, iAmOwner, l10n),
+              _memberRow(h, m, myUserId, iAmOwner, l10n),
               const Divider(),
             ],
           ],
@@ -465,6 +468,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
   }
 
   Widget _memberRow(
+    Household h,
     HouseholdMember m,
     String? myUserId,
     bool iAmOwner,
@@ -494,7 +498,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
       subtitle: Text(
         m.userId == myUserId ? l10n.householdMemberYou(role) : role,
       ),
-      trailing: _memberTrailing(m, myUserId, iAmOwner, l10n),
+      trailing: _memberTrailing(h, m, myUserId, iAmOwner, l10n),
     );
   }
 
@@ -503,6 +507,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
   ///   rather than disabled-with-a-tooltip (D115); an adult's Leave is the
   ///   bottom destructive row, not a row affordance.
   Widget? _memberTrailing(
+    Household h,
     HouseholdMember m,
     String? myUserId,
     bool iAmOwner,
@@ -516,7 +521,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
       icon: const Icon(Icons.more_vert),
       itemBuilder: (BuildContext context) => <PopupMenuEntry<void>>[
         PopupMenuItem<void>(
-          onTap: () => _removeMember(m, l10n),
+          onTap: () => _removeMember(h, m, l10n),
           child: Text(
             l10n.removeMemberMenuItem,
             style: TextStyle(color: destructive),

@@ -32,6 +32,8 @@ import 'package:kitchen_table/features/shopping_list/application/shopping_list_p
 import 'package:kitchen_table/features/shopping_list/domain/shopping_list.dart';
 import 'package:kitchen_table/main.dart';
 
+import '../../helpers/fixed_current_household.dart';
+
 // Read off the generated classes directly rather than hardcoding literals,
 // so a wording change in the ARB files cannot silently desync these
 // assertions from what the app actually renders (D77, Phase 3 part 1).
@@ -93,7 +95,8 @@ Future<void> pumpApp(
     ProviderScope(
       overrides: [
         currentUserIdProvider.overrideWith((Ref ref) => Stream<String?>.value(userId)),
-        currentHouseholdProvider.overrideWith((Ref ref) async => household),
+        currentHouseholdProvider.overrideWith(
+            () => FixedCurrentHousehold(() async => household)),
         authStateProvider.overrideWith(
             (Ref ref) => Stream<AppUser?>.value(userId == null ? null : _user)),
         ownProfileProvider.overrideWith((Ref ref) async => profile),
@@ -217,7 +220,9 @@ void main() {
                 (Ref ref) => Stream<String?>.value('u1'),
               ),
               currentHouseholdProvider.overrideWith(
-                (Ref ref) async => throw const NetworkFailure(),
+                () => FixedCurrentHousehold(
+                  () async => throw const NetworkFailure(),
+                ),
               ),
               authStateProvider.overrideWith(
                 (Ref ref) => Stream<AppUser?>.value(_user),

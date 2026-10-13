@@ -3,8 +3,7 @@
  * request acts on, and the body it is read from.
  *
  * The service client is a minimal fake over `household_members` that covers
- * the one chain these helpers use: `.from().select().eq()…[.order().limit()]
- * .maybeSingle()`. Nothing here touches the network.
+ * the one chain these helpers use: `.from().select().eq()….maybeSingle()`. Nothing here touches the network.
  *
  * Run: make test-functions
  */
@@ -26,11 +25,6 @@ function fakeService(rows: MemberRow[]): SupabaseClient {
     select: () => query(filtered),
     eq: (column: keyof MemberRow, value: string) =>
       query(filtered.filter((row) => row[column] === value)),
-    order: (column: keyof MemberRow) =>
-      query(
-        [...filtered].sort((a, b) => a[column].localeCompare(b[column])),
-      ),
-    limit: (n: number) => query(filtered.slice(0, n)),
     maybeSingle: () =>
       Promise.resolve({ data: filtered[0] ?? null, error: null }),
   });
@@ -97,18 +91,11 @@ Deno.test("requireHousehold: a malformed id is a 400", async () => {
   }
 });
 
-Deno.test("requireHousehold: no id falls back to the oldest membership", async () => {
-  assertEquals(
-    await requireHousehold(service, USER, {}),
-    { householdId: HOME, role: "owner" },
-  );
-});
-
-Deno.test("requireHousehold: no id and no membership is a 404", async () => {
+Deno.test("requireHousehold: no id is a 400, never a fallback", async () => {
   await rejectsWith(
-    requireHousehold(service, "nobody", {}),
-    404,
-    "no_household",
+    requireHousehold(service, USER, {}),
+    400,
+    "invalid_household",
   );
 });
 

@@ -7,9 +7,8 @@
  *
  * The body names the household as `householdId` (D168). The client may not
  * name a household it does not belong to, and `requireHousehold` is what
- * holds it to that (`assertMember`, 403 `not_a_member`). A body with no id --
- * an older client sends none at all -- falls back to the caller's oldest
- * household until slice B removes that path.
+ * holds it to that (`assertMember`, 403 `not_a_member`). A body with no id
+ * is a 400 `invalid_household`; there is no fallback.
  */
 
 import {

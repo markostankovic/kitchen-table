@@ -13,6 +13,7 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/db/app_database.dart';
+import 'package:kitchen_table/core/db/device_preferences.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
 import 'package:kitchen_table/features/households/data/household_repository.dart';
 import 'package:kitchen_table/features/households/data/local_household_datasource.dart';
@@ -39,7 +40,9 @@ class _FakeRemote implements RemoteHouseholdDataSource {
   String? renamedId;
   String? renamedTo;
   int leaveHouseholdCalls = 0;
+  String? leftHouseholdId;
   int deleteHouseholdCalls = 0;
+  String? deletedHouseholdId;
 
   @override
   Future<List<Map<String, dynamic>>> fetchMineRows() async {
@@ -65,7 +68,7 @@ class _FakeRemote implements RemoteHouseholdDataSource {
       throw UnimplementedError();
 
   @override
-  Future<void> redeemInvite(String code) async {}
+  Future<String> redeemInvite(String code) async => 'joined-household-id';
 
   @override
   Future<void> rename(String id, String name) async {
@@ -76,11 +79,13 @@ class _FakeRemote implements RemoteHouseholdDataSource {
   }
 
   @override
-  Future<void> removeMember(String userId) => throw UnimplementedError();
+  Future<void> removeMember(String householdId, String userId) =>
+      throw UnimplementedError();
 
   @override
-  Future<void> leaveHousehold() async {
+  Future<void> leaveHousehold(String householdId) async {
     leaveHouseholdCalls++;
+    leftHouseholdId = householdId;
     final AppFailure? failure = nextFailure;
     if (failure != null) throw failure;
   }
@@ -89,8 +94,9 @@ class _FakeRemote implements RemoteHouseholdDataSource {
   Future<void> revokeInvite(String inviteId) => throw UnimplementedError();
 
   @override
-  Future<void> deleteHousehold() async {
+  Future<void> deleteHousehold(String householdId) async {
     deleteHouseholdCalls++;
+    deletedHouseholdId = householdId;
     final AppFailure? failure = nextFailure;
     if (failure != null) throw failure;
   }
@@ -104,7 +110,11 @@ void main() {
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
     remote = _FakeRemote();
-    repo = HouseholdRepository(remote, LocalHouseholdDataSource(db));
+    repo = HouseholdRepository(
+      remote,
+      LocalHouseholdDataSource(db),
+      DevicePreferenceStore(db),
+    );
   });
 
   tearDown(() => db.close());
@@ -202,7 +212,8 @@ void main() {
     );
 
     test(
-      'the oldest household wins (D52), and that is the one cached',
+      'with no selection the oldest household wins (D52), and that is the '
+      'one cached',
       () async {
         remote.rows = <Map<String, dynamic>>[
           _row(id: 'oldest'),
@@ -218,6 +229,53 @@ void main() {
       },
     );
 
+    test(
+      'the selected household wins over the oldest (D169), and that is the '
+      'one cached',
+      () async {
+        remote.rows = <Map<String, dynamic>>[
+          _row(id: 'oldest'),
+          _row(id: 'newer'),
+        ];
+        await DevicePreferenceStore(db)
+            .write(selectedHouseholdKey('u1'), 'newer');
+
+        final Household? household = await repo.fetchCurrent(userId: 'u1');
+        expect(household?.id, 'newer');
+
+        final Map<String, dynamic>? cached =
+            await LocalHouseholdDataSource(db).readCurrent('u1');
+        expect(cached?['id'], 'newer');
+      },
+    );
+
+    test(
+      'a stale selection -- a household no longer in the list -- falls back '
+      'to the oldest',
+      () async {
+        remote.rows = <Map<String, dynamic>>[
+          _row(id: 'oldest'),
+          _row(id: 'newer'),
+        ];
+        await DevicePreferenceStore(db)
+            .write(selectedHouseholdKey('u1'), 'left-long-ago');
+
+        final Household? household = await repo.fetchCurrent(userId: 'u1');
+        expect(household?.id, 'oldest');
+      },
+    );
+
+    test('one user\'s selection does not steer another user', () async {
+      remote.rows = <Map<String, dynamic>>[
+        _row(id: 'oldest'),
+        _row(id: 'newer'),
+      ];
+      await repo.select(userId: 'u1', householdId: 'newer');
+
+      final Household? household = await repo.fetchCurrent(userId: 'u2');
+      expect(household?.id, 'oldest');
+    });
+
     test('a user\'s stale cache is never served to a different user',
         () async {
       remote.rows = <Map<String, dynamic>>[_row(id: 'h1')];
@@ -231,7 +289,48 @@ void main() {
     });
   });
 
+  group('select (D169)', () {
+    test(
+      'stores the selection, so the next fetchCurrent returns it',
+      () async {
+        remote.rows = <Map<String, dynamic>>[
+          _row(id: 'oldest'),
+          _row(id: 'newer'),
+        ];
+        expect((await repo.fetchCurrent(userId: 'u1'))?.id, 'oldest');
+
+        await repo.select(userId: 'u1', householdId: 'newer');
+
+        expect((await repo.fetchCurrent(userId: 'u1'))?.id, 'newer');
+      },
+    );
+
+    test(
+      'clears the cached row; a following NetworkFailure rethrows rather '
+      'than serving the household being switched away from (D88)',
+      () async {
+        remote.rows = <Map<String, dynamic>>[
+          _row(id: 'oldest'),
+          _row(id: 'newer'),
+        ];
+        await repo.fetchCurrent(userId: 'u1');
+
+        await repo.select(userId: 'u1', householdId: 'newer');
+
+        remote.nextFailure = const NetworkFailure();
+        await expectLater(
+          repo.fetchCurrent(userId: 'u1'),
+          throwsA(isA<NetworkFailure>()),
+        );
+      },
+    );
+  });
+
   group('create / redeemInvite clear the cache (D88)', () {
+    test('redeemInvite returns the joined household\'s id', () async {
+      expect(await repo.redeemInvite('123456'), 'joined-household-id');
+    });
+
     test(
       'a successful create clears the cache; a subsequent NetworkFailure '
       'rethrows rather than resurrecting the old household',
@@ -274,8 +373,9 @@ void main() {
         remote.rows = <Map<String, dynamic>>[_row(id: 'old')];
         await repo.fetchCurrent(userId: 'u1');
 
-        await repo.leaveHousehold();
+        await repo.leaveHousehold('old');
         expect(remote.leaveHouseholdCalls, 1);
+        expect(remote.leftHouseholdId, 'old');
 
         remote.nextFailure = const NetworkFailure();
         await expectLater(
@@ -293,8 +393,9 @@ void main() {
         remote.rows = <Map<String, dynamic>>[_row(id: 'old')];
         await repo.fetchCurrent(userId: 'u1');
 
-        await repo.deleteHousehold();
+        await repo.deleteHousehold('old');
         expect(remote.deleteHouseholdCalls, 1);
+        expect(remote.deletedHouseholdId, 'old');
 
         remote.nextFailure = const NetworkFailure();
         await expectLater(

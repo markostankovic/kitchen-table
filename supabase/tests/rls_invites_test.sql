@@ -313,15 +313,22 @@ begin
 
   -- A member of hid's OWN household can revoke, and need not be the owner --
   -- revocation inherits create-invite's "owner and adult are both trusted
-  -- adults" stance.
+  -- adults" stance. multi-household-b: D joins hid as an adult, so hid is D's
+  -- SECOND household. The old oldest-membership lookup resolved D to hid2
+  -- and refused; the check is now membership of the invite's household.
+  perform set_config('role', 'postgres', true);
+  insert into household_members (household_id, user_id, role)
+  values (hid, user_d, 'adult');
+
+  perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims',
-    json_build_object('sub', user_b, 'role', 'authenticated')::text, true);
+    json_build_object('sub', user_d, 'role', 'authenticated')::text, true);
   perform revoke_invite(invite3);
 
   perform set_config('role', 'postgres', true);
   select revoked_at, revoked_by into revoked_at_value, revoked_by_value
     from household_invites where id = invite3;
-  if revoked_at_value is null or revoked_by_value <> user_b then
+  if revoked_at_value is null or revoked_by_value <> user_d then
     failures := failures + 1;
     raise warning
       'revoke_invite did not stamp revoked_at/revoked_by correctly';
@@ -369,7 +376,7 @@ begin
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims',
     json_build_object('sub', user_a, 'role', 'authenticated')::text, true);
-  perform delete_household();
+  perform delete_household(hid);
 
   -- The swept code no longer matches the claim UPDATE's predicate, mirroring
   -- the query redeem-invite issues -- the same trick used above for plain

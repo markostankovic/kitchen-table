@@ -88,8 +88,7 @@ enum FailureCode {
   // --- Invites ---------------------------------------------------------------
   inviteNotFound,
 
-  /// `invite_already_used` and `already_in_household` -- one sentence for
-  /// both, as the switch already grouped them.
+  /// `invite_already_used`.
   inviteAlreadyUsed,
 
   /// Split out from the old shared "code was not accepted" sentence: an

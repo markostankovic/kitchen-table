@@ -7,8 +7,7 @@
  * as `householdId` (D168) -- the saved recipe's own, since tag names are
  * per household (D107) -- on `create-invite`'s shape: the client may not
  * name a household it does not belong to, and `requireHousehold` checks it.
- * A body with no id (an older client sends none) falls back to the caller's
- * oldest household until slice B removes that path.
+ * A body with no id is a 400 `invalid_household`; there is no fallback.
  *
  * Idempotent, and on a household whose vocabulary is already fully paired it
  * makes no model call at all -- `match-ingredients`' and `translate-recipe`'s

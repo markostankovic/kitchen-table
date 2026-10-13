@@ -2,26 +2,38 @@
 // design: a headlineSmall title on the left, the buttons pinned to the bottom.
 //
 // Built on sign_in_screen_test.dart's harness: a ProviderScope and a Serbian
-// MaterialApp. Nothing is submitted, so the household repository is never
-// read and needs no override.
+// MaterialApp. The layout tests submit nothing, so the household repository
+// is never read and needs no override. The submit tests (multi-household-b,
+// D169) override it with a fake and check that create and join end on the
+// NEW household, through CurrentHousehold.switchTo.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/household/current_household.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
 import 'package:kitchen_table/core/theme/app_sizes.dart';
 import 'package:kitchen_table/core/theme/app_spacing.dart';
+import 'package:kitchen_table/core/supabase/supabase_client.dart';
 import 'package:kitchen_table/core/theme/app_theme.dart';
+import 'package:kitchen_table/features/households/application/household_providers.dart';
+import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/features/households/presentation/create_household_screen.dart';
 import 'package:kitchen_table/features/households/presentation/join_household_screen.dart';
+
+import '../../helpers/fake_household_repository.dart';
 
 final AppLocalizations sr = AppLocalizationsSr();
 
 const Size _phone = Size(360, 760);
 
-Future<ThemeData> _pump(WidgetTester tester, Widget screen) async {
+Future<ThemeData> _pump(
+  WidgetTester tester,
+  Widget screen, {
+  FakeHouseholdRepository? repo,
+}) async {
   tester.view.physicalSize = _phone;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -29,6 +41,14 @@ Future<ThemeData> _pump(WidgetTester tester, Widget screen) async {
   final ThemeData theme = AppTheme.light();
   await tester.pumpWidget(
     ProviderScope(
+      overrides: [
+        if (repo != null) ...[
+          householdRepositoryProvider.overrideWithValue(repo),
+          currentUserIdProvider.overrideWith(
+            (Ref ref) => Stream<String?>.value('u1'),
+          ),
+        ],
+      ],
       child: MaterialApp(
         theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -127,5 +147,66 @@ void main() {
     await _pump(tester, const JoinHouseholdScreen());
 
     expect(find.text(sr.inviteCodeFieldLabel), findsOneWidget);
+  });
+
+  group('submit lands in the new household (D169)', () {
+    // An existing household, so "the oldest" and "the new one" differ: only
+    // a real switch makes the new one current.
+    const Household existing =
+        Household(id: 'existing', name: 'Existing', createdBy: 'u1');
+
+    ProviderContainer containerOf(WidgetTester tester, Type screen) =>
+        ProviderScope.containerOf(tester.element(find.byType(screen)));
+
+    /// Listens the way app_router.dart's `ref.listen` does in the app, which
+    /// is what keeps `currentUserIdProvider` live underneath it -- an
+    /// unlistened provider is paused, and `switchTo` would read no user.
+    Future<void> listenLikeTheRouter(WidgetTester tester, Type screen) async {
+      containerOf(tester, screen).listen(currentHouseholdProvider, (_, _) {});
+      await tester.pumpAndSettle();
+    }
+
+    Future<String?> currentId(WidgetTester tester, Type screen) =>
+        containerOf(tester, screen).read(currentHouseholdIdProvider.future);
+
+    testWidgets('create switches to the id create returned', (
+      WidgetTester tester,
+    ) async {
+      final FakeHouseholdRepository repo =
+          FakeHouseholdRepository(<Household>[existing]);
+      await _pump(tester, const CreateHouseholdScreen(), repo: repo);
+      await listenLikeTheRouter(tester, CreateHouseholdScreen);
+
+      await tester.enterText(find.byType(TextFormField), 'Vikendica');
+      await tester.tap(
+        find.widgetWithText(FilledButton, sr.createHouseholdButton),
+      );
+      await tester.pumpAndSettle();
+
+      expect(repo.selectCalls, <String>['created-2']);
+      expect(
+        await currentId(tester, CreateHouseholdScreen),
+        'created-2',
+      );
+    });
+
+    testWidgets('join switches to the id redeemInvite returned', (
+      WidgetTester tester,
+    ) async {
+      final FakeHouseholdRepository repo =
+          FakeHouseholdRepository(<Household>[existing]);
+      await _pump(tester, const JoinHouseholdScreen(), repo: repo);
+      await listenLikeTheRouter(tester, JoinHouseholdScreen);
+
+      await tester.enterText(find.byType(TextField), '123456');
+      await tester.tap(find.widgetWithText(FilledButton, sr.joinButton));
+      await tester.pumpAndSettle();
+
+      expect(repo.selectCalls, <String>['joined-123456']);
+      expect(
+        await currentId(tester, JoinHouseholdScreen),
+        'joined-123456',
+      );
+    });
   });
 }

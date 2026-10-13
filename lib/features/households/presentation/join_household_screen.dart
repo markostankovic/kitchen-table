@@ -45,12 +45,13 @@ class _JoinHouseholdScreenState extends ConsumerState<JoinHouseholdScreen> {
     });
 
     try {
-      await ref.read(householdRepositoryProvider).redeemInvite(_code.text);
-      // Refetch so the router's redirect sees the household and lets the user
-      // out of onboarding. The await matters: invalidate is lazy, and the
-      // redirect reads the value synchronously.
-      ref.invalidate(currentHouseholdProvider);
-      await ref.read(currentHouseholdProvider.future);
+      final String id = await ref
+          .read(householdRepositoryProvider)
+          .redeemInvite(_code.text);
+      // Switch to it, which re-reads, so the router's redirect sees the
+      // household and lets the user out of onboarding. The await matters:
+      // invalidate is lazy, and the redirect reads the value synchronously.
+      await ref.read(currentHouseholdProvider.notifier).switchTo(id);
     } on AppFailure catch (e) {
       if (!mounted) return;
       setState(() => _failure = e);

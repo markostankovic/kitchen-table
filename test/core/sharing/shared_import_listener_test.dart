@@ -23,6 +23,8 @@ import 'package:kitchen_table/features/households/application/household_provider
 import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/main.dart';
 
+import '../../helpers/fixed_current_household.dart';
+
 // `_profile`'s locale is `AppLocale.sr` (the domain model's own default), so
 // chrome assertions expect Serbian (D77, Phase 3 part 1) -- the same fixture
 // shape `app_shell_test.dart` uses.
@@ -53,7 +55,8 @@ Future<void> _pump(
             : Stream<SharedImport>.value(share)),
         currentUserIdProvider
             .overrideWith((Ref ref) => Stream<String?>.value(userId)),
-        currentHouseholdProvider.overrideWith((Ref ref) async => household),
+        currentHouseholdProvider.overrideWith(
+            () => FixedCurrentHousehold(() async => household)),
         authStateProvider.overrideWith((Ref ref) =>
             Stream<AppUser?>.value(userId == null ? null : _user)),
         ownProfileProvider.overrideWith((Ref ref) async => _profile),

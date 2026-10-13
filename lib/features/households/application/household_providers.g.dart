@@ -55,9 +55,12 @@ final class HouseholdRepositoryProvider
 }
 
 String _$householdRepositoryHash() =>
-    r'cfee82fdf09800adc103c7182615c237baa9b416';
+    r'6395757d69fe07446cc772ce1d1022c9cbb1f5a6';
 
 /// The caller's current household, or null if they have not created one.
+///
+/// "Current" is the household last selected on this device, else the oldest
+/// (`HouseholdRepository.fetchCurrent`, D169). [switchTo] changes it.
 ///
 /// Watches `currentUserIdProvider` from `core/` rather than the auth feature's
 /// own provider: a different user has a different household, and a signed-out
@@ -77,11 +80,14 @@ String _$householdRepositoryHash() =>
 /// this is what makes the global offline banner reachable on a COLD start at
 /// all: today its three producers all sit behind this same gate.
 
-@ProviderFor(currentHousehold)
+@ProviderFor(CurrentHousehold)
 final currentHouseholdProvider = CurrentHouseholdProvider._();
 
 /// The caller's current household, or null if they have not created one.
 ///
+/// "Current" is the household last selected on this device, else the oldest
+/// (`HouseholdRepository.fetchCurrent`, D169). [switchTo] changes it.
+///
 /// Watches `currentUserIdProvider` from `core/` rather than the auth feature's
 /// own provider: a different user has a different household, and a signed-out
 /// one has none -- but reaching into `features/auth/application/` would be the
@@ -99,16 +105,12 @@ final currentHouseholdProvider = CurrentHouseholdProvider._();
 /// own precedent (`RecipeList`, `MealPlanEditor`, `CurrentShoppingList`) --
 /// this is what makes the global offline banner reachable on a COLD start at
 /// all: today its three producers all sit behind this same gate.
-
 final class CurrentHouseholdProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<Household?>,
-          Household?,
-          FutureOr<Household?>
-        >
-    with $FutureModifier<Household?>, $FutureProvider<Household?> {
+    extends $AsyncNotifierProvider<CurrentHousehold, Household?> {
   /// The caller's current household, or null if they have not created one.
+  ///
+  /// "Current" is the household last selected on this device, else the oldest
+  /// (`HouseholdRepository.fetchCurrent`, D169). [switchTo] changes it.
   ///
   /// Watches `currentUserIdProvider` from `core/` rather than the auth feature's
   /// own provider: a different user has a different household, and a signed-out
@@ -143,16 +145,107 @@ final class CurrentHouseholdProvider
 
   @$internal
   @override
-  $FutureProviderElement<Household?> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+  CurrentHousehold create() => CurrentHousehold();
+}
 
+String _$currentHouseholdHash() => r'9a208d87b1ef2ee04e664fd2bc983ac06789266a';
+
+/// The caller's current household, or null if they have not created one.
+///
+/// "Current" is the household last selected on this device, else the oldest
+/// (`HouseholdRepository.fetchCurrent`, D169). [switchTo] changes it.
+///
+/// Watches `currentUserIdProvider` from `core/` rather than the auth feature's
+/// own provider: a different user has a different household, and a signed-out
+/// one has none -- but reaching into `features/auth/application/` would be the
+/// cross-feature import CLAUDE.md forbids.
+///
+/// `keepAlive` is justified: the router's redirect reads this on every
+/// navigation to decide whether onboarding is finished.
+///
+/// Passes [userId] into `fetchCurrent` rather than letting the repository
+/// read `Supabase.instance.client.auth.currentUser` itself (Phase 2 part 7,
+/// D87, D88): `currentUserIdProvider` is already the one definition of "who
+/// is signed in" this app keeps, and a second one inside `data/` would be
+/// exactly the duplication that provider exists to prevent. Reports
+/// reachability into `networkStatusProvider`, on the three screen providers'
+/// own precedent (`RecipeList`, `MealPlanEditor`, `CurrentShoppingList`) --
+/// this is what makes the global offline banner reachable on a COLD start at
+/// all: today its three producers all sit behind this same gate.
+
+abstract class _$CurrentHousehold extends $AsyncNotifier<Household?> {
+  FutureOr<Household?> build();
+  @$mustCallSuper
   @override
-  FutureOr<Household?> create(Ref ref) {
-    return currentHousehold(ref);
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<Household?>, Household?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<Household?>, Household?>,
+              AsyncValue<Household?>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
   }
 }
 
-String _$currentHouseholdHash() => r'12ce113de8f4d63d3d17d353a88474343f4fa44e';
+/// Every household the caller belongs to, oldest first, for slice C's
+/// household picker (multi-household-b). Nothing reads it yet.
+///
+/// Watches [currentHouseholdProvider] only to refresh after create, join,
+/// leave, delete or a switch -- each of those re-reads it.
+
+@ProviderFor(myHouseholds)
+final myHouseholdsProvider = MyHouseholdsProvider._();
+
+/// Every household the caller belongs to, oldest first, for slice C's
+/// household picker (multi-household-b). Nothing reads it yet.
+///
+/// Watches [currentHouseholdProvider] only to refresh after create, join,
+/// leave, delete or a switch -- each of those re-reads it.
+
+final class MyHouseholdsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Household>>,
+          List<Household>,
+          FutureOr<List<Household>>
+        >
+    with $FutureModifier<List<Household>>, $FutureProvider<List<Household>> {
+  /// Every household the caller belongs to, oldest first, for slice C's
+  /// household picker (multi-household-b). Nothing reads it yet.
+  ///
+  /// Watches [currentHouseholdProvider] only to refresh after create, join,
+  /// leave, delete or a switch -- each of those re-reads it.
+  MyHouseholdsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'myHouseholdsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$myHouseholdsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<Household>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<Household>> create(Ref ref) {
+    return myHouseholds(ref);
+  }
+}
+
+String _$myHouseholdsHash() => r'ed75be9815de8a73b28e1991749bae2e9f19975f';
 
 /// Everyone in the caller's household, for the member list.
 ///

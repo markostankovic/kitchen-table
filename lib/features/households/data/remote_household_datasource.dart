@@ -130,13 +130,21 @@ class RemoteHouseholdDataSource {
   /// Joins the household behind [code].
   ///
   /// An Edge Function because it writes `household_members`, which no client
-  /// may. Returns nothing: the caller invalidates the current-household
-  /// provider and the router's redirect does the rest.
-  Future<void> redeemInvite(String code) => runGuarded(() async {
-        await _client.functions.invoke(
+  /// may. Returns the joined household's id, so the caller can switch to
+  /// it.
+  Future<String> redeemInvite(String code) => runGuarded(() async {
+        final FunctionResponse res = await _client.functions.invoke(
           'redeem-invite',
           body: <String, dynamic>{'code': code.trim()},
         );
+
+        final Object? data = res.data;
+        if (data is! Map<String, dynamic> || data['householdId'] is! String) {
+          throw const UnknownFailure(
+              message: 'The server sent an unexpected reply.',
+              code: FailureCode.unexpectedServerReply);
+        }
+        return data['householdId'] as String;
       });
 
   /// Renames a household. `households_update` permits this for any member,
@@ -148,29 +156,39 @@ class RemoteHouseholdDataSource {
             .update(<String, dynamic>{'name': name}).eq('id', id);
       });
 
-  /// Removes [userId] from the caller's household. Owner-only, enforced
-  /// inside the RPC -- neither table has a write policy, so this is the only
-  /// path (phase6-part3b).
-  Future<void> removeMember(String userId) => runGuarded(() async {
+  /// Removes [userId] from [householdId]. Owner-only, enforced inside the
+  /// RPC -- neither table has a write policy, so this is the only path
+  /// (phase6-part3b).
+  Future<void> removeMember(String householdId, String userId) =>
+      runGuarded(() async {
         await _client.rpc<dynamic>(
           'remove_household_member',
-          params: <String, dynamic>{'target_user': userId},
+          params: <String, dynamic>{
+            'target_household': householdId,
+            'target_user': userId,
+          },
         );
       });
 
-  /// Caller leaves their own household. The owner may not call this -- see
+  /// Caller leaves [householdId]. The owner may not call this -- see
   /// `leave_household()`'s own guard.
-  Future<void> leaveHousehold() => runGuarded(() async {
-        await _client.rpc<dynamic>('leave_household');
+  Future<void> leaveHousehold(String householdId) => runGuarded(() async {
+        await _client.rpc<dynamic>(
+          'leave_household',
+          params: <String, dynamic>{'target_household': householdId},
+        );
       });
 
-  /// Deletes the caller's own household. Owner-only, enforced inside the RPC
+  /// Deletes [householdId]. Owner-only, enforced inside the RPC
   /// -- not a `.update({'deleted_at': ...})` through `households_update`,
   /// even though that column-blind policy would accept one from any member.
   /// The RPC exists so the owner check and the membership sweep are one
   /// atomic, enforceable act (D112, D116).
-  Future<void> deleteHousehold() => runGuarded(() async {
-        await _client.rpc<dynamic>('delete_household');
+  Future<void> deleteHousehold(String householdId) => runGuarded(() async {
+        await _client.rpc<dynamic>(
+          'delete_household',
+          params: <String, dynamic>{'target_household': householdId},
+        );
       });
 
   /// Revokes a live invite code. Any member of the code's own household may

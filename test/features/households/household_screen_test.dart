@@ -22,6 +22,8 @@ import 'package:kitchen_table/features/households/domain/household_invite.dart';
 import 'package:kitchen_table/features/households/domain/household_member.dart';
 import 'package:kitchen_table/features/households/presentation/household_screen.dart';
 
+import '../../helpers/fixed_current_household.dart';
+
 final AppLocalizations sr = AppLocalizationsSr();
 
 /// `implements`, not `extends` -- the house style (D87's own test file):
@@ -33,8 +35,11 @@ class _FakeRepo implements HouseholdRepository {
   List<HouseholdMember> members = const <HouseholdMember>[];
   List<HouseholdInvite> invites = const <HouseholdInvite>[];
   String? removedMemberId;
+  String? removedFromHouseholdId;
   int leaveHouseholdCalls = 0;
+  String? leftHouseholdId;
   int deleteHouseholdCalls = 0;
+  String? deletedHouseholdId;
   String? revokedInviteId;
   String? invitedHouseholdId;
   AppFailure? nextFailure;
@@ -73,20 +78,28 @@ class _FakeRepo implements HouseholdRepository {
   }
 
   @override
-  Future<void> redeemInvite(String code) => throw UnimplementedError();
+  Future<String> redeemInvite(String code) => throw UnimplementedError();
 
   @override
-  Future<void> removeMember(String userId) async {
+  Future<void> select({
+    required String userId,
+    required String householdId,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<void> removeMember(String householdId, String userId) async {
     final AppFailure? failure = nextFailure;
     if (failure != null) throw failure;
+    removedFromHouseholdId = householdId;
     removedMemberId = userId;
   }
 
   @override
-  Future<void> leaveHousehold() async {
+  Future<void> leaveHousehold(String householdId) async {
     final AppFailure? failure = nextFailure;
     if (failure != null) throw failure;
     leaveHouseholdCalls++;
+    leftHouseholdId = householdId;
   }
 
   @override
@@ -97,10 +110,11 @@ class _FakeRepo implements HouseholdRepository {
   }
 
   @override
-  Future<void> deleteHousehold() async {
+  Future<void> deleteHousehold(String householdId) async {
     final AppFailure? failure = nextFailure;
     if (failure != null) throw failure;
     deleteHouseholdCalls++;
+    deletedHouseholdId = householdId;
   }
 }
 
@@ -125,8 +139,10 @@ Future<void> _pump(
         // re-fetch (household_repository.dart's own doc comment on why
         // `rename` doesn't clear the local cache).
         currentHouseholdProvider.overrideWith(
-          (Ref ref) async =>
-              Household(id: _householdId, name: readName(), createdBy: 'u1'),
+          () => FixedCurrentHousehold(
+            () async =>
+                Household(id: _householdId, name: readName(), createdBy: 'u1'),
+          ),
         ),
       ],
       child: MaterialApp(
@@ -378,6 +394,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repo.removedMemberId, 'u2');
+      expect(repo.removedFromHouseholdId, _householdId);
       expect(find.text(sr.memberRemovedSnackbar), findsOneWidget);
     });
 
@@ -434,6 +451,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repo.leaveHouseholdCalls, 1);
+      expect(repo.leftHouseholdId, _householdId);
     });
 
     testWidgets('cancelling leaves nothing called', (
@@ -495,6 +513,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(repo.deleteHouseholdCalls, 1);
+        expect(repo.deletedHouseholdId, _householdId);
       },
     );
 

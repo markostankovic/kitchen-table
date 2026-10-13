@@ -117,7 +117,6 @@ AppFailure _fromFunction(FunctionException e) {
           code: FailureCode.recipeNotFound,
           cause: e);
     case 'invite_already_used':
-    case 'already_in_household':
       return ConflictFailure(
           message: message ?? 'That code has already been used.',
           code: FailureCode.inviteAlreadyUsed,
