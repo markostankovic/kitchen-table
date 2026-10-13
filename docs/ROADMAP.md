@@ -1133,7 +1133,9 @@ from `docs/IDEAS.md`, with the design brief in
 **Status: in progress.** Six slices, from the Claude Design round in
 `docs/design/handoffs/2026-10-13-multiple-households/ROUND.md`.
 `phase9-household-list` is complete (`31b685d`). Decisions taken during it:
-D170. See `docs/journal/phase-9.md`. Next: `phase9-household-switcher`.
+D170. `phase9-household-switcher` is complete (`7dd0d1c`). Decisions taken
+during it: D171. See `docs/journal/phase-9.md`. Next:
+`phase9-household-switch-loading`.
 
 ---
 

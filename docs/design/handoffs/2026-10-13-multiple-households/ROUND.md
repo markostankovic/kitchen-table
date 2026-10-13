@@ -76,7 +76,7 @@ None.
       section to slice 4: the create and join routes are onboarding-only
       until then, so they would be dead links. With one household this
       slice changes nothing.)*
-- [ ] `phase9-household-switcher` — the household line under the tab title,
+- [x] `phase9-household-switcher` (`7dd0d1c`, D171) — the household line under the tab title,
       and the switch sheet. Files: `lib/features/recipes/presentation/recipe_list_screen.dart`,
       `lib/features/meal_plan/presentation/meal_plan_screen.dart`,
       `lib/features/shopping_list/presentation/shopping_list_screen.dart`

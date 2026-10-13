@@ -1,48 +1,48 @@
 # State — 2026-10-13
 
 **Branch:** `main`
-**Last shipped:** Phase 9 slice C's first slice, `phase9-household-list`
-(`31b685d`), from the design round
-`docs/design/handoffs/2026-10-13-multiple-households/`. Someone in two or
-more households sees them all from Settings and moves between them (D170).
-With one household nothing changes.
+**Last shipped:** Phase 9 slice C's second slice,
+`phase9-household-switcher` (`7dd0d1c`), from the design round
+`docs/design/handoffs/2026-10-13-multiple-households/`. With two or more
+households you can switch from any of the three content tabs (D171). With
+one household, while unknown, or offline, nothing changes.
 
-- **Settings.** With others, the group reads `Domaćinstva` and the row
-  `Name · 2 člana · još N domaćinstva`, opening the new Households list.
-  D52's summary record grew `id` and `otherHouseholdCount`.
-- **Households list.** Join order from its own query
-  (`fetchMembershipRows`); a tap switches (`switchTo`), a gear opens that
-  household's screen. `HouseholdRow` is feature-private until the switcher
-  slice promotes it.
-- **Household screen** is keyed by id (`/settings/household/:householdId`),
-  so it shows any of your households. Leave/delete land on Settings (was
-  current), the list (wasn't) or onboarding (none left).
-- **Ordering fix.** `postgrest-dart`'s `.order()` is descending by default.
-  `fetchMembershipRows`, `fetchMineRows` (D169's fallback is now truly the
-  oldest) and `fetchMembers` pass `ascending: true`.
-- No package, no migration, 7 l10n keys, `AppSizes.splitDivider` (32).
+- **Header.** Recipes, Plan and List show the current household's name and
+  a ▾ under the title (`HouseholdTabTitle`, `core/household/widgets/`).
+  The condition is `householdSwitcherName`: non-null only with 2+, known,
+  online.
+- **Switch sheet.** `showHouseholdSwitchSheet`: gearless `HouseholdRow`s
+  in join order, then Manage households (→ Settings › Domaćinstva). A
+  switch shows `Sada ste u domaćinstvu „X“.` with `Poništi`, auto-dismissing.
+  The list's switch shows none (D170).
+- **Tabs reset after a switch.** `AppShell` sends every other tab to its
+  root on its next visit after any household id change; the current tab is
+  never reset. This closed "a household detail screen survives a switch".
+- `HouseholdRow` promoted to `core/household/widgets/`; `householdRoleLabel`
+  shared. No package, no migration, 3 l10n keys.
 
-`dart analyze` is clean, `flutter test` passes 1063/1063, Deno 172/172.
+`dart analyze` is clean, `flutter test` passes 1074/1074, Deno 172/172.
 `make check` is green except the known `seed-check`; `make test-sql` passes.
 
-**Hosted is current.** Slice B's migration `20261013120000` had **not**
-reached hosted (the earlier push stopped at its Y/n prompt), so leave,
-delete and remove-member were failing; it was pushed 2026-10-13 during this
-slice's walk (`supabase db push --yes`) and confirmed with `migration list
---linked`. The Galaxy runs this slice's release build. The walk
-(`/design-walk settings-households`, all four combinations) is closed.
+**Hosted is current**; this slice changed no schema or function. The
+Galaxy runs this slice's release build. The walk
+(`/design-walk tab-household-switcher`, all four combinations) is closed.
+It found two defects, both fixed and re-walked in the same sitting.
 
 **Hosted test data left in place** for the next slices' walks: the walk
 account is in `Renamed Household` (owner, current) and `Porodica Stanković
-– vikendica` (owner, seeded by hand). `Kod Mire` (owned by `test-user`) was
-left on the walk and has only `test-user`; re-add the walk account as
-`adult` when a walk needs a household where it isn't owner.
+– vikendica` (owner, seeded by hand; no recipes, no list). `Kod Mire` is
+owned by `test-user`, and the walk account was left on an earlier walk.
+`test-user` is also in `Renamed Household`, so it is **not** a
+one-household account any more: the emulator shows it the household line.
+A one-household check needs a fresh account, or the offline fallback as a
+stand-in. Re-add the walk account to `Kod Mire` as `adult` when a walk needs
+a household where it isn't owner.
 
 Still open:
-- **a household detail screen survives a switch**: a recipe detail (or any
-  pushed screen) left open in another tab keeps the old household's data
-  after a switch from the Households list, until
-  `phase9-household-switcher` pops tabs to their root;
+- in dark, the recipe list's empty state (`Još nema recepata.`) renders its
+  second line large and bold, seen on the switcher walk in an empty
+  household. Not from that slice, not traced;
 - **a throwaway recipe on hosted**: `Setnja odeljci TEST`, saved by the
   `phase8-ingredient-sections-edit` editor walk (later walks' throwaways
   were soft-deleted). It wants deleting (the app's own soft delete), which
@@ -111,12 +111,13 @@ Still open:
   Design updates them.
 
 **In flight:** none.
-**Next:** `phase9-household-switcher`, the household line under the tab
-titles and the switch sheet (round
-`docs/design/handoffs/2026-10-13-multiple-households/`, § D1 b, D3·1, D3·3),
-via `/plan-slice-ui`. It promotes `HouseholdRow` to
-`core/household/widgets/`. Then switch-loading, create-join-another,
-leave-switch and import-save-to, in `ROUND.md`'s order.
+**Next:** `phase9-household-switch-loading`, what a tab shows between a
+switch and its data: the 4dp primary bar under the header, flat placeholder
+bars, write controls disabled until loaded (round
+`docs/design/handoffs/2026-10-13-multiple-households/`, § D3·2), via
+`/plan-slice-ui`. The tabs' existing `LinearProgressIndicator(minHeight: 2)`
+was left for it. Then create-join-another, leave-switch and
+import-save-to, in `ROUND.md`'s order.
 Still open as candidates beside Phase 9:
 - the formatting toolbar in the translation review, the last raw formatting
   surface. It is a small `/plan-slice-ui` on D167's pattern;
@@ -132,7 +133,7 @@ Still open as candidates beside Phase 9:
 
 The open device-walk loops below still want one sitting with the Galaxy
 attached.
-**Latest decision:** D170
+**Latest decision:** D171
 
 **Twenty device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -1183,6 +1184,25 @@ Oldest first:
   Member order re-checked on the Galaxy (Renamed Household: the owner now
   above `test-user`). The fallback is not re-walked: it only shows on a
   device with no saved selection, and the Galaxy has one now.
+
+- ~~**Phase 9** (`phase9-household-switcher`)~~ — **closed 2026-10-13.**
+  The tab header and switch sheet, walked on the **Galaxy** (all four
+  combinations, hosted release build). **Found and fixed the same sitting**
+  (re-walked):
+  - with 2+ households the title rendered in `bodyMedium`, because
+    `Material` resets `DefaultTextStyle`;
+  - `Now in X.` never auto-dismissed (a `SnackBar` with an action persists
+    by default) and covered the next sheet's Manage row.
+  Clean after the fixes:
+  - the header on all three tabs, and the sheet in both brightnesses;
+  - the two-line Serbian snackbar; Undo with no second snackbar;
+  - Manage → Domaćinstva;
+  - a recipe detail reset to the Recipes root after a switch from List's
+    sheet and from the Domaćinstva list;
+  - the offline fallback is the plain title at x 16.
+  Not reached: the long name beside List's two actions (vikendica has no
+  list; the widget test covers it), and a real one-household account
+  (`test-user` is in two now).
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind

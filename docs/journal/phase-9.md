@@ -331,3 +331,115 @@ one household nothing changes. No package, no migration, 7 new l10n keys.
   has one), and the offline `otherHouseholdCount → 0` path. Left on hosted:
   the walk account in Renamed Household (current) and vikendica; Kod Mire
   with `test-user` alone. App restored to English/Light.
+
+### Slice C, part 2 — The household switcher (`phase9-household-switcher`)
+
+**Status: complete** (`7dd0d1c`). Decisions taken during it: D171.
+
+Slice 2 of 6 of the design round
+`docs/design/handoffs/2026-10-13-multiple-households/` (§ D1 b, D3·1,
+D3·3). Planned with `/plan-slice-ui`, built, walked on the Galaxy and closed
+on 2026-10-13. With one household, while it isn't known, or offline,
+nothing renders differently. No package, no migration, 3 new l10n keys.
+
+- **Header.** New `HouseholdTabTitle` (`core/household/widgets/`) on
+  Recipes, Plan and List, each bar setting `titleSpacing: AppSpacing.sm`.
+  With 2+ households: a 56 block (`appBar − 2·xs`), radius `md`, padded
+  `sm`, the title in the bar's `titleLarge` over the name in `bodyMedium`
+  `onSurfaceVariant` (one line, ellipsized) and `expand_more` at
+  `iconInButton`. Otherwise the plain title, at x 16 either way. Inert
+  while a switch is in flight.
+- **Condition.** `householdSwitcherName` in `current_household.dart`, the
+  second narrow exception after D52's summary record: the name, or null
+  with one household, unknown, or on an `AppFailure` from the
+  network-only `myHouseholds`. It reads no members.
+- **Sheet.** `showHouseholdSwitchSheet` returns a sealed
+  `HouseholdSwitchPick` (`SwitchToHousehold(id, name)` /
+  `ManageHouseholds()`) and writes nothing. It is the theme sheet like Add
+  meal: drag handle, `titleMedium` title, gearless `HouseholdRow`s in join
+  order with no hairlines, a full-width divider, then Manage households
+  (`settings_outlined`, `bodyLarge`, `chevron_right`). The caller switches
+  through `CurrentHousehold.switchTo` (D169), shows `Now in X.` /
+  `Sada ste u domaćinstvu „X“.` with Undo (captured notifier and
+  messenger, so it works after the tab rebuilds), or `go`es to
+  `HouseholdsRoute`.
+- **Shell.** `AppShell` is a `ConsumerStatefulWidget` with a `_stale` set.
+  When `currentHouseholdIdProvider`'s `.value` changes between two
+  non-null ids, every branch but the current one is marked, and arriving
+  on a marked branch passes `goBranch(initialLocation: true)`. That covers
+  a switch from the sheet and from the Households list. This closes
+  STATE's "a household detail screen survives a switch".
+- **Promotion.** `HouseholdRow` `git mv`'d to `core/household/widgets/`
+  (only its doc and imports changed). The role `switch` moved to
+  `core/household/household_role_label.dart`, shared with
+  `households_screen.dart`.
+- **DESIGN_SYSTEM.md**: § Navigation (the household line), § Household
+  (`HouseholdRow`'s home, the switch sheet), § Menu, snackbar, banner
+  (`Now in X.`), § The shared widgets (three rows), § Size and motion (the
+  56 is derived).
+- **Tests:** `household_tab_title_test` (new, 9: one household plain at x
+  16 with no `InkWell`; offline → plain; two → name and ▾; the title keeps
+  `titleLarge`; the long name ellipsized at 360 with two actions; the sheet's
+  rows, one checked radio, no gear, Manage; a switch closes and shows the
+  snackbar with `persist: false`; Undo switches back; Manage lands on the
+  route). `app_shell_test` +2: a household change while on Plan sends
+  Settings › Household back to Settings; with no change the stack is kept.
+  The first fails with the shell fix taken out.
+
+**Differs from the plan.**
+- **Undo's previous id reads `currentHouseholdProvider`, not
+  `currentHouseholdIdProvider`.** Nothing had read the id provider yet in
+  the test, so it was still loading and Undo had no id. This is the same
+  cold-`read` trap as D170's `_isCurrent`. With no id, the snackbar shows
+  without Undo.
+- **The shell drops a branch from `_stale` whenever it becomes current**,
+  including by `go` (Manage households), and the tap handler removes
+  before checking `reTap`. Otherwise Settings would reset on a later visit
+  for no reason.
+- **Found on the walk, fixed and re-walked:**
+  - the 2+ title rendered in `bodyMedium`. The plan's
+    `Material(type: transparency)` resets `DefaultTextStyle` for its
+    subtree, so the title now takes `DefaultTextStyle.of(context)` from
+    above it. A test pins the rendered size and weight and fails without
+    the fix;
+  - `Now in X.` never went away. A `SnackBar` with an action persists by
+    default in this Flutter, and it sat over the next sheet's Manage row.
+    It is now `persist: false`, as D152 does.
+
+**How it was verified.**
+- `dart analyze` and `check_layers` clean. `flutter test` **1074/1074**.
+  Deno 172/172. `make test-sql` green. `make check` green except the known
+  `seed-check`. `l10n-check` passes once committed.
+- **Walk** (`/design-walk tab-household-switcher`, Galaxy SM-S931B, hosted
+  release build installed with `adb -s`, the emulator also attached), all
+  four combinations, sr/light → sr/dark → en/dark → en/light, re-walked
+  after each fix:
+  - Recipes, Plan and List each show `Renamed Household ▾`, and each
+    opens the sheet;
+  - the sheet in both brightnesses: green radio on the current row, muted
+    meta readable in dark, no gear;
+  - a switch to `Porodica Stanković – vikendica` closed the sheet and
+    showed the two-line Serbian snackbar with „ “ quotes, and the tab
+    re-keyed (List: no list yet; Recipes: empty state);
+  - `Poništi` went back with no second snackbar;
+  - Manage landed on Settings › Domaćinstva, and a switch there showed no
+    snackbar;
+  - a recipe detail left open on Recipes was gone after a switch from
+    List's sheet and after one from the Domaćinstva list: Recipes opened
+    at its root in the new household. Settings, left on the list, came
+    back at its root after a sheet switch;
+  - airplane mode with a cold start: the plain `Recepti`, at the same size,
+    weight and x as Settings' untouched title.
+
+  Not reached:
+  - the long name beside List's **two** actions. vikendica has no list,
+    so no actions; in Renamed Household the name line ends at 738 px and
+    the actions start at 792 px. The 360-wide widget test has both
+    actions;
+  - a real one-household account. `test-user` on the emulator now shows
+    the household line, so it is in more than `Kod Mire`. The offline
+    fallback runs the same code path and was compared instead.
+
+  Left on hosted as found. App restored to Srpski / Svetla / Renamed
+  Household, airplane mode off. Noticed, not this slice: in dark the
+  recipe list's empty-state second line renders large and bold.
