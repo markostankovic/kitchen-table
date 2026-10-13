@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
+import '../../../core/household/current_household.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_sizes.dart';
@@ -46,8 +47,16 @@ class _ImportUrlScreenState extends ConsumerState<ImportUrlScreen> {
     });
 
     try {
-      final String jobId =
-          await ref.read(importRepositoryProvider).createFromUrl(_url.text);
+      final String? householdId =
+          await ref.read(currentHouseholdIdProvider.future);
+      if (householdId == null) {
+        throw const NotFoundFailure(
+            message: 'You are not in a household yet.',
+            code: FailureCode.noHousehold);
+      }
+      final String jobId = await ref
+          .read(importRepositoryProvider)
+          .createFromUrl(_url.text, householdId: householdId);
       if (!mounted) return;
       ImportReviewRoute(jobId).go(context);
     } on AppFailure catch (e) {

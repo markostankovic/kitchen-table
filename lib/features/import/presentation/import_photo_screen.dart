@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
+import '../../../core/household/current_household.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_radii.dart';
@@ -96,16 +97,27 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
     });
 
     try {
+      // Read once and passed to both steps: the upload's path prefix and the
+      // job's household must be the same one (D46).
+      final String? householdId =
+          await ref.read(currentHouseholdIdProvider.future);
+      if (householdId == null) {
+        throw const NotFoundFailure(
+            message: 'You are not in a household yet.',
+            code: FailureCode.noHousehold);
+      }
       // Two steps, and the first is the slow one: the upload happens under the
       // cook's finger, and only then does the job exist to be polled.
       final String path =
           await ref.read(importRepositoryProvider).uploadImportPhoto(
                 bytes,
+                householdId: householdId,
                 contentType: _contentType ?? 'image/jpeg',
                 extension: _extension ?? 'jpg',
               );
-      final String jobId =
-          await ref.read(importRepositoryProvider).createFromPhoto(path);
+      final String jobId = await ref
+          .read(importRepositoryProvider)
+          .createFromPhoto(path, householdId: householdId);
       if (!mounted) return;
       ImportReviewRoute(jobId).go(context);
     } on AppFailure catch (e) {

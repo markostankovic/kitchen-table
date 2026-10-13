@@ -107,7 +107,7 @@ functions-serve: ## Serve the Edge Functions locally, with hot reload
 functions-deploy: ## Deploy the Edge Functions to the linked project
 	supabase functions deploy create-invite redeem-invite \
 		import-text import-url import-photo match-ingredients \
-		translate-recipe
+		translate-recipe translate-tags
 
 run: ## Run the app on iOS/desktop (requires env/local.json)
 	flutter run $(DART_DEFINE)

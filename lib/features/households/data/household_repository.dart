@@ -106,8 +106,9 @@ class HouseholdRepository {
   Future<List<HouseholdInvite>> fetchLiveInvites(String householdId) =>
       _remote.fetchLiveInvites(householdId);
 
-  /// Mints a new six-digit code for the caller's household.
-  Future<HouseholdInvite> createInvite() => _remote.createInvite();
+  /// Mints a new six-digit code for [householdId].
+  Future<HouseholdInvite> createInvite(String householdId) =>
+      _remote.createInvite(householdId);
 
   /// Joins the household behind [code].
   ///

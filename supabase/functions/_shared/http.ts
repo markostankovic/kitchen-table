@@ -83,3 +83,26 @@ export async function readJsonBody(
   }
   return raw as Record<string, unknown>;
 }
+
+/**
+ * The request body as an object, where sending no body at all is allowed and
+ * reads as `{}`. For functions that took no body before `householdId` (D168):
+ * an older client still sends none. A body that IS sent gets [readJsonBody]'s
+ * checks.
+ */
+export async function readOptionalJsonBody(
+  req: Request,
+): Promise<Record<string, unknown>> {
+  const text = await req.text();
+  if (text.trim().length === 0) return {};
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    throw new HttpError(400, "invalid_body", "Expected a JSON body.");
+  }
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    throw new HttpError(400, "invalid_body", "Expected a JSON object.");
+  }
+  return raw as Record<string, unknown>;
+}

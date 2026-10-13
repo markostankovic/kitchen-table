@@ -197,18 +197,18 @@ ingredients(is_pantry_staple, category)''')
         }
       });
 
-  /// Mints the sr/en spelling pair for every untranslated tag in the
-  /// caller's household through the `translate-tags` Edge Function (Phase 6,
-  /// part 1b). No arguments -- the function resolves the household from the
-  /// caller's own membership, [translate]'s own shape for not letting a
-  /// client name a household it might not belong to.
+  /// Mints the sr/en spelling pair for every untranslated tag in
+  /// [householdId] through the `translate-tags` Edge Function (Phase 6,
+  /// part 1b). The function checks the caller belongs to [householdId]
+  /// before reading anything (D168).
   ///
   /// Returns the reply's `written` count -- how many `recipe_tag_names` rows
   /// were actually inserted or revived, 0 when the vocabulary was already
   /// fully paired.
-  Future<int> translateTags() => runGuarded(() async {
+  Future<int> translateTags(String householdId) => runGuarded(() async {
         final FunctionResponse res = await _client.functions.invoke(
           'translate-tags',
+          body: <String, dynamic>{'householdId': householdId},
         );
 
         if (res.data is! Map<String, dynamic>) {

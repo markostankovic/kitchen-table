@@ -36,6 +36,7 @@ class _FakeRepo implements HouseholdRepository {
   int leaveHouseholdCalls = 0;
   int deleteHouseholdCalls = 0;
   String? revokedInviteId;
+  String? invitedHouseholdId;
   AppFailure? nextFailure;
 
   @override
@@ -66,7 +67,10 @@ class _FakeRepo implements HouseholdRepository {
   Future<String> create(String name) => throw UnimplementedError();
 
   @override
-  Future<HouseholdInvite> createInvite() => throw UnimplementedError();
+  Future<HouseholdInvite> createInvite(String householdId) async {
+    invitedHouseholdId = householdId;
+    return _invite();
+  }
 
   @override
   Future<void> redeemInvite(String code) => throw UnimplementedError();
@@ -260,6 +264,20 @@ void main() {
     expect(find.text(sr.householdNameEmptyError), findsOneWidget);
     expect(repo.renamedId, isNull);
     expect(find.text('Test Household'), findsOneWidget);
+  });
+
+  testWidgets('Create invite code sends the shown household (D168)', (
+    WidgetTester tester,
+  ) async {
+    final _FakeRepo repo = _FakeRepo();
+    await _pump(tester, repo: repo, readName: () => 'Test Household');
+
+    await tester.ensureVisible(find.text(sr.createInviteCodeButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(sr.createInviteCodeButton));
+    await tester.pumpAndSettle();
+
+    expect(repo.invitedHouseholdId, _householdId);
   });
 
   testWidgets('cancelling writes nothing', (WidgetTester tester) async {

@@ -80,12 +80,17 @@ export async function requireCaller(req: Request): Promise<string> {
 }
 
 /**
- * The caller's household, or null if they are in none.
+ * The caller's oldest household, or null if they are in none.
+ *
+ * Legacy fallback for clients that send no `householdId` (D168): an APK
+ * installed before the explicit id keeps working. Only [requireHousehold]
+ * calls it. Delete in slice B (`multi-household-b`), once every client sends
+ * the id.
  *
  * Ordered by the membership's own created_at, whereas
  * HouseholdRepository.fetchCurrent() orders by the household's. The two agree
  * as long as a user is only ever in one household, which redeem-invite
- * enforces by rejecting a second. Revisit both together if that ever changes.
+ * enforces by rejecting a second.
  */
 export async function resolveHousehold(
   service: SupabaseClient,
@@ -129,4 +134,49 @@ export async function assertMember(
     );
   }
   return data.role as HouseholdRole;
+}
+
+const UUID_SHAPE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The household a request acts on, and the caller's role in it (D168).
+ *
+ * The client names it as `householdId` in the body, and [assertMember] checks
+ * it: the client may not name a household it does not belong to, and this is
+ * what holds it to that. Call it before any quota check, job row or read
+ * keyed on the id -- the service client has no RLS behind it (D31).
+ *
+ * A body with no `householdId` falls back to [resolveHousehold] (legacy, see
+ * there). A body WITH one never falls back: a non-member gets the 403.
+ */
+export async function requireHousehold(
+  service: SupabaseClient,
+  userId: string,
+  body: Record<string, unknown>,
+): Promise<{ householdId: string; role: HouseholdRole }> {
+  const requested = body.householdId;
+
+  if (requested === undefined) {
+    const membership = await resolveHousehold(service, userId);
+    if (!membership) {
+      throw new HttpError(
+        404,
+        "no_household",
+        "You are not in a household yet.",
+      );
+    }
+    return membership;
+  }
+
+  if (typeof requested !== "string" || !UUID_SHAPE.test(requested)) {
+    throw new HttpError(
+      400,
+      "invalid_household",
+      "householdId must be a household id.",
+    );
+  }
+
+  const role = await assertMember(service, userId, requested);
+  return { householdId: requested, role };
 }

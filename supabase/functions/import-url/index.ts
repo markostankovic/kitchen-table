@@ -24,7 +24,7 @@ import {
 import {
   callerClient,
   requireCaller,
-  resolveHousehold,
+  requireHousehold,
   serviceClient,
 } from "../_shared/auth.ts";
 import { AiFailure } from "../_shared/ai.ts";
@@ -60,12 +60,9 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
   // Captured while the request still exists; the background task outlives it.
   const caller = callerClient(req);
 
-  const membership = await resolveHousehold(service, userId);
-  if (!membership) {
-    throw new HttpError(404, "no_household", "You are not in a household yet.");
-  }
-
   const body = await readJsonBody(req);
+  // Before anything keyed on the household: quota, job row, reads (D31).
+  const membership = await requireHousehold(service, userId, body);
   const raw = typeof body.url === "string" ? body.url : "";
   if (raw.trim().length === 0) {
     throw new HttpError(400, "empty_input", "There is no link to import.");

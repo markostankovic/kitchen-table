@@ -92,6 +92,10 @@ AppFailure _fromFunction(FunctionException e) {
   switch (code) {
     case 'unauthenticated':
     case 'not_a_member':
+    // D168: the body named no household this caller can act on. Malformed
+    // means a client bug, never something the cook did -- the same answer
+    // as naming one they are not in.
+    case 'invalid_household':
       return UnauthorizedFailure(code: FailureCode.signInAgain, cause: e);
     case 'no_household':
       return NotFoundFailure(

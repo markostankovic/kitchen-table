@@ -29,14 +29,16 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
   bool _generating = false;
   AppFailure? _failure;
 
-  Future<void> _createInvite() async {
+  /// For [h], the household this screen shows -- not the current one, which
+  /// it need not be once there are several.
+  Future<void> _createInvite(Household h) async {
     setState(() {
       _generating = true;
       _failure = null;
     });
 
     try {
-      await ref.read(householdRepositoryProvider).createInvite();
+      await ref.read(householdRepositoryProvider).createInvite(h.id);
       ref.invalidate(liveInvitesProvider);
     } on AppFailure catch (e) {
       if (!mounted) return;
@@ -352,7 +354,8 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
                       // Outlined, not filled: nothing on this screen is its
                       // one action, so it has no filled button.
                       child: OutlinedButton.icon(
-                        onPressed: _generating ? null : _createInvite,
+                        onPressed:
+                            _generating ? null : () => _createInvite(h),
                         icon: const Icon(Icons.add),
                         label: Text(
                           _generating

@@ -104,16 +104,19 @@ class RemoteHouseholdDataSource {
         return rows.map(_toInvite).toList();
       });
 
-  /// Mints a new six-digit code for the caller's household.
+  /// Mints a new six-digit code for [householdId].
   ///
   /// An Edge Function because only the service role may write
-  /// `household_invites` (docs/ARCHITECTURE.md, client/edge split). The
-  /// household is resolved server-side, so there is nothing to send.
-  Future<HouseholdInvite> createInvite() => runGuarded(() async {
+  /// `household_invites` (docs/ARCHITECTURE.md, client/edge split). It
+  /// checks the caller belongs to [householdId] (D168).
+  Future<HouseholdInvite> createInvite(String householdId) =>
+      runGuarded(() async {
         // The session token rides along automatically -- supabase_flutter
         // routes the functions client through AuthHttpClient.
-        final FunctionResponse res =
-            await _client.functions.invoke('create-invite');
+        final FunctionResponse res = await _client.functions.invoke(
+          'create-invite',
+          body: <String, dynamic>{'householdId': householdId},
+        );
 
         final Object? data = res.data;
         if (data is! Map<String, dynamic>) {

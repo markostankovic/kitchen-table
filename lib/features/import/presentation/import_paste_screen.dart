@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
+import '../../../core/household/current_household.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_sizes.dart';
@@ -54,9 +55,19 @@ class _ImportPasteScreenState extends ConsumerState<ImportPasteScreen> {
     });
 
     try {
-      final String jobId = await ref
-          .read(importRepositoryProvider)
-          .createFromText(_text.text, sourceUrl: _sourceUrl.text);
+      final String? householdId =
+          await ref.read(currentHouseholdIdProvider.future);
+      if (householdId == null) {
+        throw const NotFoundFailure(
+            message: 'You are not in a household yet.',
+            code: FailureCode.noHousehold);
+      }
+      final String jobId =
+          await ref.read(importRepositoryProvider).createFromText(
+                _text.text,
+                householdId: householdId,
+                sourceUrl: _sourceUrl.text,
+              );
       if (!mounted) return;
       // Replaces rather than pushes: coming back to a paste box that already
       // started a job would invite starting a second one.

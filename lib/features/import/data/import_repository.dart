@@ -3,12 +3,12 @@
 ///
 /// The only place in this feature that touches Supabase (CLAUDE.md rule 1).
 ///
-/// Note what is NOT here: no household lookup. `import-text` resolves the
-/// household server-side from the caller's membership, and
-/// `import_jobs_select` is `is_household_member(household_id)` (D39), so a row
-/// this client can read is already a row it is allowed to read. That is why
-/// `RecipeRepository._currentHouseholdId` did not have to be copied a third
-/// time.
+/// Note what is NOT here: no household lookup. Every method that needs the
+/// household takes it as `householdId`, read by the caller from
+/// `currentHouseholdIdProvider` (D52), and the import functions check the
+/// caller belongs to it (D168). Polling needs none: `import_jobs_select` is
+/// `is_household_member(household_id)` (D39), so a row this client can read
+/// is already a row it is allowed to read.
 library;
 
 import 'dart:typed_data';
@@ -36,11 +36,16 @@ class ImportRepository {
   /// reading a page of prose cannot fit inside the request that started it.
   /// It answers 202 with the id and does the work afterwards, so this returns
   /// almost immediately and the caller polls (D14).
-  Future<String> createFromText(String text, {String? sourceUrl}) =>
+  Future<String> createFromText(
+    String text, {
+    required String householdId,
+    String? sourceUrl,
+  }) =>
       runGuarded(() async {
         final FunctionResponse res = await _client.functions.invoke(
           'import-text',
           body: <String, dynamic>{
+            'householdId': householdId,
             'text': text,
             if (sourceUrl != null && sourceUrl.trim().isNotEmpty)
               'sourceUrl': sourceUrl.trim(),
@@ -63,10 +68,14 @@ class ImportRepository {
   /// The URL is vetted server-side before a job row exists, so an unusable
   /// link comes back as a synchronous `invalid_url` or `url_not_allowed`
   /// rather than as a job that fails a moment later (D45).
-  Future<String> createFromUrl(String url) => runGuarded(() async {
+  Future<String> createFromUrl(String url, {required String householdId}) =>
+      runGuarded(() async {
         final FunctionResponse res = await _client.functions.invoke(
           'import-url',
-          body: <String, dynamic>{'url': url.trim()},
+          body: <String, dynamic>{
+            'householdId': householdId,
+            'url': url.trim(),
+          },
         );
 
         final Object? data = res.data;
@@ -150,28 +159,16 @@ class ImportRepository {
   ///
   /// The path is `{household_id}/{uuid}.{ext}`, and that prefix is the access
   /// control rather than a filing convention -- every policy on the
-  /// `import-uploads` bucket reads it (D46). The household id is the one the
-  /// caller can actually see, so RLS on `households` is what makes it true.
+  /// `import-uploads` bucket reads it (D46), so an upload into a household
+  /// the caller is not in is refused by Storage. Pass the same [householdId]
+  /// to [createFromPhoto], which checks the prefix against it.
   Future<String> uploadImportPhoto(
     Uint8List bytes, {
+    required String householdId,
     required String contentType,
     required String extension,
   }) =>
       runGuarded(() async {
-        final List<Map<String, dynamic>> rows = await _client
-            .from('households')
-            .select('id')
-            .isFilter('deleted_at', null)
-            .order('created_at')
-            .limit(1);
-
-        if (rows.isEmpty) {
-          throw const NotFoundFailure(
-              message: 'You are not in a household yet.',
-              code: FailureCode.noHousehold);
-        }
-
-        final String householdId = rows.first['id'] as String;
         final String path =
             '$householdId/${DateTime.now().microsecondsSinceEpoch}.$extension';
 
@@ -185,10 +182,17 @@ class ImportRepository {
       });
 
   /// Starts an import from a photograph already in Storage.
-  Future<String> createFromPhoto(String storagePath) => runGuarded(() async {
+  Future<String> createFromPhoto(
+    String storagePath, {
+    required String householdId,
+  }) =>
+      runGuarded(() async {
         final FunctionResponse res = await _client.functions.invoke(
           'import-photo',
-          body: <String, dynamic>{'storagePath': storagePath},
+          body: <String, dynamic>{
+            'householdId': householdId,
+            'storagePath': storagePath,
+          },
         );
 
         final Object? data = res.data;

@@ -45,6 +45,7 @@ void main() {
     final Map<String, (Type, FailureCode)> table = <String, (Type, FailureCode)>{
       'unauthenticated': (UnauthorizedFailure, FailureCode.signInAgain),
       'not_a_member': (UnauthorizedFailure, FailureCode.signInAgain),
+      'invalid_household': (UnauthorizedFailure, FailureCode.signInAgain),
       'no_household': (NotFoundFailure, FailureCode.noHousehold),
       'invite_not_found': (NotFoundFailure, FailureCode.inviteNotFound),
       'recipe_not_found': (NotFoundFailure, FailureCode.recipeNotFound),
@@ -81,6 +82,7 @@ void main() {
     const Set<String> ignoresServerMessage = <String>{
       'unauthenticated',
       'not_a_member',
+      'invalid_household',
     };
 
     table.forEach((String slug, (Type, FailureCode) expected) {

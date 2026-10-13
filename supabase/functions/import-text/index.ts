@@ -13,9 +13,9 @@
  * the same path a 30-second cookbook photo will take -- one code path, which
  * is the whole argument for the queue.
  *
- * The household is resolved server-side from the caller's membership. As in
- * create-invite, the client has no business naming a household it might not
- * belong to.
+ * The client names the household as `householdId` (D168), and
+ * `requireHousehold` checks the caller belongs to it: as in create-invite,
+ * the client may not name a household it does not belong to.
  */
 
 import {
@@ -27,7 +27,7 @@ import {
 import {
   callerClient,
   requireCaller,
-  resolveHousehold,
+  requireHousehold,
   serviceClient,
 } from "../_shared/auth.ts";
 import { AiFailure } from "../_shared/ai.ts";
@@ -54,12 +54,9 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
   // service role would see every household's private aliases.
   const caller = callerClient(req);
 
-  const membership = await resolveHousehold(service, userId);
-  if (!membership) {
-    throw new HttpError(404, "no_household", "You are not in a household yet.");
-  }
-
   const body = await readJsonBody(req);
+  // Before anything keyed on the household: quota, job row, reads (D31).
+  const membership = await requireHousehold(service, userId, body);
   const text = typeof body.text === "string" ? body.text.trim() : "";
   const sourceUrl = typeof body.sourceUrl === "string" ? body.sourceUrl : null;
 

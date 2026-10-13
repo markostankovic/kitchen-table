@@ -5,15 +5,22 @@
  * which no client may (docs/ARCHITECTURE.md: "anything granting access to
  * household data is not client logic").
  *
- * Takes no request body. The household is resolved server-side from the
- * caller's membership -- the client has no business naming a household it
- * might not belong to.
+ * The body names the household as `householdId` (D168). The client may not
+ * name a household it does not belong to, and `requireHousehold` is what
+ * holds it to that (`assertMember`, 403 `not_a_member`). A body with no id --
+ * an older client sends none at all -- falls back to the caller's oldest
+ * household until slice B removes that path.
  */
 
-import { HttpError, jsonResponse, withHttp } from "../_shared/http.ts";
+import {
+  HttpError,
+  jsonResponse,
+  readOptionalJsonBody,
+  withHttp,
+} from "../_shared/http.ts";
 import {
   requireCaller,
-  resolveHousehold,
+  requireHousehold,
   serviceClient,
 } from "../_shared/auth.ts";
 import { randomInviteCode } from "../_shared/invite_code.ts";
@@ -25,14 +32,8 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
   const userId = await requireCaller(req);
   const service = serviceClient();
 
-  const membership = await resolveHousehold(service, userId);
-  if (!membership) {
-    throw new HttpError(
-      404,
-      "no_household",
-      "You are not in a household yet.",
-    );
-  }
+  const body = await readOptionalJsonBody(req);
+  const membership = await requireHousehold(service, userId, body);
 
   // No role check. `owner` and `adult` are both trusted adults -- there is no
   // restricted role in the check constraint to protect against. This is

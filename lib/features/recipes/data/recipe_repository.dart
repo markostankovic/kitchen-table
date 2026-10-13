@@ -211,8 +211,8 @@ class RecipeRepository {
   Future<void> translate(String recipeId, String targetLocale) =>
       _remote.translate(recipeId, targetLocale);
 
-  /// Mints the sr/en spelling pair for every untranslated tag in the
-  /// caller's household (Phase 6, part 1b), returning whether anything was
+  /// Mints the sr/en spelling pair for every untranslated tag in
+  /// [householdId] (Phase 6, part 1b), returning whether anything was
   /// actually written.
   ///
   /// Online-only (D12), like [translate]. NEVER THROWS -- catches
@@ -221,9 +221,9 @@ class RecipeRepository {
   /// it rides in on (D48), except this one is not awaited by its caller
   /// (`RecipeEditor.save()`), which is exactly why it must not throw: an
   /// unawaited future that throws is an unhandled async error.
-  Future<bool> translateTagsBestEffort() async {
+  Future<bool> translateTagsBestEffort(String householdId) async {
     try {
-      final int written = await _remote.translateTags();
+      final int written = await _remote.translateTags(householdId);
       return written > 0;
     } on Object catch (error, stackTrace) {
       developer.log(

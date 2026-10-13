@@ -10,7 +10,8 @@
  * different attachment.
  *
  * The image is already in Storage when this is called: the client uploads it
- * to `import-uploads/{household_id}/{uuid}.jpg` and sends the path. Keeping it
+ * to `import-uploads/{household_id}/{uuid}.jpg` and sends the path, with the
+ * household as `householdId` (D168). Keeping it
  * there rather than posting bytes is what lets a failed job be re-run against
  * the same photograph instead of asking somebody to find the book again.
  */
@@ -24,7 +25,7 @@ import {
 import {
   callerClient,
   requireCaller,
-  resolveHousehold,
+  requireHousehold,
   serviceClient,
 } from "../_shared/auth.ts";
 import { AiFailure, type ContentBlock, MODELS } from "../_shared/ai.ts";
@@ -64,12 +65,9 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
   // and search_ingredients needs the caller's RLS (D31).
   const caller = callerClient(req);
 
-  const membership = await resolveHousehold(service, userId);
-  if (!membership) {
-    throw new HttpError(404, "no_household", "You are not in a household yet.");
-  }
-
   const body = await readJsonBody(req);
+  // Before anything keyed on the household: quota, job row, reads (D31).
+  const membership = await requireHousehold(service, userId, body);
   const path = typeof body.storagePath === "string"
     ? body.storagePath.trim()
     : "";
@@ -78,8 +76,8 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
     throw new HttpError(400, "empty_input", "There is no photo to import.");
   }
 
-  // The household is re-derived from the path and compared to the caller's own
-  // membership. The storage policy already stops a cross-household UPLOAD;
+  // The household is re-derived from the path and compared to the requested
+  // one, which requireHousehold has already checked the caller belongs to. The storage policy already stops a cross-household UPLOAD;
   // this stops a caller naming somebody else's EXISTING object in a job they
   // create -- the same argument create-invite makes about not letting a client
   // name a household.

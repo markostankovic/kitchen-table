@@ -3,11 +3,12 @@
  * caller's household that does not have one yet (Phase 6, part 1b).
  *
  * An Edge Function for the same reason as `translate-recipe`: it costs money
- * and holds the model key (CLAUDE.md rule 2). Takes no request body, on
- * `create-invite`'s own shape -- the household is resolved server-side from
- * the caller's membership, never named by the client (D107's read path
- * already resolves `(tag_key, locale)` the same way, with no household
- * argument either).
+ * and holds the model key (CLAUDE.md rule 2). The body names the household
+ * as `householdId` (D168) -- the saved recipe's own, since tag names are
+ * per household (D107) -- on `create-invite`'s shape: the client may not
+ * name a household it does not belong to, and `requireHousehold` checks it.
+ * A body with no id (an older client sends none) falls back to the caller's
+ * oldest household until slice B removes that path.
  *
  * Idempotent, and on a household whose vocabulary is already fully paired it
  * makes no model call at all -- `match-ingredients`' and `translate-recipe`'s
@@ -20,11 +21,15 @@
 
 /// <reference types="npm:@supabase/functions-js@2/src/edge-runtime.d.ts" />
 
-import { HttpError, jsonResponse, withHttp } from "../_shared/http.ts";
+import {
+  jsonResponse,
+  readOptionalJsonBody,
+  withHttp,
+} from "../_shared/http.ts";
 import {
   callerClient,
   requireCaller,
-  resolveHousehold,
+  requireHousehold,
   serviceClient,
 } from "../_shared/auth.ts";
 import { checkQuota, recordUsage } from "../_shared/usage.ts";
@@ -51,15 +56,8 @@ Deno.serve(withHttp(async (req: Request): Promise<Response> => {
   // reason.
   const caller = callerClient(req);
 
-  const membership = await resolveHousehold(service, userId);
-  if (!membership) {
-    throw new HttpError(
-      404,
-      "no_household",
-      "You are not in a household yet.",
-    );
-  }
-  const householdId = membership.householdId;
+  const body = await readOptionalJsonBody(req);
+  const { householdId } = await requireHousehold(service, userId, body);
 
   // The household's tag vocabulary, derived from its own recipes -- the same
   // grouping `RecipeTag.vocabularyOf` does in Dart: normalize each tag into

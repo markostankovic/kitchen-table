@@ -269,8 +269,13 @@ class RecipeEditor extends _$RecipeEditor {
       final RecipesRevision revision = ref.read(
         recipesRevisionProvider.notifier,
       );
+      // The saved recipe's own household, not the current one: tag names
+      // are per household (D107), and the two can differ once switching
+      // exists.
       unawaited(
-        repository.translateTagsBestEffort().then((bool wrote) {
+        repository
+            .translateTagsBestEffort(saved.source!.householdId)
+            .then((bool wrote) {
           if (wrote) revision.bump();
         }),
       );

@@ -61,7 +61,8 @@ class _FakeRemote implements RemoteHouseholdDataSource {
       throw UnimplementedError();
 
   @override
-  Future<HouseholdInvite> createInvite() => throw UnimplementedError();
+  Future<HouseholdInvite> createInvite(String householdId) =>
+      throw UnimplementedError();
 
   @override
   Future<void> redeemInvite(String code) async {}
