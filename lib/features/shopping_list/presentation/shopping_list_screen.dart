@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
+import '../../../core/household/widgets/household_switch_gate.dart';
+import '../../../core/household/widgets/household_switch_placeholder.dart';
 import '../../../core/household/widgets/household_tab_title.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
 import '../../../core/ingredients/widgets/ingredient_line_row.dart';
@@ -64,60 +66,74 @@ class ShoppingListScreen extends ConsumerWidget {
       currentShoppingListProvider,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        titleSpacing: AppSpacing.sm,
-        title: HouseholdTabTitle(title: l10n.navList),
-        actions: <Widget>[
-          if (list.value != null) ...<Widget>[
-            IconButton(
-              tooltip: l10n.copyListTooltip,
-              icon: const Icon(Icons.copy_outlined),
-              onPressed: () => _copy(context, ref, list.value!),
-            ),
-            IconButton(
-              tooltip: l10n.regenerateTooltip,
-              icon: const Icon(Icons.refresh_outlined),
-              onPressed: () => _generate(context, ref),
+    // `skipLoadingOnReload` below keeps the previous value through a reload,
+    // and a household switch is a reload: without the gate this showed the
+    // OLD household's list, Copy and Regenerate live, until the new one
+    // arrived (phase9-household-switch-loading).
+    return HouseholdSwitchGate(
+      dataLoading: list.isLoading,
+      builder: (BuildContext context, bool awaiting) => Scaffold(
+        appBar: AppBar(
+          titleSpacing: AppSpacing.sm,
+          title: HouseholdTabTitle(title: l10n.navList),
+          actions: <Widget>[
+            // Mid-switch both render, disabled, whatever the list holds.
+            if (awaiting || list.value != null) ...<Widget>[
+              IconButton(
+                tooltip: l10n.copyListTooltip,
+                icon: const Icon(Icons.copy_outlined),
+                onPressed: awaiting
+                    ? null
+                    : () => _copy(context, ref, list.value!),
+              ),
+              IconButton(
+                tooltip: l10n.regenerateTooltip,
+                icon: const Icon(Icons.refresh_outlined),
+                onPressed: awaiting ? null : () => _generate(context, ref),
+              ),
+            ],
+          ],
+        ),
+        body: Column(
+          children: <Widget>[
+            if (awaiting) const HouseholdSwitchProgressBar(),
+            const _RangeBar(),
+            if (list.isLoading && !awaiting)
+              const LinearProgressIndicator(minHeight: 2),
+            Expanded(
+              // A regeneration bumps the revision, which reloads this
+              // provider. Without `skipLoadingOnReload` the list blanked for
+              // a moment and came back scrolled to the top -- a long-press in
+              // "Probably have" lost the cook's place every time (Phase 8
+              // part 1's walk). The progress bar above still shows the work.
+              child: awaiting
+                  ? const HouseholdSwitchPlaceholder()
+                  : list.when(
+                      skipLoadingOnReload: true,
+                      loading: () => const SizedBox.shrink(),
+                      error: (Object e, _) =>
+                          AppErrorView(message: localizedErrorMessage(e, l10n)),
+                      data: (ShoppingList? current) => RefreshIndicator(
+                        // Pull means generate, like the app-bar button (D147) -- on
+                        // the empty state too, where it does what its own button does.
+                        onRefresh: () => _generate(context, ref),
+                        child: current == null
+                            ? AppEmptyState(
+                                card: true,
+                                icon: Icons.shopping_basket_outlined,
+                                title: l10n.noListYetTitle,
+                                body: l10n.noListYetBody,
+                                action: FilledButton.tonal(
+                                  onPressed: () => _generate(context, ref),
+                                  child: Text(l10n.generateListButton),
+                                ),
+                              )
+                            : _ListBody(list: current),
+                      ),
+                    ),
             ),
           ],
-        ],
-      ),
-      body: Column(
-        children: <Widget>[
-          const _RangeBar(),
-          if (list.isLoading) const LinearProgressIndicator(minHeight: 2),
-          Expanded(
-            // A regeneration bumps the revision, which reloads this
-            // provider. Without `skipLoadingOnReload` the list blanked for
-            // a moment and came back scrolled to the top -- a long-press in
-            // "Probably have" lost the cook's place every time (Phase 8
-            // part 1's walk). The progress bar above still shows the work.
-            child: list.when(
-              skipLoadingOnReload: true,
-              loading: () => const SizedBox.shrink(),
-              error: (Object e, _) =>
-                  AppErrorView(message: localizedErrorMessage(e, l10n)),
-              data: (ShoppingList? current) => RefreshIndicator(
-                // Pull means generate, like the app-bar button (D147) -- on
-                // the empty state too, where it does what its own button does.
-                onRefresh: () => _generate(context, ref),
-                child: current == null
-                    ? AppEmptyState(
-                        card: true,
-                        icon: Icons.shopping_basket_outlined,
-                        title: l10n.noListYetTitle,
-                        body: l10n.noListYetBody,
-                        action: FilledButton.tonal(
-                          onPressed: () => _generate(context, ref),
-                          child: Text(l10n.generateListButton),
-                        ),
-                      )
-                    : _ListBody(list: current),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

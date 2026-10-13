@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
+import '../../../core/household/widgets/household_switch_gate.dart';
+import '../../../core/household/widgets/household_switch_placeholder.dart';
 import '../../../core/household/widgets/household_tab_title.dart';
 import '../../../core/l10n/date_labels.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
@@ -76,79 +78,91 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<MealPlanWeek> week = ref.watch(mealPlanEditorProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        titleSpacing: AppSpacing.sm,
-        title: HouseholdTabTitle(title: l10n.navPlan),
-        actions: <Widget>[
-          if (_view == _PlanView.week)
-            IconButton(
-              tooltip: l10n.thisWeekTooltip,
-              icon: const Icon(Icons.today_outlined),
-              onPressed: () => ref.read(visibleWeekProvider.notifier).today(),
-            ),
-        ],
-      ),
-      body: Column(
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: SegmentedButton<_PlanView>(
-              expandedInsets: EdgeInsets.zero,
-              segments: <ButtonSegment<_PlanView>>[
-                ButtonSegment<_PlanView>(
-                  value: _PlanView.today,
-                  label: Text(l10n.todayViewLabel),
-                ),
-                ButtonSegment<_PlanView>(
-                  value: _PlanView.week,
-                  label: Text(l10n.weekViewLabel),
-                ),
-              ],
-              selected: <_PlanView>{_view},
-              onSelectionChanged: (Set<_PlanView> selection) {
-                setState(() => _view = selection.first);
-                if (selection.first == _PlanView.today) {
-                  ref.read(visibleWeekProvider.notifier).today();
-                }
-              },
-            ),
-          ),
-          if (_view == _PlanView.week) const _WeekBar(),
-          if (week.isLoading) const LinearProgressIndicator(minHeight: 2),
-          Expanded(
-            child: week.when(
-              loading: () => const SizedBox.shrink(),
-              error: (Object e, _) =>
-                  AppErrorView(message: localizedErrorMessage(e, l10n)),
-              data: (MealPlanWeek plan) => RefreshIndicator(
-                onRefresh: () async => ref.invalidate(mealPlanEditorProvider),
-                child: ListView(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  children: <Widget>[
-                    const _SavedCopyLine(),
-                    if (_view == _PlanView.week)
-                      for (
-                        int i = 0;
-                        i < plan.week.days.length;
-                        i++
-                      ) ...<Widget>[
-                        if (i > 0) const SizedBox(height: AppSpacing.md),
-                        _DayCard(day: plan.week.days[i], plan: plan),
-                      ]
-                    else
-                      _DayCard(
-                        day: DateTime.now(),
-                        plan: plan,
-                        showFullDate: true,
-                        alwaysExpanded: true,
-                      ),
-                  ],
-                ),
+    // Between a household switch and its data, the frame stays and the
+    // content is a placeholder (phase9-household-switch-loading). The
+    // segments and the week bar are reads, so they stay live.
+    return HouseholdSwitchGate(
+      dataLoading: week.isLoading,
+      builder: (BuildContext context, bool awaiting) => Scaffold(
+        appBar: AppBar(
+          titleSpacing: AppSpacing.sm,
+          title: HouseholdTabTitle(title: l10n.navPlan),
+          actions: <Widget>[
+            if (_view == _PlanView.week)
+              IconButton(
+                tooltip: l10n.thisWeekTooltip,
+                icon: const Icon(Icons.today_outlined),
+                onPressed: () => ref.read(visibleWeekProvider.notifier).today(),
+              ),
+          ],
+        ),
+        body: Column(
+          children: <Widget>[
+            if (awaiting) const HouseholdSwitchProgressBar(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: SegmentedButton<_PlanView>(
+                expandedInsets: EdgeInsets.zero,
+                segments: <ButtonSegment<_PlanView>>[
+                  ButtonSegment<_PlanView>(
+                    value: _PlanView.today,
+                    label: Text(l10n.todayViewLabel),
+                  ),
+                  ButtonSegment<_PlanView>(
+                    value: _PlanView.week,
+                    label: Text(l10n.weekViewLabel),
+                  ),
+                ],
+                selected: <_PlanView>{_view},
+                onSelectionChanged: (Set<_PlanView> selection) {
+                  setState(() => _view = selection.first);
+                  if (selection.first == _PlanView.today) {
+                    ref.read(visibleWeekProvider.notifier).today();
+                  }
+                },
               ),
             ),
-          ),
-        ],
+            if (_view == _PlanView.week) const _WeekBar(),
+            if (week.isLoading && !awaiting)
+              const LinearProgressIndicator(minHeight: 2),
+            Expanded(
+              child: awaiting
+                  ? const HouseholdSwitchPlaceholder()
+                  : week.when(
+                      loading: () => const SizedBox.shrink(),
+                      error: (Object e, _) =>
+                          AppErrorView(message: localizedErrorMessage(e, l10n)),
+                      data: (MealPlanWeek plan) => RefreshIndicator(
+                        onRefresh: () async =>
+                            ref.invalidate(mealPlanEditorProvider),
+                        child: ListView(
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          children: <Widget>[
+                            const _SavedCopyLine(),
+                            if (_view == _PlanView.week)
+                              for (
+                                int i = 0;
+                                i < plan.week.days.length;
+                                i++
+                              ) ...<Widget>[
+                                if (i > 0)
+                                  const SizedBox(height: AppSpacing.md),
+                                _DayCard(day: plan.week.days[i], plan: plan),
+                              ]
+                            else
+                              _DayCard(
+                                day: DateTime.now(),
+                                plan: plan,
+                                showFullDate: true,
+                                alwaysExpanded: true,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

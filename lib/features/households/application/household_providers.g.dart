@@ -148,7 +148,7 @@ final class CurrentHouseholdProvider
   CurrentHousehold create() => CurrentHousehold();
 }
 
-String _$currentHouseholdHash() => r'9a208d87b1ef2ee04e664fd2bc983ac06789266a';
+String _$currentHouseholdHash() => r'e3b8598bb04b7e5fdaae2d1c4e4272be8f4d8861';
 
 /// The caller's current household, or null if they have not created one.
 ///
@@ -184,6 +184,101 @@ abstract class _$CurrentHousehold extends $AsyncNotifier<Household?> {
             as $ClassProviderElement<
               AnyNotifier<AsyncValue<Household?>, Household?>,
               AsyncValue<Household?>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+/// The household a [CurrentHousehold.switchTo] is switching to, or null when
+/// none is in flight (phase9-household-switch-loading).
+///
+/// Owned by `switchTo` rather than by whoever called it: the header, its
+/// Undo and the Households list all switch, and all three must put every tab
+/// into the same loading state. Crosses to other features only as
+/// `core/household/current_household.dart`'s narrow facts.
+///
+/// `keepAlive`, because `switchTo` writes it whether or not anything is
+/// listening yet.
+
+@ProviderFor(HouseholdSwitchInFlight)
+final householdSwitchInFlightProvider = HouseholdSwitchInFlightProvider._();
+
+/// The household a [CurrentHousehold.switchTo] is switching to, or null when
+/// none is in flight (phase9-household-switch-loading).
+///
+/// Owned by `switchTo` rather than by whoever called it: the header, its
+/// Undo and the Households list all switch, and all three must put every tab
+/// into the same loading state. Crosses to other features only as
+/// `core/household/current_household.dart`'s narrow facts.
+///
+/// `keepAlive`, because `switchTo` writes it whether or not anything is
+/// listening yet.
+final class HouseholdSwitchInFlightProvider
+    extends $NotifierProvider<HouseholdSwitchInFlight, String?> {
+  /// The household a [CurrentHousehold.switchTo] is switching to, or null when
+  /// none is in flight (phase9-household-switch-loading).
+  ///
+  /// Owned by `switchTo` rather than by whoever called it: the header, its
+  /// Undo and the Households list all switch, and all three must put every tab
+  /// into the same loading state. Crosses to other features only as
+  /// `core/household/current_household.dart`'s narrow facts.
+  ///
+  /// `keepAlive`, because `switchTo` writes it whether or not anything is
+  /// listening yet.
+  HouseholdSwitchInFlightProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'householdSwitchInFlightProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$householdSwitchInFlightHash();
+
+  @$internal
+  @override
+  HouseholdSwitchInFlight create() => HouseholdSwitchInFlight();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String?>(value),
+    );
+  }
+}
+
+String _$householdSwitchInFlightHash() =>
+    r'52577f8433af62a9b50aded03ab4121344e3d020';
+
+/// The household a [CurrentHousehold.switchTo] is switching to, or null when
+/// none is in flight (phase9-household-switch-loading).
+///
+/// Owned by `switchTo` rather than by whoever called it: the header, its
+/// Undo and the Households list all switch, and all three must put every tab
+/// into the same loading state. Crosses to other features only as
+/// `core/household/current_household.dart`'s narrow facts.
+///
+/// `keepAlive`, because `switchTo` writes it whether or not anything is
+/// listening yet.
+
+abstract class _$HouseholdSwitchInFlight extends $Notifier<String?> {
+  String? build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<String?, String?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<String?, String?>,
+              String?,
               Object?,
               Object?
             >;

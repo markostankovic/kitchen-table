@@ -1,15 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
+import 'package:kitchen_table/core/household/current_household.dart';
+import 'package:kitchen_table/core/household/widgets/household_switch_placeholder.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/date_labels.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
 import 'package:kitchen_table/core/net/network_status.dart';
 import 'package:kitchen_table/core/recipes/recipe_picker_providers.dart';
+import 'package:kitchen_table/core/supabase/supabase_client.dart';
 import 'package:kitchen_table/core/theme/app_theme.dart';
+import 'package:kitchen_table/features/households/application/household_providers.dart';
+import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/features/meal_plan/application/meal_plan_providers.dart';
 import 'package:kitchen_table/features/meal_plan/domain/meal_plan_entry.dart';
 import 'package:kitchen_table/features/meal_plan/domain/meal_plan_week.dart';
@@ -17,6 +24,8 @@ import 'package:kitchen_table/features/meal_plan/domain/meal_slot.dart';
 import 'package:kitchen_table/features/meal_plan/domain/plan_week.dart';
 import 'package:kitchen_table/features/meal_plan/presentation/meal_plan_screen.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe.dart';
+
+import '../../helpers/household_switch_harness.dart';
 
 /// Captured write calls, kept off the notifier itself: `riverpod_lint` flags
 /// a `Notifier` subclass for exposing public state through anything but
@@ -1210,6 +1219,68 @@ void main() {
       expect(find.text(weekdayNameAndDay(_monday, 'sr')), findsOneWidget);
     },
   );
+
+  // phase9-household-switch-loading -- between a switch and its data.
+  group('household switch', () {
+    testWidgets('mid-switch: the placeholder and the 4dp bar, no 2dp bar, '
+        'segments live; then the new plan', (WidgetTester tester) async {
+      final HeldHouseholdRepository repo =
+          HeldHouseholdRepository(<Household>[_homeHousehold, _weekend]);
+      final ProviderContainer container = await _pumpSwitchable(tester, repo);
+      await tester.tap(find.text('This week'));
+      await tester.pumpAndSettle();
+      expect(find.text('Šargarepa torta'), findsOneWidget);
+
+      repo.currentHold = Completer<void>();
+      final Future<void> switching = container
+          .read(currentHouseholdProvider.notifier)
+          .switchTo('weekend');
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(HouseholdSwitchPlaceholder), findsOneWidget);
+      expect(find.byType(HouseholdSwitchProgressBar), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget,
+          reason: 'the 4dp bar alone, never the 2dp one beside it');
+      expect(find.text('Šargarepa torta'), findsNothing);
+
+      // The segments are reads: Today still answers.
+      await tester.tap(find.text('Today'));
+      await tester.pump();
+      expect(find.byIcon(Icons.today_outlined), findsNothing);
+
+      repo.currentHold!.complete();
+      await switching;
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('This week'));
+      await tester.pumpAndSettle();
+      expect(find.byType(HouseholdSwitchPlaceholder), findsNothing);
+      expect(find.byType(HouseholdSwitchProgressBar), findsNothing);
+      expect(find.text('Pita sa sirom'), findsOneWidget);
+      expect(find.text('Šargarepa torta'), findsNothing);
+    });
+
+    testWidgets('one household: the first load is still the 2dp bar', (
+      WidgetTester tester,
+    ) async {
+      final HeldHouseholdRepository repo =
+          HeldHouseholdRepository(<Household>[_homeHousehold])
+            ..currentHold = Completer<void>();
+      await _pumpSwitchable(tester, repo, settle: false);
+
+      final LinearProgressIndicator bar = tester.widget(
+        find.byType(LinearProgressIndicator),
+      );
+      expect(bar.minHeight, 2);
+      expect(find.byType(HouseholdSwitchPlaceholder), findsNothing);
+      expect(find.byType(HouseholdSwitchProgressBar), findsNothing);
+
+      repo.currentHold!.complete();
+      await tester.pumpAndSettle();
+      expect(find.byType(HouseholdSwitchPlaceholder), findsNothing);
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+    });
+  });
 }
 
 class _ThrowingPlan extends MealPlanEditor {
@@ -1218,3 +1289,73 @@ class _ThrowingPlan extends MealPlanEditor {
     throw const NetworkFailure();
   }
 }
+
+const Household _homeHousehold =
+    Household(id: 'h1', name: 'Kod Mire', createdBy: 'u1');
+const Household _weekend =
+    Household(id: 'weekend', name: 'Vikendica', createdBy: 'u1');
+
+/// [mealPlanEditorProvider] answering per household, the way the real one
+/// keys on `currentHouseholdIdProvider`.
+class _HouseholdPlan extends _StubPlan {
+  _HouseholdPlan() : super(MealPlanWeek.empty(_week), _Calls());
+
+  @override
+  Stream<MealPlanWeek> build() async* {
+    final String? id = await ref.watch(currentHouseholdIdProvider.future);
+    yield MealPlanWeek(
+      week: _week,
+      planId: 'plan-$id',
+      entries: <MealPlanEntry>[
+        MealPlanEntry(
+          id: 'e-$id',
+          mealPlanId: 'plan-$id',
+          entryDate: _monday,
+          slot: MealSlot.lunch,
+          position: 0,
+          entryKind: MealEntryKind.recipe,
+          recipeId: 'r-$id',
+          recipeTitle: id == 'h1' ? 'Šargarepa torta' : 'Pita sa sirom',
+        ),
+      ],
+    );
+  }
+}
+
+Future<ProviderContainer> _pumpSwitchable(
+  WidgetTester tester,
+  HeldHouseholdRepository repo, {
+  bool settle = true,
+}) async {
+  tester.view.physicalSize = const Size(1200, 3000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        ...householdSwitchOverrides(repo),
+        mealPlanEditorProvider.overrideWith(_HouseholdPlan.new),
+        visibleWeekProvider.overrideWith(() => _PinnedWeek()),
+        plannableRecipesProvider(query: '')
+            .overrideWith((Ref ref) async => const <Recipe>[]),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: appSupportedLocales,
+        home: const MealPlanScreen(),
+      ),
+    ),
+  );
+  final ProviderContainer container = ProviderScope.containerOf(
+    tester.element(find.byType(MealPlanScreen)),
+  );
+  container.listen(currentUserIdProvider, (_, _) {});
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
+  return container;
+}
+

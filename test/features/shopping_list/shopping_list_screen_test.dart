@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
+import 'package:kitchen_table/core/household/current_household.dart';
+import 'package:kitchen_table/core/household/widgets/household_switch_placeholder.dart';
 import 'package:kitchen_table/core/ingredients/ingredient_catalog_providers.dart';
 import 'package:kitchen_table/core/ingredients/widgets/ingredient_line_row.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
@@ -12,14 +16,19 @@ import 'package:kitchen_table/core/l10n/generated/app_localizations_en.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
 import 'package:kitchen_table/core/net/network_status.dart';
 import 'package:kitchen_table/core/refresh/data_revision.dart';
+import 'package:kitchen_table/core/supabase/supabase_client.dart';
 import 'package:kitchen_table/core/theme/app_theme.dart';
 import 'package:kitchen_table/core/widgets/app_empty_state.dart';
+import 'package:kitchen_table/features/households/application/household_providers.dart';
+import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit_catalog.dart';
 import 'package:kitchen_table/features/shopping_list/application/shopping_list_providers.dart';
 import 'package:kitchen_table/features/shopping_list/domain/rational.dart';
 import 'package:kitchen_table/features/shopping_list/domain/shopping_item.dart';
 import 'package:kitchen_table/features/shopping_list/domain/shopping_list.dart';
+
+import '../../helpers/household_switch_harness.dart';
 import 'package:kitchen_table/features/shopping_list/presentation/shopping_list_screen.dart';
 
 /// Captured calls, kept off the notifier: `riverpod_lint`'s
@@ -1122,4 +1131,124 @@ void main() {
       expect(find.byType(DateRangePickerDialog), findsOneWidget);
     });
   });
+
+  // phase9-household-switch-loading -- between a switch and its data.
+  group('household switch', () {
+    testWidgets('mid-switch: the placeholder, none of the old list, Copy and '
+        'Regenerate disabled; then the new household\'s empty state', (
+      WidgetTester tester,
+    ) async {
+      final HeldHouseholdRepository repo =
+          HeldHouseholdRepository(<Household>[_homeHousehold, _weekend]);
+      final ProviderContainer container = await _pumpSwitchable(tester, repo);
+      expect(find.text('Mleko'), findsOneWidget);
+      expect(_action(tester, Icons.copy_outlined).onPressed, isNotNull);
+
+      repo.currentHold = Completer<void>();
+      final Future<void> switching = container
+          .read(currentHouseholdProvider.notifier)
+          .switchTo('weekend');
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(HouseholdSwitchPlaceholder), findsOneWidget);
+      expect(find.byType(HouseholdSwitchProgressBar), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget,
+          reason: 'the 4dp bar alone, never the 2dp one beside it');
+      expect(find.text('Mleko'), findsNothing);
+      expect(_action(tester, Icons.copy_outlined).onPressed, isNull);
+      expect(_action(tester, Icons.refresh_outlined).onPressed, isNull);
+
+      repo.currentHold!.complete();
+      await switching;
+      await tester.pumpAndSettle();
+      expect(find.byType(HouseholdSwitchPlaceholder), findsNothing);
+      expect(find.byType(HouseholdSwitchProgressBar), findsNothing);
+      expect(find.byType(AppEmptyState), findsOneWidget);
+      expect(find.text('Mleko'), findsNothing);
+      // No list: today's rule hides both again.
+      expect(find.byIcon(Icons.copy_outlined), findsNothing);
+      expect(find.byIcon(Icons.refresh_outlined), findsNothing);
+    });
+
+    testWidgets('one household: the first load is still the 2dp bar', (
+      WidgetTester tester,
+    ) async {
+      final HeldHouseholdRepository repo =
+          HeldHouseholdRepository(<Household>[_homeHousehold])
+            ..currentHold = Completer<void>();
+      await _pumpSwitchable(tester, repo, settle: false);
+
+      final LinearProgressIndicator bar = tester.widget(
+        find.byType(LinearProgressIndicator),
+      );
+      expect(bar.minHeight, 2);
+      expect(find.byType(HouseholdSwitchPlaceholder), findsNothing);
+      expect(find.byType(HouseholdSwitchProgressBar), findsNothing);
+
+      repo.currentHold!.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Mleko'), findsOneWidget);
+      expect(find.byType(HouseholdSwitchPlaceholder), findsNothing);
+    });
+  });
 }
+
+const Household _homeHousehold =
+    Household(id: 'h1', name: 'Kod Mire', createdBy: 'u1');
+const Household _weekend =
+    Household(id: 'weekend', name: 'Vikendica', createdBy: 'u1');
+
+/// [currentShoppingListProvider] answering per household, the way the real
+/// one keys on `currentHouseholdIdProvider`: a list for `h1`, none for the
+/// weekend household.
+class _HouseholdList extends _StubList {
+  _HouseholdList() : super(null, _Calls());
+
+  @override
+  Stream<ShoppingList?> build() async* {
+    final String? id = await ref.watch(currentHouseholdIdProvider.future);
+    yield id == 'h1' ? _list(<ShoppingItem>[_item('Mleko')]) : null;
+  }
+}
+
+Future<ProviderContainer> _pumpSwitchable(
+  WidgetTester tester,
+  HeldHouseholdRepository repo, {
+  bool settle = true,
+}) async {
+  tester.view.physicalSize = const Size(1200, 3000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        ...householdSwitchOverrides(repo),
+        currentShoppingListProvider.overrideWith(_HouseholdList.new),
+        shoppingRangeProvider.overrideWith(() => _PinnedRange()),
+        unitCatalogProvider.overrideWith((Ref ref) async => _units),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: appSupportedLocales,
+        home: const ShoppingListScreen(),
+      ),
+    ),
+  );
+  final ProviderContainer container = ProviderScope.containerOf(
+    tester.element(find.byType(ShoppingListScreen)),
+  );
+  container.listen(currentUserIdProvider, (_, _) {});
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
+  return container;
+}
+
+IconButton _action(WidgetTester tester, IconData icon) =>
+    tester.widget<IconButton>(
+      find.ancestor(of: find.byIcon(icon), matching: find.byType(IconButton)),
+    );

@@ -21,6 +21,10 @@ import 'household_switch_sheet.dart';
 /// title, the same pixels as before: every tab bar sets `titleSpacing:
 /// AppSpacing.sm` and this supplies the other `sm`, so the title sits at 16
 /// in both modes.
+///
+/// During a switch -- from here, its Undo, or the Households list -- the line
+/// shows the target household's name at once and the block is inert until
+/// the switch resolves (phase9-household-switch-loading).
 class HouseholdTabTitle extends ConsumerStatefulWidget {
   const HouseholdTabTitle({required this.title, super.key});
 
@@ -31,8 +35,11 @@ class HouseholdTabTitle extends ConsumerStatefulWidget {
 }
 
 class _HouseholdTabTitleState extends ConsumerState<HouseholdTabTitle> {
-  /// True while a switch is in flight; the block is inert meanwhile.
-  bool _switching = false;
+  /// The target's name, held from the switch's start until
+  /// [householdSwitcherNameProvider] has settled on the new one: after
+  /// `switchTo` returns it is still re-reading `myHouseholds`, and its
+  /// `.value` meanwhile is the OLD name.
+  String? _heldName;
 
   /// Undo runs on the captured notifier and messenger, not `ref` or
   /// `context`: the tab may have rebuilt or gone by the time it is tapped.
@@ -55,7 +62,6 @@ class _HouseholdTabTitleState extends ConsumerState<HouseholdTabTitle> {
       case ManageHouseholds():
         const HouseholdsRoute().go(context);
       case SwitchToHousehold(:final String id, :final String name):
-        setState(() => _switching = true);
         try {
           await notifier.switchTo(id);
           messenger
@@ -70,15 +76,13 @@ class _HouseholdTabTitleState extends ConsumerState<HouseholdTabTitle> {
                     ? null
                     : SnackBarAction(
                         label: l10n.undoSnackbarAction,
-                        onPressed: () => _undo(notifier, previousId, messenger,
-                            l10n),
+                        onPressed: () =>
+                            _undo(notifier, previousId, messenger, l10n),
                       ),
               ),
             );
         } on AppFailure catch (e) {
           messenger.showSnackBar(SnackBar(content: Text(e.localized(l10n))));
-        } finally {
-          if (mounted) setState(() => _switching = false);
         }
     }
   }
@@ -99,7 +103,17 @@ class _HouseholdTabTitleState extends ConsumerState<HouseholdTabTitle> {
 
   @override
   Widget build(BuildContext context) {
-    final String? name = ref.watch(householdSwitcherNameProvider).value;
+    final AsyncValue<String?> switcher = ref.watch(
+      householdSwitcherNameProvider,
+    );
+    final bool pending = ref.watch(householdSwitchPendingProvider);
+    final String? target = ref.watch(householdSwitchTargetNameProvider);
+    if (target != null) {
+      _heldName = target;
+    } else if (!pending && !switcher.isLoading) {
+      _heldName = null;
+    }
+    final String? name = _heldName ?? switcher.value;
     if (name == null) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
@@ -123,7 +137,7 @@ class _HouseholdTabTitleState extends ConsumerState<HouseholdTabTitle> {
           type: MaterialType.transparency,
           child: InkWell(
             borderRadius: BorderRadius.circular(AppRadii.md),
-            onTap: _switching ? null : _openSheet,
+            onTap: pending ? null : _openSheet,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               child: Column(

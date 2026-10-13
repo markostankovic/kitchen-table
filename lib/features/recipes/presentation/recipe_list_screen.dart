@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/failure_l10n.dart';
+import '../../../core/household/current_household.dart';
+import '../../../core/household/widgets/household_switch_gate.dart';
+import '../../../core/household/widgets/household_switch_placeholder.dart';
 import '../../../core/household/widgets/household_tab_title.dart';
 import '../../../core/l10n/app_locale.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
@@ -85,144 +88,167 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
         favoritesOnly: _favoritesOnly,
       ),
     );
+    // A tag key belongs to one household's vocabulary: keeping it would open
+    // the new household on a filter it may not have. The search text and
+    // Favorites carry over (phase9-household-switch-loading).
+    ref.listen<bool>(householdSwitchPendingProvider, (bool? _, bool pending) {
+      if (pending && _tag.isNotEmpty) setState(() => _tag = '');
+    });
 
-    return Scaffold(
-      // The title shares its ARB key with the nav label (D77, Phase 3 part 1)
-      // so the tab and this AppBar never disagree about the language they are
-      // in, even though the rest of this screen's content is still English.
-      appBar: AppBar(
-        titleSpacing: AppSpacing.sm,
-        title: HouseholdTabTitle(title: l10n.navRecipes),
-        actions: <Widget>[
-          // The app bar's `+` anchors a menu rather than a single action,
-          // because there is more than one way to get a recipe in: write it,
-          // or import it from a link, a paste or a photo. It replaced the FAB
-          // in sync-design-initial (D138, amending D119).
-          MenuAnchor(
-            builder:
-                (BuildContext context, MenuController controller, Widget? _) =>
-                    IconButton(
-                      tooltip: l10n.addRecipeTooltip,
-                      icon: const Icon(Icons.add),
-                      onPressed: () => controller.isOpen
-                          ? controller.close()
-                          : controller.open(),
-                    ),
-            menuChildren: <Widget>[
-              MenuItemButton(
-                leadingIcon: const Icon(Icons.edit_outlined),
-                onPressed: () => const RecipeNewRoute().go(context),
-                child: Text(l10n.newRecipeMenuItem),
-              ),
-              MenuItemButton(
-                leadingIcon: const Icon(Icons.link_outlined),
-                onPressed: () => const ImportUrlRoute().go(context),
-                child: Text(l10n.importFromLinkMenuItem),
-              ),
-              MenuItemButton(
-                leadingIcon: const Icon(Icons.content_paste_outlined),
-                onPressed: () => const ImportPasteRoute().go(context),
-                child: Text(l10n.pasteRecipeMenuItem),
-              ),
-              MenuItemButton(
-                leadingIcon: const Icon(Icons.photo_camera_outlined),
-                onPressed: () => const ImportPhotoRoute().go(context),
-                child: Text(l10n.photographPageMenuItem),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: Column(
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.xs,
-              AppSpacing.lg,
-              AppSpacing.md,
+    return HouseholdSwitchGate(
+      dataLoading: recipes.isLoading,
+      builder: (BuildContext context, bool awaiting) => Scaffold(
+        // The title shares its ARB key with the nav label (D77, Phase 3 part 1)
+        // so the tab and this AppBar never disagree about the language they are
+        // in, even though the rest of this screen's content is still English.
+        appBar: AppBar(
+          titleSpacing: AppSpacing.sm,
+          title: HouseholdTabTitle(title: l10n.navRecipes),
+          actions: <Widget>[
+            // The app bar's `+` anchors a menu rather than a single action,
+            // because there is more than one way to get a recipe in: write it,
+            // or import it from a link, a paste or a photo. It replaced the FAB
+            // in sync-design-initial (D138, amending D119).
+            MenuAnchor(
+              builder:
+                  (
+                    BuildContext context,
+                    MenuController controller,
+                    Widget? _,
+                  ) => IconButton(
+                    tooltip: l10n.addRecipeTooltip,
+                    icon: const Icon(Icons.add),
+                    onPressed: awaiting
+                        ? null
+                        : () => controller.isOpen
+                              ? controller.close()
+                              : controller.open(),
+                  ),
+              menuChildren: <Widget>[
+                MenuItemButton(
+                  leadingIcon: const Icon(Icons.edit_outlined),
+                  onPressed: () => const RecipeNewRoute().go(context),
+                  child: Text(l10n.newRecipeMenuItem),
+                ),
+                MenuItemButton(
+                  leadingIcon: const Icon(Icons.link_outlined),
+                  onPressed: () => const ImportUrlRoute().go(context),
+                  child: Text(l10n.importFromLinkMenuItem),
+                ),
+                MenuItemButton(
+                  leadingIcon: const Icon(Icons.content_paste_outlined),
+                  onPressed: () => const ImportPasteRoute().go(context),
+                  child: Text(l10n.pasteRecipeMenuItem),
+                ),
+                MenuItemButton(
+                  leadingIcon: const Icon(Icons.photo_camera_outlined),
+                  onPressed: () => const ImportPhotoRoute().go(context),
+                  child: Text(l10n.photographPageMenuItem),
+                ),
+              ],
             ),
-            child: AppSearchField(
-              controller: _search,
-              hintText: l10n.searchRecipesHint,
-              onChanged: _onQueryChanged,
+          ],
+        ),
+        body: Column(
+          children: <Widget>[
+            if (awaiting) const HouseholdSwitchProgressBar(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.xs,
+                AppSpacing.lg,
+                AppSpacing.md,
+              ),
+              child: AppSearchField(
+                controller: _search,
+                hintText: l10n.searchRecipesHint,
+                onChanged: _onQueryChanged,
+              ),
             ),
-          ),
-          _FilterRow(
-            selectedTag: _tag,
-            favoritesOnly: _favoritesOnly,
-            onTagTap: _toggleTag,
-            onFavoritesTap: _toggleFavoritesOnly,
-            onClear: _clearFilters,
-            l10n: l10n,
-          ),
-          Expanded(
-            child: recipes.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (Object e, _) =>
-                  AppErrorView(message: localizedErrorMessage(e, l10n)),
-              data: (List<Recipe> items) {
-                final bool filtered = _tag.isNotEmpty || _favoritesOnly;
-                final bool narrowed = _query.isNotEmpty || filtered;
-                // A filter is the one narrowing with a way out on this
-                // screen, so only it earns the empty state's one tonal
-                // action. A query alone has the field's own clear button.
-                return items.isEmpty
-                    ? AppEmptyState(
-                        card: true,
-                        icon: narrowed
-                            ? Icons.search_off
-                            : Icons.menu_book_outlined,
-                        title: narrowed
-                            ? l10n.noRecipesMatch
-                            : l10n.noRecipesYet,
-                        body: filtered ? l10n.noRecipesMatchFilterBody : null,
-                        action: filtered
-                            ? FilledButton.tonal(
-                                onPressed: _clearFilters,
-                                child: Text(l10n.clearFiltersButton),
+            // Its chips are the old household's until the new list arrives.
+            if (!awaiting)
+              _FilterRow(
+                selectedTag: _tag,
+                favoritesOnly: _favoritesOnly,
+                onTagTap: _toggleTag,
+                onFavoritesTap: _toggleFavoritesOnly,
+                onClear: _clearFilters,
+                l10n: l10n,
+              ),
+            Expanded(
+              child: awaiting
+                  ? const HouseholdSwitchPlaceholder()
+                  : recipes.when(
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (Object e, _) =>
+                          AppErrorView(message: localizedErrorMessage(e, l10n)),
+                      data: (List<Recipe> items) {
+                        final bool filtered = _tag.isNotEmpty || _favoritesOnly;
+                        final bool narrowed = _query.isNotEmpty || filtered;
+                        // A filter is the one narrowing with a way out on this
+                        // screen, so only it earns the empty state's one tonal
+                        // action. A query alone has the field's own clear button.
+                        return items.isEmpty
+                            ? AppEmptyState(
+                                card: true,
+                                icon: narrowed
+                                    ? Icons.search_off
+                                    : Icons.menu_book_outlined,
+                                title: narrowed
+                                    ? l10n.noRecipesMatch
+                                    : l10n.noRecipesYet,
+                                body: filtered
+                                    ? l10n.noRecipesMatchFilterBody
+                                    : null,
+                                action: filtered
+                                    ? FilledButton.tonal(
+                                        onPressed: _clearFilters,
+                                        child: Text(l10n.clearFiltersButton),
+                                      )
+                                    : null,
                               )
-                            : null,
-                      )
-                    : RefreshIndicator(
-                        onRefresh: () async => ref.invalidate(
-                          recipeListProvider(
-                            query: _query,
-                            tag: _tag,
-                            favoritesOnly: _favoritesOnly,
-                          ),
-                        ),
-                        child: ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.lg,
-                            AppSpacing.lg,
-                            AppSpacing.lg,
-                            AppSpacing.xl,
-                          ),
-                          // The result count rides as item 0 of every
-                          // non-empty list, so it scrolls away with the list
-                          // rather than pinning a line of chrome above it.
-                          itemCount: items.length + 1,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: AppSpacing.md),
-                          itemBuilder: (BuildContext context, int i) {
-                            if (i == 0) {
-                              return _ResultCount(count: items.length);
-                            }
-                            final Recipe recipe = items[i - 1];
-                            return RecipeCard(
-                              recipe: recipe,
-                              l10n: l10n,
-                              onTap: () =>
-                                  RecipeDetailRoute(recipe.id).go(context),
-                            );
-                          },
-                        ),
-                      );
-              },
+                            : RefreshIndicator(
+                                onRefresh: () async => ref.invalidate(
+                                  recipeListProvider(
+                                    query: _query,
+                                    tag: _tag,
+                                    favoritesOnly: _favoritesOnly,
+                                  ),
+                                ),
+                                child: ListView.separated(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    AppSpacing.lg,
+                                    AppSpacing.lg,
+                                    AppSpacing.lg,
+                                    AppSpacing.xl,
+                                  ),
+                                  // The result count rides as item 0 of every
+                                  // non-empty list, so it scrolls away with the list
+                                  // rather than pinning a line of chrome above it.
+                                  itemCount: items.length + 1,
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(height: AppSpacing.md),
+                                  itemBuilder: (BuildContext context, int i) {
+                                    if (i == 0) {
+                                      return _ResultCount(count: items.length);
+                                    }
+                                    final Recipe recipe = items[i - 1];
+                                    return RecipeCard(
+                                      recipe: recipe,
+                                      l10n: l10n,
+                                      onTap: () =>
+                                          RecipeDetailRoute(recipe.id)
+                                              .go(context),
+                                    );
+                                  },
+                                ),
+                              );
+                      },
+                    ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

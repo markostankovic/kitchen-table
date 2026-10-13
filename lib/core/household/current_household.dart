@@ -32,6 +32,12 @@
 /// [householdSwitcherName] is the second, narrower still: just the current
 /// household's name when there are others to switch to, for the tab header
 /// (phase9-household-switcher).
+/// [householdSwitchPending] and [householdSwitchTargetName] are the switch's
+/// own two facts (phase9-household-switch-loading): whether one is in flight,
+/// so Recipes, Plan and List can hold their loading state until their data is
+/// the new household's, and the name it is switching to, so the header shows
+/// it at once. A bool and a string, not the in-flight notifier, for the same
+/// reason as above.
 ///
 /// `core/` may depend on `features/` (docs/ARCHITECTURE.md); `tool/check_layers.dart`
 /// derives layer and feature only from `lib/features` paths and does not
@@ -107,4 +113,27 @@ Future<String?> householdSwitcherName(Ref ref) async {
     return null;
   }
   return household.name;
+}
+
+/// Whether a household switch is in flight (`CurrentHousehold.switchTo`,
+/// from the header, its Undo, or the Households list).
+@riverpod
+bool householdSwitchPending(Ref ref) =>
+    ref.watch(householdSwitchInFlightProvider) != null;
+
+/// The name of the household a switch in flight is switching to; null when
+/// none is, or while the caller's households are not yet known.
+///
+/// `myHouseholds` reloads during a switch but keeps its previous value, so
+/// `.value` is still the list the sheet was built from.
+@riverpod
+String? householdSwitchTargetName(Ref ref) {
+  final String? id = ref.watch(householdSwitchInFlightProvider);
+  if (id == null) return null;
+  final List<HouseholdMembership>? mine = ref.watch(myHouseholdsProvider).value;
+  if (mine == null) return null;
+  for (final HouseholdMembership m in mine) {
+    if (m.household.id == id) return m.household.name;
+  }
+  return null;
 }

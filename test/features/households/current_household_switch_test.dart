@@ -5,8 +5,11 @@
 // Supabase, no Drift. The repository's own selection rules are proved in
 // household_repository_offline_test.dart; this proves the provider wiring.
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kitchen_table/core/error/app_failure.dart';
 import 'package:kitchen_table/core/household/current_household.dart';
 import 'package:kitchen_table/core/supabase/supabase_client.dart';
 import 'package:kitchen_table/features/households/application/household_providers.dart';
@@ -15,6 +18,7 @@ import 'package:kitchen_table/features/households/domain/household_member.dart';
 import 'package:kitchen_table/features/households/domain/household_membership.dart';
 
 import '../../helpers/fake_household_repository.dart';
+import '../../helpers/household_switch_harness.dart';
 
 const Household _home = Household(id: 'home', name: 'Home', createdBy: 'u1');
 const Household _weekend =
@@ -124,4 +128,70 @@ void main() {
       <String>['home', joined],
     );
   });
+
+  // phase9-household-switch-loading -- the in-flight signal.
+
+  test('switchTo raises the in-flight id before select, clears it after',
+      () async {
+    final _SpyingRepository repo =
+        _SpyingRepository(<Household>[_home, _weekend]);
+    final ProviderContainer container = _container(repo);
+    await _signedIn(container);
+    container.listen(householdSwitchPendingProvider, (_, _) {});
+    // The header has the list loaded by the time anyone can switch.
+    container.listen(householdSwitchTargetNameProvider, (_, _) {});
+    container.listen(myHouseholdsProvider, (_, _) {});
+    await container.read(myHouseholdsProvider.future);
+    await container.read(currentHouseholdIdProvider.future);
+    repo.container = container;
+    repo.currentHold = Completer<void>();
+
+    final Future<void> switching =
+        container.read(currentHouseholdProvider.notifier).switchTo('weekend');
+
+    expect(repo.inFlightAtSelect, 'weekend');
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(householdSwitchInFlightProvider), 'weekend');
+    expect(container.read(householdSwitchPendingProvider), isTrue);
+    expect(container.read(householdSwitchTargetNameProvider), 'Weekend');
+
+    repo.currentHold!.complete();
+    await switching;
+    expect(container.read(householdSwitchInFlightProvider), isNull);
+    expect(container.read(householdSwitchPendingProvider), isFalse);
+    expect(container.read(householdSwitchTargetNameProvider), isNull);
+  });
+
+  test('a failed switch clears the in-flight id too', () async {
+    final HeldHouseholdRepository repo =
+        HeldHouseholdRepository(<Household>[_home, _weekend])
+          ..selectFailure = const NetworkFailure(message: 'offline');
+    final ProviderContainer container = _container(repo);
+    await _signedIn(container);
+    await container.read(currentHouseholdIdProvider.future);
+
+    await expectLater(
+      container.read(currentHouseholdProvider.notifier).switchTo('weekend'),
+      throwsA(isA<NetworkFailure>()),
+    );
+    expect(container.read(householdSwitchInFlightProvider), isNull);
+    expect(container.read(currentHouseholdIdProvider).value, 'home');
+  });
+}
+
+/// Records what the in-flight id was when `select` ran.
+class _SpyingRepository extends HeldHouseholdRepository {
+  _SpyingRepository(super.households);
+
+  ProviderContainer? container;
+  String? inFlightAtSelect;
+
+  @override
+  Future<void> select({
+    required String userId,
+    required String householdId,
+  }) {
+    inFlightAtSelect = container?.read(householdSwitchInFlightProvider);
+    return super.select(userId: userId, householdId: householdId);
+  }
 }

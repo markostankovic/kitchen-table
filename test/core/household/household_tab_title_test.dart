@@ -4,6 +4,8 @@
 // Providers are overridden rather than mocked (households_screen_test.dart's
 // own precedent), so CLAUDE.md rule 8 is never triggered.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +25,7 @@ import 'package:kitchen_table/features/households/domain/household_membership.da
 
 import '../../helpers/fake_household_repository.dart';
 import '../../helpers/fixed_current_household.dart';
+import '../../helpers/household_switch_harness.dart';
 
 final AppLocalizations sr = AppLocalizationsSr();
 
@@ -249,5 +252,98 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(_householdsPage), findsOneWidget);
+  });
+
+  // phase9-household-switch-loading -- the header during a switch.
+
+  testWidgets('mid-switch the header shows the target name, inert, and never '
+      'the old name again', (WidgetTester tester) async {
+    final HeldHouseholdRepository repo = HeldHouseholdRepository(
+      <Household>[_mira, _weekend],
+    );
+    await _pump(tester, repo);
+    await _openSheet(tester);
+
+    repo.currentHold = Completer<void>();
+    await tester.tap(find.text(_longName));
+    await tester.pumpAndSettle();
+
+    // The sheet is closed; the switch is still held at fetchCurrent.
+    expect(find.text(sr.switchHouseholdSheetTitle), findsNothing);
+    expect(find.descendant(of: _header, matching: find.text(_longName)),
+        findsOneWidget);
+    expect(find.text('Kod Mire'), findsNothing);
+    InkWell block() => tester.widget<InkWell>(
+      find.descendant(of: _header, matching: find.byType(InkWell)),
+    );
+    expect(block().onTap, isNull);
+
+    // The switch resolves, but `myHouseholds` is still re-reading: the
+    // switcher name's own `.value` is the old one meanwhile.
+    repo.membershipsHold = Completer<void>();
+    repo.currentHold!.complete();
+    repo.currentHold = null;
+    for (int i = 0; i < 5; i++) {
+      await tester.pump();
+      expect(find.text('Kod Mire'), findsNothing);
+      expect(find.descendant(of: _header, matching: find.text(_longName)),
+          findsOneWidget);
+    }
+
+    repo.membershipsHold!.complete();
+    repo.membershipsHold = null;
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: _header, matching: find.text(_longName)),
+        findsOneWidget);
+    expect(find.text('Kod Mire'), findsNothing);
+    expect(block().onTap, isNotNull);
+  });
+
+  testWidgets('Undo makes the block inert too', (WidgetTester tester) async {
+    final HeldHouseholdRepository repo = HeldHouseholdRepository(
+      <Household>[_mira, _weekend],
+    );
+    await _pump(tester, repo);
+    await _openSheet(tester);
+    await tester.tap(find.text(_longName));
+    await tester.pumpAndSettle();
+
+    repo.currentHold = Completer<void>();
+    await tester.tap(find.text(sr.undoSnackbarAction));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.descendant(of: _header, matching: find.text('Kod Mire')),
+        findsOneWidget);
+    expect(
+      tester
+          .widget<InkWell>(
+            find.descendant(of: _header, matching: find.byType(InkWell)),
+          )
+          .onTap,
+      isNull,
+    );
+
+    repo.currentHold!.complete();
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: _header, matching: find.text('Kod Mire')),
+        findsOneWidget);
+  });
+
+  testWidgets('a failed switch goes back to the current name', (
+    WidgetTester tester,
+  ) async {
+    final HeldHouseholdRepository repo = HeldHouseholdRepository(
+      <Household>[_mira, _weekend],
+    )..selectFailure = const NetworkFailure(message: 'offline');
+    await _pump(tester, repo);
+    await _openSheet(tester);
+    await tester.tap(find.text(_longName));
+    await tester.pumpAndSettle();
+
+    expect(find.descendant(of: _header, matching: find.text('Kod Mire')),
+        findsOneWidget);
+    expect(find.descendant(of: _header, matching: find.text(_longName)),
+        findsNothing);
   });
 }

@@ -65,15 +65,47 @@ class CurrentHousehold extends _$CurrentHousehold {
   /// `currentHouseholdIdProvider` watcher follow it, so every screen
   /// provider re-keys without being told. Create and join call it with the
   /// new id; the Households list does.
+  ///
+  /// Raises [HouseholdSwitchInFlight] for the whole of it, success or
+  /// failure, so every tab -- not just the one whose header started it --
+  /// can show the switch's loading state (phase9-household-switch-loading).
   Future<void> switchTo(String householdId) async {
     final String? userId = ref.read(currentUserIdProvider).value;
     if (userId == null) return;
-    await ref
-        .read(householdRepositoryProvider)
-        .select(userId: userId, householdId: householdId);
-    ref.invalidateSelf();
-    await future;
+    final HouseholdSwitchInFlight inFlight = ref.read(
+      householdSwitchInFlightProvider.notifier,
+    );
+    inFlight.start(householdId);
+    try {
+      await ref
+          .read(householdRepositoryProvider)
+          .select(userId: userId, householdId: householdId);
+      ref.invalidateSelf();
+      await future;
+    } finally {
+      inFlight.clear();
+    }
   }
+}
+
+/// The household a [CurrentHousehold.switchTo] is switching to, or null when
+/// none is in flight (phase9-household-switch-loading).
+///
+/// Owned by `switchTo` rather than by whoever called it: the header, its
+/// Undo and the Households list all switch, and all three must put every tab
+/// into the same loading state. Crosses to other features only as
+/// `core/household/current_household.dart`'s narrow facts.
+///
+/// `keepAlive`, because `switchTo` writes it whether or not anything is
+/// listening yet.
+@Riverpod(keepAlive: true)
+class HouseholdSwitchInFlight extends _$HouseholdSwitchInFlight {
+  @override
+  String? build() => null;
+
+  void start(String householdId) => state = householdId;
+
+  void clear() => state = null;
 }
 
 /// Every household the caller belongs to, in the order they joined, with

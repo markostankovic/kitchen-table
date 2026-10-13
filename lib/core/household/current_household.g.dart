@@ -183,3 +183,112 @@ final class HouseholdSwitcherNameProvider
 
 String _$householdSwitcherNameHash() =>
     r'b144d96651d23df5b47c57bd546fe2f4eebbf3d0';
+
+/// Whether a household switch is in flight (`CurrentHousehold.switchTo`,
+/// from the header, its Undo, or the Households list).
+
+@ProviderFor(householdSwitchPending)
+final householdSwitchPendingProvider = HouseholdSwitchPendingProvider._();
+
+/// Whether a household switch is in flight (`CurrentHousehold.switchTo`,
+/// from the header, its Undo, or the Households list).
+
+final class HouseholdSwitchPendingProvider
+    extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
+  /// Whether a household switch is in flight (`CurrentHousehold.switchTo`,
+  /// from the header, its Undo, or the Households list).
+  HouseholdSwitchPendingProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'householdSwitchPendingProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$householdSwitchPendingHash();
+
+  @$internal
+  @override
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  bool create(Ref ref) {
+    return householdSwitchPending(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$householdSwitchPendingHash() =>
+    r'3954aa50d1daac78b6b614663f87683e8d6ea5cf';
+
+/// The name of the household a switch in flight is switching to; null when
+/// none is, or while the caller's households are not yet known.
+///
+/// `myHouseholds` reloads during a switch but keeps its previous value, so
+/// `.value` is still the list the sheet was built from.
+
+@ProviderFor(householdSwitchTargetName)
+final householdSwitchTargetNameProvider = HouseholdSwitchTargetNameProvider._();
+
+/// The name of the household a switch in flight is switching to; null when
+/// none is, or while the caller's households are not yet known.
+///
+/// `myHouseholds` reloads during a switch but keeps its previous value, so
+/// `.value` is still the list the sheet was built from.
+
+final class HouseholdSwitchTargetNameProvider
+    extends $FunctionalProvider<String?, String?, String?>
+    with $Provider<String?> {
+  /// The name of the household a switch in flight is switching to; null when
+  /// none is, or while the caller's households are not yet known.
+  ///
+  /// `myHouseholds` reloads during a switch but keeps its previous value, so
+  /// `.value` is still the list the sheet was built from.
+  HouseholdSwitchTargetNameProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'householdSwitchTargetNameProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$householdSwitchTargetNameHash();
+
+  @$internal
+  @override
+  $ProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  String? create(Ref ref) {
+    return householdSwitchTargetName(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String?>(value),
+    );
+  }
+}
+
+String _$householdSwitchTargetNameHash() =>
+    r'a9c4ac7c24ca10a9ee5f7b0470ff773e5d225b28';

@@ -489,7 +489,9 @@ title sits the current household's name in `bodyMedium` `onSurfaceVariant`,
 one line, ellipsized, then `expand_more` at `iconInButton` in the same
 colour, no gap. Tapping the block opens the switch sheet (§ Household).
 With one household, while that is unknown, or offline, it is absent: the
-plain title, the same pixels as before.
+plain title, the same pixels as before. During a switch — from the sheet,
+its Undo, or the households list — the line shows the target household's
+name straight away, and the block is inert until the switch resolves.
 
 ### Inputs
 
@@ -1143,6 +1145,26 @@ sheet and shows "Now in X." with Undo; a switch from the households list
 shows nothing (the radio moving is the feedback). After any switch, the
 shell sends every other tab back to its root on its next visit.
 
+**Between a switch and its data.** From the moment a switch starts until a
+tab has the new household's data, Recipes, Plan and List keep their frame
+(search field, segments, week bar, range bar, nav) and add a 4dp
+indeterminate bar directly under the app bar: `primary` on a
+`surfaceContainerHighest` track, full-bleed, first in the body, so the frame
+moves down 4. It replaces the tab's own 2dp bar, never sits beside it. In
+place of the content: one theme card padded `lg`, top-aligned in the
+content area with the list's own padding, holding six flat `AppRadii.xs`
+bars in `surfaceContainerHighest`, 12 or 16 high, `lg` apart, at fractional
+widths, four with a trailing amount bar. No text, no shimmer: the bar is
+the only thing that moves, and the card is excluded from semantics. Write
+controls in the frame are disabled meanwhile (Recipes' `+`; List's Copy and
+Regenerate render disabled whether or not a list exists), and Recipes hides
+its filter row, whose chips are the old household's. Only a switch does
+this: cold start, week paging, filters, regenerate and pull-to-refresh keep
+the spinner (Recipes) or the 2dp bar (Plan, List), and one-household
+screens are unchanged. `HouseholdSwitchGate` decides it,
+`HouseholdSwitchPlaceholder` and `HouseholdSwitchProgressBar` draw it, all in
+`core/household/widgets/`.
+
 ### Settings
 
 All private in `settings_screen.dart`; none is in `core/widgets/`.
@@ -1241,6 +1263,8 @@ lives, below.
 | `HouseholdRow` | `core/household/widgets/household_row.dart` |
 | `HouseholdTabTitle` | `core/household/widgets/household_tab_title.dart` |
 | `showHouseholdSwitchSheet` | `core/household/widgets/household_switch_sheet.dart` |
+| `HouseholdSwitchGate` | `core/household/widgets/household_switch_gate.dart` |
+| `HouseholdSwitchPlaceholder` / `HouseholdSwitchProgressBar` | `core/household/widgets/household_switch_placeholder.dart` |
 
 `AppBadge` has two looks, both 24 tall, radius `xs`, the label in
 `labelMedium` `onSurfaceVariant`:

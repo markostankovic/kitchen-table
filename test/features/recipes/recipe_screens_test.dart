@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kitchen_table/core/images/recipe_image_cache.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
+import 'package:kitchen_table/core/household/current_household.dart';
+import 'package:kitchen_table/core/household/widgets/household_switch_placeholder.dart';
+import 'package:kitchen_table/core/supabase/supabase_client.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/meal_plan/meal_plan_writer.dart';
@@ -13,6 +18,8 @@ import 'package:kitchen_table/core/theme/app_theme.dart';
 import 'package:kitchen_table/core/widgets/app_badge.dart';
 import 'package:kitchen_table/core/widgets/app_meta_row.dart';
 import 'package:kitchen_table/core/widgets/app_monogram_tile.dart';
+import 'package:kitchen_table/features/households/application/household_providers.dart';
+import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/features/ingredients/domain/ingredient_match.dart';
 import 'package:kitchen_table/features/ingredients/domain/quantity.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
@@ -31,6 +38,7 @@ import 'package:kitchen_table/features/recipes/presentation/recipe_detail_screen
 import 'package:kitchen_table/features/recipes/presentation/recipe_list_screen.dart';
 
 import '../../helpers/fake_image_cache.dart';
+import '../../helpers/household_switch_harness.dart';
 
 /// Providers are overridden rather than mocked -- Riverpod's own override
 /// mechanism means no mocking package, so CLAUDE.md rule 8 is never triggered.
@@ -1670,4 +1678,160 @@ void main() {
       expect(find.text('You are not in a household yet.'), findsOneWidget);
     });
   });
+
+  // phase9-household-switch-loading -- between a switch and its data.
+  group('household switch', () {
+    testWidgets('mid-switch: the placeholder and the bar, nothing of the old '
+        'household, + disabled; then the new recipes', (
+      WidgetTester tester,
+    ) async {
+      final HeldHouseholdRepository repo =
+          HeldHouseholdRepository(<Household>[_homeHousehold, _weekend]);
+      final ProviderContainer container = await _pumpSwitchable(tester, repo);
+      expect(find.text('Šargarepa torta'), findsOneWidget);
+      expect(_chip('dessert'), findsOneWidget);
+
+      repo.currentHold = Completer<void>();
+      final Future<void> switching = container
+          .read(currentHouseholdProvider.notifier)
+          .switchTo('weekend');
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(HouseholdSwitchPlaceholder), findsOneWidget);
+      expect(find.byType(HouseholdSwitchProgressBar), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('Šargarepa torta'), findsNothing);
+      expect(find.byType(FilterChip), findsNothing);
+      expect(_addButton(tester).onPressed, isNull);
+
+      repo.currentHold!.complete();
+      await switching;
+      await tester.pumpAndSettle();
+      expect(find.byType(HouseholdSwitchPlaceholder), findsNothing);
+      expect(find.byType(HouseholdSwitchProgressBar), findsNothing);
+      expect(find.text('Pita sa sirom'), findsOneWidget);
+      expect(_addButton(tester).onPressed, isNotNull);
+    });
+
+    testWidgets('a switch clears the tag filter', (WidgetTester tester) async {
+      final HeldHouseholdRepository repo =
+          HeldHouseholdRepository(<Household>[_homeHousehold, _weekend]);
+      final ProviderContainer container = await _pumpSwitchable(tester, repo);
+      await tester.tap(_chip('dessert'));
+      await tester.pumpAndSettle();
+
+      // Held across a frame, as the real network-first re-read always is:
+      // a derived provider sees only what lasts until the next frame.
+      repo.currentHold = Completer<void>();
+      final Future<void> switching = container
+          .read(currentHouseholdProvider.notifier)
+          .switchTo('weekend');
+      await tester.pump();
+      repo.currentHold!.complete();
+      await switching;
+      await tester.pumpAndSettle();
+
+      // Pita has no `dessert` tag: it shows only with the filter gone.
+      expect(find.text('Pita sa sirom'), findsOneWidget);
+    });
+
+    testWidgets('one household: the first load is still the spinner', (
+      WidgetTester tester,
+    ) async {
+      final HeldHouseholdRepository repo =
+          HeldHouseholdRepository(<Household>[_homeHousehold])
+            ..currentHold = Completer<void>();
+      await _pumpSwitchable(tester, repo, settle: false);
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(HouseholdSwitchPlaceholder), findsNothing);
+      expect(find.byType(HouseholdSwitchProgressBar), findsNothing);
+
+      repo.currentHold!.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Šargarepa torta'), findsOneWidget);
+      expect(find.byType(HouseholdSwitchPlaceholder), findsNothing);
+    });
+  });
 }
+
+const Household _homeHousehold =
+    Household(id: 'h1', name: 'Kod Mire', createdBy: 'u1');
+const Household _weekend =
+    Household(id: 'weekend', name: 'Vikendica', createdBy: 'u1');
+
+/// [recipeListProvider] answering per household, the way the real one keys
+/// on `currentHouseholdIdProvider`.
+class _HouseholdRecipeList extends RecipeList {
+  @override
+  Stream<List<Recipe>> build({
+    String query = '',
+    String tag = '',
+    bool favoritesOnly = false,
+  }) async* {
+    final String? id = await ref.watch(currentHouseholdIdProvider.future);
+    yield RecipeFilter.apply(
+      id == 'h1'
+          ? const <Recipe>[
+              Recipe(
+                id: 'r1',
+                householdId: 'h1',
+                title: 'Šargarepa torta',
+                originalLocale: 'sr',
+                sourceType: RecipeSourceType.manual,
+                status: RecipeStatus.tested,
+                createdBy: 'u1',
+                tags: <String>['dessert'],
+              ),
+            ]
+          : <Recipe>[_pita.copyWith(householdId: 'weekend')],
+      query: query,
+      tag: tag,
+      favoritesOnly: favoritesOnly,
+    );
+  }
+}
+
+Future<ProviderContainer> _pumpSwitchable(
+  WidgetTester tester,
+  HeldHouseholdRepository repo, {
+  bool settle = true,
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        ...householdSwitchOverrides(repo),
+        recipeListProvider.overrideWith2((_) => _HouseholdRecipeList()),
+        recipeImageCacheManagerProvider.overrideWithValue(FakeImageCache()),
+        appLocaleProvider.overrideWith((Ref ref) => const Locale('sr')),
+        tagLabelsProvider('sr').overrideWith(
+          (Ref ref) async => const <String, String>{},
+        ),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: appSupportedLocales,
+        home: const RecipeListScreen(),
+      ),
+    ),
+  );
+  final ProviderContainer container = ProviderScope.containerOf(
+    tester.element(find.byType(RecipeListScreen)),
+  );
+  container.listen(currentUserIdProvider, (_, _) {});
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
+  return container;
+}
+
+Finder _chip(String label) => find.widgetWithText(FilterChip, label);
+
+IconButton _addButton(WidgetTester tester) => tester.widget<IconButton>(
+  find.ancestor(of: find.byIcon(Icons.add), matching: find.byType(IconButton)),
+);
+
