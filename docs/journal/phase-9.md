@@ -443,3 +443,117 @@ nothing renders differently. No package, no migration, 3 new l10n keys.
   Left on hosted as found. App restored to Srpski / Svetla / Renamed
   Household, airplane mode off. Noticed, not this slice: in dark the
   recipe list's empty-state second line renders large and bold.
+
+### Slice C, part 3 — Between a switch and its data (`phase9-household-switch-loading`)
+
+**Status: complete** (`d95724b`). Decisions taken during it: D172.
+
+Slice 3 of 6 of the design round
+`docs/design/handoffs/2026-10-13-multiple-households/` (§ D3·2). Planned
+with `/plan-slice-ui`, built, walked on the emulator (and the Galaxy) and
+closed on 2026-10-13. Only a switch shows the new state; with one
+household, nothing renders differently. No package, no migration, no l10n
+key.
+
+- **The signal.** `HouseholdSwitchInFlight` (keepAlive, the target id) in
+  `household_providers.dart`. `CurrentHousehold.switchTo` sets it before
+  `select` and clears it in a `finally`, so a failed switch clears it too.
+  `core/household/current_household.dart` exposes it as two narrow facts,
+  `householdSwitchPending` and `householdSwitchTargetName` (from
+  `myHouseholds`' still-held `.value`).
+- **Header.** `HouseholdTabTitle` shows the target name at once and is
+  inert while pending, which replaces its local `_switching`, so Undo and
+  the Households list's switch make it inert too. It holds that name until
+  `householdSwitcherName` stops loading. Otherwise the old name flashed back
+  while `myHouseholds` re-fetched after `switchTo` returned.
+- **Gate.** New `HouseholdSwitchGate` (`core/household/widgets/`) wraps each
+  tab's whole `Scaffold`, so app-bar actions see it. `awaiting` turns on
+  when pending rises and off once pending is false and the tab's own
+  `isLoading` is false, checked on both edges.
+- **Placeholder.** New `HouseholdSwitchPlaceholder`: one theme card padded
+  `lg`, six `AppRadii.xs` bars in `surfaceContainerHighest` (12/16 high,
+  `lg` apart, fractional widths, four with a 0.12 amount bar), wrapped in
+  `ExcludeSemantics`. Also `HouseholdSwitchProgressBar`, the 4dp
+  indeterminate `primary` bar on a `surfaceContainerHighest` track, first
+  in the body.
+- **Tabs.**
+  - Recipes: `+` disabled, `_FilterRow` not built, placeholder for
+    `recipes.when`. A switch clears `_tag`.
+  - Plan: segments and week bar stay, the 2dp bar is suppressed.
+  - List: Copy and Regenerate render disabled whatever `list.value` is, the
+    2dp bar is suppressed, `_RangeBar` stays, and `skipLoadingOnReload`
+    stays for regenerate.
+
+  This fixed List showing the **old household's list**, with both buttons
+  live, through the switch's reload, and Recipes' tag chips leaking the same
+  way.
+- **DESIGN_SYSTEM.md**: § Navigation (the household line during a switch),
+  § Household (new "Between a switch and its data."), § The shared widgets
+  (two rows).
+- **Tests:**
+  - `current_household_switch_test` +2: set before `select`, null after
+    success and after an `AppFailure`.
+  - `household_tab_title_test` +3: the target name with no frame of the old
+    name while `myHouseholds` is held, which fails with the hold removed;
+    Undo inert; a failed switch goes back.
+  - `household_switch_gate_test` (new, 4): no switch; on from start through
+    the data still loading; data that beats the switch waits; a failed
+    switch turns it off.
+  - The three tab suites, +7: the placeholder and 4dp bar, no old content,
+    disabled controls, then the new data; one household keeps the
+    spinner / 2dp bar; a switch clears Recipes' tag.
+  - New helper `test/helpers/household_switch_harness.dart`
+    (`HeldHouseholdRepository`, `householdSwitchOverrides`).
+
+**Differs from the plan.**
+- **A derived provider sees only what lasts until a frame.**
+  `householdSwitchPending` is recomputed on the frame, so a switch that
+  starts and finishes within one frame is never pending. A real one is
+  network-first with Drift writes either side, so it always spans frames.
+  The in-memory fakes don't, which is why the widget tests hold
+  `fetchCurrent` with a `Completer` (D172 Consequences).
+- **A tab first built mid-switch starts awaiting**: the gate's initial
+  state reads `householdSwitchPending`.
+- Tests that call `switchTo` directly listen to `currentUserIdProvider`.
+  In the app the header keeps it alive; without it `switchTo` returns early.
+- `dart format` churn outside the touched regions was reverted (the repo
+  isn't format-clean).
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **1090/1090**, Deno 172/172,
+  `make test-sql` and `l10n-check` green. `make check` green except the
+  known `seed-check`.
+- **Walk** (`/design-walk tab-household-switch-loading`), hosted release
+  build installed by serial on both devices:
+  - **The Galaxy** (walk account) switches in under 0.3 s, too fast to
+    screenshot the in-between. It showed the end state only: Renamed's
+    recipes with nothing of vikendica, and the long Serbian name on one
+    line.
+  - **The emulator** (`test-user`, Renamed Household / Kod Mire) was
+    slowed with `adb emu network delay gprs` / `speed gsm|gprs` and
+    captured in `exec-out screencap` bursts, all four combinations
+    (sr/light → sr/dark → en/light → en/dark):
+    - switching from each of Recipes, Plan and List, the new name was in the
+      header from the first frame. The 4dp bar sat flush under the app bar,
+      the frame stayed and the flat card showed;
+    - Recipes' `+` and List's Copy / Regenerate were visibly disabled, and
+      Plan showed no 2dp bar;
+    - no old-household content appeared in any frame;
+    - Kod Mire's empty states replaced the placeholder, which did not
+      linger;
+    - in dark, the track and the placeholder bars read on the card;
+    - Undo gave the same state back;
+    - a switch from Settings › Households put List and Plan into the
+      placeholder, then the new data;
+    - offline cold start (the one-household stand-in): plain title,
+      Recipes' spinner, no placeholder or 4dp bar anywhere.
+  - Restored: emulator Srpski / Svetla / Renamed, network normal; Galaxy
+    English / Light / vikendica.
+  - Noticed, not this slice:
+    - the switch sheet's rows turn into a small spinner as it closes
+      (`myHouseholds` reloading under it);
+    - List's "Next list: …" line is absent while awaiting and then
+      appears, nudging the card down a line;
+    - an offline cold start came up Serbian with the profile on English;
+    - the first `_ListBody` of a session waits on the unit catalog with its
+      own spinner.

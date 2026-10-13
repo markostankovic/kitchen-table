@@ -1,45 +1,61 @@
 # State — 2026-10-13
 
 **Branch:** `main`
-**Last shipped:** Phase 9 slice C's second slice,
-`phase9-household-switcher` (`7dd0d1c`), from the design round
-`docs/design/handoffs/2026-10-13-multiple-households/`. With two or more
-households you can switch from any of the three content tabs (D171). With
-one household, while unknown, or offline, nothing changes.
+**Last shipped:** Phase 9 slice C's third slice,
+`phase9-household-switch-loading` (`d95724b`), from the design round
+`docs/design/handoffs/2026-10-13-multiple-households/` (§ D3·2, D172).
+From the moment a household switch starts until a tab has the new
+household's data, Recipes, Plan and List hold a loading state. Only a
+switch does this; with one household, and on every other load, nothing
+changes.
 
-- **Header.** Recipes, Plan and List show the current household's name and
-  a ▾ under the title (`HouseholdTabTitle`, `core/household/widgets/`).
-  The condition is `householdSwitcherName`: non-null only with 2+, known,
-  online.
-- **Switch sheet.** `showHouseholdSwitchSheet`: gearless `HouseholdRow`s
-  in join order, then Manage households (→ Settings › Domaćinstva). A
-  switch shows `Sada ste u domaćinstvu „X“.` with `Poništi`, auto-dismissing.
-  The list's switch shows none (D170).
-- **Tabs reset after a switch.** `AppShell` sends every other tab to its
-  root on its next visit after any household id change; the current tab is
-  never reset. This closed "a household detail screen survives a switch".
-- `HouseholdRow` promoted to `core/household/widgets/`; `householdRoleLabel`
-  shared. No package, no migration, 3 l10n keys.
+- **During a switch.** The header shows the new name at once and is inert.
+  A 4dp indeterminate `primary` bar sits under the app bar, replacing the
+  tab's 2dp bar. The frame stays (search, segments, week bar, range bar).
+  One flat placeholder card replaces the content.
+- **Write controls.** Recipes' `+` is disabled, and its tag chips are
+  hidden. List's Copy and Regenerate show disabled. A switch clears
+  Recipes' tag filter.
+- **Fixed.** List no longer shows the old household's list, with live
+  buttons, through `skipLoadingOnReload` after a switch. Recipes' chips no
+  longer leak the same way.
+- **Pieces.** `CurrentHousehold.switchTo` owns `HouseholdSwitchInFlight`,
+  exposed as `householdSwitchPending` / `householdSwitchTargetName` in
+  `core/household/`. `HouseholdSwitchGate` and `HouseholdSwitchPlaceholder`
+  (`HouseholdSwitchProgressBar`) are in `core/household/widgets/`. No
+  package, no migration, no l10n key.
 
-`dart analyze` is clean, `flutter test` passes 1074/1074, Deno 172/172.
+`dart analyze` is clean, `flutter test` passes 1090/1090, Deno 172/172.
 `make check` is green except the known `seed-check`; `make test-sql` passes.
 
-**Hosted is current**; this slice changed no schema or function. The
-Galaxy runs this slice's release build. The walk
-(`/design-walk tab-household-switcher`, all four combinations) is closed.
-It found two defects, both fixed and re-walked in the same sitting.
+**Hosted is current**; this slice changed no schema or function. Both the
+Galaxy and the emulator run this slice's release build. The walk
+(`/design-walk tab-household-switch-loading`, all four combinations) is
+closed, with no defect of its own. The in-between state lasts under 0.3 s
+on the Galaxy, so it was captured on the emulator with its network slowed
+(`adb emu network delay gprs`).
 
 **Hosted test data left in place** for the next slices' walks: the walk
-account is in `Renamed Household` (owner, current) and `Porodica Stanković
-– vikendica` (owner, seeded by hand; no recipes, no list). `Kod Mire` is
-owned by `test-user`, and the walk account was left on an earlier walk.
-`test-user` is also in `Renamed Household`, so it is **not** a
+account is in `Renamed Household` (owner) and `Porodica Stanković
+– vikendica` (owner, seeded by hand; no recipes, no list; current on the
+Galaxy). `Kod Mire` is owned by `test-user` (no recipes, no list); the walk
+account was left on an earlier walk. `test-user` is also in `Renamed
+Household` (current on the emulator), so it is **not** a
 one-household account any more: the emulator shows it the household line.
 A one-household check needs a fresh account, or the offline fallback as a
 stand-in. Re-add the walk account to `Kod Mire` as `adult` when a walk needs
 a household where it isn't owner.
 
 Still open:
+- the switch sheet's rows turn into a small spinner for a frame or two as
+  it closes after a pick: `myHouseholds` reloads under it
+  (`showHouseholdSwitchSheet`, D171). Seen on the switch-loading walk with
+  a slowed network;
+- during a switch, List's "Next list: …" line under the range segments is
+  absent (it derives from the list), then appears with the data and nudges
+  the card down a line;
+- an offline cold start came up in Serbian chrome with the profile set to
+  English (seen on the emulator, switch-loading walk). Not traced;
 - in dark, the recipe list's empty state (`Još nema recepata.`) renders its
   second line large and bold, seen on the switcher walk in an empty
   household. Not from that slice, not traced;
@@ -111,12 +127,10 @@ Still open:
   Design updates them.
 
 **In flight:** none.
-**Next:** `phase9-household-switch-loading`, what a tab shows between a
-switch and its data: the 4dp primary bar under the header, flat placeholder
-bars, write controls disabled until loaded (round
-`docs/design/handoffs/2026-10-13-multiple-households/`, § D3·2), via
-`/plan-slice-ui`. The tabs' existing `LinearProgressIndicator(minHeight: 2)`
-was left for it. Then create-join-another, leave-switch and
+**Next:** `phase9-household-create-join-another`: in-app Create and Join
+for someone who already has a household (round
+`docs/design/handoffs/2026-10-13-multiple-households/`, `ROUND.md`'s next
+unticked slice), via `/plan-slice-ui`. Then leave-switch and
 import-save-to, in `ROUND.md`'s order.
 Still open as candidates beside Phase 9:
 - the formatting toolbar in the translation review, the last raw formatting
@@ -133,7 +147,7 @@ Still open as candidates beside Phase 9:
 
 The open device-walk loops below still want one sitting with the Galaxy
 attached.
-**Latest decision:** D171
+**Latest decision:** D172
 
 **Twenty device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB

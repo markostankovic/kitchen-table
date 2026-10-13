@@ -90,7 +90,7 @@ None.
       Tapping a row switches, closes the sheet, pops to the current tab's
       root, and shows "Now in X." / „Sada ste u domaćinstvu „X“." with Undo
       (switches back).
-- [ ] `phase9-household-switch-loading` — what a tab shows between the
+- [x] `phase9-household-switch-loading` (`d95724b`, D172) — what a tab shows between the
       switch and its data. Files: the three tab screens above. Bundle:
       § D3·2. The header shows the new name at once; a 4dp primary linear
       progress bar sits under the header; content is flat placeholder bars in
