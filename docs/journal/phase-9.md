@@ -93,3 +93,129 @@ no new l10n key.
   too. The walk was for paste, URL and photo imports, a new tag getting its
   pair, and an invite code. Marko did it and closed the slice; it was not
   observed from the session.
+
+### Slice B — Client selection and switching
+
+**Status: complete** (`48728cf`). Decisions taken during it: D169.
+
+The second of three slices. It ends every remaining "oldest membership
+wins" pick and gives the client a real, remembered choice. Planned with
+`/plan-slice`, then built, deployed, walked on the Galaxy and closed on
+2026-10-13. With one household nothing changes for the user. Nothing in the
+app can reach Join while you're already in a household until slice C, so
+the second-household paths are proved by tests, not on the device. One
+migration, no package, no new l10n key.
+
+- **Client (D169 #1–2).**
+  - `device_preferences.dart` gains `selectedHouseholdKey(userId)` →
+    `'selected_household.<userId>'`.
+  - `HouseholdRepository` takes a `DevicePreferenceStore` as a third
+    dependency. `fetchCurrent` picks the row whose `id` matches the
+    selection, else `rows.first`, and writes that row through, as before
+    (D88). The new `select(userId:, householdId:)` writes the preference,
+    then `_local.clearCurrent(userId)`, so an offline switch errors rather
+    than serving the old household.
+  - `redeemInvite` returns the joined id, which the function already sent.
+    `removeMember`, `leaveHousehold` and `deleteHousehold` take the
+    household id and send `target_household`.
+  - `currentHousehold` became `class CurrentHousehold`, with the same
+    `build()`. The generated name is unchanged, so every `watch`/`.future`
+    call site compiled as it was. `switchTo(id)` calls `select`, then
+    `invalidateSelf()` and `await future`.
+  - New `myHouseholdsProvider` lists every household for slice C. It
+    watches `currentHouseholdProvider` so it refreshes after create, join,
+    leave, delete or a switch. Nothing reads it yet.
+  - Create and join call `switchTo(newId)` in place of invalidate + re-read.
+    `HouseholdScreen` passes the shown household's `h.id` to remove, leave
+    and delete; `_removeMember` gets it threaded through `_members` →
+    `_memberRow` → `_memberTrailing`.
+  - `already_in_household` is gone from `supabase_failure.dart`, from
+    `FailureCode.inviteAlreadyUsed`'s doc and from the sr ARB description
+    (l10n regenerated).
+- **SQL (D169 #3).** Migration `20261013120000_household_rpcs_take_a_household.sql`
+  drops the zero-argument `remove_household_member(uuid)`,
+  `leave_household()` and `delete_household()`. It recreates them as
+  `(target_household, target_user)`, `(target_household)` and
+  `(target_household)`. Each looks the caller's role up in *that* household
+  and raises `'not a member of that household'` (22023, so the client's
+  mapping is unchanged). Bodies otherwise copied from migrations 22 and 23.
+- **Edge Functions (D169 #4).** `resolveHousehold` and the fallback are
+  deleted. `requireHousehold` treats an absent `householdId` as the same
+  400 `invalid_household` as a malformed one, so D168 is complete.
+  `redeem-invite` drops the `memberOf.size > 0` → 409 block and keeps
+  `memberOf` for the idempotent `alreadyMember` paths. Header comments in
+  create-invite, translate-tags and `http.ts` no longer describe a fallback.
+- **Tests:**
+  - `rls_household_test.sql`: every call passes the household. A new
+    two-household block puts C as adult of X (the older membership) and
+    owner of Y. Non-member E can call none of the three on X.
+    `delete_household(X)` by C raises. `leave_household(X)` removes only
+    the X row and leaves Y untouched. `delete_household(Y)` stamps only Y
+    and keeps the X membership.
+  - `rls_invites_test.sql`: `delete_household(hid)`, and the revoke case
+    below.
+  - `auth_test.ts`: the two legacy cases become "no id is a 400, never a
+    fallback". The fake lost its `order`/`limit`.
+  - `household_repository_offline_test`: selected wins and is cached; no
+    selection → oldest; stale selection → oldest; one user's selection
+    doesn't steer another; `select` stores and is read back; `select`
+    clears the cache so a following offline read rethrows; `redeemInvite`
+    returns the id; leave/delete forward the id.
+  - `current_household_switch_test` (new): oldest by default,
+    `switchTo('weekend')` makes `currentHouseholdIdProvider` yield it, and
+    `myHouseholdsProvider` lists both and picks up a joined one.
+  - `onboarding_screens_test`: create and join end on the new id (an
+    existing household present, so only a real switch passes).
+    `household_screen_test`: the shown id reaches remove, leave and delete.
+  - Two helpers in `test/helpers/`: `FixedCurrentHousehold` (a
+    notifier can't take the old `(Ref ref) async =>` override) and
+    `FakeHouseholdRepository` (an in-memory two-household repository).
+
+**Differs from the plan.**
+- **`revoke_invite` had the same lookup** and the slice didn't list it.
+  With a second membership, revoking a code from your newer household would
+  have been refused. The same migration `create or replace`s it with an
+  unchanged signature, checking membership of the invite's own household
+  (one `'no such invite'` message for both misses, as before).
+  `rls_invites_test.sql` now has D (owner of hid2, older) join hid as an
+  adult and revoke hid's code.
+- **An unlistened provider is paused (Riverpod 3).** In the onboarding
+  widget tests `switchTo` read `currentUserIdProvider` as still loading and
+  silently did nothing. Awaiting `.future` instead hung, for the same
+  reason. The app is unaffected, because the router always listens to
+  `currentHouseholdProvider`. The slice's `.value` read stays, and the test
+  listens the way the router does (`listenLikeTheRouter`).
+- `recipe_editor.g.dart`'s hash changed on regeneration; committed as
+  generated output.
+
+**How it was verified.**
+- `dart analyze` is clean, `check_layers` passes, and `flutter test` passes
+  **1046/1046**. The Deno function tests pass 172/172, and
+  `lint-functions` is clean. `make check` is green except the known
+  `seed-check`. `make test-sql` passes all 20 files, and `make l10n-check`
+  passes once the regenerated file was committed.
+- `resolveHousehold` appears nowhere in `supabase/functions`.
+  `already_in_household` appears nowhere in `lib`, `test` or
+  `supabase/functions`. `order by created_at` doesn't appear in the new
+  migration.
+- **Deployed.** Marko confirmed only the Galaxy has the app and that it
+  would get the new APK at once. The session's `db push` was refused by
+  the permission check, after a `--dry-run` that listed only
+  `20261013120000`. Marko ran `make db-push`, `make functions-deploy` and
+  `make install-hosted`. The session confirmed the Galaxy's
+  `lastUpdateTime` matched the APK's build minute.
+- **Walk, observed from the session** (Galaxy SM-S931B, `ANDROID_SERIAL`
+  pinned because the emulator was attached; sr, light; the app's own
+  language toggle, restored to English afterwards):
+  - a cold start lands on Recipes (9) in "Renamed Household", 2 members;
+  - Plan and List load from it (the list generated Oct 12);
+  - a paste import made a job that reached review with 3/3 matched, and
+    was then discarded (still 9 recipes);
+  - Create invite code minted 543613, and Opozovi revoked it ("Kod
+    opozvan."), which also exercised the new `revoke_invite` on hosted;
+  - after a force-stop and relaunch it was still the same household;
+  - logcat showed no Flutter errors and no `invalid_household`,
+    `not_a_member` or `22023`.
+
+  Leave, delete and the second-household paths were not walked. They are
+  covered by `make test-sql` and the provider tests, and slice C has the UI.

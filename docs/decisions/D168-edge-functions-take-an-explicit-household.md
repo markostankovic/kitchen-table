@@ -14,6 +14,8 @@ in several households.
    to `resolveHousehold` (the caller's oldest membership), so an APK already
    on a phone keeps working whichever ships first. A body *with* one never
    falls back. Delete `resolveHousehold` and the fallback in slice B.
+   **Removed in `multi-household-b` (D169 #4):** no id is now a 400
+   `invalid_household`, and `resolveHousehold` is gone.
 3. **Which id the client sends.** Imports send `currentHouseholdIdProvider`
    (D52). Tag translation sends the saved recipe's own `householdId` (D107).
    Create-invite sends the household the screen shows. The photo screen
@@ -42,6 +44,6 @@ in several households.
 - Validating the id with Zod / `make types`: these bodies are hand-built
   everywhere else (`ImportRepository`), and one string isn't a schema.
 
-**Consequences.** Until slice B, a function's household can come from two
-places. Any new household-scoped function should call `requireHousehold`,
+**Consequences.** Until slice B (now shipped, D169), a function's household
+could come from two places. Any new household-scoped function should call `requireHousehold`,
 never `resolveHousehold`.

@@ -1,37 +1,42 @@
 # State — 2026-10-13
 
 **Branch:** `main`
-**Last shipped:** Phase 9 slice A, `multi-household-a` (`2030b66`), the
-first of three slices that let one account belong to several households.
-Five Edge Functions (import-text, import-url, import-photo, create-invite,
-translate-tags) take `householdId` in the body, checked by membership,
-in place of "oldest household wins" (D168). Nothing changes for the user.
+**Last shipped:** Phase 9 slice B, `multi-household-b` (`48728cf`), the
+second of three slices that let one account belong to several households.
+The client picks its household and the server stops guessing (D169). With
+one household nothing changes for the user.
 
-- **Server.** `requireHousehold` in `_shared/auth.ts`: no id falls back to
-  the oldest membership (legacy, for installed APKs), a malformed one is
-  400 `invalid_household`, and a non-member gets 403 `not_a_member`.
-  `readOptionalJsonBody` lets the two functions that took no body accept an
-  empty one.
-- **Client.** The import screens send `currentHouseholdIdProvider`'s id.
-  `ImportRepository` lost its own oldest-household query. Tag translation
-  sends the saved recipe's household, and create-invite the shown one.
-- `invalid_household` maps onto `not_a_member`'s client arm. `translate-tags`
-  is now in `make functions-deploy`.
-- No migration, no package, no new l10n key.
+- **Client.** The current household is a device-local, per-user selection
+  in `DevicePreferences` (`selected_household.<userId>`). `fetchCurrent`
+  prefers it, else the oldest. `CurrentHousehold.switchTo(id)` is the one
+  way to change it, and `select` clears the cached row (D88). Create and
+  join land in the new household. `myHouseholdsProvider` lists them all,
+  for slice C, and nothing reads it yet.
+- **SQL.** Migration `20261013120000`: `remove_household_member`,
+  `leave_household` and `delete_household` take `target_household`.
+  `revoke_invite` checks the invite's own household; it wasn't in the
+  plan.
+- **Edge Functions.** `resolveHousehold` and D168's fallback are gone, so a
+  body without `householdId` is a 400 `invalid_household`. `redeem-invite`
+  no longer rejects a second membership, and `already_in_household` is gone
+  everywhere.
+- No package, no new l10n key.
 
-`dart analyze` is clean, `flutter test` passes 1035/1035 and the Deno
-function tests pass 173/173. `make check` is green except the known
+`dart analyze` is clean, `flutter test` passes 1046/1046 and the Deno
+function tests pass 172/172. `make check` is green except the known
 `seed-check`; `make test-sql` and `make l10n-check` pass.
 
-**Hosted is current**: all eight functions were deployed on 2026-10-13.
-Marko confirmed the previously installed build still imports (the legacy
-path). The new release APK is on the physical Galaxy, and Marko walked it
-before closing.
+**Hosted is current**: the migration and all eight functions were deployed
+on 2026-10-13 (Marko ran them; the session's push was refused by the
+permission check). Any older build now fails leave, delete and
+remove-member, and a pre-slice-A build fails imports too. Only the Galaxy
+has the app, and it runs this build. The walk on it was observed from the
+session and was clean: cold start, recipes, plan, list, a paste import
+(discarded), an invite minted and revoked, and a relaunch, all in the same
+household. Leave, delete and second-household paths are covered by tests
+only, until slice C.
 
 Still open:
-- **D168's legacy fallback**: a function body with no `householdId` still
-  resolves the caller's oldest household. Slice B deletes it, together with
-  `resolveHousehold`;
 - **a throwaway recipe on hosted**: `Setnja odeljci TEST`, saved by the
   `phase8-ingredient-sections-edit` editor walk (later walks' throwaways
   were soft-deleted). It wants deleting (the app's own soft delete), which
@@ -100,12 +105,10 @@ Still open:
   Design updates them.
 
 **In flight:** none.
-**Next:** Phase 9 slice B, client selection and switching (`/plan-slice
-multi-household-b`). The client picks its current household instead of the
-oldest; `currentHouseholdIdProvider` stays the one definition (D52).
-`redeem-invite`'s `already_in_household` guard goes, and so do
-`resolveHousehold` and D168's fallback. Slice C (the UI) waits on Claude
-Design's round for `docs/design/BRIEF_multiple_households.md`.
+**Next:** Phase 9 slice C, the multiple-households UI. It waits on Claude
+Design's round for `docs/design/BRIEF_multiple_households.md`, which goes
+through `/design-handoff`, then `/plan-slice-ui`. The client side is ready
+for it: `CurrentHousehold.switchTo` and `myHouseholdsProvider` (D169).
 Still open as candidates beside Phase 9:
 - the formatting toolbar in the translation review, the last raw formatting
   surface. It is a small `/plan-slice-ui` on D167's pattern;
@@ -121,7 +124,7 @@ Still open as candidates beside Phase 9:
 
 The open device-walk loops below still want one sitting with the Galaxy
 attached.
-**Latest decision:** D168
+**Latest decision:** D169
 
 **Twenty device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB

@@ -1121,7 +1121,7 @@ from `docs/IDEAS.md`, with the design brief in
 
 ### Slice B — Client selection and switching
 
-**Status: not started.**
+**Status: complete** (`48728cf`). Decisions taken during it: D169. See `docs/journal/phase-9.md`.
 
 - The client chooses its current household rather than taking the oldest.
   `currentHouseholdIdProvider` stays the one definition (D52).
