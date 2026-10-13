@@ -417,7 +417,9 @@ already-localized error line above the buttons in `bodySmall` `error`, `sm`
 above them. Its child is one filled button, full width, or equal `Expanded`
 halves `md` apart, or a single full-width **outlined** button — the import
 waiting state's Discard. The busy spinner inside a button is the call
-site's, `AppSizes.iconInMeta` square.
+site's, `AppSizes.iconInMeta` square. The import review's bar can carry one
+line above its buttons, with 2+ households (§ Import review); `AppActionBar`
+itself is unchanged.
 
 The import entry screens (link, paste, photo) do **not** use it: a pinned
 bar sits under the keyboard. Their filled `Pročitaj ovaj recept` is inline,
@@ -1101,6 +1103,22 @@ behind a confirm dialog whose destructive action is a `TextButton` in
 `destructive` — text, not a filled button. The Failed state's discard needs
 no confirm: a failed parse has nothing to lose.
 
+**With two or more households** the bar's child becomes a `Column` (stretch)
+of one line, `xs`, then the same button row. The line is a 48 min-height
+(`AppSizes.target`) `Row`: `home_outlined` 16 (`iconInMeta`) in
+`onSurfaceVariant`, `sm`, then `Čuva se u: **X**` / `Saves to **X**` in
+`bodyMedium` — the prefix in `onSurfaceVariant`, the household name a w600
+`onSurface` span (weight and colour, never `primary`) — `Expanded`, up to two
+lines (the long name wraps rather than ellipsizing at one), then a theme
+`TextButton` `Promenite` / `Change`. No negative margin: its label ends 12
+inside the gutter. The name is the job's household until changed; Change
+opens the save-to sheet (§ Household) and is disabled while saving. After
+the save, `Sačuvano u domaćinstvu „X“.` / `Saved to X.`, no action; saving
+into a household that isn't the current one lands on the current Recipes
+root rather than the detail, and switches nothing. With one household (also
+while unknown, or offline) the bar is unchanged: the same `Row`, no line, no
+snackbar.
+
 ### Household
 
 All of these are private in `household_screen.dart`; none is in
@@ -1187,6 +1205,13 @@ sheet and shows "Now in X." with Undo; a switch from the households list
 shows nothing (the radio moving is the feedback). After any switch, the
 shell sends every other tab back to its root on its next visit.
 
+Its second use is `showSaveToHouseholdSheet`, from the import review's
+Change (§ Import review): the same sheet titled `Sačuvajte u domaćinstvu` /
+`Save to`, the radio on the import's target (inert), and **no** Manage
+households row or the hairline before it — Manage would leave an unsaved
+review. A pick closes the sheet and sets where this import alone is saved;
+nothing switches, and there is no snackbar until the save.
+
 **Between a switch and its data.** From the moment a switch starts until a
 tab has the new household's data, Recipes, Plan and List keep their frame
 (search field, segments, week bar, range bar, nav) and add a 4dp
@@ -1248,7 +1273,9 @@ the first is the shopping list's pantry move; the household switch sheet's
 `Sada ste u domaćinstvu „X“.` / `Now in X.` is another. The counter-example:
 `Napustili ste „X“. Sada ste u domaćinstvu „Y“.` / `You left X. Now in Y.`
 (and its delete twin) carries **no** Undo, because leaving isn't reversible
-from the app. The offline banner on `offline` / `onOffline` — calm.
+from the app. Nor does the import review's `Sačuvano u domaćinstvu „X“.` /
+`Saved to X.`: the target usually isn't current, so there is nothing to undo
+in place. The offline banner on `offline` / `onOffline` — calm.
 
 ### Dialog
 
@@ -1316,6 +1343,7 @@ lives, below.
 | `HouseholdRow` | `core/household/widgets/household_row.dart` |
 | `HouseholdTabTitle` | `core/household/widgets/household_tab_title.dart` |
 | `showHouseholdSwitchSheet` | `core/household/widgets/household_switch_sheet.dart` |
+| `showSaveToHouseholdSheet` | `core/household/widgets/household_switch_sheet.dart` |
 | `HouseholdSwitchGate` | `core/household/widgets/household_switch_gate.dart` |
 | `HouseholdSwitchPlaceholder` / `HouseholdSwitchProgressBar` | `core/household/widgets/household_switch_placeholder.dart` |
 

@@ -86,11 +86,12 @@ enum ImportJobStatus {
 
 /// One import, as the client sees it.
 ///
-/// No `householdId`: the server resolves the household from the caller's
-/// membership when the job is created, and `import_jobs_select` is
+/// `householdId` is the household the job was created in. It is carried for
+/// the review's "Saves to" line (D175), whose honest default is the job's
+/// household rather than the current one -- they differ when someone switched
+/// between sharing and reviewing. It is not a filter: `import_jobs_select` is
 /// `is_household_member(household_id)`, so a row the client can read is
-/// already a row it is allowed to read. Carrying the id would only invite
-/// somebody to filter on it and believe the filter was the security.
+/// already a row it is allowed to read.
 ///
 /// Pure Dart (rule 7).
 @freezed
@@ -99,6 +100,7 @@ abstract class ImportJob with _$ImportJob {
 
   const factory ImportJob({
     required String id,
+    required String householdId,
     required ImportKind kind,
     required ImportJobStatus status,
     ParsedRecipe? result,

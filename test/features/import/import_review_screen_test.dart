@@ -1,9 +1,9 @@
 // The confirm screen (D8), driven through the real notifier with the job and
 // the catalog stubbed by provider override -- no mocking package (rule 8).
 //
-// No test presses Save. `save()` writes aliases and calls
-// save_imported_recipe, both of which reach the network; the SQL test covers
-// the server half and the end-to-end run covers the join.
+// Save is pressed only in the "Saves to" group (phase9-import-save-to), with
+// the catalog's alias write-back and save_imported_recipe both faked; the SQL
+// test covers the server half and the end-to-end run covers the join.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,22 +16,38 @@ import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations_sr.dart';
 import 'package:kitchen_table/core/router/routes.dart';
+import 'package:kitchen_table/core/supabase/supabase_client.dart';
 import 'package:kitchen_table/core/theme/app_theme.dart';
 import 'package:kitchen_table/core/widgets/app_empty_state.dart';
 import 'package:kitchen_table/core/widgets/app_formatting_toolbar.dart';
+import 'package:kitchen_table/features/households/application/household_providers.dart';
+import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/features/import/application/import_confirm.dart';
 import 'package:kitchen_table/features/import/application/import_providers.dart';
 import 'package:kitchen_table/features/import/data/import_repository.dart';
 import 'package:kitchen_table/features/import/domain/import_job.dart';
 import 'package:kitchen_table/features/import/domain/parsed_recipe.dart';
 import 'package:kitchen_table/features/import/presentation/import_review_screen.dart';
+import 'package:kitchen_table/features/ingredients/data/ingredient_repository.dart';
 import 'package:kitchen_table/features/ingredients/domain/ingredient_line_parser.dart';
 import 'package:kitchen_table/features/ingredients/domain/ingredient_match.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit.dart';
 import 'package:kitchen_table/features/ingredients/domain/unit_catalog.dart';
 import 'package:kitchen_table/features/recipes/domain/recipe_draft.dart';
+import 'package:kitchen_table/features/recipes/domain/recipe_ingredient.dart';
+import 'package:kitchen_table/features/recipes/domain/recipe_step.dart';
+
+import '../../helpers/fake_household_repository.dart';
+import '../../helpers/fixed_current_household.dart';
 
 const String _jobId = 'job-1';
+
+const Household _mira = Household(id: 'mira', name: 'Kod Mire', createdBy: 'u1');
+const Household _weekend = Household(
+  id: 'weekend',
+  name: 'Porodica Stanković – vikendica',
+  createdBy: 'u1',
+);
 
 final UnitCatalog _units = UnitCatalog(
   units: const <Unit>[
@@ -80,8 +96,47 @@ ParsedRecipe _parsed() => const ParsedRecipe(
 class _FakeImportRepo implements ImportRepository {
   final List<String> dismissed = <String>[];
 
+  /// Every save's `targetHouseholdId`, in order.
+  final List<String?> savedTargets = <String?>[];
+
   @override
   Future<void> dismiss(String jobId) async => dismissed.add(jobId);
+
+  @override
+  Future<String> saveImported(
+    String jobId, {
+    required ImportKind kind,
+    required String title,
+    required String originalLocale,
+    required List<RecipeIngredient> ingredients,
+    required List<RecipeStep> steps,
+    String? description,
+    String? notes,
+    int? servings,
+    int? prepMinutes,
+    int? cookMinutes,
+    String? sourceUrl,
+    String? sourceAttribution,
+    List<String> tags = const <String>[],
+    String? targetHouseholdId,
+  }) async {
+    savedTargets.add(targetHouseholdId);
+    return 'recipe-1';
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('not stubbed: ${invocation.memberName}');
+}
+
+/// The alias write-back that runs before the save (D42), answered locally.
+class _FakeCatalog implements IngredientRepository {
+  @override
+  Future<bool> linkAlias(
+    String ingredientId,
+    String aliasName, {
+    String locale = 'sr',
+  }) async => true;
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
@@ -89,6 +144,7 @@ class _FakeImportRepo implements ImportRepository {
 }
 
 const String _landedOnRecipes = 'landed on the recipe list';
+const String _landedOnDetail = 'landed on the recipe detail';
 
 Future<void> _pump(
   WidgetTester tester,
@@ -104,7 +160,13 @@ Future<void> _pump(
   // Inside the app shell's Scaffold, as on a device: that one takes the
   // keyboard's inset out of everything below it.
   bool inShell = false,
+  // The caller's households, oldest first; the first is current. One by
+  // default, which is today's bar.
+  List<Household> households = const <Household>[_mira],
 }) async {
+  final FakeHouseholdRepository householdRepo = FakeHouseholdRepository(
+    List<Household>.of(households),
+  );
   tester.view.physicalSize = surface;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -125,6 +187,12 @@ Future<void> _pump(
       GoRoute(
         path: RecipesRoute.path,
         builder: (_, _) => const Scaffold(body: Text(_landedOnRecipes)),
+        routes: <RouteBase>[
+          GoRoute(
+            path: ':recipeId',
+            builder: (_, _) => const Scaffold(body: Text(_landedOnDetail)),
+          ),
+        ],
       ),
     ],
   );
@@ -144,6 +212,16 @@ Future<void> _pump(
         ingredientMatchesProvider.overrideWith(
           (Ref ref, (String, {String locale}) arg) async =>
               const <IngredientMatch>[],
+        ),
+        ingredientCatalogProvider.overrideWithValue(_FakeCatalog()),
+        householdRepositoryProvider.overrideWithValue(householdRepo),
+        currentUserIdProvider.overrideWith(
+          (Ref ref) => Stream<String?>.value('u1'),
+        ),
+        currentHouseholdProvider.overrideWith(
+          () => FixedCurrentHousehold(
+            () => householdRepo.fetchCurrent(userId: 'u1'),
+          ),
         ),
       ],
       child: MaterialApp.router(
@@ -172,8 +250,10 @@ ImportJob _job(
   ParsedRecipe? result,
   String? errorMessage,
   String? recipeId,
+  String householdId = 'mira',
 }) => ImportJob(
   id: _jobId,
+  householdId: householdId,
   kind: ImportKind.text,
   status: status,
   result: result,
@@ -762,6 +842,156 @@ void main() {
         ),
       );
       expect(find.text('Poslužite toplo'), findsOneWidget);
+    });
+  });
+
+  group('Saves to (phase9-import-save-to)', () {
+    final Finder savesTo = find.textContaining('Saves to', findRichText: true);
+
+    Future<void> pumpReview(
+      WidgetTester tester, {
+      required List<Household> households,
+      _FakeImportRepo? repo,
+      String householdId = 'mira',
+    }) => _pump(
+      tester,
+      _job(
+        ImportJobStatus.needsReview,
+        result: _parsed(),
+        householdId: householdId,
+      ),
+      repo: repo,
+      households: households,
+    );
+
+    testWidgets('one household: no line, null target, detail, no snackbar', (
+      WidgetTester tester,
+    ) async {
+      final _FakeImportRepo repo = _FakeImportRepo();
+      await pumpReview(tester, households: <Household>[_mira], repo: repo);
+
+      expect(savesTo, findsNothing);
+      expect(find.text('Change'), findsNothing);
+
+      await tester.tap(find.text('Save recipe'));
+      await tester.pumpAndSettle();
+
+      expect(repo.savedTargets, <String?>[null]);
+      expect(find.text(_landedOnDetail), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('2+ households name the JOB\'s household, even when it is not '
+        'the current one', (WidgetTester tester) async {
+      await pumpReview(
+        tester,
+        households: <Household>[_mira, _weekend],
+        householdId: 'weekend',
+      );
+
+      expect(
+        find.text('Saves to ${_weekend.name}', findRichText: true),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the name is w600 onSurface over an onSurfaceVariant prefix', (
+      WidgetTester tester,
+    ) async {
+      await pumpReview(tester, households: <Household>[_mira, _weekend]);
+
+      final RichText text = tester.widget<RichText>(
+        find.text('Saves to Kod Mire', findRichText: true),
+      );
+      final ColorScheme colors = AppTheme.light().colorScheme;
+      final TextSpan root = text.text as TextSpan;
+      expect(root.style!.color, colors.onSurfaceVariant);
+      final TextSpan line = root.children!.single as TextSpan;
+      final TextSpan name = line.children!.single as TextSpan;
+      expect(name.text, 'Kod Mire');
+      expect(name.style!.color, colors.onSurface);
+      expect(name.style!.fontWeight, FontWeight.w600);
+    });
+
+    testWidgets('saving unchanged sends null, lands on detail, says where', (
+      WidgetTester tester,
+    ) async {
+      final _FakeImportRepo repo = _FakeImportRepo();
+      await pumpReview(
+        tester,
+        households: <Household>[_mira, _weekend],
+        repo: repo,
+      );
+
+      await tester.tap(find.text('Save recipe'));
+      await tester.pumpAndSettle();
+
+      expect(repo.savedTargets, <String?>[null]);
+      expect(find.text(_landedOnDetail), findsOneWidget);
+      expect(find.text('Saved to Kod Mire.'), findsOneWidget);
+    });
+
+    testWidgets('Change opens Save to without Manage; picking another updates '
+        'the line, and Save sends it and lands on Recipes', (
+      WidgetTester tester,
+    ) async {
+      final _FakeImportRepo repo = _FakeImportRepo();
+      await pumpReview(
+        tester,
+        households: <Household>[_mira, _weekend],
+        repo: repo,
+      );
+
+      await tester.tap(find.text('Change'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Save to'), findsOneWidget);
+      expect(find.text('Manage households'), findsNothing);
+
+      await tester.tap(find.text(_weekend.name));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Save to'), findsNothing);
+      expect(
+        find.text('Saves to ${_weekend.name}', findRichText: true),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Save recipe'));
+      await tester.pumpAndSettle();
+
+      expect(repo.savedTargets, <String?>['weekend']);
+      expect(find.text(_landedOnRecipes), findsOneWidget);
+      expect(find.text('Saved to ${_weekend.name}.'), findsOneWidget);
+    });
+
+    testWidgets('Serbian at 360dp: the long name wraps, nothing overflows', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        _job(
+          ImportJobStatus.needsReview,
+          result: _parsed(),
+          householdId: 'weekend',
+        ),
+        locale: srLatn,
+        surface: const Size(360, 3000),
+        households: <Household>[_mira, _weekend],
+      );
+      expect(tester.takeException(), isNull);
+
+      final AppLocalizationsSr sr = AppLocalizationsSr();
+      expect(find.text(sr.importSaveToChange), findsOneWidget);
+      final Finder line = find.text(
+        '${sr.importSavesToPrefix} ${_weekend.name}',
+        findRichText: true,
+      );
+      expect(line, findsOneWidget);
+      // Up to two lines, never one with an ellipsis that eats the name. The
+      // test font is one em per glyph, so whether it fits in two is the
+      // device walk's to check, not this one's.
+      expect(tester.widget<RichText>(line).maxLines, 2);
     });
   });
 }

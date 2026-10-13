@@ -2155,6 +2155,30 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Domaćinstvo „{left}“ je obrisano. Sada ste u domaćinstvu „{next}“.'**
   String deletedHouseholdNowIn(String left, String next);
+
+  /// Import review (phase9-import-save-to), the line above the action bar's buttons when the caller has two or more households. The household's name follows after a space, as a separate bold span, so this is only the prefix.
+  ///
+  /// In sr, this message translates to:
+  /// **'Čuva se u:'**
+  String get importSavesToPrefix;
+
+  /// Import review, the text button at the end of the importSavesToPrefix line; opens the saveToHouseholdSheetTitle sheet. Formal imperative, as switchHouseholdSheetTitle.
+  ///
+  /// In sr, this message translates to:
+  /// **'Promenite'**
+  String get importSaveToChange;
+
+  /// Household sheet opened from the import review's importSaveToChange button, its title. Picks where this import alone is saved; does not switch households, and has no Manage households row.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sačuvajte u domaćinstvu'**
+  String get saveToHouseholdSheetTitle;
+
+  /// Snackbar after saving an import when the caller has two or more households; names the household it was saved to. No action. Not shown with one household.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sačuvano u domaćinstvu „{name}“.'**
+  String savedToHousehold(String name);
 }
 
 class _AppLocalizationsDelegate

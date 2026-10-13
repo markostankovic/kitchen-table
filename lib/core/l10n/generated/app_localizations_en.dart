@@ -1240,4 +1240,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String deletedHouseholdNowIn(String left, String next) {
     return 'Deleted $left. Now in $next.';
   }
+
+  @override
+  String get importSavesToPrefix => 'Saves to';
+
+  @override
+  String get importSaveToChange => 'Change';
+
+  @override
+  String get saveToHouseholdSheetTitle => 'Save to';
+
+  @override
+  String savedToHousehold(String name) {
+    return 'Saved to $name.';
+  }
 }

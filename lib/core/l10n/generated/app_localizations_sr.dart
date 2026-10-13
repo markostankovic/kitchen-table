@@ -1257,4 +1257,18 @@ class AppLocalizationsSr extends AppLocalizations {
   String deletedHouseholdNowIn(String left, String next) {
     return 'Domaćinstvo „$left“ je obrisano. Sada ste u domaćinstvu „$next“.';
   }
+
+  @override
+  String get importSavesToPrefix => 'Čuva se u:';
+
+  @override
+  String get importSaveToChange => 'Promenite';
+
+  @override
+  String get saveToHouseholdSheetTitle => 'Sačuvajte u domaćinstvu';
+
+  @override
+  String savedToHousehold(String name) {
+    return 'Sačuvano u domaćinstvu „$name“.';
+  }
 }

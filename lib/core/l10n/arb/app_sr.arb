@@ -1676,5 +1676,26 @@
         "type": "String"
       }
     }
+  },
+  "importSavesToPrefix": "Čuva se u:",
+  "@importSavesToPrefix": {
+    "description": "Import review (phase9-import-save-to), the line above the action bar's buttons when the caller has two or more households. The household's name follows after a space, as a separate bold span, so this is only the prefix."
+  },
+  "importSaveToChange": "Promenite",
+  "@importSaveToChange": {
+    "description": "Import review, the text button at the end of the importSavesToPrefix line; opens the saveToHouseholdSheetTitle sheet. Formal imperative, as switchHouseholdSheetTitle."
+  },
+  "saveToHouseholdSheetTitle": "Sačuvajte u domaćinstvu",
+  "@saveToHouseholdSheetTitle": {
+    "description": "Household sheet opened from the import review's importSaveToChange button, its title. Picks where this import alone is saved; does not switch households, and has no Manage households row."
+  },
+  "savedToHousehold": "Sačuvano u domaćinstvu „{name}“.",
+  "@savedToHousehold": {
+    "description": "Snackbar after saving an import when the caller has two or more households; names the household it was saved to. No action. Not shown with one household.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

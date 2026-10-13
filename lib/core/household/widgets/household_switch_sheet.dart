@@ -1,3 +1,10 @@
+/// The household sheet, for its two callers: switching households
+/// ([showHouseholdSwitchSheet], from the tab header) and picking where one
+/// import is saved ([showSaveToHouseholdSheet], from the import review,
+/// D175). One widget, three differences: the title, which row carries the
+/// radio, and whether the Manage households row is there.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -45,11 +52,56 @@ Future<HouseholdSwitchPick?> showHouseholdSwitchSheet(BuildContext context) =>
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (BuildContext context) => const _HouseholdSwitchSheet(),
+      builder: (BuildContext context) => _HouseholdSwitchSheet(
+        title: AppLocalizations.of(context).switchHouseholdSheetTitle,
+        showManage: true,
+      ),
     );
 
+/// Lists the caller's households to pick where one import is saved
+/// (phase9-import-save-to). Opened from the import review's "Saves to" line.
+///
+/// The radio is on [selectedId], the import's target, and that row is inert.
+/// No Manage households row: it would navigate away from an unsaved review.
+/// Returns the picked household, or null when dismissed. Nothing switches --
+/// the caller keeps the pick for this import only.
+Future<({String id, String name})?> showSaveToHouseholdSheet(
+  BuildContext context, {
+  required String selectedId,
+}) async {
+  final HouseholdSwitchPick? pick =
+      await showModalBottomSheet<HouseholdSwitchPick>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (BuildContext context) => _HouseholdSwitchSheet(
+          title: AppLocalizations.of(context).saveToHouseholdSheetTitle,
+          selectedId: selectedId,
+          showManage: false,
+        ),
+      );
+  return switch (pick) {
+    SwitchToHousehold(:final String id, :final String name) => (
+      id: id,
+      name: name,
+    ),
+    _ => null,
+  };
+}
+
 class _HouseholdSwitchSheet extends ConsumerWidget {
-  const _HouseholdSwitchSheet();
+  const _HouseholdSwitchSheet({
+    required this.title,
+    required this.showManage,
+    this.selectedId,
+  });
+
+  final String title;
+
+  /// The row carrying the radio; null means the current household.
+  final String? selectedId;
+
+  final bool showManage;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -59,7 +111,8 @@ class _HouseholdSwitchSheet extends ConsumerWidget {
     final AsyncValue<List<HouseholdMembership>> mine = ref.watch(
       myHouseholdsProvider,
     );
-    final String? currentId = ref.watch(currentHouseholdIdProvider).value;
+    final String? currentId =
+        selectedId ?? ref.watch(currentHouseholdIdProvider).value;
 
     return SafeArea(
       child: ConstrainedBox(
@@ -77,10 +130,7 @@ class _HouseholdSwitchSheet extends ConsumerWidget {
                 AppSpacing.lg,
                 AppSpacing.sm,
               ),
-              child: Text(
-                l10n.switchHouseholdSheetTitle,
-                style: theme.textTheme.titleMedium,
-              ),
+              child: Text(title, style: theme.textTheme.titleMedium),
             ),
             ...mine.when(
               loading: () => <Widget>[
@@ -105,29 +155,32 @@ class _HouseholdSwitchSheet extends ConsumerWidget {
                 ),
               ],
             ),
-            const Divider(height: AppSpacing.lg),
-            ListTile(
-              leading: Icon(
-                Icons.settings_outlined,
-                size: AppSizes.icon,
-                color: colors.onSurfaceVariant,
-              ),
-              title: Text(
-                l10n.manageHouseholdsAction,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colors.onSurface,
+            if (showManage) ...<Widget>[
+              const Divider(height: AppSpacing.lg),
+              ListTile(
+                leading: Icon(
+                  Icons.settings_outlined,
+                  size: AppSizes.icon,
+                  color: colors.onSurfaceVariant,
                 ),
+                title: Text(
+                  l10n.manageHouseholdsAction,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: colors.onSurface,
+                  ),
+                ),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  size: AppSizes.icon,
+                  color: colors.onSurfaceVariant,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                ),
+                onTap: () =>
+                    Navigator.of(context).pop(const ManageHouseholds()),
               ),
-              trailing: Icon(
-                Icons.chevron_right,
-                size: AppSizes.icon,
-                color: colors.onSurfaceVariant,
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-              ),
-              onTap: () => Navigator.of(context).pop(const ManageHouseholds()),
-            ),
+            ],
             const SizedBox(height: AppSpacing.sm),
           ],
         ),

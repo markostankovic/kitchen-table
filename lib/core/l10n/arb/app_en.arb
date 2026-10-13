@@ -368,5 +368,10 @@
   "deleteNamedHouseholdConfirmBody": "Everyone in it loses access to its recipes, meal plans and shopping lists. This can't be undone from the app.",
   "householdSwitchAfterLeaving": "You'll switch to {name}.",
   "leftHouseholdNowIn": "You left {left}. Now in {next}.",
-  "deletedHouseholdNowIn": "Deleted {left}. Now in {next}."
+  "deletedHouseholdNowIn": "Deleted {left}. Now in {next}.",
+
+  "importSavesToPrefix": "Saves to",
+  "importSaveToChange": "Change",
+  "saveToHouseholdSheetTitle": "Save to",
+  "savedToHousehold": "Saved to {name}."
 }

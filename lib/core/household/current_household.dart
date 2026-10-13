@@ -32,6 +32,8 @@
 /// [householdSwitcherName] is the second, narrower still: just the current
 /// household's name when there are others to switch to, for the tab header
 /// (phase9-household-switcher).
+/// [householdNameAmongMany] is the same condition for a named household: the
+/// import review's "Saves to X" line (phase9-import-save-to, D175).
 /// [householdSwitchPending] and [householdSwitchTargetName] are the switch's
 /// own two facts (phase9-household-switch-loading): whether one is in flight,
 /// so Recipes, Plan and List can hold their loading state until their data is
@@ -113,6 +115,27 @@ Future<String?> householdSwitcherName(Ref ref) async {
     return null;
   }
   return household.name;
+}
+
+/// The name of household [householdId] when the caller has 2+ households and
+/// it is one of them; null with one, while unknown, offline (myHouseholds is
+/// network-only), or when the id isn't among them -- the import review's
+/// whole condition for its "Saves to X" line, [householdSwitcherName]'s rule
+/// for a household other than the current one (D171, D175).
+@riverpod
+Future<String?> householdNameAmongMany(Ref ref, String householdId) async {
+  try {
+    final List<HouseholdMembership> mine = await ref.watch(
+      myHouseholdsProvider.future,
+    );
+    if (mine.length < 2) return null;
+    for (final HouseholdMembership m in mine) {
+      if (m.household.id == householdId) return m.household.name;
+    }
+    return null;
+  } on AppFailure {
+    return null;
+  }
 }
 
 /// Whether a household switch is in flight (`CurrentHousehold.switchTo`,

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
+import '../../../core/household/current_household.dart';
+import '../../../core/household/widgets/household_switch_sheet.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
 import '../../../core/ingredients/widgets/ingredient_lines_editor.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
@@ -255,6 +257,11 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody>
   bool _discarding = false;
   AppFailure? _failure;
 
+  /// Where this import alone is saved; null means the job's own household
+  /// (D175). Screen state, not the notifier's: nothing else in the review
+  /// depends on it, and picking it switches nothing.
+  String? _targetHouseholdId;
+
   /// The focused formattable field's controller, which the formatting
   /// toolbar drives; null while none has focus.
   final ValueNotifier<RichTextEditingController?> _activeFormatting =
@@ -288,16 +295,81 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody>
 
   bool get _busy => _saving || _discarding;
 
+  /// The household this import saves to: the picked one, else the job's.
+  String? get _effectiveHouseholdId =>
+      _targetHouseholdId ??
+      ref.watch(importJobProvider(widget.jobId)).value?.householdId;
+
+  /// The household's name for the "Saves to" line; null with one household,
+  /// while unknown, or offline, and then the bar is today's.
+  String? _savesToName() {
+    final String? id = _effectiveHouseholdId;
+    if (id == null) return null;
+    return ref.watch(householdNameAmongManyProvider(id)).value;
+  }
+
+  Future<void> _changeTarget() async {
+    final String? selectedId = _effectiveHouseholdId;
+    if (selectedId == null) return;
+    final ({String id, String name})? pick = await showSaveToHouseholdSheet(
+      context,
+      selectedId: selectedId,
+    );
+    if (pick == null || !mounted) return;
+    final String? jobHouseholdId =
+        ref.read(importJobProvider(widget.jobId)).value?.householdId;
+    // Back to the job's own is no target at all, so the save sends exactly
+    // what an unchanged one does.
+    setState(
+      () => _targetHouseholdId = pick.id == jobHouseholdId ? null : pick.id,
+    );
+  }
+
   Future<void> _submit() async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    // Captured before the save and the navigation (D152): the review is gone
+    // by the time the snackbar shows.
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final String? targetId = _effectiveHouseholdId;
+    final String? savedToName = targetId == null
+        ? null
+        : ref.read(householdNameAmongManyProvider(targetId)).value;
+
     setState(() {
       _saving = true;
       _failure = null;
     });
 
     try {
-      final String recipeId = await _confirm.save();
+      // Only asked when the line was shown: with one household the target is
+      // always the current one.
+      String? currentId;
+      if (savedToName != null) {
+        try {
+          currentId = await ref.read(currentHouseholdIdProvider.future);
+        } on AppFailure {
+          currentId = null;
+        }
+      }
+      final String recipeId = await _confirm.save(
+        targetHouseholdId: _targetHouseholdId,
+      );
       if (!mounted) return;
-      RecipeDetailRoute(recipeId).go(context);
+      if (savedToName == null || targetId == currentId) {
+        RecipeDetailRoute(recipeId).go(context);
+      } else {
+        // Saved into a household that isn't the current one: its detail would
+        // offer Plan and edit against the wrong household's data, so the
+        // current Recipes root instead. No switch (D175).
+        const RecipesRoute().go(context);
+      }
+      if (savedToName != null) {
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(content: Text(l10n.savedToHousehold(savedToName))),
+          );
+      }
     } on AppFailure catch (e) {
       if (!mounted) return;
       setState(() => _failure = e);
@@ -498,8 +570,8 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody>
     );
   }
 
-  /// The bar itself is [AppActionBar]; only its two buttons are this
-  /// screen's.
+  /// The bar itself is [AppActionBar]; only its two buttons, and with 2+
+  /// households the "Saves to" line above them, are this screen's.
   Widget _buildActionBar(AppLocalizations l10n) {
     // Horizontal lg rather than the theme's xl: at 360dp each half is about
     // 158dp, and `Odbaci ovaj uvoz` would wrap at the default.
@@ -507,29 +579,109 @@ class _ReviewBodyState extends ConsumerState<_ReviewBody>
       horizontal: AppSpacing.lg,
     );
 
+    final Widget buttons = Row(
+      children: <Widget>[
+        Expanded(
+          child: OutlinedButton(
+            style: OutlinedButton.styleFrom(padding: buttonPadding),
+            onPressed: _busy ? null : _discard,
+            child: Text(l10n.discardImportButton),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: FilledButton(
+            style: FilledButton.styleFrom(padding: buttonPadding),
+            onPressed: _busy ? null : _submit,
+            child: _saving
+                ? const SizedBox.square(
+                    dimension: AppSizes.iconInMeta,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(l10n.saveRecipeButton),
+          ),
+        ),
+      ],
+    );
+
+    final String? savesToName = _savesToName();
+    // One household: exactly today's bar, the same widget tree.
+    if (savesToName == null) {
+      return AppActionBar(error: _failure?.localized(l10n), child: buttons);
+    }
+
     return AppActionBar(
       error: _failure?.localized(l10n),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _SavesToLine(
+            name: savesToName,
+            onChange: _busy ? null : _changeTarget,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          buttons,
+        ],
+      ),
+    );
+  }
+}
+
+/// `Saves to X` with a Change button, above the review's buttons when the
+/// caller has 2+ households (phase9-import-save-to). A shared link never
+/// shows a tab, so never the household line under its title; this is where
+/// the review says it instead.
+class _SavesToLine extends StatelessWidget {
+  const _SavesToLine({required this.name, required this.onChange});
+
+  final String name;
+  final VoidCallback? onChange;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: AppSizes.target),
       child: Row(
         children: <Widget>[
+          Icon(
+            Icons.home_outlined,
+            size: AppSizes.iconInMeta,
+            color: colors.onSurfaceVariant,
+          ),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(padding: buttonPadding),
-              onPressed: _busy ? null : _discard,
-              child: Text(l10n.discardImportButton),
+            // Two lines rather than one with an ellipsis that eats the name:
+            // `Čuva se u: Porodica Stanković – vikendica` wraps at 360dp.
+            child: Text.rich(
+              TextSpan(
+                text: '${l10n.importSavesToPrefix} ',
+                children: <InlineSpan>[
+                  TextSpan(
+                    text: name,
+                    style: TextStyle(
+                      color: colors.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: FilledButton(
-              style: FilledButton.styleFrom(padding: buttonPadding),
-              onPressed: _busy ? null : _submit,
-              child: _saving
-                  ? const SizedBox.square(
-                      dimension: AppSizes.iconInMeta,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(l10n.saveRecipeButton),
-            ),
+          // The theme's padding, no negative margin: the label ends 12 inside
+          // the gutter rather than on it.
+          TextButton(
+            onPressed: onChange,
+            child: Text(l10n.importSaveToChange),
           ),
         ],
       ),

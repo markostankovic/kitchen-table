@@ -23,7 +23,8 @@ import '../domain/import_job.dart';
 import '../domain/parsed_recipe.dart';
 
 const String _jobColumns =
-    'id, kind, status, result, error_code, error_message, recipe_id';
+    'id, household_id, kind, status, result, error_code, error_message, '
+    'recipe_id';
 
 class ImportRepository {
   const ImportRepository(this._client);
@@ -105,6 +106,13 @@ class ImportRepository {
   /// safe because the draft keeps the id it was given, so a failed second step
   /// is fixed by pressing Save again; an import has a third step and no such
   /// anchor, and a retry would create a second recipe from the same import.
+  ///
+  /// The recipe goes to the job's household unless [targetHouseholdId] names
+  /// another, which the server accepts only when the caller is a member of it
+  /// (D175). The key is sent only when non-null, so an unchanged save sends
+  /// exactly the payload it always has -- PostgREST rejects an argument name
+  /// the function doesn't have, even with a null value, and a database without
+  /// the new parameter must keep taking it.
   Future<String> saveImported(
     String jobId, {
     required ImportKind kind,
@@ -120,6 +128,7 @@ class ImportRepository {
     String? sourceUrl,
     String? sourceAttribution,
     List<String> tags = const <String>[],
+    String? targetHouseholdId,
   }) =>
       runGuarded(() async {
         final dynamic id = await _client.rpc<dynamic>(
@@ -142,6 +151,7 @@ class ImportRepository {
             'ingredient_lines':
                 ingredients.map(_ingredientPayload).toList(growable: false),
             'steps': steps.map(_stepPayload).toList(growable: false),
+            'target_household': ?targetHouseholdId,
           },
         );
         return id as String;
@@ -208,6 +218,7 @@ class ImportRepository {
     final Object? result = row['result'];
     return ImportJob(
       id: row['id'] as String,
+      householdId: row['household_id'] as String,
       kind: ImportKind.fromWire(row['kind'] as String),
       status: ImportJobStatus.fromWire(row['status'] as String),
       // jsonb arrives already decoded. The generated fromJson is the only

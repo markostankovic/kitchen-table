@@ -106,7 +106,11 @@ class ImportConfirm extends _$ImportConfirm {
   /// returns false rather than raising when a string already names a different
   /// ingredient, and losing a recipe over a word one household spells oddly
   /// would be the wrong trade.
-  Future<String> save() async {
+  ///
+  /// [targetHouseholdId] is where this import alone is saved, null meaning the
+  /// job's own household (D175). It is the screen's per-import choice, not
+  /// state here: nothing else in the review depends on it.
+  Future<String> save({String? targetHouseholdId}) async {
     final ImportReview? review = state.value;
     if (review == null) {
       throw StateError('save() before the draft finished loading');
@@ -132,6 +136,7 @@ class ImportConfirm extends _$ImportConfirm {
               tags: current.tags,
               ingredients: current.toIngredients(),
               steps: current.toSteps(),
+              targetHouseholdId: targetHouseholdId,
             );
 
     // Not `ref.invalidate(recipeListProvider)`: that provider belongs to

@@ -184,6 +184,106 @@ final class HouseholdSwitcherNameProvider
 String _$householdSwitcherNameHash() =>
     r'b144d96651d23df5b47c57bd546fe2f4eebbf3d0';
 
+/// The name of household [householdId] when the caller has 2+ households and
+/// it is one of them; null with one, while unknown, offline (myHouseholds is
+/// network-only), or when the id isn't among them -- the import review's
+/// whole condition for its "Saves to X" line, [householdSwitcherName]'s rule
+/// for a household other than the current one (D171, D175).
+
+@ProviderFor(householdNameAmongMany)
+final householdNameAmongManyProvider = HouseholdNameAmongManyFamily._();
+
+/// The name of household [householdId] when the caller has 2+ households and
+/// it is one of them; null with one, while unknown, offline (myHouseholds is
+/// network-only), or when the id isn't among them -- the import review's
+/// whole condition for its "Saves to X" line, [householdSwitcherName]'s rule
+/// for a household other than the current one (D171, D175).
+
+final class HouseholdNameAmongManyProvider
+    extends $FunctionalProvider<AsyncValue<String?>, String?, FutureOr<String?>>
+    with $FutureModifier<String?>, $FutureProvider<String?> {
+  /// The name of household [householdId] when the caller has 2+ households and
+  /// it is one of them; null with one, while unknown, offline (myHouseholds is
+  /// network-only), or when the id isn't among them -- the import review's
+  /// whole condition for its "Saves to X" line, [householdSwitcherName]'s rule
+  /// for a household other than the current one (D171, D175).
+  HouseholdNameAmongManyProvider._({
+    required HouseholdNameAmongManyFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'householdNameAmongManyProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$householdNameAmongManyHash();
+
+  @override
+  String toString() {
+    return r'householdNameAmongManyProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<String?> create(Ref ref) {
+    final argument = this.argument as String;
+    return householdNameAmongMany(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is HouseholdNameAmongManyProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$householdNameAmongManyHash() =>
+    r'59b2f49092b70d6e2e7503600fe73063f27592c9';
+
+/// The name of household [householdId] when the caller has 2+ households and
+/// it is one of them; null with one, while unknown, offline (myHouseholds is
+/// network-only), or when the id isn't among them -- the import review's
+/// whole condition for its "Saves to X" line, [householdSwitcherName]'s rule
+/// for a household other than the current one (D171, D175).
+
+final class HouseholdNameAmongManyFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<String?>, String> {
+  HouseholdNameAmongManyFamily._()
+    : super(
+        retry: null,
+        name: r'householdNameAmongManyProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// The name of household [householdId] when the caller has 2+ households and
+  /// it is one of them; null with one, while unknown, offline (myHouseholds is
+  /// network-only), or when the id isn't among them -- the import review's
+  /// whole condition for its "Saves to X" line, [householdSwitcherName]'s rule
+  /// for a household other than the current one (D171, D175).
+
+  HouseholdNameAmongManyProvider call(String householdId) =>
+      HouseholdNameAmongManyProvider._(argument: householdId, from: this);
+
+  @override
+  String toString() => r'householdNameAmongManyProvider';
+}
+
 /// Whether a household switch is in flight (`CurrentHousehold.switchTo`,
 /// from the header, its Undo, or the Households list).
 

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ImportJob {
 
- String get id; ImportKind get kind; ImportJobStatus get status; ParsedRecipe? get result; String? get errorCode; String? get errorMessage; String? get recipeId;
+ String get id; String get householdId; ImportKind get kind; ImportJobStatus get status; ParsedRecipe? get result; String? get errorCode; String? get errorMessage; String? get recipeId;
 /// Create a copy of ImportJob
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -27,20 +27,20 @@ $ImportJobCopyWith<ImportJob> get copyWith => _$ImportJobCopyWithImpl<ImportJob>
 @override
 bool operator ==(Object other) {
   final _this = this as ImportJob;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImportJob&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.result, _this.result) || other.result == _this.result)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&(identical(other.errorMessage, _this.errorMessage) || other.errorMessage == _this.errorMessage)&&(identical(other.recipeId, _this.recipeId) || other.recipeId == _this.recipeId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImportJob&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.householdId, _this.householdId) || other.householdId == _this.householdId)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.result, _this.result) || other.result == _this.result)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&(identical(other.errorMessage, _this.errorMessage) || other.errorMessage == _this.errorMessage)&&(identical(other.recipeId, _this.recipeId) || other.recipeId == _this.recipeId));
 }
 
 
 @override
 int get hashCode {
   final _this = this as ImportJob;
-  return Object.hash(runtimeType,_this.id,_this.kind,_this.status,_this.result,_this.errorCode,_this.errorMessage,_this.recipeId);
+  return Object.hash(runtimeType,_this.id,_this.householdId,_this.kind,_this.status,_this.result,_this.errorCode,_this.errorMessage,_this.recipeId);
 }
 
 @override
 String toString() {
   final _this = this as ImportJob;
-  return 'ImportJob(id: ${_this.id}, kind: ${_this.kind}, status: ${_this.status}, result: ${_this.result}, errorCode: ${_this.errorCode}, errorMessage: ${_this.errorMessage}, recipeId: ${_this.recipeId})';
+  return 'ImportJob(id: ${_this.id}, householdId: ${_this.householdId}, kind: ${_this.kind}, status: ${_this.status}, result: ${_this.result}, errorCode: ${_this.errorCode}, errorMessage: ${_this.errorMessage}, recipeId: ${_this.recipeId})';
 }
 
 
@@ -51,7 +51,7 @@ abstract mixin class $ImportJobCopyWith<$Res>  {
   factory $ImportJobCopyWith(ImportJob value, $Res Function(ImportJob) _then) = _$ImportJobCopyWithImpl;
 @useResult
 $Res call({
- String id, ImportKind kind, ImportJobStatus status, ParsedRecipe? result, String? errorCode, String? errorMessage, String? recipeId
+ String id, String householdId, ImportKind kind, ImportJobStatus status, ParsedRecipe? result, String? errorCode, String? errorMessage, String? recipeId
 });
 
 
@@ -68,9 +68,10 @@ class _$ImportJobCopyWithImpl<$Res>
 
 /// Create a copy of ImportJob
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? status = null,Object? result = freezed,Object? errorCode = freezed,Object? errorMessage = freezed,Object? recipeId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? householdId = null,Object? kind = null,Object? status = null,Object? result = freezed,Object? errorCode = freezed,Object? errorMessage = freezed,Object? recipeId = freezed,}) {
   return _then(ImportJob(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,householdId: null == householdId ? _self.householdId : householdId // ignore: cast_nullable_to_non_nullable
 as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as ImportKind,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as ImportJobStatus,result: freezed == result ? _self.result : result // ignore: cast_nullable_to_non_nullable
@@ -174,10 +175,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  ImportKind kind,  ImportJobStatus status,  ParsedRecipe? result,  String? errorCode,  String? errorMessage,  String? recipeId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String householdId,  ImportKind kind,  ImportJobStatus status,  ParsedRecipe? result,  String? errorCode,  String? errorMessage,  String? recipeId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ImportJob() when $default != null:
-return $default(_that.id,_that.kind,_that.status,_that.result,_that.errorCode,_that.errorMessage,_that.recipeId);case _:
+return $default(_that.id,_that.householdId,_that.kind,_that.status,_that.result,_that.errorCode,_that.errorMessage,_that.recipeId);case _:
   return orElse();
 
 }
@@ -195,10 +196,10 @@ return $default(_that.id,_that.kind,_that.status,_that.result,_that.errorCode,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  ImportKind kind,  ImportJobStatus status,  ParsedRecipe? result,  String? errorCode,  String? errorMessage,  String? recipeId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String householdId,  ImportKind kind,  ImportJobStatus status,  ParsedRecipe? result,  String? errorCode,  String? errorMessage,  String? recipeId)  $default,) {final _that = this;
 switch (_that) {
 case _ImportJob():
-return $default(_that.id,_that.kind,_that.status,_that.result,_that.errorCode,_that.errorMessage,_that.recipeId);case _:
+return $default(_that.id,_that.householdId,_that.kind,_that.status,_that.result,_that.errorCode,_that.errorMessage,_that.recipeId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -215,10 +216,10 @@ return $default(_that.id,_that.kind,_that.status,_that.result,_that.errorCode,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  ImportKind kind,  ImportJobStatus status,  ParsedRecipe? result,  String? errorCode,  String? errorMessage,  String? recipeId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String householdId,  ImportKind kind,  ImportJobStatus status,  ParsedRecipe? result,  String? errorCode,  String? errorMessage,  String? recipeId)?  $default,) {final _that = this;
 switch (_that) {
 case _ImportJob() when $default != null:
-return $default(_that.id,_that.kind,_that.status,_that.result,_that.errorCode,_that.errorMessage,_that.recipeId);case _:
+return $default(_that.id,_that.householdId,_that.kind,_that.status,_that.result,_that.errorCode,_that.errorMessage,_that.recipeId);case _:
   return null;
 
 }
@@ -230,10 +231,11 @@ return $default(_that.id,_that.kind,_that.status,_that.result,_that.errorCode,_t
 
 
 class _ImportJob extends ImportJob {
-  const _ImportJob({required this.id, required this.kind, required this.status, this.result, this.errorCode, this.errorMessage, this.recipeId}): super._();
+  const _ImportJob({required this.id, required this.householdId, required this.kind, required this.status, this.result, this.errorCode, this.errorMessage, this.recipeId}): super._();
   
 
 @override final  String id;
+@override final  String householdId;
 @override final  ImportKind kind;
 @override final  ImportJobStatus status;
 @override final  ParsedRecipe? result;
@@ -251,18 +253,18 @@ _$ImportJobCopyWith<_ImportJob> get copyWith => __$ImportJobCopyWithImpl<_Import
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImportJob&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.status, status) || other.status == status)&&(identical(other.result, result) || other.result == result)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.recipeId, recipeId) || other.recipeId == recipeId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImportJob&&(identical(other.id, id) || other.id == id)&&(identical(other.householdId, householdId) || other.householdId == householdId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.status, status) || other.status == status)&&(identical(other.result, result) || other.result == result)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.recipeId, recipeId) || other.recipeId == recipeId));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,kind,status,result,errorCode,errorMessage,recipeId);
+    return Object.hash(runtimeType,id,householdId,kind,status,result,errorCode,errorMessage,recipeId);
 }
 
 @override
 String toString() {
-    return 'ImportJob(id: $id, kind: $kind, status: $status, result: $result, errorCode: $errorCode, errorMessage: $errorMessage, recipeId: $recipeId)';
+    return 'ImportJob(id: $id, householdId: $householdId, kind: $kind, status: $status, result: $result, errorCode: $errorCode, errorMessage: $errorMessage, recipeId: $recipeId)';
 }
 
 
@@ -273,7 +275,7 @@ abstract mixin class _$ImportJobCopyWith<$Res> implements $ImportJobCopyWith<$Re
   factory _$ImportJobCopyWith(_ImportJob value, $Res Function(_ImportJob) _then) = __$ImportJobCopyWithImpl;
 @override @useResult
 $Res call({
- String id, ImportKind kind, ImportJobStatus status, ParsedRecipe? result, String? errorCode, String? errorMessage, String? recipeId
+ String id, String householdId, ImportKind kind, ImportJobStatus status, ParsedRecipe? result, String? errorCode, String? errorMessage, String? recipeId
 });
 
 
@@ -290,9 +292,10 @@ class __$ImportJobCopyWithImpl<$Res>
 
 /// Create a copy of ImportJob
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? kind = null,Object? status = null,Object? result = freezed,Object? errorCode = freezed,Object? errorMessage = freezed,Object? recipeId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? householdId = null,Object? kind = null,Object? status = null,Object? result = freezed,Object? errorCode = freezed,Object? errorMessage = freezed,Object? recipeId = freezed,}) {
   return _then(_ImportJob(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,householdId: null == householdId ? _self.householdId : householdId // ignore: cast_nullable_to_non_nullable
 as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as ImportKind,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as ImportJobStatus,result: freezed == result ? _self.result : result // ignore: cast_nullable_to_non_nullable

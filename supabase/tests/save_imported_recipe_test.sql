@@ -4,7 +4,8 @@
 -- as one unit from the server side. What is worth asserting is therefore not
 -- that it inserts a row -- it is that the three steps travel together, that it
 -- refuses every job it should, and that household_id comes from the JOB rather
--- than from the payload a client sent.
+-- than from the payload a client sent -- or from a named target only when the
+-- caller is a member of it (D175).
 --
 -- Run: make test-sql
 --
@@ -17,7 +18,11 @@ declare
 
   hid_3     uuid;
   hid_4     uuid;
+  hid_3b    uuid;
   job_3     uuid;
+  job_3b    uuid;
+  job_3c    uuid;
+  job_3d    uuid;
   job_4     uuid;
   job_bad   uuid;
   rid       uuid;
@@ -47,6 +52,8 @@ begin
   perform set_config('request.jwt.claims',
     json_build_object('sub', user_3, 'role', 'authenticated')::text, true);
   select create_household('zzz saved household three') into hid_3;
+  -- A second membership for the saving user, the target of D175's saves.
+  select create_household('zzz saved household three b') into hid_3b;
 
   perform set_config('request.jwt.claims',
     json_build_object('sub', user_4, 'role', 'authenticated')::text, true);
@@ -61,6 +68,19 @@ begin
   insert into import_jobs (household_id, created_by, kind, status, result)
   values (hid_4, user_4, 'text', 'needs_review', '{}'::jsonb)
   returning id into job_4;
+
+  -- Three more of user_3's jobs, for the target_household cases (D175).
+  insert into import_jobs (household_id, created_by, kind, status, result)
+  values (hid_3, user_3, 'text', 'needs_review', '{}'::jsonb)
+  returning id into job_3b;
+
+  insert into import_jobs (household_id, created_by, kind, status, result)
+  values (hid_3, user_3, 'text', 'needs_review', '{}'::jsonb)
+  returning id into job_3c;
+
+  insert into import_jobs (household_id, created_by, kind, status, result)
+  values (hid_3, user_3, 'text', 'needs_review', '{}'::jsonb)
+  returning id into job_3d;
 
   -- A job that has not been read yet.
   insert into import_jobs (household_id, created_by, kind, status)
@@ -189,6 +209,75 @@ begin
   end if;
 
   ---------------------------------------------------------------------------
+  -- A named target (D175)
+  ---------------------------------------------------------------------------
+  -- A household the caller IS a member of: the recipe lands there, not in the
+  -- job's household, and the job is still completed.
+  select save_imported_recipe(
+    job_3b,
+    jsonb_build_object('title', 'zzz saved to target', 'original_locale', 'sr'),
+    '[]'::jsonb, '[]'::jsonb, hid_3b
+  ) into rid;
+
+  select count(*) into n from recipes
+   where id = rid and household_id = hid_3b and created_by = user_3;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'recipe not saved to the named target household';
+  end if;
+
+  select count(*) into n from import_jobs
+   where id = job_3b and status = 'done' and recipe_id = rid;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'the job was not completed by a save to a target';
+  end if;
+
+  -- An explicit null target is the same as none: the job's household.
+  select save_imported_recipe(
+    job_3c,
+    jsonb_build_object('title', 'zzz saved null target', 'original_locale', 'sr'),
+    '[]'::jsonb, '[]'::jsonb, null
+  ) into rid;
+
+  select count(*) into n from recipes
+   where id = rid and household_id = hid_3;
+  if n <> 1 then
+    failures := failures + 1;
+    raise warning 'a null target did not fall back to the job''s household';
+  end if;
+
+  -- A household the caller is NOT in. This is the assertion the membership
+  -- check exists for: a definer function talked into writing elsewhere.
+  select count(*) into n from recipes where household_id = hid_4;
+
+  got_error := false;
+  begin
+    perform save_imported_recipe(
+      job_3d,
+      jsonb_build_object('title', 'zzz saved foreign target',
+        'original_locale', 'sr'),
+      '[]'::jsonb, '[]'::jsonb, hid_4);
+  exception when sqlstate '42501' then got_error := true;
+  end;
+  if not got_error then
+    failures := failures + 1;
+    raise warning 'saved into a household the caller is not a member of';
+  end if;
+
+  select count(*) - n into n from recipes where household_id = hid_4;
+  if n <> 0 then
+    failures := failures + 1;
+    raise warning 'a recipe was inserted into a foreign target household';
+  end if;
+
+  select count(*) into n from recipes where title = 'zzz saved foreign target';
+  if n <> 0 then
+    failures := failures + 1;
+    raise warning 'the refused target save left a recipe behind';
+  end if;
+
+  ---------------------------------------------------------------------------
   -- Refusals
   ---------------------------------------------------------------------------
   -- Another household's job. The whole reason the function is definer is that
@@ -271,9 +360,9 @@ begin
   -- Teardown
   ---------------------------------------------------------------------------
   perform set_config('role', 'postgres', true);
-  delete from import_jobs where household_id in (hid_3, hid_4);
+  delete from import_jobs where household_id in (hid_3, hid_3b, hid_4);
   delete from recipes where title like 'zzz saved%';
-  delete from households where id in (hid_3, hid_4);
+  delete from households where id in (hid_3, hid_3b, hid_4);
   delete from auth.users where id in (user_3, user_4);
 
   if failures > 0 then
