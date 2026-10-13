@@ -129,3 +129,57 @@ final class CurrentHouseholdSummaryProvider
 
 String _$currentHouseholdSummaryHash() =>
     r'eacbbb02fb146a9d62fd2d478da4ee69f4d0f357';
+
+/// The current household's name when the caller has others to switch to;
+/// null with one, while unknown, or offline (myHouseholds is network-only)
+/// -- the tab header's whole condition for showing its second line.
+///
+/// Reads no members, unlike [currentHouseholdSummary]: the header must not
+/// wait on a member-count query.
+
+@ProviderFor(householdSwitcherName)
+final householdSwitcherNameProvider = HouseholdSwitcherNameProvider._();
+
+/// The current household's name when the caller has others to switch to;
+/// null with one, while unknown, or offline (myHouseholds is network-only)
+/// -- the tab header's whole condition for showing its second line.
+///
+/// Reads no members, unlike [currentHouseholdSummary]: the header must not
+/// wait on a member-count query.
+
+final class HouseholdSwitcherNameProvider
+    extends $FunctionalProvider<AsyncValue<String?>, String?, FutureOr<String?>>
+    with $FutureModifier<String?>, $FutureProvider<String?> {
+  /// The current household's name when the caller has others to switch to;
+  /// null with one, while unknown, or offline (myHouseholds is network-only)
+  /// -- the tab header's whole condition for showing its second line.
+  ///
+  /// Reads no members, unlike [currentHouseholdSummary]: the header must not
+  /// wait on a member-count query.
+  HouseholdSwitcherNameProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'householdSwitcherNameProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$householdSwitcherNameHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<String?> create(Ref ref) {
+    return householdSwitcherName(ref);
+  }
+}
+
+String _$householdSwitcherNameHash() =>
+    r'b144d96651d23df5b47c57bd546fe2f4eebbf3d0';

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
+import '../../../core/household/widgets/household_tab_title.dart';
 import '../../../core/ingredients/ingredient_catalog_providers.dart';
 import '../../../core/ingredients/widgets/ingredient_line_row.dart';
 import '../../../core/l10n/date_labels.dart';
@@ -65,7 +66,8 @@ class ShoppingListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.navList),
+        titleSpacing: AppSpacing.sm,
+        title: HouseholdTabTitle(title: l10n.navList),
         actions: <Widget>[
           if (list.value != null) ...<Widget>[
             IconButton(

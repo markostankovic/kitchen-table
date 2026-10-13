@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/failure_l10n.dart';
+import '../../../core/household/widgets/household_tab_title.dart';
 import '../../../core/l10n/app_locale.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/recipes/widgets/recipe_card.dart';
@@ -90,7 +91,8 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
       // so the tab and this AppBar never disagree about the language they are
       // in, even though the rest of this screen's content is still English.
       appBar: AppBar(
-        title: Text(l10n.navRecipes),
+        titleSpacing: AppSpacing.sm,
+        title: HouseholdTabTitle(title: l10n.navRecipes),
         actions: <Widget>[
           // The app bar's `+` anchors a menu rather than a single action,
           // because there is more than one way to get a recipe in: write it,

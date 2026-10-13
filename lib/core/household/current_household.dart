@@ -29,6 +29,9 @@
 /// the row can open the Households list instead (phase9-household-list). It
 /// crosses as a record of exactly those facts, not the `Household` model,
 /// so this file still hands out no households-feature types.
+/// [householdSwitcherName] is the second, narrower still: just the current
+/// household's name when there are others to switch to, for the tab header
+/// (phase9-household-switcher).
 ///
 /// `core/` may depend on `features/` (docs/ARCHITECTURE.md); `tool/check_layers.dart`
 /// derives layer and feature only from `lib/features` paths and does not
@@ -83,4 +86,25 @@ currentHouseholdSummary(Ref ref) async {
     memberCount: members.length,
     otherHouseholdCount: others < 0 ? 0 : others,
   );
+}
+
+/// The current household's name when the caller has others to switch to;
+/// null with one, while unknown, or offline (myHouseholds is network-only)
+/// -- the tab header's whole condition for showing its second line.
+///
+/// Reads no members, unlike [currentHouseholdSummary]: the header must not
+/// wait on a member-count query.
+@riverpod
+Future<String?> householdSwitcherName(Ref ref) async {
+  final Household? household = await ref.watch(currentHouseholdProvider.future);
+  if (household == null) return null;
+  try {
+    final List<HouseholdMembership> mine = await ref.watch(
+      myHouseholdsProvider.future,
+    );
+    if (mine.length < 2) return null;
+  } on AppFailure {
+    return null;
+  }
+  return household.name;
 }

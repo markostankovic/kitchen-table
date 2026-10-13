@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_sizes.dart';
-import '../../../../core/theme/app_spacing.dart';
+import '../../theme/app_sizes.dart';
+import '../../theme/app_spacing.dart';
 
 /// One household in a list: a radio marking the current one, the name, and
 /// a meta line, with an optional gear behind a hairline that manages it.
 ///
-/// Feature-private while the Households screen is its one consumer. The
-/// switcher sheet (phase9-household-switcher) is the second, from other
-/// features, and promotes it to `core/household/widgets/` -- hence the
-/// [onManage]-less mode now, so that promotion is a move, not a rewrite.
+/// Shared by the Households list (with the gear) and the household switch
+/// sheet (without it, phase9-household-switcher), which three other features
+/// open -- hence it lives in `core/household/widgets/`.
 ///
 /// The name wraps and is never cut off: no `maxLines`, no ellipsis.
 class HouseholdRow extends StatelessWidget {

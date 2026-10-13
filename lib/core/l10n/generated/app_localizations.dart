@@ -2017,6 +2017,24 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Upravljajte: {name}'**
   String manageHouseholdTooltip(String name);
+
+  /// Household switch sheet (phase9-household-switcher), its title; also the tab header's tap hint. Opened from the household line under the Recipes / Plan / List titles.
+  ///
+  /// In sr, this message translates to:
+  /// **'Promenite domaćinstvo'**
+  String get switchHouseholdSheetTitle;
+
+  /// Household switch sheet, the row under the list that opens Settings › Households.
+  ///
+  /// In sr, this message translates to:
+  /// **'Upravljajte domaćinstvima'**
+  String get manageHouseholdsAction;
+
+  /// Snackbar after switching household from the switch sheet; offers undoSnackbarAction to switch back. Not shown for a switch from the Households list.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sada ste u domaćinstvu „{name}“.'**
+  String nowInHousehold(String name);
 }
 
 class _AppLocalizationsDelegate

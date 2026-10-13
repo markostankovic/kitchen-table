@@ -272,7 +272,8 @@ same number today, but one is a hit area and the other is a drawing, and they
 have no reason to move together. `signInButton` is not `field`, `grip` is not
 `iconInButton`, `gripColumn` is not `avatar`, `onboardingMark` is not
 `thumb` or `field`, and `splitDivider` is not `tag` (one is a drawing of a
-chip, the other a divider), for the same reason.
+chip, the other a divider), for the same reason. The household title block's
+56 is derived (`appBar − 2·xs`) rather than a size of its own.
 
 `AppDurations`: 150 ms for a small state change, 250 ms for a transition,
 emphasized easing. **No decorative animation.** The class exists so later
@@ -479,6 +480,16 @@ status-bar icons are light while a photo is behind them. Collapsed, it is
 the ordinary bar. `NavigationBar` 80dp on `surfaceContainer`; the selected
 destination is a **`primary` pill with an `onPrimary` icon and a `primary`
 label** — not Material's default `secondaryContainer` indicator.
+
+**The household line.** On Recipes, Plan and List only, with two or more
+households, a tab bar's title (`HouseholdTabTitle`) becomes a 56 block
+(`appBar − 2·xs`, derived, not a size), radius `md`, padded `sm`; the bar
+sets `titleSpacing: sm`, so the title stays at 16. Under the `titleLarge`
+title sits the current household's name in `bodyMedium` `onSurfaceVariant`,
+one line, ellipsized, then `expand_more` at `iconInButton` in the same
+colour, no gap. Tapping the block opens the switch sheet (§ Household).
+With one household, while that is unknown, or offline, it is absent: the
+plain title, the same pixels as before.
 
 ### Inputs
 
@@ -1118,9 +1129,19 @@ vertical hairline in `outlineVariant` and an outlined gear in a 48 target,
 `xs` either side. Between rows a 1px hairline inset 56 (`lg + icon + lg`), so
 it starts under the names. Tapping a row switches to it; the current row is
 inert, and every row is while a switch is in flight. The gear pushes that
-household's screen, current or not. `HouseholdRow` is feature-private in
-`features/households/presentation/widgets/` until the switcher sheet, its
-second consumer, promotes it to `core/household/widgets/`.
+household's screen, current or not. `HouseholdRow` lives in
+`core/household/widgets/`, shared by the list and the switch sheet.
+
+**The switch sheet.** `showHouseholdSwitchSheet`, opened from the household
+line. The theme sheet, as Add meal (`surfaceContainerHigh`, top radius
+`xl`), with a drag handle and a `titleMedium` title, gutters `lg`. Gearless
+`HouseholdRow`s in join order, no hairlines between them; then a full-width
+hairline and Manage households — `settings_outlined`, `bodyLarge`
+`onSurface`, `chevron_right`, both icons 24 in `onSurfaceVariant` — which
+opens the households list. The current row is inert. A switch closes the
+sheet and shows "Now in X." with Undo; a switch from the households list
+shows nothing (the radio moving is the feedback). After any switch, the
+shell sends every other tab back to its root on its next visit.
 
 ### Settings
 
@@ -1159,7 +1180,8 @@ and `PopupMenuItem` (`popupMenuTheme`) alike — are `bodyMedium` w400 in
 though the design's menu has no icon slot. Snackbars on `inverseSurface` with the action in
 `inversePrimary`. A snackbar that confirms a reversible change carries a `Poništi` /
 `Undo` `SnackBarAction`, its colour left to the theme (`inversePrimary`) —
-the first is the shopping list's pantry move. The offline banner on `offline` / `onOffline` — calm.
+the first is the shopping list's pantry move; the household switch sheet's
+`Sada ste u domaćinstvu „X“.` / `Now in X.` is another. The offline banner on `offline` / `onOffline` — calm.
 
 ### Dialog
 
@@ -1216,6 +1238,9 @@ lives, below.
 | `IngredientLineRow` | `core/ingredients/widgets/ingredient_line_row.dart` |
 | `IngredientLinesEditor` | `core/ingredients/widgets/ingredient_lines_editor.dart` |
 | `RecipeGroupHeading` | `core/recipes/widgets/recipe_group_heading.dart` |
+| `HouseholdRow` | `core/household/widgets/household_row.dart` |
+| `HouseholdTabTitle` | `core/household/widgets/household_tab_title.dart` |
+| `showHouseholdSwitchSheet` | `core/household/widgets/household_switch_sheet.dart` |
 
 `AppBadge` has two looks, both 24 tall, radius `xs`, the label in
 `labelMedium` `onSurfaceVariant`:

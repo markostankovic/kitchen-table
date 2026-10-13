@@ -1148,4 +1148,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String manageHouseholdTooltip(String name) {
     return 'Manage $name';
   }
+
+  @override
+  String get switchHouseholdSheetTitle => 'Switch household';
+
+  @override
+  String get manageHouseholdsAction => 'Manage households';
+
+  @override
+  String nowInHousehold(String name) {
+    return 'Now in $name.';
+  }
 }

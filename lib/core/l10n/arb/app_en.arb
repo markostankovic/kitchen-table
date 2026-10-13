@@ -344,5 +344,8 @@
   "householdMoreCount": "{count, plural, one{{count} more household} other{{count} more households}}",
   "householdSettingsRowMeta": "{members} · {more}",
   "householdListRowMeta": "{members} · {role}",
-  "manageHouseholdTooltip": "Manage {name}"
+  "manageHouseholdTooltip": "Manage {name}",
+  "switchHouseholdSheetTitle": "Switch household",
+  "manageHouseholdsAction": "Manage households",
+  "nowInHousehold": "Now in {name}."
 }

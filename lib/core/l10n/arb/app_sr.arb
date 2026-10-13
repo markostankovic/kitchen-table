@@ -1528,5 +1528,22 @@
         "type": "String"
       }
     }
+  },
+  "switchHouseholdSheetTitle": "Promenite domaćinstvo",
+  "@switchHouseholdSheetTitle": {
+    "description": "Household switch sheet (phase9-household-switcher), its title; also the tab header's tap hint. Opened from the household line under the Recipes / Plan / List titles."
+  },
+  "manageHouseholdsAction": "Upravljajte domaćinstvima",
+  "@manageHouseholdsAction": {
+    "description": "Household switch sheet, the row under the list that opens Settings › Households."
+  },
+  "nowInHousehold": "Sada ste u domaćinstvu „{name}“.",
+  "@nowInHousehold": {
+    "description": "Snackbar after switching household from the switch sheet; offers undoSnackbarAction to switch back. Not shown for a switch from the Households list.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

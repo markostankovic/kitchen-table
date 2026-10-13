@@ -91,13 +91,15 @@ Future<void> pumpApp(
   AppDatabase? db,
   MealPlanEditor Function()? mealPlanEditor,
   CurrentShoppingList Function()? shoppingList,
+  Household? Function()? readHousehold,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         currentUserIdProvider.overrideWith((Ref ref) => Stream<String?>.value(userId)),
         currentHouseholdProvider.overrideWith(
-            () => FixedCurrentHousehold(() async => household)),
+            () => FixedCurrentHousehold(
+                () async => readHousehold == null ? household : readHousehold())),
         authStateProvider.overrideWith(
             (Ref ref) => Stream<AppUser?>.value(userId == null ? null : _user)),
         ownProfileProvider.overrideWith((Ref ref) async => profile),
@@ -379,6 +381,46 @@ void main() {
       await _tapTab(tester, sr.navList);
       expect(counts.listBuilds, 1);
       expect(counts.generates, 0);
+    });
+  });
+
+  // phase9-household-switcher: after a household switch, every other tab
+  // goes back to its root on its next visit; with no switch, a tab keeps
+  // its stack.
+  group('reset on household switch', () {
+    testWidgets('a household change sends a background tab to its root',
+        (WidgetTester tester) async {
+      Household current = _household;
+      await pumpApp(tester, readHousehold: () => current);
+
+      await _tapTab(tester, sr.navSettings);
+      await _openHousehold(tester);
+      expect(find.widgetWithText(AppBar, sr.householdScreenTitle),
+          findsOneWidget);
+
+      await _tapTab(tester, sr.navPlan);
+      current = const Household(id: 'h2', name: 'Other', createdBy: 'u1');
+      ProviderScope.containerOf(tester.element(find.byType(NavigationBar)))
+          .invalidate(currentHouseholdProvider);
+      await tester.pumpAndSettle();
+
+      await _tapTab(tester, sr.navSettings);
+      expect(find.widgetWithText(AppBar, sr.householdScreenTitle),
+          findsNothing);
+      expect(find.widgetWithText(AppBar, sr.navSettings), findsOneWidget);
+    });
+
+    testWidgets('with no switch, returning to a tab keeps its stack',
+        (WidgetTester tester) async {
+      await pumpApp(tester);
+
+      await _tapTab(tester, sr.navSettings);
+      await _openHousehold(tester);
+      await _tapTab(tester, sr.navPlan);
+      await _tapTab(tester, sr.navSettings);
+
+      expect(find.widgetWithText(AppBar, sr.householdScreenTitle),
+          findsOneWidget);
     });
   });
 

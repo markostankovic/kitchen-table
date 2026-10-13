@@ -1164,4 +1164,15 @@ class AppLocalizationsSr extends AppLocalizations {
   String manageHouseholdTooltip(String name) {
     return 'Upravljajte: $name';
   }
+
+  @override
+  String get switchHouseholdSheetTitle => 'Promenite domaćinstvo';
+
+  @override
+  String get manageHouseholdsAction => 'Upravljajte domaćinstvima';
+
+  @override
+  String nowInHousehold(String name) {
+    return 'Sada ste u domaćinstvu „$name“.';
+  }
 }

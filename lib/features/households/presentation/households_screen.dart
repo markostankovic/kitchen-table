@@ -4,15 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/household/current_household.dart';
+import '../../../core/household/household_role_label.dart';
+import '../../../core/household/widgets/household_row.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../application/household_providers.dart';
-import '../domain/household_member.dart';
 import '../domain/household_membership.dart';
-import 'widgets/household_row.dart';
 
 /// Every household the caller belongs to, in the order they joined. A row
 /// switches to that household; its gear opens that household's screen,
@@ -111,7 +111,7 @@ class _HouseholdsScreenState extends ConsumerState<HouseholdsScreen> {
       name: m.household.name,
       meta: l10n.householdListRowMeta(
         l10n.householdMemberCount(m.memberCount),
-        _roleLabel(m.role, l10n),
+        householdRoleLabel(m.role, l10n),
       ),
       isCurrent: isCurrent,
       onTap: isCurrent || _switching ? null : () => _switchTo(id, l10n),
@@ -119,12 +119,4 @@ class _HouseholdsScreenState extends ConsumerState<HouseholdsScreen> {
       manageTooltip: l10n.manageHouseholdTooltip(m.household.name),
     );
   }
-
-  /// No `default` arm, as on the Household screen: a new `HouseholdRole`
-  /// must not compile until it has a label.
-  String _roleLabel(HouseholdRole role, AppLocalizations l10n) =>
-      switch (role) {
-        HouseholdRole.owner => l10n.householdRoleOwner,
-        HouseholdRole.adult => l10n.householdRoleAdult,
-      };
 }

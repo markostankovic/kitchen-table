@@ -6,6 +6,7 @@ import '../../features/households/application/household_providers.dart';
 import '../../features/meal_plan/application/meal_plan_providers.dart';
 import '../../features/recipes/application/recipe_providers.dart';
 import '../../features/shopping_list/application/shopping_list_providers.dart';
+import '../household/current_household.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../net/offline_banner.dart';
 
@@ -35,10 +36,25 @@ import '../net/offline_banner.dart';
 /// before `goBranch`; each is a cached read (D67), so the screen keeps its
 /// content and updates in place. Re-tapping the current tab only pops it to
 /// its root -- pull already refreshes in place.
-class AppShell extends ConsumerWidget {
+///
+/// After a household switch, every *other* tab goes back to its root the
+/// next time it is opened (phase9-household-switcher), so no screen from
+/// the old household -- a recipe, a household's detail -- survives under a
+/// tab. [_stale] collects them when the household id changes, and arriving
+/// on one passes `initialLocation: true`. go_router has no public API to
+/// reset a background branch, and looping `goBranch` over every branch at
+/// switch time does not work: successive `router.go` calls in one frame
+/// coalesce. The current tab is never reset: from the switch sheet it is
+/// already at its root (the header lives only on tab roots), and from the
+/// Households list it should stay on the list (D170). A
+/// `ConsumerStatefulWidget` now, to hold that set.
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
+
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
 
   static List<NavigationDestination> _destinations(AppLocalizations loc) =>
       <NavigationDestination>[
@@ -68,9 +84,35 @@ class AppShell extends ConsumerWidget {
         ),
       ];
 
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  /// Branches to send to their root on their next visit, after a household
+  /// switch.
+  final Set<int> _stale = <int>{};
+
+  StatefulNavigationShell get navigationShell => widget.navigationShell;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final AppLocalizations loc = AppLocalizations.of(context);
+
+    // `.value`, not the AsyncValue: `switchTo`'s invalidate passes through a
+    // loading state that keeps the old value.
+    ref.listen<AsyncValue<String?>>(currentHouseholdIdProvider, (
+      AsyncValue<String?>? prev,
+      AsyncValue<String?> next,
+    ) {
+      final String? before = prev?.value;
+      final String? after = next.value;
+      if (before == null || after == null || before == after) return;
+      for (int i = 0; i < navigationShell.route.branches.length; i++) {
+        if (i != navigationShell.currentIndex) _stale.add(i);
+      }
+    });
+    // A tab reached some other way -- Manage households' `go` -- has been
+    // visited, so is no longer stale.
+    _stale.remove(navigationShell.currentIndex);
 
     return Scaffold(
       body: Column(
@@ -81,15 +123,18 @@ class AppShell extends ConsumerWidget {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
-        destinations: _destinations(loc),
+        destinations: AppShell._destinations(loc),
         onDestinationSelected: (int index) {
           final bool reTap = index == navigationShell.currentIndex;
+          // `remove` first, so it always runs.
+          final bool reset = _stale.remove(index) || reTap;
           if (!reTap) _refreshBranch(ref, index);
           navigationShell.goBranch(
             index,
             // Tapping the active tab returns it to its root, the platform
-            // convention on both iOS and Android.
-            initialLocation: reTap,
+            // convention on both iOS and Android; so does arriving on a tab
+            // after a household switch.
+            initialLocation: reset,
           );
         },
       ),

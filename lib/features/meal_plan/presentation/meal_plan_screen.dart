@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
+import '../../../core/household/widgets/household_tab_title.dart';
 import '../../../core/l10n/date_labels.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/l10n/meal_slot_labels.dart';
@@ -77,7 +78,8 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.navPlan),
+        titleSpacing: AppSpacing.sm,
+        title: HouseholdTabTitle(title: l10n.navPlan),
         actions: <Widget>[
           if (_view == _PlanView.week)
             IconButton(
