@@ -191,34 +191,48 @@ abstract class _$CurrentHousehold extends $AsyncNotifier<Household?> {
   }
 }
 
-/// Every household the caller belongs to, oldest first, for slice C's
-/// household picker (multi-household-b). Nothing reads it yet.
+/// Every household the caller belongs to, in the order they joined, with
+/// their role in it and its member count -- the Households list.
+///
+/// Its own membership query (`fetchMemberships`), not `fetchCurrent`'s
+/// oldest-first rows: that order is D169's fallback and stays as it is.
+/// Network-only, like `fetchMine` (D88 caches the current row only).
 ///
 /// Watches [currentHouseholdProvider] only to refresh after create, join,
-/// leave, delete or a switch -- each of those re-reads it.
+/// leave, delete, rename or a switch -- each of those re-reads it.
 
 @ProviderFor(myHouseholds)
 final myHouseholdsProvider = MyHouseholdsProvider._();
 
-/// Every household the caller belongs to, oldest first, for slice C's
-/// household picker (multi-household-b). Nothing reads it yet.
+/// Every household the caller belongs to, in the order they joined, with
+/// their role in it and its member count -- the Households list.
+///
+/// Its own membership query (`fetchMemberships`), not `fetchCurrent`'s
+/// oldest-first rows: that order is D169's fallback and stays as it is.
+/// Network-only, like `fetchMine` (D88 caches the current row only).
 ///
 /// Watches [currentHouseholdProvider] only to refresh after create, join,
-/// leave, delete or a switch -- each of those re-reads it.
+/// leave, delete, rename or a switch -- each of those re-reads it.
 
 final class MyHouseholdsProvider
     extends
         $FunctionalProvider<
-          AsyncValue<List<Household>>,
-          List<Household>,
-          FutureOr<List<Household>>
+          AsyncValue<List<HouseholdMembership>>,
+          List<HouseholdMembership>,
+          FutureOr<List<HouseholdMembership>>
         >
-    with $FutureModifier<List<Household>>, $FutureProvider<List<Household>> {
-  /// Every household the caller belongs to, oldest first, for slice C's
-  /// household picker (multi-household-b). Nothing reads it yet.
+    with
+        $FutureModifier<List<HouseholdMembership>>,
+        $FutureProvider<List<HouseholdMembership>> {
+  /// Every household the caller belongs to, in the order they joined, with
+  /// their role in it and its member count -- the Households list.
+  ///
+  /// Its own membership query (`fetchMemberships`), not `fetchCurrent`'s
+  /// oldest-first rows: that order is D169's fallback and stays as it is.
+  /// Network-only, like `fetchMine` (D88 caches the current row only).
   ///
   /// Watches [currentHouseholdProvider] only to refresh after create, join,
-  /// leave, delete or a switch -- each of those re-reads it.
+  /// leave, delete, rename or a switch -- each of those re-reads it.
   MyHouseholdsProvider._()
     : super(
         from: null,
@@ -235,27 +249,120 @@ final class MyHouseholdsProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<Household>> $createElement(
+  $FutureProviderElement<List<HouseholdMembership>> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<List<Household>> create(Ref ref) {
+  FutureOr<List<HouseholdMembership>> create(Ref ref) {
     return myHouseholds(ref);
   }
 }
 
-String _$myHouseholdsHash() => r'ed75be9815de8a73b28e1991749bae2e9f19975f';
+String _$myHouseholdsHash() => r'2414cad7cfee6c32d5318582b0d166c25ec184fa';
 
-/// Everyone in the caller's household, for the member list.
+/// [householdId], if it is one of the caller's households, else null -- the
+/// Household screen's header, which may show a household other than the
+/// current one.
+
+@ProviderFor(householdById)
+final householdByIdProvider = HouseholdByIdFamily._();
+
+/// [householdId], if it is one of the caller's households, else null -- the
+/// Household screen's header, which may show a household other than the
+/// current one.
+
+final class HouseholdByIdProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Household?>,
+          Household?,
+          FutureOr<Household?>
+        >
+    with $FutureModifier<Household?>, $FutureProvider<Household?> {
+  /// [householdId], if it is one of the caller's households, else null -- the
+  /// Household screen's header, which may show a household other than the
+  /// current one.
+  HouseholdByIdProvider._({
+    required HouseholdByIdFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'householdByIdProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$householdByIdHash();
+
+  @override
+  String toString() {
+    return r'householdByIdProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<Household?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Household?> create(Ref ref) {
+    final argument = this.argument as String;
+    return householdById(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is HouseholdByIdProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$householdByIdHash() => r'77cdd5eb4ff2e06dc6553d078528a903f4c47d1f';
+
+/// [householdId], if it is one of the caller's households, else null -- the
+/// Household screen's header, which may show a household other than the
+/// current one.
+
+final class HouseholdByIdFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<Household?>, String> {
+  HouseholdByIdFamily._()
+    : super(
+        retry: null,
+        name: r'householdByIdProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// [householdId], if it is one of the caller's households, else null -- the
+  /// Household screen's header, which may show a household other than the
+  /// current one.
+
+  HouseholdByIdProvider call(String householdId) =>
+      HouseholdByIdProvider._(argument: householdId, from: this);
+
+  @override
+  String toString() => r'householdByIdProvider';
+}
+
+/// Everyone in [householdId], for the member list.
 ///
 /// Display names depend on `profiles_select_co_member`; without that policy
 /// every co-member renders as unknown.
 
 @ProviderFor(householdMembers)
-final householdMembersProvider = HouseholdMembersProvider._();
+final householdMembersProvider = HouseholdMembersFamily._();
 
-/// Everyone in the caller's household, for the member list.
+/// Everyone in [householdId], for the member list.
 ///
 /// Display names depend on `profiles_select_co_member`; without that policy
 /// every co-member renders as unknown.
@@ -270,23 +377,30 @@ final class HouseholdMembersProvider
     with
         $FutureModifier<List<HouseholdMember>>,
         $FutureProvider<List<HouseholdMember>> {
-  /// Everyone in the caller's household, for the member list.
+  /// Everyone in [householdId], for the member list.
   ///
   /// Display names depend on `profiles_select_co_member`; without that policy
   /// every co-member renders as unknown.
-  HouseholdMembersProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'householdMembersProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
+  HouseholdMembersProvider._({
+    required HouseholdMembersFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'householdMembersProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$householdMembersHash();
+
+  @override
+  String toString() {
+    return r'householdMembersProvider'
+        ''
+        '($argument)';
+  }
 
   @$internal
   @override
@@ -296,18 +410,57 @@ final class HouseholdMembersProvider
 
   @override
   FutureOr<List<HouseholdMember>> create(Ref ref) {
-    return householdMembers(ref);
+    final argument = this.argument as String;
+    return householdMembers(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is HouseholdMembersProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
   }
 }
 
-String _$householdMembersHash() => r'da6342bcdf5be05e316d6df64926f0323cb8be64';
+String _$householdMembersHash() => r'c1777ffc62c1d0f728739dcd70a9714c27d9387b';
 
-/// Invite codes that can still be redeemed, newest first.
+/// Everyone in [householdId], for the member list.
+///
+/// Display names depend on `profiles_select_co_member`; without that policy
+/// every co-member renders as unknown.
+
+final class HouseholdMembersFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<HouseholdMember>>, String> {
+  HouseholdMembersFamily._()
+    : super(
+        retry: null,
+        name: r'householdMembersProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Everyone in [householdId], for the member list.
+  ///
+  /// Display names depend on `profiles_select_co_member`; without that policy
+  /// every co-member renders as unknown.
+
+  HouseholdMembersProvider call(String householdId) =>
+      HouseholdMembersProvider._(argument: householdId, from: this);
+
+  @override
+  String toString() => r'householdMembersProvider';
+}
+
+/// [householdId]'s invite codes that can still be redeemed, newest first.
 
 @ProviderFor(liveInvites)
-final liveInvitesProvider = LiveInvitesProvider._();
+final liveInvitesProvider = LiveInvitesFamily._();
 
-/// Invite codes that can still be redeemed, newest first.
+/// [householdId]'s invite codes that can still be redeemed, newest first.
 
 final class LiveInvitesProvider
     extends
@@ -319,20 +472,27 @@ final class LiveInvitesProvider
     with
         $FutureModifier<List<HouseholdInvite>>,
         $FutureProvider<List<HouseholdInvite>> {
-  /// Invite codes that can still be redeemed, newest first.
-  LiveInvitesProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'liveInvitesProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
+  /// [householdId]'s invite codes that can still be redeemed, newest first.
+  LiveInvitesProvider._({
+    required LiveInvitesFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'liveInvitesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$liveInvitesHash();
+
+  @override
+  String toString() {
+    return r'liveInvitesProvider'
+        ''
+        '($argument)';
+  }
 
   @$internal
   @override
@@ -342,8 +502,41 @@ final class LiveInvitesProvider
 
   @override
   FutureOr<List<HouseholdInvite>> create(Ref ref) {
-    return liveInvites(ref);
+    final argument = this.argument as String;
+    return liveInvites(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is LiveInvitesProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
   }
 }
 
-String _$liveInvitesHash() => r'76b21836967f4bdcdea7056cf816bbd88d519f8e';
+String _$liveInvitesHash() => r'3c344bf062b88e3cbbc69fca806c6780cc85c0cf';
+
+/// [householdId]'s invite codes that can still be redeemed, newest first.
+
+final class LiveInvitesFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<HouseholdInvite>>, String> {
+  LiveInvitesFamily._()
+    : super(
+        retry: null,
+        name: r'liveInvitesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// [householdId]'s invite codes that can still be redeemed, newest first.
+
+  LiveInvitesProvider call(String householdId) =>
+      LiveInvitesProvider._(argument: householdId, from: this);
+
+  @override
+  String toString() => r'liveInvitesProvider';
+}

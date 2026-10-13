@@ -253,6 +253,7 @@ number in the table.
 | `field` | 52 | filled text field, search |
 | `chip` | 40 | filter chips |
 | `tag` | 32 | an input/tag chip and the ingredient suggestion pill — a drawing; a tappable one keeps a 48 hit area |
+| `splitDivider` | 32 | the vertical hairline between a row's main tap area and its trailing action: the household list's gear |
 | `appBar` | 64 | top app bar |
 | `nav` | 80 | `NavigationBar` |
 | `icon` / `iconInButton` / `iconInMeta` | 24 / 20 / 16 | actions · inside buttons · in meta lines |
@@ -269,8 +270,9 @@ number in the table.
 `emptyStateIcon` is its own name rather than a borrowed `target`: they are the
 same number today, but one is a hit area and the other is a drawing, and they
 have no reason to move together. `signInButton` is not `field`, `grip` is not
-`iconInButton`, `gripColumn` is not `avatar` and `onboardingMark` is not
-`thumb` or `field`, for the same reason.
+`iconInButton`, `gripColumn` is not `avatar`, `onboardingMark` is not
+`thumb` or `field`, and `splitDivider` is not `tag` (one is a drawing of a
+chip, the other a divider), for the same reason.
 
 `AppDurations`: 150 ms for a small state change, 250 ms for a transition,
 emphasized easing. **No decorative animation.** The class exists so later
@@ -1100,6 +1102,26 @@ adult. An `xs` start inset plus the theme's `lg` button padding puts the icon
 at 20dp (D146). Only one ever renders, and neither while the caller's role is
 unknown — absent, not disabled (D115).
 
+The Household screen is keyed by household id: it shows any of the caller's
+households, not only the current one, and the button follows the caller's
+role in *that* household.
+
+**The households list.** Its own screen, `Domaćinstva`, reached from
+Settings when there are two or more. Under the app bar, Settings' insets, an
+intro line in `bodyMedium` `onSurfaceVariant`, `lg`, then one theme `Card`
+(`Clip.antiAlias`) of `HouseholdRow`s in the order the caller joined. A row:
+a 24 radio (`radio_button_checked` in `primary` on the current one,
+`radio_button_unchecked` in `onSurfaceVariant` otherwise — nothing else here
+is green), `lg`, the name in `titleMedium` (wrapping, never ellipsized) over
+`2 člana · Član` in `bodyMedium` `onSurfaceVariant`; then a `splitDivider`
+vertical hairline in `outlineVariant` and an outlined gear in a 48 target,
+`xs` either side. Between rows a 1px hairline inset 56 (`lg + icon + lg`), so
+it starts under the names. Tapping a row switches to it; the current row is
+inert, and every row is while a switch is in flight. The gear pushes that
+household's screen, current or not. `HouseholdRow` is feature-private in
+`features/households/presentation/widgets/` until the switcher sheet, its
+second consumer, promotes it to `core/household/widgets/`.
+
 ### Settings
 
 All private in `settings_screen.dart`; none is in `core/widgets/`.
@@ -1122,6 +1144,9 @@ every `SegmentedButton` in the app.
 **The household row.** The whole card is an `InkWell` clipped to its radius:
 `home_outlined` in `onSurfaceVariant`, `lg`, the household's name in
 `titleMedium` over `2 člana` in `bodyMedium`, and a trailing `chevron_right`.
+With one household it opens the Household screen. With two or more, the
+group header is `Domaćinstva`, the subtitle adds `· još N domaćinstva`
+(`2 člana · još 1 domaćinstvo`), and the row opens the households list.
 
 **Sign out** is set apart: `xl`, a full-width hairline, `xl`, the `Nalog`
 header, then the neutral outlined button (§ Buttons).

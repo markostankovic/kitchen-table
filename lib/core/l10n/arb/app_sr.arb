@@ -1473,5 +1473,60 @@
   "hideKeyboardTooltip": "Sakrij tastaturu",
   "@hideKeyboardTooltip": {
     "description": "Recipe editor formatting toolbar (Phase 8, D166), the button at the end that hides the keyboard (and the toolbar with it)."
+  },
+
+  "householdsScreenTitle": "Domaćinstva",
+  "@householdsScreenTitle": {
+    "description": "Households screen's AppBar title: every household the caller belongs to."
+  },
+  "householdsSectionTitle": "Domaćinstva",
+  "@householdsSectionTitle": {
+    "description": "Settings screen, the household group's header when the caller is in two or more households (the row then opens the Households list)."
+  },
+  "householdsIntro": "Svako ima svoje recepte, plan i spisak. Dodirnite jedno da pređete u njega, ili zupčanik da njime upravljate.",
+  "@householdsIntro": {
+    "description": "Households screen, the intro line above the list."
+  },
+  "householdMoreCount": "{count, plural, one{još {count} domaćinstvo} few{još {count} domaćinstva} other{još {count} domaćinstava}}",
+  "@householdMoreCount": {
+    "description": "Settings screen, the household row's second half when the caller is in other households too: how many others.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "householdSettingsRowMeta": "{members} · {more}",
+  "@householdSettingsRowMeta": {
+    "description": "Settings screen, the household row's subtitle with two or more households: the member count, then householdMoreCount.",
+    "placeholders": {
+      "members": {
+        "type": "String"
+      },
+      "more": {
+        "type": "String"
+      }
+    }
+  },
+  "householdListRowMeta": "{members} · {role}",
+  "@householdListRowMeta": {
+    "description": "Households screen, a row's meta line: the member count, then the caller's role in that household.",
+    "placeholders": {
+      "members": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "manageHouseholdTooltip": "Upravljajte: {name}",
+  "@manageHouseholdTooltip": {
+    "description": "Households screen, the gear button on a row that opens that household's screen.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

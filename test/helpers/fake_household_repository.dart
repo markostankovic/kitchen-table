@@ -1,5 +1,7 @@
 import 'package:kitchen_table/features/households/data/household_repository.dart';
 import 'package:kitchen_table/features/households/domain/household.dart';
+import 'package:kitchen_table/features/households/domain/household_member.dart';
+import 'package:kitchen_table/features/households/domain/household_membership.dart';
 
 /// An in-memory [HouseholdRepository] that answers the multi-household reads
 /// the way the real one does (D169): [fetchCurrent] is the [select]ed
@@ -24,6 +26,20 @@ class FakeHouseholdRepository implements HouseholdRepository {
   @override
   Future<List<Household>> fetchMine() async =>
       List<Household>.of(households);
+
+  /// In [households]' order, which doubles as join order here: [create] and
+  /// [redeemInvite] append. Owner of what [userId] created, adult otherwise.
+  @override
+  Future<List<HouseholdMembership>> fetchMemberships({
+    required String userId,
+  }) async => <HouseholdMembership>[
+    for (final Household h in households)
+      HouseholdMembership(
+        household: h,
+        role: h.createdBy == userId ? HouseholdRole.owner : HouseholdRole.adult,
+        memberCount: 1,
+      ),
+  ];
 
   @override
   Future<Household?> fetchCurrent({

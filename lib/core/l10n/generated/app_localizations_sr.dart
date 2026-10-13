@@ -1127,4 +1127,41 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get hideKeyboardTooltip => 'Sakrij tastaturu';
+
+  @override
+  String get householdsScreenTitle => 'Domaćinstva';
+
+  @override
+  String get householdsSectionTitle => 'Domaćinstva';
+
+  @override
+  String get householdsIntro =>
+      'Svako ima svoje recepte, plan i spisak. Dodirnite jedno da pređete u njega, ili zupčanik da njime upravljate.';
+
+  @override
+  String householdMoreCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'još $count domaćinstava',
+      few: 'još $count domaćinstva',
+      one: 'još $count domaćinstvo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String householdSettingsRowMeta(String members, String more) {
+    return '$members · $more';
+  }
+
+  @override
+  String householdListRowMeta(String members, String role) {
+    return '$members · $role';
+  }
+
+  @override
+  String manageHouseholdTooltip(String name) {
+    return 'Upravljajte: $name';
+  }
 }

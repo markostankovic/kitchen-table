@@ -24,8 +24,11 @@
 /// [currentHouseholdSummary] is the one exception, and a narrow one (Phase 7
 /// part 9b): the Settings screen (`features/auth/`) shows the household's
 /// name and member count on the row that opens the household screen. It
-/// crosses as a record of exactly those two facts, not the `Household`
-/// model, so this file still hands out no households-feature types.
+/// also carries the household's id, so Settings can route to that
+/// household's screen, and how many other households the caller is in, so
+/// the row can open the Households list instead (phase9-household-list). It
+/// crosses as a record of exactly those facts, not the `Household` model,
+/// so this file still hands out no households-feature types.
 ///
 /// `core/` may depend on `features/` (docs/ARCHITECTURE.md); `tool/check_layers.dart`
 /// derives layer and feature only from `lib/features` paths and does not
@@ -36,9 +39,11 @@ library;
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../error/app_failure.dart';
 import '../../features/households/application/household_providers.dart';
 import '../../features/households/domain/household.dart';
 import '../../features/households/domain/household_member.dart';
+import '../../features/households/domain/household_membership.dart';
 
 part 'current_household.g.dart';
 
@@ -48,16 +53,34 @@ Future<String?> currentHouseholdId(Ref ref) async {
   return household?.id;
 }
 
-/// The current household's name and member count, or null when there is no
-/// household -- see this file's doc comment for why a record.
+/// The current household's id, name and member count, and how many other
+/// households the caller is in; or null when there is no household -- see
+/// this file's doc comment for why a record.
+///
+/// [otherHouseholdCount] falls to 0 on an [AppFailure]: `myHouseholds` is
+/// network-only while the current household has a cache, so offline the row
+/// takes the one-household look rather than failing whole.
 @riverpod
-Future<({String name, int memberCount})?> currentHouseholdSummary(
-  Ref ref,
-) async {
+Future<({String id, String name, int memberCount, int otherHouseholdCount})?>
+currentHouseholdSummary(Ref ref) async {
   final Household? household = await ref.watch(currentHouseholdProvider.future);
   if (household == null) return null;
   final List<HouseholdMember> members = await ref.watch(
-    householdMembersProvider.future,
+    householdMembersProvider(household.id).future,
   );
-  return (name: household.name, memberCount: members.length);
+  int others;
+  try {
+    final List<HouseholdMembership> mine = await ref.watch(
+      myHouseholdsProvider.future,
+    );
+    others = mine.length - 1;
+  } on AppFailure {
+    others = 0;
+  }
+  return (
+    id: household.id,
+    name: household.name,
+    memberCount: members.length,
+    otherHouseholdCount: others < 0 ? 0 : others,
+  );
 }

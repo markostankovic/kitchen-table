@@ -11,6 +11,8 @@ import 'package:kitchen_table/core/household/current_household.dart';
 import 'package:kitchen_table/core/supabase/supabase_client.dart';
 import 'package:kitchen_table/features/households/application/household_providers.dart';
 import 'package:kitchen_table/features/households/domain/household.dart';
+import 'package:kitchen_table/features/households/domain/household_member.dart';
+import 'package:kitchen_table/features/households/domain/household_membership.dart';
 
 import '../../helpers/fake_household_repository.dart';
 
@@ -68,17 +70,39 @@ void main() {
     );
   });
 
-  test('myHouseholdsProvider lists every household, oldest first', () async {
+  test('myHouseholdsProvider lists every membership, in join order',
+      () async {
     final ProviderContainer container = _container(
       FakeHouseholdRepository(<Household>[_home, _weekend]),
     );
     await _signedIn(container);
 
-    final List<Household> households =
+    final List<HouseholdMembership> mine =
         await container.read(myHouseholdsProvider.future);
     expect(
-      households.map((Household h) => h.id),
+      mine.map((HouseholdMembership m) => m.household.id),
       <String>['home', 'weekend'],
+    );
+    expect(
+      mine.map((HouseholdMembership m) => m.role),
+      <HouseholdRole>[HouseholdRole.owner, HouseholdRole.adult],
+    );
+  });
+
+  test('householdByIdProvider finds one of yours, and null otherwise',
+      () async {
+    final ProviderContainer container = _container(
+      FakeHouseholdRepository(<Household>[_home, _weekend]),
+    );
+    await _signedIn(container);
+
+    expect(
+      await container.read(householdByIdProvider('weekend').future),
+      _weekend,
+    );
+    expect(
+      await container.read(householdByIdProvider('elsewhere').future),
+      isNull,
     );
   });
 
@@ -96,7 +120,7 @@ void main() {
 
     expect(
       (await container.read(myHouseholdsProvider.future))
-          .map((Household h) => h.id),
+          .map((HouseholdMembership m) => m.household.id),
       <String>['home', joined],
     );
   });

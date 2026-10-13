@@ -13,6 +13,7 @@ import '../../features/auth/presentation/sign_in_screen.dart';
 import '../../features/auth/presentation/settings_screen.dart';
 import '../../features/households/presentation/create_household_screen.dart';
 import '../../features/households/presentation/household_screen.dart';
+import '../../features/households/presentation/households_screen.dart';
 import '../../features/households/presentation/join_household_screen.dart';
 import '../../features/meal_plan/presentation/meal_plan_screen.dart';
 import '../../features/import/presentation/import_paste_screen.dart';
@@ -110,7 +111,11 @@ class JoinHouseholdRoute extends GoRouteData with $JoinHouseholdRoute {
         TypedGoRoute<SettingsRoute>(
           path: SettingsRoute.path,
           routes: <TypedRoute<RouteData>>[
-            TypedGoRoute<HouseholdRoute>(path: 'household'),
+            // Siblings, not a nest: `go` from Settings gives Settings >
+            // Household (one household, Back lands on Settings), and `push`
+            // from the list gives list > Household.
+            TypedGoRoute<HouseholdsRoute>(path: 'households'),
+            TypedGoRoute<HouseholdRoute>(path: 'household/:householdId'),
           ],
         ),
       ],
@@ -320,13 +325,29 @@ class SettingsRoute extends GoRouteData with $SettingsRoute {
       const SettingsScreen();
 }
 
-/// Nested under Settings, so it keeps the bottom nav and the back stack.
-class HouseholdRoute extends GoRouteData with $HouseholdRoute {
-  const HouseholdRoute();
+/// Every household the caller belongs to. Nested under Settings, so it
+/// keeps the bottom nav and the back stack.
+class HouseholdsRoute extends GoRouteData with $HouseholdsRoute {
+  const HouseholdsRoute();
 
-  static const String path = '/settings/household';
+  static const String path = '/settings/households';
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      const HouseholdScreen();
+      const HouseholdsScreen();
+}
+
+/// One household's screen, by id -- any of the caller's households, not
+/// only the current one. Nested under Settings, so it keeps the bottom nav
+/// and the back stack.
+class HouseholdRoute extends GoRouteData with $HouseholdRoute {
+  const HouseholdRoute(this.householdId);
+
+  final String householdId;
+
+  static const String path = '/settings/household/:householdId';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      HouseholdScreen(householdId: householdId);
 }

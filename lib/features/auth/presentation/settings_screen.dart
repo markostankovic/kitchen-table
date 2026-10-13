@@ -16,12 +16,13 @@ import '../domain/app_user.dart';
 import '../domain/profile.dart';
 
 /// The Settings tab, in groups (Phase 7 part 9b): who you are, Appearance
-/// (Light/Dark, D128), Language (D77), the way in to the household screen,
-/// and -- set apart below a hairline -- sign-out.
+/// (Light/Dark, D128), Language (D77), the way in to the household screen
+/// -- or, with two or more households, to the Households list -- and, set
+/// apart below a hairline, sign-out.
 ///
 /// Owned by `auth/` because everything on it is account state, apart from
 /// the theme (device-local, reached through `core/theme/`) and the household
-/// row's name and count (reached through `core/household/`, D52). The
+/// row's facts (reached through `core/household/`, D52). The
 /// household itself lives on its own screen in `features/households/`.
 ///
 /// Navigation between the two goes through `core/router/routes.dart`, which
@@ -37,9 +38,9 @@ class SettingsScreen extends ConsumerWidget {
     final AsyncValue<AppUser?> user = ref.watch(authStateProvider);
     final ThemeMode themeMode =
         ref.watch(appThemeModeProvider).value ?? ThemeMode.light;
-    final ({String name, int memberCount})? household = ref
-        .watch(currentHouseholdSummaryProvider)
-        .value;
+    final ({String id, String name, int memberCount, int otherHouseholdCount})?
+    household = ref.watch(currentHouseholdSummaryProvider).value;
+    final int others = household?.otherHouseholdCount ?? 0;
 
     return Scaffold(
       appBar: AppBar(title: Text(loc.navSettings)),
@@ -136,11 +137,29 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          _GroupHeader(text: loc.householdSectionTitle),
+          _GroupHeader(
+            text: others > 0
+                ? loc.householdsSectionTitle
+                : loc.householdSectionTitle,
+          ),
+          // With one household this opens it, by `go` so Back lands here;
+          // with more, the list. Inert until the summary arrives, since the
+          // route needs the id.
           _HouseholdRow(
             name: household?.name ?? loc.householdScreenTitle,
-            memberCount: household?.memberCount,
-            onTap: () => const HouseholdRoute().go(context),
+            subtitle: household == null
+                ? null
+                : others > 0
+                ? loc.householdSettingsRowMeta(
+                    loc.householdMemberCount(household.memberCount),
+                    loc.householdMoreCount(others),
+                  )
+                : loc.householdMemberCount(household.memberCount),
+            onTap: household == null
+                ? null
+                : others > 0
+                ? () => const HouseholdsRoute().go(context)
+                : () => HouseholdRoute(household.id).go(context),
           ),
           const SizedBox(height: AppSpacing.xl),
           const Divider(),
@@ -295,24 +314,23 @@ class _ProfileRow extends StatelessWidget {
 }
 
 /// The household group's one row: the whole card is the tap target.
-/// [memberCount] is null while the members are still loading, and the line
-/// is then left out rather than guessed.
+/// [subtitle] is null while the summary is still loading, and the line is
+/// then left out rather than guessed.
 class _HouseholdRow extends StatelessWidget {
   const _HouseholdRow({
     required this.name,
-    required this.memberCount,
+    required this.subtitle,
     required this.onTap,
   });
 
   final String name;
-  final int? memberCount;
-  final VoidCallback onTap;
+  final String? subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final AppLocalizations loc = AppLocalizations.of(context);
-    final int? count = memberCount;
+    final String? line = subtitle;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -332,9 +350,9 @@ class _HouseholdRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(name, style: theme.textTheme.titleMedium),
-                    if (count != null)
+                    if (line != null)
                       Text(
-                        loc.householdMemberCount(count),
+                        line,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

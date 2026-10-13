@@ -10,6 +10,8 @@
 library;
 
 import '../../domain/household.dart';
+import '../../domain/household_member.dart';
+import '../../domain/household_membership.dart';
 
 Household householdFromWire(Map<String, dynamic> row) {
   final String? deletedAt = row['deleted_at'] as String?;
@@ -18,5 +20,26 @@ Household householdFromWire(Map<String, dynamic> row) {
     name: row['name'] as String,
     createdBy: row['created_by'] as String,
     deletedAt: deletedAt == null ? null : DateTime.parse(deletedAt),
+  );
+}
+
+/// A `household_members.role` value. The one mapping, shared by
+/// [membershipFromWire] and `RemoteHouseholdDataSource`'s member rows.
+HouseholdRole householdRoleFromWire(String role) =>
+    HouseholdRole.values.byName(role);
+
+/// One of the caller's own `household_members` rows, with its household
+/// embedded and that household's member ids nested under it
+/// (`RemoteHouseholdDataSource.fetchMembershipRows`). The member count is the
+/// nested list's length.
+HouseholdMembership membershipFromWire(Map<String, dynamic> row) {
+  final Map<String, dynamic> household =
+      row['households'] as Map<String, dynamic>;
+  final List<dynamic> members =
+      household['household_members'] as List<dynamic>? ?? const <dynamic>[];
+  return HouseholdMembership(
+    household: householdFromWire(household),
+    role: householdRoleFromWire(row['role'] as String),
+    memberCount: members.length,
   );
 }

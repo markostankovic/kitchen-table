@@ -31,6 +31,12 @@ abstract final class AppSizes {
   /// [target] as a drawing; a tappable one keeps a 48dp hit area.
   static const double tag = 32;
 
+  /// The vertical hairline between a row's main tap area and its trailing
+  /// action button: the household list's gear. Its own name rather than
+  /// borrowing [tag]: the same number today, but one is a drawing of a chip
+  /// and the other a divider, and they have no reason to move together.
+  static const double splitDivider = 32;
+
   /// The top app bar.
   static const double appBar = 64;
 

@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
 import 'package:kitchen_table/core/l10n/app_locale.dart';
 import 'package:kitchen_table/core/l10n/generated/app_localizations.dart';
@@ -20,6 +21,7 @@ import 'package:kitchen_table/features/households/data/household_repository.dart
 import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/features/households/domain/household_invite.dart';
 import 'package:kitchen_table/features/households/domain/household_member.dart';
+import 'package:kitchen_table/features/households/domain/household_membership.dart';
 import 'package:kitchen_table/features/households/presentation/household_screen.dart';
 
 import '../../helpers/fixed_current_household.dart';
@@ -43,6 +45,54 @@ class _FakeRepo implements HouseholdRepository {
   String? revokedInviteId;
   String? invitedHouseholdId;
   AppFailure? nextFailure;
+
+  /// The shown household's name, read fresh on every membership fetch so a
+  /// rename's confirming re-read sees what was just written.
+  String Function() readName = () => 'H';
+
+  /// The caller's other households, after [_householdId] in join order.
+  List<Household> others = const <Household>[];
+
+  /// The current household. Leaving or deleting it moves this to the first
+  /// of [others], or null, as `fetchCurrent`'s fallback would.
+  String? currentId = _householdId;
+
+  bool get _shownGone =>
+      leftHouseholdId == _householdId || deletedHouseholdId == _householdId;
+
+  Household get _shown =>
+      Household(id: _householdId, name: readName(), createdBy: 'u1');
+
+  /// What `currentHouseholdProvider` resolves to.
+  Household? current() {
+    if (currentId == null) return null;
+    if (currentId == _householdId) return _shown;
+    return others.firstWhere((Household h) => h.id == currentId);
+  }
+
+  void _gone(String householdId) {
+    if (householdId == currentId) {
+      currentId = others.isEmpty ? null : others.first.id;
+    }
+  }
+
+  @override
+  Future<List<HouseholdMembership>> fetchMemberships({
+    required String userId,
+  }) async => <HouseholdMembership>[
+    if (!_shownGone)
+      HouseholdMembership(
+        household: _shown,
+        role: HouseholdRole.owner,
+        memberCount: members.length,
+      ),
+    for (final Household h in others)
+      HouseholdMembership(
+        household: h,
+        role: HouseholdRole.adult,
+        memberCount: 1,
+      ),
+  ];
 
   @override
   Future<void> rename(String id, String name) async {
@@ -100,6 +150,7 @@ class _FakeRepo implements HouseholdRepository {
     if (failure != null) throw failure;
     leaveHouseholdCalls++;
     leftHouseholdId = householdId;
+    _gone(householdId);
   }
 
   @override
@@ -115,17 +166,46 @@ class _FakeRepo implements HouseholdRepository {
     if (failure != null) throw failure;
     deleteHouseholdCalls++;
     deletedHouseholdId = householdId;
+    _gone(householdId);
   }
 }
 
 const String _householdId = 'h1';
+
+/// Stand-ins for where a leave or delete lands.
+const String _settingsMarker = 'SETTINGS ROOT';
+const String _listMarker = 'HOUSEHOLDS LIST';
 
 Future<void> _pump(
   WidgetTester tester, {
   required _FakeRepo repo,
   required String Function() readName,
   String userId = 'u1',
+  String householdId = _householdId,
 }) async {
+  repo.readName = readName;
+  // Flat routes at the real paths, so SettingsRoute / HouseholdsRoute's
+  // `go` lands somewhere a test can see.
+  final GoRouter router = GoRouter(
+    initialLocation: '/settings/household/$householdId',
+    routes: <RouteBase>[
+      GoRoute(
+        path: '/settings',
+        builder: (_, _) => const Scaffold(body: Text(_settingsMarker)),
+      ),
+      GoRoute(
+        path: '/settings/households',
+        builder: (_, _) => const Scaffold(body: Text(_listMarker)),
+      ),
+      GoRoute(
+        path: '/settings/household/:householdId',
+        builder: (_, GoRouterState state) => HouseholdScreen(
+          householdId: state.pathParameters['householdId']!,
+        ),
+      ),
+    ],
+  );
+  addTearDown(router.dispose);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -139,18 +219,15 @@ Future<void> _pump(
         // re-fetch (household_repository.dart's own doc comment on why
         // `rename` doesn't clear the local cache).
         currentHouseholdProvider.overrideWith(
-          () => FixedCurrentHousehold(
-            () async =>
-                Household(id: _householdId, name: readName(), createdBy: 'u1'),
-          ),
+          () => FixedCurrentHousehold(() async => repo.current()),
         ),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         theme: AppTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: appSupportedLocales,
         locale: const Locale('sr'),
-        home: const HouseholdScreen(),
+        routerConfig: router,
       ),
     ),
   );
@@ -225,6 +302,20 @@ void _expectDestructiveTextButton(WidgetTester tester, String label) {
 }
 
 void main() {
+  testWidgets(
+    'a household that is not one of yours shows noHouseholdYet',
+    (WidgetTester tester) async {
+      await _pump(
+        tester,
+        repo: _FakeRepo(),
+        readName: () => 'H',
+        householdId: 'not-mine',
+      );
+
+      expect(find.text(sr.noHouseholdYet), findsOneWidget);
+    },
+  );
+
   testWidgets('the edit icon opens the rename dialog', (
     WidgetTester tester,
   ) async {
@@ -453,6 +544,48 @@ void main() {
       expect(repo.leaveHouseholdCalls, 1);
       expect(repo.leftHouseholdId, _householdId);
     });
+
+    testWidgets(
+      'leaving the current household, when another remains, lands on '
+      'Settings',
+      (WidgetTester tester) async {
+        final _FakeRepo repo = _FakeRepo()
+          ..members = _ownerAndAdult
+          ..others = const <Household>[
+            Household(id: 'h2', name: 'Vikendica', createdBy: 'u3'),
+          ];
+        await _pump(tester, repo: repo, readName: () => 'H', userId: 'u2');
+
+        await _tapBottomRow(tester, sr.leaveHouseholdButton);
+        await tester.tap(find.widgetWithText(TextButton, sr.leaveButton));
+        await tester.pumpAndSettle();
+
+        expect(repo.leftHouseholdId, _householdId);
+        expect(repo.currentId, 'h2');
+        expect(find.text(_settingsMarker), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'leaving a household that is not current lands back on the list',
+      (WidgetTester tester) async {
+        final _FakeRepo repo = _FakeRepo()
+          ..members = _ownerAndAdult
+          ..others = const <Household>[
+            Household(id: 'h2', name: 'Vikendica', createdBy: 'u3'),
+          ]
+          ..currentId = 'h2';
+        await _pump(tester, repo: repo, readName: () => 'H', userId: 'u2');
+
+        await _tapBottomRow(tester, sr.leaveHouseholdButton);
+        await tester.tap(find.widgetWithText(TextButton, sr.leaveButton));
+        await tester.pumpAndSettle();
+
+        expect(repo.leftHouseholdId, _householdId);
+        expect(repo.currentId, 'h2');
+        expect(find.text(_listMarker), findsOneWidget);
+      },
+    );
 
     testWidgets('cancelling leaves nothing called', (
       WidgetTester tester,

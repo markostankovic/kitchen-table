@@ -53,6 +53,10 @@ class _FakeRemote implements RemoteHouseholdDataSource {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> fetchMembershipRows(String userId) =>
+      throw UnimplementedError();
+
+  @override
   Future<String> create(String name) async => 'new-household-id';
 
   @override

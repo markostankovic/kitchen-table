@@ -26,6 +26,7 @@ import '../../../core/error/app_failure.dart';
 import '../domain/household.dart';
 import '../domain/household_invite.dart';
 import '../domain/household_member.dart';
+import '../domain/household_membership.dart';
 import 'dto/household_dto.dart';
 import 'local_household_datasource.dart';
 import 'remote_household_datasource.dart';
@@ -42,6 +43,17 @@ class HouseholdRepository {
   Future<List<Household>> fetchMine() async {
     final List<Map<String, dynamic>> rows = await _remote.fetchMineRows();
     return rows.map(householdFromWire).toList();
+  }
+
+  /// Every household [userId] belongs to, with their role and the member
+  /// count, in the order they joined -- the network-only Households list.
+  /// Not cached, as [fetchMine] is not (D88 caches the current row only).
+  Future<List<HouseholdMembership>> fetchMemberships({
+    required String userId,
+  }) async {
+    final List<Map<String, dynamic>> rows =
+        await _remote.fetchMembershipRows(userId);
+    return rows.map(membershipFromWire).toList();
   }
 
   /// The caller's current household, or null if they have none yet.

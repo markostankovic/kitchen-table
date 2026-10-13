@@ -175,7 +175,12 @@ RouteBase get $appShellRoute => StatefulShellRouteData.$route(
           factory: $SettingsRoute._fromState,
           routes: [
             GoRouteData.$route(
-              path: 'household',
+              path: 'households',
+              hasOverriddenOnExit: false,
+              factory: $HouseholdsRoute._fromState,
+            ),
+            GoRouteData.$route(
+              path: 'household/:householdId',
               hasOverriddenOnExit: false,
               factory: $HouseholdRoute._fromState,
             ),
@@ -470,12 +475,37 @@ mixin $SettingsRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-mixin $HouseholdRoute on GoRouteData {
-  static HouseholdRoute _fromState(GoRouterState state) =>
-      const HouseholdRoute();
+mixin $HouseholdsRoute on GoRouteData {
+  static HouseholdsRoute _fromState(GoRouterState state) =>
+      const HouseholdsRoute();
 
   @override
-  String get location => GoRouteData.$location('/settings/household');
+  String get location => GoRouteData.$location('/settings/households');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $HouseholdRoute on GoRouteData {
+  static HouseholdRoute _fromState(GoRouterState state) =>
+      HouseholdRoute(state.pathParameters['householdId']!);
+
+  HouseholdRoute get _self => this as HouseholdRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/household/${Uri.encodeComponent(_self.householdId)}',
+  );
 
   @override
   void go(BuildContext context) => context.go(location);

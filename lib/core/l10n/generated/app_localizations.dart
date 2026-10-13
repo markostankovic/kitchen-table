@@ -1975,6 +1975,48 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Sakrij tastaturu'**
   String get hideKeyboardTooltip;
+
+  /// Households screen's AppBar title: every household the caller belongs to.
+  ///
+  /// In sr, this message translates to:
+  /// **'Domaćinstva'**
+  String get householdsScreenTitle;
+
+  /// Settings screen, the household group's header when the caller is in two or more households (the row then opens the Households list).
+  ///
+  /// In sr, this message translates to:
+  /// **'Domaćinstva'**
+  String get householdsSectionTitle;
+
+  /// Households screen, the intro line above the list.
+  ///
+  /// In sr, this message translates to:
+  /// **'Svako ima svoje recepte, plan i spisak. Dodirnite jedno da pređete u njega, ili zupčanik da njime upravljate.'**
+  String get householdsIntro;
+
+  /// Settings screen, the household row's second half when the caller is in other households too: how many others.
+  ///
+  /// In sr, this message translates to:
+  /// **'{count, plural, one{još {count} domaćinstvo} few{još {count} domaćinstva} other{još {count} domaćinstava}}'**
+  String householdMoreCount(int count);
+
+  /// Settings screen, the household row's subtitle with two or more households: the member count, then householdMoreCount.
+  ///
+  /// In sr, this message translates to:
+  /// **'{members} · {more}'**
+  String householdSettingsRowMeta(String members, String more);
+
+  /// Households screen, a row's meta line: the member count, then the caller's role in that household.
+  ///
+  /// In sr, this message translates to:
+  /// **'{members} · {role}'**
+  String householdListRowMeta(String members, String role);
+
+  /// Households screen, the gear button on a row that opens that household's screen.
+  ///
+  /// In sr, this message translates to:
+  /// **'Upravljajte: {name}'**
+  String manageHouseholdTooltip(String name);
 }
 
 class _AppLocalizationsDelegate

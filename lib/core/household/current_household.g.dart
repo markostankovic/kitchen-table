@@ -43,27 +43,60 @@ final class CurrentHouseholdIdProvider
 String _$currentHouseholdIdHash() =>
     r'07088488b8a7d0d635971cc10dfaaa5122109b74';
 
-/// The current household's name and member count, or null when there is no
-/// household -- see this file's doc comment for why a record.
+/// The current household's id, name and member count, and how many other
+/// households the caller is in; or null when there is no household -- see
+/// this file's doc comment for why a record.
+///
+/// [otherHouseholdCount] falls to 0 on an [AppFailure]: `myHouseholds` is
+/// network-only while the current household has a cache, so offline the row
+/// takes the one-household look rather than failing whole.
 
 @ProviderFor(currentHouseholdSummary)
 final currentHouseholdSummaryProvider = CurrentHouseholdSummaryProvider._();
 
-/// The current household's name and member count, or null when there is no
-/// household -- see this file's doc comment for why a record.
+/// The current household's id, name and member count, and how many other
+/// households the caller is in; or null when there is no household -- see
+/// this file's doc comment for why a record.
+///
+/// [otherHouseholdCount] falls to 0 on an [AppFailure]: `myHouseholds` is
+/// network-only while the current household has a cache, so offline the row
+/// takes the one-household look rather than failing whole.
 
 final class CurrentHouseholdSummaryProvider
     extends
         $FunctionalProvider<
-          AsyncValue<({int memberCount, String name})?>,
-          ({int memberCount, String name})?,
-          FutureOr<({int memberCount, String name})?>
+          AsyncValue<
+            ({
+              String id,
+              int memberCount,
+              String name,
+              int otherHouseholdCount,
+            })?
+          >,
+          ({String id, int memberCount, String name, int otherHouseholdCount})?,
+          FutureOr<
+            ({
+              String id,
+              int memberCount,
+              String name,
+              int otherHouseholdCount,
+            })?
+          >
         >
     with
-        $FutureModifier<({int memberCount, String name})?>,
-        $FutureProvider<({int memberCount, String name})?> {
-  /// The current household's name and member count, or null when there is no
-  /// household -- see this file's doc comment for why a record.
+        $FutureModifier<
+          ({String id, int memberCount, String name, int otherHouseholdCount})?
+        >,
+        $FutureProvider<
+          ({String id, int memberCount, String name, int otherHouseholdCount})?
+        > {
+  /// The current household's id, name and member count, and how many other
+  /// households the caller is in; or null when there is no household -- see
+  /// this file's doc comment for why a record.
+  ///
+  /// [otherHouseholdCount] falls to 0 on an [AppFailure]: `myHouseholds` is
+  /// network-only while the current household has a cache, so offline the row
+  /// takes the one-household look rather than failing whole.
   CurrentHouseholdSummaryProvider._()
     : super(
         from: null,
@@ -80,15 +113,19 @@ final class CurrentHouseholdSummaryProvider
 
   @$internal
   @override
-  $FutureProviderElement<({int memberCount, String name})?> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  $FutureProviderElement<
+    ({String id, int memberCount, String name, int otherHouseholdCount})?
+  >
+  $createElement($ProviderPointer pointer) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<({int memberCount, String name})?> create(Ref ref) {
+  FutureOr<
+    ({String id, int memberCount, String name, int otherHouseholdCount})?
+  >
+  create(Ref ref) {
     return currentHouseholdSummary(ref);
   }
 }
 
 String _$currentHouseholdSummaryHash() =>
-    r'662f1c8bf79b5e1a6aa35e607ff3befe103caa1b';
+    r'eacbbb02fb146a9d62fd2d478da4ee69f4d0f357';

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
+import '../../../core/router/routes.dart';
 import '../../../core/supabase/supabase_client.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -18,8 +19,13 @@ import '../domain/household_invite.dart';
 import '../domain/household_member.dart';
 
 /// Household management: who is in it, and how to let someone else in.
+///
+/// Keyed by [householdId]: any of the caller's households, not only the
+/// current one -- the Households list's gear opens it for each.
 class HouseholdScreen extends ConsumerStatefulWidget {
-  const HouseholdScreen({super.key});
+  const HouseholdScreen({required this.householdId, super.key});
+
+  final String householdId;
 
   @override
   ConsumerState<HouseholdScreen> createState() => _HouseholdScreenState();
@@ -39,7 +45,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
 
     try {
       await ref.read(householdRepositoryProvider).createInvite(h.id);
-      ref.invalidate(liveInvitesProvider);
+      ref.invalidate(liveInvitesProvider(widget.householdId));
     } on AppFailure catch (e) {
       if (!mounted) return;
       setState(() => _failure = e);
@@ -111,8 +117,11 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
 
     try {
       await ref.read(householdRepositoryProvider).rename(h.id, trimmed);
+      // Re-reads myHouseholdsProvider too, which watches it. Awaits the
+      // list rather than the current household: the renamed one need not
+      // be current.
       ref.invalidate(currentHouseholdProvider);
-      await ref.read(currentHouseholdProvider.future);
+      await ref.read(myHouseholdsProvider.future);
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l10n.householdRenamedSnackbar)));
@@ -158,7 +167,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
       await ref
           .read(householdRepositoryProvider)
           .removeMember(h.id, member.userId);
-      ref.invalidate(householdMembersProvider);
+      ref.invalidate(householdMembersProvider(widget.householdId));
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l10n.memberRemovedSnackbar)));
@@ -194,15 +203,13 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
 
     if (confirmed != true) return;
 
+    final bool wasCurrent = _isCurrent();
     try {
       await ref.read(householdRepositoryProvider).leaveHousehold(h.id);
       ref.invalidate(currentHouseholdProvider);
-      // Resolves to null; app_router.dart's ref.listen bumps the refresh
-      // notifier and the redirect sends us to CreateHouseholdRoute. No new
-      // routing here. This screen is being torn down underneath the await,
-      // hence the mounted guard before touching context.
-      await ref.read(currentHouseholdProvider.future);
+      final Household? next = await ref.read(currentHouseholdProvider.future);
       if (!mounted) return;
+      _landAfterGoing(next, wasCurrent: wasCurrent);
     } on AppFailure catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -237,20 +244,47 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
 
     if (confirmed != true) return;
 
+    final bool wasCurrent = _isCurrent();
     try {
       await ref.read(householdRepositoryProvider).deleteHousehold(h.id);
       ref.invalidate(currentHouseholdProvider);
-      // Resolves to null; app_router.dart's ref.listen bumps the refresh
-      // notifier and the redirect sends us to CreateHouseholdRoute. No new
-      // routing here. This screen is being torn down underneath the await,
-      // hence the mounted guard before touching context, and no SnackBar on
-      // success -- same as _leave.
-      await ref.read(currentHouseholdProvider.future);
+      // No SnackBar on success -- same as _leave.
+      final Household? next = await ref.read(currentHouseholdProvider.future);
       if (!mounted) return;
+      _landAfterGoing(next, wasCurrent: wasCurrent);
     } on AppFailure catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
+    }
+  }
+
+  /// Whether this screen's household is the current one. Read before a
+  /// leave or delete, since the answer changes underneath it.
+  ///
+  /// From [currentHouseholdProvider] rather than `currentHouseholdIdProvider`:
+  /// the same answer, but this one is always already loaded here --
+  /// [myHouseholdsProvider] behind the header watches it -- so a `read`
+  /// never meets a cold provider.
+  bool _isCurrent() =>
+      widget.householdId == ref.read(currentHouseholdProvider).value?.id;
+
+  /// Where a successful leave or delete lands, once the current household
+  /// has been re-read as [next]:
+  ///
+  /// - [next] is null: nowhere from here. app_router.dart's ref.listen
+  ///   bumps the refresh notifier and the redirect sends us to
+  ///   CreateHouseholdRoute; this screen is being torn down underneath the
+  ///   await, hence the caller's mounted guard before touching context.
+  /// - [wasCurrent]: the Settings root, now in the next household (D5).
+  /// - otherwise -- a household reached through the list's gear -- back to
+  ///   the list, which re-reads.
+  void _landAfterGoing(Household? next, {required bool wasCurrent}) {
+    if (next == null) return;
+    if (wasCurrent) {
+      const SettingsRoute().go(context);
+    } else {
+      const HouseholdsRoute().go(context);
     }
   }
 
@@ -259,7 +293,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
   Future<void> _revoke(HouseholdInvite invite, AppLocalizations l10n) async {
     try {
       await ref.read(householdRepositoryProvider).revokeInvite(invite.id);
-      ref.invalidate(liveInvitesProvider);
+      ref.invalidate(liveInvitesProvider(widget.householdId));
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l10n.inviteRevokedSnackbar)));
@@ -274,11 +308,13 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
+    // Null when [householdId] is not one of the caller's households -- a
+    // stale link after leaving, say. Unreachable in normal use.
     final AsyncValue<Household?> household = ref.watch(
-      currentHouseholdProvider,
+      householdByIdProvider(widget.householdId),
     );
     final List<HouseholdMember>? members = ref
-        .watch(householdMembersProvider)
+        .watch(householdMembersProvider(widget.householdId))
         .value;
 
     return Scaffold(
@@ -398,7 +434,8 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
   HouseholdRole? _myRole() {
     final String? myUserId = ref.watch(currentUserIdProvider).value;
     final List<HouseholdMember> loadedMembers =
-        ref.watch(householdMembersProvider).value ?? const <HouseholdMember>[];
+        ref.watch(householdMembersProvider(widget.householdId)).value ??
+        const <HouseholdMember>[];
     for (final HouseholdMember m in loadedMembers) {
       if (m.userId == myUserId) return m.role;
     }
@@ -452,7 +489,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
     final bool iAmOwner = _myRole() == HouseholdRole.owner;
 
     return ref
-        .watch(householdMembersProvider)
+        .watch(householdMembersProvider(widget.householdId))
         .when(
           loading: () => <Widget>[_sectionLine(l10n.loadingEllipsis)],
           error: (Object e, _) => <Widget>[
@@ -556,7 +593,7 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
 
   List<Widget> _invites(AppLocalizations l10n) {
     return ref
-        .watch(liveInvitesProvider)
+        .watch(liveInvitesProvider(widget.householdId))
         .when(
           loading: () => <Widget>[_sectionLine(l10n.loadingEllipsis)],
           error: (Object e, _) => <Widget>[

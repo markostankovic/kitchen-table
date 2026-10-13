@@ -336,5 +336,13 @@
   "formatItalicTooltip": "Italic",
   "formatBulletListTooltip": "Bulleted list",
   "formatNumberedListTooltip": "Numbered list",
-  "hideKeyboardTooltip": "Hide keyboard"
+  "hideKeyboardTooltip": "Hide keyboard",
+
+  "householdsScreenTitle": "Households",
+  "householdsSectionTitle": "Households",
+  "householdsIntro": "Each has its own recipes, plan and list. Tap one to switch to it, or the gear to manage it.",
+  "householdMoreCount": "{count, plural, one{{count} more household} other{{count} more households}}",
+  "householdSettingsRowMeta": "{members} · {more}",
+  "householdListRowMeta": "{members} · {role}",
+  "manageHouseholdTooltip": "Manage {name}"
 }

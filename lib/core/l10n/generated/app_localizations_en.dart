@@ -1112,4 +1112,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hideKeyboardTooltip => 'Hide keyboard';
+
+  @override
+  String get householdsScreenTitle => 'Households';
+
+  @override
+  String get householdsSectionTitle => 'Households';
+
+  @override
+  String get householdsIntro =>
+      'Each has its own recipes, plan and list. Tap one to switch to it, or the gear to manage it.';
+
+  @override
+  String householdMoreCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more households',
+      one: '$count more household',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String householdSettingsRowMeta(String members, String more) {
+    return '$members · $more';
+  }
+
+  @override
+  String householdListRowMeta(String members, String role) {
+    return '$members · $role';
+  }
+
+  @override
+  String manageHouseholdTooltip(String name) {
+    return 'Manage $name';
+  }
 }

@@ -109,8 +109,9 @@ class AppShell extends ConsumerWidget {
   /// - Plan: [mealPlanEditorProvider], the visible week only.
   /// - List: [currentShoppingListProvider], a re-read only. A pull there
   ///   means *generate* (D147), which is a write; a tab switch never is.
-  /// - Settings: [householdMembersProvider], which feeds the member count.
-  ///   Not `currentHouseholdProvider` -- it is keepAlive and the root of
+  /// - Settings: [householdMembersProvider], which feeds the member count
+  ///   (the whole family), and [myHouseholdsProvider], which feeds the count
+  ///   of other households. Not `currentHouseholdProvider` -- it is keepAlive and the root of
   ///   every tab's household id.
   static void _refreshBranch(WidgetRef ref, int index) {
     switch (index) {
@@ -122,6 +123,7 @@ class AppShell extends ConsumerWidget {
         ref.invalidate(currentShoppingListProvider);
       case 3:
         ref.invalidate(householdMembersProvider);
+        ref.invalidate(myHouseholdsProvider);
     }
   }
 }

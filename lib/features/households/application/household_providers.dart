@@ -10,6 +10,7 @@ import '../data/remote_household_datasource.dart';
 import '../domain/household.dart';
 import '../domain/household_invite.dart';
 import '../domain/household_member.dart';
+import '../domain/household_membership.dart';
 
 part 'household_providers.g.dart';
 
@@ -63,7 +64,7 @@ class CurrentHousehold extends _$CurrentHousehold {
   /// `ref.listen(currentHouseholdProvider…)` and every
   /// `currentHouseholdIdProvider` watcher follow it, so every screen
   /// provider re-keys without being told. Create and join call it with the
-  /// new id; slice C's picker will too.
+  /// new id; the Households list does.
   Future<void> switchTo(String householdId) async {
     final String? userId = ref.read(currentUserIdProvider).value;
     if (userId == null) return;
@@ -75,34 +76,48 @@ class CurrentHousehold extends _$CurrentHousehold {
   }
 }
 
-/// Every household the caller belongs to, oldest first, for slice C's
-/// household picker (multi-household-b). Nothing reads it yet.
+/// Every household the caller belongs to, in the order they joined, with
+/// their role in it and its member count -- the Households list.
+///
+/// Its own membership query (`fetchMemberships`), not `fetchCurrent`'s
+/// oldest-first rows: that order is D169's fallback and stays as it is.
+/// Network-only, like `fetchMine` (D88 caches the current row only).
 ///
 /// Watches [currentHouseholdProvider] only to refresh after create, join,
-/// leave, delete or a switch -- each of those re-reads it.
+/// leave, delete, rename or a switch -- each of those re-reads it.
 @riverpod
-Future<List<Household>> myHouseholds(Ref ref) async {
+Future<List<HouseholdMembership>> myHouseholds(Ref ref) async {
   final String? userId = ref.watch(currentUserIdProvider).value;
-  if (userId == null) return const <Household>[];
+  if (userId == null) return const <HouseholdMembership>[];
   await ref.watch(currentHouseholdProvider.future);
-  return ref.watch(householdRepositoryProvider).fetchMine();
+  return ref.watch(householdRepositoryProvider).fetchMemberships(
+    userId: userId,
+  );
 }
 
-/// Everyone in the caller's household, for the member list.
+/// [householdId], if it is one of the caller's households, else null -- the
+/// Household screen's header, which may show a household other than the
+/// current one.
+@riverpod
+Future<Household?> householdById(Ref ref, String householdId) async {
+  final List<HouseholdMembership> mine = await ref.watch(
+    myHouseholdsProvider.future,
+  );
+  for (final HouseholdMembership m in mine) {
+    if (m.household.id == householdId) return m.household;
+  }
+  return null;
+}
+
+/// Everyone in [householdId], for the member list.
 ///
 /// Display names depend on `profiles_select_co_member`; without that policy
 /// every co-member renders as unknown.
 @riverpod
-Future<List<HouseholdMember>> householdMembers(Ref ref) async {
-  final Household? household = await ref.watch(currentHouseholdProvider.future);
-  if (household == null) return const <HouseholdMember>[];
-  return ref.watch(householdRepositoryProvider).fetchMembers(household.id);
-}
+Future<List<HouseholdMember>> householdMembers(Ref ref, String householdId) =>
+    ref.watch(householdRepositoryProvider).fetchMembers(householdId);
 
-/// Invite codes that can still be redeemed, newest first.
+/// [householdId]'s invite codes that can still be redeemed, newest first.
 @riverpod
-Future<List<HouseholdInvite>> liveInvites(Ref ref) async {
-  final Household? household = await ref.watch(currentHouseholdProvider.future);
-  if (household == null) return const <HouseholdInvite>[];
-  return ref.watch(householdRepositoryProvider).fetchLiveInvites(household.id);
-}
+Future<List<HouseholdInvite>> liveInvites(Ref ref, String householdId) =>
+    ref.watch(householdRepositoryProvider).fetchLiveInvites(householdId);

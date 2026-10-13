@@ -25,6 +25,7 @@ import 'package:kitchen_table/features/households/application/household_provider
 import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/features/households/domain/household_invite.dart';
 import 'package:kitchen_table/features/households/domain/household_member.dart';
+import 'package:kitchen_table/features/households/domain/household_membership.dart';
 import 'package:kitchen_table/features/meal_plan/application/meal_plan_providers.dart';
 import 'package:kitchen_table/features/meal_plan/domain/meal_plan_week.dart';
 import 'package:kitchen_table/features/meal_plan/domain/plan_week.dart';
@@ -100,10 +101,25 @@ Future<void> pumpApp(
         authStateProvider.overrideWith(
             (Ref ref) => Stream<AppUser?>.value(userId == null ? null : _user)),
         ownProfileProvider.overrideWith((Ref ref) async => profile),
-        // Without these two the household screen reaches the real
-        // repository, and so Supabase.instance.client, which throws.
-        householdMembersProvider.overrideWith((Ref ref) async => _members),
-        liveInvitesProvider.overrideWith((Ref ref) async => _invites),
+        // Without these three the household screen reaches the real
+        // repository, and so Supabase.instance.client, which throws. One
+        // household, so Settings keeps its one-household row.
+        householdMembersProvider.overrideWith(
+          (Ref ref, String householdId) async => _members,
+        ),
+        liveInvitesProvider.overrideWith(
+          (Ref ref, String householdId) async => _invites,
+        ),
+        myHouseholdsProvider.overrideWith(
+          (Ref ref) async => <HouseholdMembership>[
+            if (household != null)
+              HouseholdMembership(
+                household: household,
+                role: HouseholdRole.owner,
+                memberCount: _members.length,
+              ),
+          ],
+        ),
         if (networkStatus != null)
           networkStatusProvider.overrideWithValue(networkStatus),
         if (db != null) appDatabaseProvider.overrideWithValue(db),

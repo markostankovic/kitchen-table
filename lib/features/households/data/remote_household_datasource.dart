@@ -19,6 +19,7 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/supabase/supabase_failure.dart';
 import '../domain/household_invite.dart';
 import '../domain/household_member.dart';
+import 'dto/household_dto.dart';
 
 class RemoteHouseholdDataSource {
   const RemoteHouseholdDataSource(this._client);
@@ -49,7 +50,40 @@ class RemoteHouseholdDataSource {
             .from('households')
             .select('id, name, created_by, deleted_at')
             .isFilter('deleted_at', null)
-            .order('created_at')
+            // postgrest-dart's `order` is descending unless told otherwise.
+            .order('created_at', ascending: true)
+            .retry(count: 1, requestTimeout: const Duration(seconds: 5));
+
+        return rows;
+      });
+
+  /// The caller's own `household_members` rows, in the order they joined
+  /// (`household_members.created_at`), each with its household and that
+  /// household's member ids embedded -- the Households list, in one round
+  /// trip. Decoded by `membershipFromWire`.
+  ///
+  /// Join order, not [fetchMineRows]' oldest-household order: that one is
+  /// D169's fallback for "which household is current", and stays as it is.
+  ///
+  /// `households!inner` with the `deleted_at` filter drops a soft-deleted
+  /// household's row entirely, in the query rather than in RLS (D23). The
+  /// nested `household_members(user_id)` lists every co-member:
+  /// `household_members`' select policy lets a member read their
+  /// household's rows. Counted client-side -- PostgREST aggregates are off
+  /// on Supabase.
+  ///
+  /// Retried and bounded as [fetchMineRows] is, for the same reasons (D89).
+  Future<List<Map<String, dynamic>>> fetchMembershipRows(String userId) =>
+      runGuarded(() async {
+        final List<Map<String, dynamic>> rows = await _client
+            .from('household_members')
+            .select('role, created_at, '
+                'households!inner(id, name, created_by, deleted_at, '
+                'household_members(user_id))')
+            .eq('user_id', userId)
+            .isFilter('households.deleted_at', null)
+            // postgrest-dart's `order` is descending unless told otherwise.
+            .order('created_at', ascending: true)
             .retry(count: 1, requestTimeout: const Duration(seconds: 5));
 
         return rows;
@@ -80,7 +114,7 @@ class RemoteHouseholdDataSource {
             .from('household_members')
             .select('household_id, user_id, role, profiles(display_name)')
             .eq('household_id', householdId)
-            .order('created_at');
+            .order('created_at', ascending: true);
 
         return rows.map(_toMember).toList();
       });
@@ -206,7 +240,7 @@ class RemoteHouseholdDataSource {
     return HouseholdMember(
       householdId: row['household_id'] as String,
       userId: row['user_id'] as String,
-      role: HouseholdRole.values.byName(row['role'] as String),
+      role: householdRoleFromWire(row['role'] as String),
       displayName: profile is Map<String, dynamic>
           ? profile['display_name'] as String?
           : null,
