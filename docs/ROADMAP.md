@@ -1135,8 +1135,10 @@ from `docs/IDEAS.md`, with the design brief in
 `phase9-household-list` is complete (`31b685d`). Decisions taken during it:
 D170. `phase9-household-switcher` is complete (`7dd0d1c`). Decisions taken
 during it: D171. `phase9-household-switch-loading` is complete
-(`d95724b`). Decisions taken during it: D172. See `docs/journal/phase-9.md`.
-Next: `phase9-household-create-join-another`.
+(`d95724b`). Decisions taken during it: D172.
+`phase9-household-create-join-another` is complete (`b955e3d`). Decisions
+taken during it: D173. See `docs/journal/phase-9.md`.
+Next: `phase9-household-leave-switch`.
 
 ---
 

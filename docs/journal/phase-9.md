@@ -557,3 +557,117 @@ key.
     - an offline cold start came up Serbian with the profile on English;
     - the first `_ListBody` of a session waits on the unit catalog with its
       own spinner.
+
+### Slice C, part 4 — Create and join another household (`phase9-household-create-join-another`)
+
+**Status:** complete (`b955e3d`). Decisions taken during it: D173.
+
+Slice 4 of 6 of the design round
+`docs/design/handoffs/2026-10-13-multiple-households/` (§ D4, § D2's
+list-footer rows, § D2·7–8). Planned with `/plan-slice`, built, walked and
+closed on 2026-10-13. No package, no migration, no function change. Hosted's
+functions were behind, though: see the walk below.
+
+- **Routes.** `CreateAnotherHouseholdRoute` (`/households/new`) and
+  `JoinAnotherHouseholdRoute` (`/households/join`) are top-level and
+  outside the shell. `app_router.dart` is unchanged.
+- **Screens.** `CreateHouseholdScreen` / `JoinHouseholdScreen` take
+  `another`:
+  - `AppBar(leading: CloseButton())`, no `OnboardingMark`;
+  - padding `fromLTRB(xl, sm, xl, xxl)`;
+  - the "another" title, and a body naming
+    `currentHouseholdProvider`'s name;
+  - no cross-link.
+
+  Onboarding mode renders as before.
+- **Join's already-a-member state.**
+  - Join holds the redemption in state and shows `_AlreadyMemberPanel`:
+    `card` fill, `AppRadii.sm`, a 16 `info_outline` centred in one
+    `bodyMedium` line's height, derived from the text theme.
+  - The FilledButton becomes Done (pops) or Switch to X
+    (`landInHousehold` with Undo).
+  - "Use another code" clears the field and the panel, and refocuses the
+    field (a `FocusNode`). Editing the field also clears the panel.
+- **`InviteRedemption`** (freezed, domain). `RemoteHouseholdDatasource
+  .redeemInvite` parses `householdName` (`''` if absent) and `alreadyMember`
+  (`false` if absent). The repository keeps D88's `clearAll()`.
+- **`household_landing.dart`**: `landInHousehold` plus the
+  `HouseholdLandingAction` enum (`invite` / `undo`), on
+  `HouseholdTabTitle`'s captured-messenger shape. Undo is omitted when there
+  was no previous household.
+- **Households list.** Two footer `ListTile`s (`add`, `key_outlined`), with
+  `xs` content padding and one `Divider(height: 1)`. They are inert while a
+  switch runs.
+- **Household screen.** `_anotherHome()` sits between the invite button and
+  `_destructiveRow`, and renders only when `myHouseholds` has exactly one
+  entry.
+- **Strings.** 13 new keys (sr template with descriptions, en).
+- **Docs.** DESIGN_SYSTEM.md § Action bar (the "another" mode and the panel),
+  § Household (the card, the list's footer rows) and § Size and motion
+  (`onboardingMark`).
+- **Tests.**
+  - New `another_household_screens_test.dart` (11): chrome for both forms;
+    ✕ pops; create lands with Invite, and Invite opens the household's
+    screen; join lands with Undo and Undo switches back; the panel's colours;
+    Switch; Done pops without switching; Use another code; editing clears
+    the panel.
+  - New `test/core/router/app_router_redirect_test.dart` (5): calls the
+    real router's `topRedirect` directly.
+  - `households_screen_test` +3, `household_screen_test` +4,
+    `onboarding_screens_test` +2. The repository and helper fakes return
+    `InviteRedemption`, and `FakeHouseholdRepository` gained
+    `memberCodes`.
+
+**Differs from the plan.**
+- **`arb_parity_test` failed on the planned Serbian Switch label**, which
+  omits `{name}` by design. The test got a one-key `deliberatelyOmitted`
+  exemption with its reason (D173 Consequences); the copy stayed as planned.
+- **`household_screen_test`'s `_pump` now uses an 800×1000 surface.** The
+  card pushed the destructive row past the lazy `ListView`'s cache extent,
+  which broke seven tests. The size is a parameter, so the 360×780 layout
+  test passes its own.
+- The new tests listen to `currentUserIdProvider` themselves.
+  `householdSwitchOverrides`' `FixedCurrentHousehold` doesn't watch it, so
+  `switchTo` would return early (slice 3's note, again).
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **1115/1115**. `make -k check` green
+  except the known `seed-check`. `l10n-check` failed only because the
+  generated files were uncommitted, and `gen-l10n` is stable on a re-run.
+- **Walk** (`/design-walk household-create-join-another`), hosted release
+  build installed by serial on both devices. The emulator (`test-user`)
+  walked all four combinations; the Galaxy minted invite codes and took the
+  keyboard check.
+- **Found, not this slice's code: hosted Edge Functions were still slice
+  A's.** They were deployed at 07:24 UTC, before slice B's `48728cf`. A
+  fresh join got `409 already_in_household` (checked with a direct call as
+  `test-user`) and showed `Nešto je pošlo naopako.` Marko ran
+  `make functions-deploy` (`redeem-invite` v5, `create-invite` v3), and the
+  join then worked. Slice A's journal note that hosted was current held only
+  for the migration.
+- **Clean:**
+  - One household (sr light and dark): the card sits between the invite
+    button and the hairline, with the body on one line. It is absent with
+    two households. Settings is unchanged.
+  - The footer rows in all four combinations.
+  - The forms: sr titles wrap to two lines, en fits on one, and ✕ pops to
+    the list.
+  - Create lands on Recipes in the new household, with the header updated:
+    `Sada ste u domaćinstvu „…“.` + Pozovite (sr dark), `Now in Walk
+    throwaway.` + Invite (en light). Invite opened Settings › its screen.
+    Settings then shows the list with the new radio filled, never the
+    form.
+  - The panel in all four (`card`, never red): Gotovo pops without
+    switching, and Pređite / Switch to X lands with Undo, which switches
+    back. A fresh join of a Galaxy code lands with Poništi. Unesite drugi
+    kod clears.
+  - The Galaxy's real keyboard with a name longer than the slice's: no
+    overflow, and the button stays above the keyboard.
+- **Two Undo taps that "failed" were the walk's own latency**: a uiautomator
+  dump takes about 1.5 s, so the tap arrived after the 4 s auto-dismiss. A
+  poller that taps from the bounds it already has switched back every time.
+- **Not reached**, so the loop stays open in STATE:
+  - the en "Another home?" card: `test-user` is now in five households,
+    and the session may not delete or leave on hosted;
+  - onboarding on a device (the widget test covers the mark and
+    cross-link).

@@ -99,7 +99,7 @@ None.
       rather than its header; if the planner finds the tabs already have a
       loading state this can collapse into a small slice or into the previous
       one.
-- [ ] `phase9-household-create-join-another` — in-app Create and Join.
+- [x] `phase9-household-create-join-another` (`b955e3d`, D173) — in-app Create and Join.
       Files: `lib/features/households/presentation/create_household_screen.dart`,
       `join_household_screen.dart`, `onboarding_mark.dart` (it stops
       showing here), `lib/core/router/routes.dart`, the `.arb` files.
