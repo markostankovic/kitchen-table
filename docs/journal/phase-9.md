@@ -219,3 +219,115 @@ migration, no package, no new l10n key.
 
   Leave, delete and the second-household paths were not walked. They are
   covered by `make test-sql` and the provider tests, and slice C has the UI.
+
+### Slice C, part 1 — The list of your households (`phase9-household-list`)
+
+**Status: complete** (`31b685d`). Decisions taken during it: D170.
+
+The first slice of Slice C's design round,
+`docs/design/handoffs/2026-10-13-multiple-households/` (§ D2). Planned with
+`/plan-slice`, built, walked on the Galaxy and closed on 2026-10-13. With
+one household nothing changes. No package, no migration, 7 new l10n keys.
+
+- **Data.** New pure `HouseholdMembership` (`household`, `role`,
+  `memberCount`; freezed, no `fromJson`). `RemoteHouseholdDataSource
+  .fetchMembershipRows(userId)` reads the caller's `household_members` rows
+  in join order with `households!inner(id, name, created_by, deleted_at,
+  household_members(user_id))`, filtering `households.deleted_at` in the
+  query (D23), retried like `fetchMineRows` (D89). `membershipFromWire`
+  reuses `householdFromWire`; the role mapping moved into
+  `householdRoleFromWire`, shared with `_toMember`.
+  `HouseholdRepository.fetchMemberships(userId:)`; `fetchMine` and
+  `fetchCurrent` untouched.
+- **Providers.** `myHouseholdsProvider` returns memberships (still watching
+  `currentHouseholdProvider` to refresh). New `householdByIdProvider(id)`.
+  `householdMembersProvider` and `liveInvitesProvider` became families
+  keyed by id. `currentHouseholdSummaryProvider`'s record grew `id` and
+  `otherHouseholdCount` (D52; 0 on `AppFailure`). `AppShell._refreshBranch`
+  also invalidates `myHouseholdsProvider` for Settings (D149).
+- **Routes.** `HouseholdsRoute` (`/settings/households`) and
+  `HouseholdRoute(householdId)` (`/settings/household/:householdId`),
+  siblings under Settings.
+- **Screens.**
+  - Settings: with 0 others exactly as before, opening the household by
+    `go`. With more, the header is `Domaćinstva`, the subtitle
+    `2 člana · još N domaćinstva`, and the row opens the list.
+    `_HouseholdRow` takes a finished subtitle and is inert until the summary
+    arrives.
+  - `HouseholdsScreen`: intro line, one card of `HouseholdRow`s, dividers
+    inset 56. A tap calls `switchTo` (every row inert while it runs; the
+    current row always); the gear `push`es that household's screen.
+  - `HouseholdRow` (feature-private, `onManage`-less mode for the switcher):
+    radio, name wrapping with no ellipsis, meta, a `splitDivider` (new
+    `AppSizes`, 32) hairline and a 48 gear.
+  - `HouseholdScreen(householdId)`: every read keyed by the id. Rename
+    awaits `myHouseholdsProvider`. Leave/delete land on onboarding,
+    `/settings` (was current) or `/settings/households`.
+- **DESIGN_SYSTEM.md**: § Size and motion (`splitDivider`), § Settings (the
+  two-household row), § Household (id-scoped screen, the households list).
+- **Tests:** `households_screen_test` (order, one checked radio, sr meta
+  `2 člana · Član` / `1 član · Vlasnik`, the long name whole at 360, tap
+  switches, current tap does nothing, gear tooltip and navigation);
+  `settings_screen_test` (new; 0 and 1 others); `household_dto_test` (new;
+  role, count, nested `deleted_at`); `household_screen_test` now on a
+  `GoRouter` with three new cases (leave current → `/settings`, leave
+  non-current → list, not-yours → `noHouseholdYet`);
+  `current_household_switch_test` (memberships, `householdByIdProvider`);
+  `app_shell_test` family overrides.
+
+**Differs from the plan.**
+- **`_isCurrent` reads `currentHouseholdProvider`, not
+  `currentHouseholdIdProvider`.** Nothing on the screen watches the id
+  provider, so a cold `ref.read` returned loading and every leave counted as
+  non-current. The new test caught it.
+- **`postgrest-dart`'s `.order()` is descending by default.** The local
+  curl check of the new query looked right (raw PostgREST is ascending);
+  the device showed the list newest-first. Fixed with `ascending: true`.
+  The same default had made `fetchMineRows` (D169's "oldest" fallback) pick
+  the **newest** household and `fetchMembers` list newest-first; both fixed
+  in this slice at Marko's call (D170 #6). The other two bare `.order()`s
+  are harmless: recipe lines are re-sorted client-side, units by `code`.
+- `HouseholdRoute` takes the id positionally, on `RecipeDetailRoute`'s
+  precedent.
+
+**How it was verified.**
+- `dart analyze` and `check_layers` clean; `flutter test` **1063/1063**;
+  Deno 172/172; `make test-sql` all green; `make check` green except the
+  known `seed-check`. `make l10n-check` only differed by the uncommitted
+  regeneration (re-running `gen-l10n` was byte-identical).
+- **The membership query on the local stack** (`supabase db reset`, two
+  users via the admin API, three households, one soft-deleted with the
+  membership left in place): curl with the user's JWT returned join order
+  (the older household, joined last, came last), both co-members in the
+  nested embed under RLS, and no soft-deleted row.
+- **Hosted.** Slice B's migration `20261013120000` turned out **not to be
+  on hosted** (`migration list --linked`): Marko's earlier push had stopped
+  at its Y/n prompt. Pushed during the walk with `supabase db push --yes`
+  and confirmed. Until then every leave, delete and remove-member from the
+  slice-B build failed. Marko seeded two households by hand for the walk
+  account: `Porodica Stanković – vikendica` (owner) and `Kod Mire` (adult,
+  owned by `test-user`).
+- **Walk** (`/design-walk settings-households`, Galaxy SM-S931B, 480 dpi,
+  hosted release build, installed with `adb -d` since the emulator was
+  attached; all four combinations):
+  - one household (before the seed): `Domaćinstvo`, `Renamed Household ·
+    2 člana`, opens the Household screen, Back to Settings;
+  - three households: `Domaćinstva`, `2 člana · još 2 domaćinstva` (en `2
+    members · 2 more households`); the long name wraps in the Settings row
+    and the list;
+  - the list in join order (after the fix), radio `#366A35` on the current
+    row, hairline exactly 96px = 32dp, `#494A3F` on `#292923` in dark,
+    gears aligned, dividers starting under the names;
+  - a tap switched (radio moved), and Recipes followed: 9 recipes for
+    Renamed Household, the empty state for Kod Mire;
+  - each gear opened that household with the right role: Delete for an
+    owner household, Leave for Kod Mire; Back returned to the list;
+  - leaving the non-current Kod Mire through its gear landed on the list
+    one row shorter, and Settings then read `1 more household`;
+  - after the `fetchMembers` fix, Renamed Household lists its owner above
+    `test-user`.
+
+  Not walked: the fallback for a device with no saved selection (the Galaxy
+  has one), and the offline `otherHouseholdCount → 0` path. Left on hosted:
+  the walk account in Renamed Household (current) and vikendica; Kod Mire
+  with `test-user` alone. App restored to English/Light.

@@ -1,42 +1,48 @@
 # State — 2026-10-13
 
 **Branch:** `main`
-**Last shipped:** Phase 9 slice B, `multi-household-b` (`48728cf`), the
-second of three slices that let one account belong to several households.
-The client picks its household and the server stops guessing (D169). With
-one household nothing changes for the user.
+**Last shipped:** Phase 9 slice C's first slice, `phase9-household-list`
+(`31b685d`), from the design round
+`docs/design/handoffs/2026-10-13-multiple-households/`. Someone in two or
+more households sees them all from Settings and moves between them (D170).
+With one household nothing changes.
 
-- **Client.** The current household is a device-local, per-user selection
-  in `DevicePreferences` (`selected_household.<userId>`). `fetchCurrent`
-  prefers it, else the oldest. `CurrentHousehold.switchTo(id)` is the one
-  way to change it, and `select` clears the cached row (D88). Create and
-  join land in the new household. `myHouseholdsProvider` lists them all,
-  for slice C, and nothing reads it yet.
-- **SQL.** Migration `20261013120000`: `remove_household_member`,
-  `leave_household` and `delete_household` take `target_household`.
-  `revoke_invite` checks the invite's own household; it wasn't in the
-  plan.
-- **Edge Functions.** `resolveHousehold` and D168's fallback are gone, so a
-  body without `householdId` is a 400 `invalid_household`. `redeem-invite`
-  no longer rejects a second membership, and `already_in_household` is gone
-  everywhere.
-- No package, no new l10n key.
+- **Settings.** With others, the group reads `Domaćinstva` and the row
+  `Name · 2 člana · još N domaćinstva`, opening the new Households list.
+  D52's summary record grew `id` and `otherHouseholdCount`.
+- **Households list.** Join order from its own query
+  (`fetchMembershipRows`); a tap switches (`switchTo`), a gear opens that
+  household's screen. `HouseholdRow` is feature-private until the switcher
+  slice promotes it.
+- **Household screen** is keyed by id (`/settings/household/:householdId`),
+  so it shows any of your households. Leave/delete land on Settings (was
+  current), the list (wasn't) or onboarding (none left).
+- **Ordering fix.** `postgrest-dart`'s `.order()` is descending by default.
+  `fetchMembershipRows`, `fetchMineRows` (D169's fallback is now truly the
+  oldest) and `fetchMembers` pass `ascending: true`.
+- No package, no migration, 7 l10n keys, `AppSizes.splitDivider` (32).
 
-`dart analyze` is clean, `flutter test` passes 1046/1046 and the Deno
-function tests pass 172/172. `make check` is green except the known
-`seed-check`; `make test-sql` and `make l10n-check` pass.
+`dart analyze` is clean, `flutter test` passes 1063/1063, Deno 172/172.
+`make check` is green except the known `seed-check`; `make test-sql` passes.
 
-**Hosted is current**: the migration and all eight functions were deployed
-on 2026-10-13 (Marko ran them; the session's push was refused by the
-permission check). Any older build now fails leave, delete and
-remove-member, and a pre-slice-A build fails imports too. Only the Galaxy
-has the app, and it runs this build. The walk on it was observed from the
-session and was clean: cold start, recipes, plan, list, a paste import
-(discarded), an invite minted and revoked, and a relaunch, all in the same
-household. Leave, delete and second-household paths are covered by tests
-only, until slice C.
+**Hosted is current.** Slice B's migration `20261013120000` had **not**
+reached hosted (the earlier push stopped at its Y/n prompt), so leave,
+delete and remove-member were failing; it was pushed 2026-10-13 during this
+slice's walk (`supabase db push --yes`) and confirmed with `migration list
+--linked`. The Galaxy runs this slice's release build. The walk
+(`/design-walk settings-households`, all four combinations) is closed.
+
+**Hosted test data left in place** for the next slices' walks: the walk
+account is in `Renamed Household` (owner, current) and `Porodica Stanković
+– vikendica` (owner, seeded by hand). `Kod Mire` (owned by `test-user`) was
+left on the walk and has only `test-user`; re-add the walk account as
+`adult` when a walk needs a household where it isn't owner.
 
 Still open:
+- **a household detail screen survives a switch**: a recipe detail (or any
+  pushed screen) left open in another tab keeps the old household's data
+  after a switch from the Households list, until
+  `phase9-household-switcher` pops tabs to their root;
 - **a throwaway recipe on hosted**: `Setnja odeljci TEST`, saved by the
   `phase8-ingredient-sections-edit` editor walk (later walks' throwaways
   were soft-deleted). It wants deleting (the app's own soft delete), which
@@ -105,10 +111,12 @@ Still open:
   Design updates them.
 
 **In flight:** none.
-**Next:** Phase 9 slice C, the multiple-households UI. It waits on Claude
-Design's round for `docs/design/BRIEF_multiple_households.md`, which goes
-through `/design-handoff`, then `/plan-slice-ui`. The client side is ready
-for it: `CurrentHousehold.switchTo` and `myHouseholdsProvider` (D169).
+**Next:** `phase9-household-switcher`, the household line under the tab
+titles and the switch sheet (round
+`docs/design/handoffs/2026-10-13-multiple-households/`, § D1 b, D3·1, D3·3),
+via `/plan-slice-ui`. It promotes `HouseholdRow` to
+`core/household/widgets/`. Then switch-loading, create-join-another,
+leave-switch and import-save-to, in `ROUND.md`'s order.
 Still open as candidates beside Phase 9:
 - the formatting toolbar in the translation review, the last raw formatting
   surface. It is a small `/plan-slice-ui` on D167's pattern;
@@ -124,7 +132,7 @@ Still open as candidates beside Phase 9:
 
 The open device-walk loops below still want one sitting with the Galaxy
 attached.
-**Latest decision:** D169
+**Latest decision:** D170
 
 **Twenty device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
@@ -1150,6 +1158,31 @@ Oldest first:
     matched 8 of 8, all auto-accepted, so nothing was flagged. The row
     widget is unchanged (`IngredientLineRow`), so the risk is low;
   - Backspace on an empty line on **iOS** (unverified, no device).
+- ~~**Phase 9** (`phase9-household-list`)~~ — **closed 2026-10-13.** The
+  Households list and the id-scoped Household screen, walked on the
+  **Galaxy** (all four combinations, hosted release build) with two hosted
+  households seeded by hand for the walk account (`Porodica Stanković –
+  vikendica`, owner; `Kod Mire`, adult, owned by `test-user` -- since left on
+  the walk). **Found and fixed the same sitting** (re-walked): the list came
+  back newest-first, because `postgrest-dart`'s `.order()` defaults to
+  **descending**; `fetchMembershipRows` now passes `ascending: true`.
+  Everything else clean: one-household Settings unchanged; `Domaćinstva` /
+  `2 člana · još 2 domaćinstva`; long names wrap, never ellipsized; join
+  order, `primary` radio, the 32dp hairline `#494A3F` on `#292923` in dark;
+  a tap switches and Recipes follows; each gear opens that household with
+  the right role (Delete / Leave); leaving the non-current `Kod Mire`
+  landed on the list one row shorter, and Settings then read `1 more
+  household`. The leave needed slice B's migration
+  `20261013120000_household_rpcs_take_a_household.sql`, which was **not on
+  hosted** until this walk (pushed 2026-10-13).
+  The same `.order()` default had also made `fetchMineRows` -- D169's
+  "oldest first" fallback -- pick the **newest** household when the device
+  has no selection (after the seed, the walk account landed in
+  `vikendica`), and `fetchMembers` list members newest-first. Both
+  pre-existing; fixed in this slice too (`ascending: true`), after the walk.
+  Member order re-checked on the Galaxy (Renamed Household: the owner now
+  above `test-user`). The fallback is not re-walked: it only shows on a
+  device with no saved selection, and the Galaxy has one now.
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind

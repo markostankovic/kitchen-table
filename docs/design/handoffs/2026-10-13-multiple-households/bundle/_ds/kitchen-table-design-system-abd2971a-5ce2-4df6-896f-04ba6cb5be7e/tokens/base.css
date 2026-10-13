@@ -1,0 +1,11 @@
+body{margin:0;background:var(--surface);color:var(--on-surface);font:var(--type-body-medium);-webkit-font-smoothing:antialiased}
+a{color:var(--primary);text-decoration:none}a:hover{text-decoration:underline}
+.kt-icon{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;direction:ltr;-webkit-font-feature-settings:"liga";font-feature-settings:"liga";-webkit-font-smoothing:antialiased;font-variation-settings:"FILL" 0,"wght" 400,"GRAD" 0,"opsz" 24;user-select:none}
+.kt-icon.filled{font-variation-settings:"FILL" 1,"wght" 400,"GRAD" 0,"opsz" 24}
+/* M3 state layer: currentColor at 8% hover / 12% press. Add class kt-state to any interactive surface. */
+.kt-state{position:relative;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.kt-state::after{content:"";position:absolute;inset:0;background:currentColor;opacity:0;transition:opacity var(--duration-short) var(--ease-emphasized);pointer-events:none;border-radius:inherit}
+.kt-state:hover::after{opacity:.08}.kt-state:active::after{opacity:.12}
+.kt-state[disabled],.kt-state[aria-disabled="true"]{cursor:default}.kt-state[disabled]::after{opacity:0}
+.kt-noscroll{scrollbar-width:none}.kt-noscroll::-webkit-scrollbar{display:none}
+.kt-dash{background-image:linear-gradient(to right,var(--outline-variant) 6px,transparent 6px);background-size:10px 1px;background-repeat:repeat-x;background-position:left bottom}

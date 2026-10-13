@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/tokens/colors.css">
+<link rel="stylesheet" href="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/tokens/typography.css">
+<link rel="stylesheet" href="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/tokens/base.css">
+<link rel="stylesheet" href="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/styles.css">
+<script src="_ds/kitchen-table-design-system-abd2971a-5ce2-4df6-896f-04ba6cb5be7e/_ds_bundle.js"></script>
+<style>body{margin:0;background:#E9E4DB}a{color:#366A35}a:hover{color:#1D511E}</style>
+</helmet>
+
+<div style="padding:48px 56px 8px;max-width:960px;font-family:var(--font-sans);color:#1F190F">
+  <div style="font:700 32px/40px var(--font-sans);letter-spacing:.5px;color:#366A35">Kitchen Table · more than one household</div>
+  <div style="font:400 16px/24px var(--font-sans);color:#484134;margin-top:8px;text-wrap:pretty">Sections D1–D6. Direction (b), the household under the tab title, is accepted. Every changed screen is shown in light and dark; Serbian and English alternate, and the long name "Porodica Stanković – vikendica" is used wherever length matters. Screens are 360dp wide.</div>
+  <div style="font:13px/1.55 var(--font-sans);color:#3A332A;margin-top:12px;text-wrap:pretty"><b>Tokens:</b> no new tokens; everything uses existing roles. <b>Component changes:</b> AppBar gets an optional <span style="font-family:ui-monospace,monospace">household</span> second line (D1·b), and a new <b>HouseholdRow</b> adds a radio, name and meta, plus an optional manage button (D2). <b>With one household</b>, none of this renders. The only visible change is a last section on the Household screen (D2·7).</div>
+</div>
+
+<section data-screen-label="D1 Where the switcher lives" style="padding:40px 56px 24px">
+  <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:20px;font:600 13px/16px var(--font-sans);color:#1F190F"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1F190F;color:#fff;border-radius:4px">D1</span>Where the switcher lives</div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="width:300px;flex:none;font:13px/1.55 var(--font-sans);color:#3A332A;display:flex;flex-direction:column;gap:10px;text-wrap:pretty">
+      <div style="font:600 15px/20px var(--font-sans);color:#6F6759">(a) Settings only · not chosen</div>
+      <p style="margin:0">The tabs stay exactly as they are today. In Settings, the Household row opens a list of your households. <b>Why:</b> no new chrome, and that suits how rarely people switch. <b>But</b> nothing on Recipes, Plan or List says which household you're in, so you can add to the wrong list without noticing.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">(b) Household under the tab title · <span style="color:#366A35">accepted</span></div>
+      <p style="margin:0">With two or more households, the Recipes, Plan and List headers get a second line with the current name and a ▾. Tapping the title block (56dp) opens a sheet to switch. <b>Why:</b> the name sits right where you add things, so it reminds you where you are without being a separate warning.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Why (b)</div>
+      <p style="margin:0">People switch a few times a week at most, so a one-tap switcher isn't the point. The point is the label. Adding to the wrong household is silent and costly. It's prevented by one line of bodyMedium that only people with 2+ households ever see. The title stays at the same x (16) and size. With one household, the header is the standard AppBar, identical to today (D1·1).</p>
+      <p style="margin:0">Management (rename, members, leave) stays in Settings for both directions, so (b) only adds a shortcut.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <sc-for list="{{ d1 }}" as="v" hint-placeholder-count="4">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">{{ v.cap }}</div>
+        <div data-theme="{{ v.theme }}" style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <sc-if value="{{ v.plain }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="{{ v.recipes }}" actions="{{ v.addAction }}" hint-size="100%,64px"></x-import></sc-if>
+          <sc-if value="{{ v.label }}" hint-placeholder-val="{{ true }}">
+            <header style="height:64px;flex:none;display:flex;align-items:center;gap:4px;padding:0 4px 0 8px;background:var(--surface)">
+              <div class="kt-state" style="flex:1;min-width:0;height:56px;padding:0 8px;border-radius:12px;display:flex;flex-direction:column;justify-content:center">
+                <div style="font:600 24px/30px var(--font-sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.recipes }}</div>
+                <div style="display:flex;align-items:center;gap:2px;font:var(--type-body-medium);color:var(--on-surface-variant)"><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.hh }}</span><span class="kt-icon" style="font-size:18px;flex:none">expand_more</span></div>
+              </div>
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="add" label="{{ v.addLabel }}" hint-size="48px,48px"></x-import>
+            </header>
+          </sc-if>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto">
+            <div style="padding:4px 16px 12px"><x-import component-from-global-scope="KitchenTableDesignSystem_abd297.SearchField" placeholder="{{ v.search }}" hint-size="100%,48px"></x-import></div>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.FilterRow" filters="{{ v.filters }}" selected="{{ v.noSel }}" hint-size="100%,40px"></x-import>
+            <div style="padding:16px 16px 24px;display:flex;flex-direction:column;gap:12px">
+              <div style="font:var(--type-body-medium);color:var(--on-surface-variant)">{{ v.count }}</div>
+              <sc-for list="{{ v.recs }}" as="r" hint-placeholder-count="4">
+                <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.RecipeCard" title="{{ r.title }}" letter="{{ r.letter }}" servings="{{ r.servings }}" time="{{ r.time }}" rating="{{ r.rating }}" favorite="{{ r.favorite }}" hint-size="100%,96px"></x-import>
+              </sc-for>
+            </div>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="recipes" items="{{ v.nav }}" hint-size="100%,80px"></x-import>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="D2 List of your households" style="padding:24px 56px">
+  <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:20px;font:600 13px/16px var(--font-sans);color:#1F190F"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1F190F;color:#fff;border-radius:4px">D2</span>List of your households</div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="width:300px;flex:none;font:13px/1.55 var(--font-sans);color:#3A332A;display:flex;flex-direction:column;gap:10px;text-wrap:pretty">
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F">Getting there</div>
+      <p style="margin:0"><b>One household:</b> the Settings row shows "Kod Mire · 2 members" and opens the Household screen, as today. <b>Two or more:</b> the group label becomes "Households". The row shows the current name and "2 members · 1 more household", and opens this list (D2·1–6).</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Row switches, gear manages</div>
+      <p style="margin:0">Tapping the <b>row</b> switches to that household. The leading radio says it's a choice, and the current one is filled in primary. The <b>gear</b> is a separate 48dp button behind a 32dp hairline. It opens that household's Household screen, whether or not it's the current one. Phones use the same split for Wi-Fi networks, and the intro line under the title says it in words.</p>
+      <p style="margin:0">Meta: "N members · Owner / Member" (sr: člana / članova · Vlasnik / Član). Names wrap to two lines here and are never cut off. They're truncated only in the one-line header. The order stays fixed (the order you joined), so rows don't move when you switch.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Actions at the end</div>
+      <p style="margin:0">"Create a new household" and "Join with a code" are plain ListRows below the card, so they don't read as households.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">The way in with one household</div>
+      <p style="margin:0">One addition to today's Household screen: a last section, "Another home?", with an outlined "Add a household" that opens this list (D2·7–8). It sits below everything that exists today.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <sc-for list="{{ d2settings }}" as="v" hint-placeholder-count="2">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">{{ v.cap }}</div>
+        <div data-theme="{{ v.theme }}" style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="{{ v.settings }}" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:4px 16px 24px;display:flex;flex-direction:column;gap:24px">
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.ProfileCard" name="Luka Jovanović" email="luka@example.com" provider="{{ v.provider }}" hint-size="100%,96px"></x-import>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.SettingsGroup" label="{{ v.appearance }}" title="{{ v.themeT }}" description="{{ v.themeD }}" hint-size="100%,140px">
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.SegmentedButton" options="{{ v.themeOpts }}" value="{{ v.theme }}" hint-size="100%,40px"></x-import>
+            </x-import>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.SettingsGroup" label="{{ v.language }}" hint-size="100%,96px">
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.SegmentedButton" options="{{ langOptions }}" value="{{ v.lang }}" hint-size="100%,40px"></x-import>
+            </x-import>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.SettingsGroup" label="{{ v.hhsLabel }}" card="{{ false }}" hint-size="100%,96px">
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavRow" title="{{ v.hh }}" subtitle="{{ v.hhSub }}" hint-size="100%,72px"></x-import>
+            </x-import>
+            <div style="height:1px;background:var(--outline-variant)"></div>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.SettingsGroup" label="{{ v.account }}" card="{{ false }}" style="margin-top:-8px" hint-size="100%,80px">
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="neutral" icon="login" full-width="{{ true }}" hint-size="100%,48px">{{ v.signout }}</x-import>
+            </x-import>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="settings" items="{{ v.nav }}" hint-size="100%,80px"></x-import>
+        </div>
+      </div>
+      </sc-for>
+
+      <sc-for list="{{ d2list }}" as="v" hint-placeholder-count="4">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">{{ v.cap }}</div>
+        <div data-theme="{{ v.theme }}" style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="{{ v.households }}" leading="back" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:0 16px 24px">
+            <p style="margin:0 4px 16px;font:var(--type-body-medium);color:var(--on-surface-variant);text-wrap:pretty">{{ v.intro }}</p>
+            <div style="background:var(--card);border-radius:12px;overflow:hidden">
+              <sc-for list="{{ v.rows }}" as="r" hint-placeholder-count="2">
+                <div>
+                  <div style="display:flex;align-items:center">
+                    <div class="kt-state" style="flex:1;min-width:0;display:flex;align-items:center;gap:16px;padding:10px 8px 10px 16px;min-height:64px;box-sizing:border-box">
+                      <sc-if value="{{ r.cur }}" hint-placeholder-val="{{ false }}"><span class="kt-icon" style="font-size:24px;color:var(--primary);flex:none">radio_button_checked</span></sc-if>
+                      <sc-if value="{{ r.other }}" hint-placeholder-val="{{ true }}"><span class="kt-icon" style="font-size:24px;color:var(--on-surface-variant);flex:none">radio_button_unchecked</span></sc-if>
+                      <div style="flex:1;min-width:0"><div style="font:var(--type-title-medium);text-wrap:pretty">{{ r.name }}</div><div style="font:var(--type-body-medium);color:var(--on-surface-variant)">{{ r.meta }}</div></div>
+                    </div>
+                    <span style="width:1px;height:32px;flex:none;background:var(--outline-variant)"></span>
+                    <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="settings" label="{{ r.manage }}" style="margin:0 4px" hint-size="48px,48px"></x-import>
+                  </div>
+                  <sc-if value="{{ r.div }}" hint-placeholder-val="{{ true }}"><div style="height:1px;background:var(--outline-variant);margin-left:56px"></div></sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:8px;padding:0 4px">
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.ListRow" icon="add" title="{{ v.create }}" hint-size="100%,64px"></x-import>
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.ListRow" icon="key" title="{{ v.join }}" divider="{{ false }}" hint-size="100%,64px"></x-import>
+            </div>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="settings" items="{{ v.nav }}" hint-size="100%,80px"></x-import>
+        </div>
+      </div>
+      </sc-for>
+
+      <sc-for list="{{ d2single }}" as="v" hint-placeholder-count="2">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">{{ v.cap }}</div>
+        <div data-theme="{{ v.theme }}" style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="{{ v.household }}" leading="back" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:8px 16px 24px">
+            <div style="display:flex;align-items:flex-start">
+              <div style="flex:1"><div style="font:var(--type-headline-small);letter-spacing:var(--tracking-headline-small)">Kod Mire</div><div style="font:400 16px/24px var(--font-sans);color:var(--on-surface-variant);margin-top:4px">{{ v.two }}</div></div>
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="edit" label="{{ v.rename }}" hint-size="48px,48px"></x-import>
+            </div>
+            <h2 style="margin:28px 0 8px;font:var(--type-title-medium)">{{ v.membersH }}</h2>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.ListRow" letter="M" tone="primary" title="Mira Jovanović" subtitle="{{ v.owner }}" hint-size="100%,64px"></x-import>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.ListRow" letter="L" title="Luka Jovanović" subtitle="{{ v.memberYou }}" trailing="more" hint-size="100%,64px"></x-import>
+            <h2 style="margin:28px 0 12px;font:var(--type-title-medium)">{{ v.inviteH }}</h2>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="outlined" icon="add" hint-size="auto,48px">{{ v.createCode }}</x-import>
+            <div style="margin-top:28px;background:var(--card);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+              <div><div style="font:var(--type-title-medium)">{{ v.anotherH }}</div><div style="font:var(--type-body-medium);color:var(--on-surface-variant);margin-top:2px;text-wrap:pretty">{{ v.anotherB }}</div></div>
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="outlined" icon="add_home" hint-size="auto,48px">{{ v.addHh }}</x-import>
+            </div>
+            <div style="height:1px;background:var(--outline-variant);margin:24px 0 8px"></div>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="destructive" icon="logout" style="padding-left:4px" hint-size="auto,48px">{{ v.leave }}</x-import>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="settings" items="{{ v.nav }}" hint-size="100%,80px"></x-import>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="D3 Switching" style="padding:24px 56px">
+  <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:20px;font:600 13px/16px var(--font-sans);color:#1F190F"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1F190F;color:#fff;border-radius:4px">D3</span>Switching</div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="width:300px;flex:none;font:13px/1.55 var(--font-sans);color:#3A332A;display:flex;flex-direction:column;gap:10px;text-wrap:pretty">
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F">1 · Sheet</div>
+      <p style="margin:0">Opens from the header line on Recipes, Plan or List. It uses the same HouseholdRow as D2, without the gear. Tapping a row switches and closes the sheet (250 ms). "Manage households" at the bottom opens the D2 list in Settings. The sheet uses the same surfaceContainerLow, radius 28 and level 3 as Add meal.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">2 · Loading</div>
+      <p style="margin:0">The header shows the new name straight away, so the change registers before the data arrives. A 4dp linear progress bar in primary runs under the header. The tab keeps its frame (segments, nav). The content is replaced by flat placeholder bars in surfaceContainerHighest on the card. There's no shimmer, and the progress bar is the only motion. Controls that write are disabled until the data has loaded.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">3 · Landed</div>
+      <p style="margin:0">You always land on the <b>root of the current tab</b>. Any open detail screens are popped. The snackbar reads "Now in Jovanovići." with <b>Undo</b>, which switches back, so a mis-tap costs one tap. Serbian: "Sada ste u domaćinstvu „…“." It wraps to two lines with the long name.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <sc-for list="{{ d3 }}" as="v" hint-placeholder-count="6">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">{{ v.cap }}</div>
+        <div data-theme="{{ v.theme }}" style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <header style="height:64px;flex:none;display:flex;align-items:center;gap:4px;padding:0 4px 0 8px;background:var(--surface)">
+            <div class="kt-state" style="flex:1;min-width:0;height:56px;padding:0 8px;border-radius:12px;display:flex;flex-direction:column;justify-content:center">
+              <div style="font:600 24px/30px var(--font-sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.listT }}</div>
+              <div style="display:flex;align-items:center;gap:2px;font:var(--type-body-medium);color:var(--on-surface-variant)"><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.hh }}</span><span class="kt-icon" style="font-size:18px;flex:none">expand_more</span></div>
+            </div>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="refresh" label="Regenerate" hint-size="48px,48px"></x-import>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="content_copy" label="Copy list" hint-size="48px,48px"></x-import>
+          </header>
+          <sc-if value="{{ v.loading }}" hint-placeholder-val="{{ false }}"><div style="height:4px;flex:none;background:var(--surface-container-highest);position:relative;overflow:hidden"><div style="position:absolute;left:22%;width:38%;top:0;bottom:0;border-radius:2px;background:var(--primary)"></div></div></sc-if>
+          <div style="flex:1;overflow:hidden;padding:4px 16px 24px;display:grid;align-content:start;grid-template-columns:minmax(0,1fr);gap:12px">
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.SegmentedButton" options="{{ v.range }}" value="this" hint-size="100%,40px"></x-import>
+            <sc-if value="{{ v.loaded }}" hint-placeholder-val="{{ true }}">
+              <div style="background:var(--card);border-radius:12px;padding:4px 16px 8px">
+                <sc-for list="{{ v.items }}" as="a" hint-placeholder-count="3">
+                  <div>
+                    <div style="font:var(--type-title-small);font-size:15px;padding:16px 0 0">{{ a.aisle }}</div>
+                    <sc-for list="{{ a.items }}" as="it" hint-placeholder-count="2">
+                      <div class="{{ it.cls }}" style="display:flex;gap:16px;padding:10px 0;min-height:48px;box-sizing:border-box;font:var(--type-body-large)"><span style="flex:1;min-width:0">{{ it.name }}</span><span style="white-space:nowrap"><b style="font-weight:600;color:var(--primary)">{{ it.n }}</b><span style="color:var(--on-surface-variant)"> {{ it.u }}</span></span></div>
+                    </sc-for>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ v.loading }}" hint-placeholder-val="{{ false }}">
+              <div style="background:var(--card);border-radius:12px;padding:20px 16px;display:flex;flex-direction:column;gap:18px">
+                <sc-for list="{{ skel }}" as="k" hint-placeholder-count="6">
+                  <div style="display:flex;gap:16px;align-items:center"><span style="height:{{ k.h }}px;width:{{ k.w }}%;border-radius:4px;background:var(--surface-container-highest)"></span><span style="flex:1"></span><sc-if value="{{ k.amt }}"><span style="height:14px;width:40px;border-radius:4px;background:var(--surface-container-highest)"></span></sc-if></div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="list" items="{{ v.nav }}" hint-size="100%,80px"></x-import>
+          <sc-if value="{{ v.snack }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Snackbar" message="{{ v.snack }}" action="{{ v.undo }}" style="position:absolute;left:12px;right:12px;bottom:92px" hint-size="336px,48px"></x-import></sc-if>
+          <sc-if value="{{ v.sheet }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;inset:0;background:var(--scrim)"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-container-low);border-radius:28px 28px 0 0;box-shadow:var(--elevation-3);padding:0 0 12px">
+              <div style="display:flex;justify-content:center;padding:12px 0 8px"><div style="width:32px;height:4px;border-radius:2px;background:var(--outline)"></div></div>
+              <div style="padding:8px 24px 8px;font:var(--type-title-large)">{{ v.switchT }}</div>
+              <sc-for list="{{ v.rows }}" as="r" hint-placeholder-count="3">
+                <div class="kt-state" style="display:flex;align-items:center;gap:16px;padding:10px 24px;min-height:64px;box-sizing:border-box">
+                  <sc-if value="{{ r.cur }}" hint-placeholder-val="{{ false }}"><span class="kt-icon" style="font-size:24px;color:var(--primary);flex:none">radio_button_checked</span></sc-if>
+                  <sc-if value="{{ r.other }}" hint-placeholder-val="{{ true }}"><span class="kt-icon" style="font-size:24px;color:var(--on-surface-variant);flex:none">radio_button_unchecked</span></sc-if>
+                  <div style="flex:1;min-width:0"><div style="font:var(--type-title-medium);text-wrap:pretty">{{ r.name }}</div><div style="font:var(--type-body-medium);color:var(--on-surface-variant)">{{ r.meta }}</div></div>
+                </div>
+              </sc-for>
+              <div style="height:1px;background:var(--outline-variant);margin:8px 0"></div>
+              <div class="kt-state" style="display:flex;align-items:center;gap:16px;padding:0 24px;min-height:56px"><span class="kt-icon" style="font-size:24px;color:var(--on-surface-variant)">settings</span><span style="flex:1;font:500 16px/24px var(--font-sans)">{{ v.manageAll }}</span><span class="kt-icon" style="font-size:24px;color:var(--on-surface-variant)">chevron_right</span></div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="D4 Create and join from inside the app" style="padding:24px 56px">
+  <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:20px;font:600 13px/16px var(--font-sans);color:#1F190F"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1F190F;color:#fff;border-radius:4px">D4</span>Create and join from inside the app</div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="width:300px;flex:none;font:13px/1.55 var(--font-sans);color:#3A332A;display:flex;flex-direction:column;gap:10px;text-wrap:pretty">
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F">Same screens, three changes</div>
+      <p style="margin:0"><b>1.</b> An AppBar with <b>✕</b>. It's a task you can abandon, and ✕ returns you to the list. <b>2.</b> No 56dp mark, which belongs to the first-run welcome. The headlineSmall title moves up to 8 below the bar. <b>3.</b> The title says "another": "Create another household" / "Napravite još jedno domaćinstvo". The long Serbian title wraps to two lines.</p>
+      <p style="margin:0">The body says the current household is untouched. The cross-link button ("I have an invite code" / "Create a household instead") is dropped, because the list already offers both. One primary button stays pinned to the bottom.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Where you land</div>
+      <p style="margin:0">In the <b>new household</b>, on the Recipes root. The header line appears for the first time here. Snackbar: "Now in Vikendica." After Create, the action is <b>Invite</b>, which opens that household's screen with the invite code. After Join, the action is Undo.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Already a member</div>
+      <p style="margin:0">If the code is for a household you're already in, this isn't an error, so it's not shown in red. A quiet card panel under the field reads "You're already a member of Jovanovići." The primary button becomes <b>"Switch to Jovanovići"</b>, or "Done" if it's the current household. "Use another code" clears the field.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <sc-for list="{{ d4form }}" as="v" hint-placeholder-count="6">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">{{ v.cap }}</div>
+        <div data-theme="{{ v.theme }}" style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" leading="close" hint-size="100%,64px"></x-import>
+          <div style="flex:1;display:flex;flex-direction:column;padding:8px 24px 32px;gap:24px">
+            <div>
+              <h1 style="margin:0;font:var(--type-headline-small);letter-spacing:var(--tracking-headline-small);text-wrap:pretty">{{ v.fTitle }}</h1>
+              <p style="margin:8px 0 0;font:var(--type-body-large);color:var(--on-surface-variant);text-wrap:pretty">{{ v.fBody }}</p>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.TextField" label="{{ v.fLabel }}" default-value="{{ v.fValue }}" hint-size="100%,52px"></x-import>
+              <sc-if value="{{ v.already }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:8px;background:var(--card);border-radius:8px;padding:8px 12px;font:var(--type-body-medium);color:var(--on-surface-variant);text-wrap:pretty"><span class="kt-icon" style="font-size:16px;line-height:20px">info</span><span style="flex:1;min-width:0">{{ v.already }}</span></div></sc-if>
+            </div>
+            <div style="flex:1"></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" full-width="{{ true }}" hint-size="100%,48px">{{ v.fCta }}</x-import>
+              <sc-if value="{{ v.fAlt }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="text" full-width="{{ true }}" hint-size="100%,48px">{{ v.fAlt }}</x-import></sc-if>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-for>
+
+      <sc-for list="{{ d4land }}" as="v" hint-placeholder-count="2">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">{{ v.cap }}</div>
+        <div data-theme="{{ v.theme }}" style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <header style="height:64px;flex:none;display:flex;align-items:center;gap:4px;padding:0 4px 0 8px;background:var(--surface)">
+            <div class="kt-state" style="flex:1;min-width:0;height:56px;padding:0 8px;border-radius:12px;display:flex;flex-direction:column;justify-content:center">
+              <div style="font:600 24px/30px var(--font-sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.recipes }}</div>
+              <div style="display:flex;align-items:center;gap:2px;font:var(--type-body-medium);color:var(--on-surface-variant)"><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.hh }}</span><span class="kt-icon" style="font-size:18px;flex:none">expand_more</span></div>
+            </div>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.IconButton" icon="add" label="{{ v.addLabel }}" hint-size="48px,48px"></x-import>
+          </header>
+          <div style="flex:1;padding:16px">
+            <div style="background:var(--card);border-radius:12px">
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.EmptyState" icon="menu_book" title="{{ v.emptyT }}" body="{{ v.emptyB }}" hint-size="100%,240px"></x-import>
+            </div>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="recipes" items="{{ v.nav }}" hint-size="100%,80px"></x-import>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Snackbar" message="{{ v.snack }}" action="{{ v.invite }}" style="position:absolute;left:12px;right:12px;bottom:92px" hint-size="336px,48px"></x-import>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="D5 Leaving or deleting" style="padding:24px 56px">
+  <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:20px;font:600 13px/16px var(--font-sans);color:#1F190F"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1F190F;color:#fff;border-radius:4px">D5</span>Leaving or deleting when you have others</div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="width:300px;flex:none;font:13px/1.55 var(--font-sans);color:#3A332A;display:flex;flex-direction:column;gap:10px;text-wrap:pretty">
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F">The dialog names where you'll go</div>
+      <p style="margin:0">The title names the household, because you may have several. The body keeps today's explicit consequences, then ends with one sentence in onSurface: "You'll switch to Jovanovići." The household you switch to is the one you used most recently among the others.</p>
+      <p style="margin:0"><b>Owner:</b> "Delete household" replaces "Leave". The body is the handover's destructive copy plus the switch sentence (D5·3–4). The long Serbian name wraps in the title.</p>
+      <p style="margin:0"><b>Leaving a household you're not in right now</b> (reached through the gear): there's no switch sentence and you stay where you are.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Afterwards</div>
+      <p style="margin:0">You land on the Settings root in the next household, with the snackbar "You left Kod Mire. Now in Jovanovići." There's no Undo, because leaving can't be undone from here.</p>
+      <p style="margin:0"><b>Your last household:</b> the dialog copy is as today, without the switch sentence. Afterwards you go back to first-run onboarding (Name your household), as today.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <sc-for list="{{ d5 }}" as="v" hint-placeholder-count="4">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">{{ v.cap }}</div>
+        <div data-theme="{{ v.theme }}" style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="{{ v.household }}" leading="back" hint-size="100%,64px"></x-import>
+          <div style="flex:1;padding:8px 16px 24px">
+            <div style="font:var(--type-headline-small);letter-spacing:var(--tracking-headline-small);text-wrap:pretty">{{ v.hName }}</div>
+            <div style="font:400 16px/24px var(--font-sans);color:var(--on-surface-variant);margin-top:4px">{{ v.hCount }}</div>
+            <h2 style="margin:28px 0 8px;font:var(--type-title-medium)">{{ v.membersH }}</h2>
+            <sc-for list="{{ v.people }}" as="p" hint-placeholder-count="2">
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.ListRow" letter="{{ p.l }}" tone="{{ p.tone }}" title="{{ p.name }}" subtitle="{{ p.sub }}" hint-size="100%,64px"></x-import>
+            </sc-for>
+          </div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.NavigationBar" value="settings" items="{{ v.nav }}" hint-size="100%,80px"></x-import>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Dialog" title="{{ v.dTitle }}" actions="{{ v.dActions }}" hint-size="100%,100%"><span>{{ v.dBody }}</span><span style="display:block;margin-top:12px;color:var(--on-surface)">{{ v.dSwitch }}</span></x-import>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="D6 Knowing where you are" style="padding:24px 56px 56px">
+  <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:20px;font:600 13px/16px var(--font-sans);color:#1F190F"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1F190F;color:#fff;border-radius:4px">D6</span>Knowing where you are</div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="width:300px;flex:none;font:13px/1.55 var(--font-sans);color:#3A332A;display:flex;flex-direction:column;gap:10px;text-wrap:pretty">
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F">Tabs: the header line is enough</div>
+      <p style="margin:0">On Recipes, Plan and List, the D1·b line is the reminder. The recipe editor, the Add meal sheet and list edits all open from a tab that shows the name, so they add nothing.</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Import review: one line before Save</div>
+      <p style="margin:0">This is the one write that can start <b>outside the app</b>: you share a link from the browser and never see a tab. A single bodyMedium line sits above the pinned buttons, inside the existing hairline footer: <span style="font-family:ui-monospace,monospace">home</span> "Saves to <b>Kod Mire</b>" with a text button, <b>Change</b>.</p>
+      <p style="margin:0"><b>Change</b> opens the D3 sheet, titled "Save to". It chooses where this import is saved, and you don't switch households. The snackbar says "Saved to Jovanovići."</p>
+      <div style="font:600 15px/20px var(--font-sans);color:#1F190F;margin-top:6px">Nothing else</div>
+      <p style="margin:0">There's no colour per household, and no name on recipe detail, settings rows or the copied list. With one household, the import footer is identical to today: two buttons, no line.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <sc-for list="{{ d6 }}" as="v" hint-placeholder-count="2">
+      <div>
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#6F6759;margin-bottom:10px">{{ v.cap }}</div>
+        <div data-theme="{{ v.theme }}" style="width:360px;height:760px;position:relative;overflow:hidden;border-radius:24px;background:var(--surface);color:var(--on-surface);display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+          <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:500 13px var(--font-sans)"><span>9:41</span><span class="kt-icon" style="font-size:16px">signal_cellular_alt wifi battery_full</span></div>
+          <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.AppBar" title="{{ v.revT }}" leading="close" hint-size="100%,64px"></x-import>
+          <div class="kt-noscroll" style="flex:1;overflow-y:auto;padding:4px 16px 24px;display:grid;align-content:start;grid-template-columns:minmax(0,1fr);gap:12px">
+            <div style="background:var(--card);border-radius:12px;padding:16px">
+              <div style="font:var(--type-title-medium)">{{ v.matched }}</div>
+              <div style="height:4px;border-radius:2px;background:var(--surface-container-highest);margin:12px 0 0"><div style="width:100%;height:100%;border-radius:2px;background:var(--primary)"></div></div>
+            </div>
+            <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.TextField" label="{{ v.titleL }}" default-value="{{ v.titleV }}" hint-size="100%,52px"></x-import>
+            <div class="kt-state" style="display:flex;align-items:center;background:var(--card);border-radius:12px;padding:16px;margin-top:4px">
+              <div style="flex:1"><div style="font:var(--type-title-medium)">{{ v.ingrT }}</div><div style="font:var(--type-body-medium);color:var(--on-surface-variant)">{{ v.ingrS }}</div></div>
+              <span class="kt-icon" style="color:var(--on-surface-variant)">chevron_right</span>
+            </div>
+            <div class="kt-state" style="display:flex;align-items:center;background:var(--card);border-radius:12px;padding:16px">
+              <div style="flex:1"><div style="font:var(--type-title-medium)">{{ v.methT }}</div><div style="font:var(--type-body-medium);color:var(--on-surface-variant)">{{ v.methS }}</div></div>
+              <span class="kt-icon" style="color:var(--on-surface-variant)">chevron_right</span>
+            </div>
+          </div>
+          <div style="padding:4px 16px 16px;border-top:1px solid var(--outline-variant);background:var(--surface)">
+            <div style="display:flex;align-items:center;gap:8px;min-height:48px;font:var(--type-body-medium);color:var(--on-surface-variant)">
+              <span class="kt-icon" style="font-size:16px;flex:none">home</span>
+              <span style="flex:1;min-width:0;text-wrap:pretty">{{ v.savesTo }} <b style="font-weight:600;color:var(--on-surface)">{{ v.hh }}</b></span>
+              <x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="text" style="flex:none;margin-right:-12px" hint-size="auto,48px">{{ v.change }}</x-import>
+            </div>
+            <div style="display:flex;gap:12px;margin-top:4px">
+              <div style="flex:1;min-width:0;display:flex"><x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" variant="outlined" full-width="{{ true }}" hint-size="100%,48px">{{ v.discard }}</x-import></div>
+              <div style="flex:1;min-width:0;display:flex"><x-import component-from-global-scope="KitchenTableDesignSystem_abd297.Button" full-width="{{ true }}" hint-size="100%,48px">{{ v.save }}</x-import></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() {
+    const tick = () => { if (window.KitchenTableDesignSystem_abd297) this.forceUpdate(); else this._t = setTimeout(tick, 100); };
+    tick();
+  }
+  componentWillUnmount() { clearTimeout(this._t); }
+  renderVals() {
+    const h = React.createElement, NS = window.KitchenTableDesignSystem_abd297 || {};
+    const B = (p, c) => NS.Button ? h(NS.Button, p, c) : null;
+    const IB = p => NS.IconButton ? h(NS.IconButton, p) : null;
+    const LONG = 'Porodica Stanković – vikendica';
+    const HH = {
+      mire: ['Kod Mire', 2, 'member'], jov: ['Jovanovići', 4, 'owner'], stan: [LONG, 6, 'member'],
+      ns: ['Stan u Novom Sadu', 1, 'owner'], kum: ['Slava kod kumova', 9, 'member'],
+    };
+    const srN = n => n % 10 === 1 && n % 100 !== 11 ? 'član' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? 'člana' : 'članova';
+    const meta = (k, lang) => { const [, n, r] = HH[k]; return lang === 'sr' ? `${n} ${srN(n)} · ${r === 'owner' ? 'Vlasnik' : 'Član'}` : `${n} ${n === 1 ? 'member' : 'members'} · ${r === 'owner' ? 'Owner' : 'Member'}`; };
+    const rows = (keys, cur, lang) => keys.map((k, i) => ({ name: HH[k][0], meta: meta(k, lang), cur: k === cur, other: k !== cur, div: i < keys.length - 1, manage: (lang === 'sr' ? 'Upravljajte: ' : 'Manage ') + HH[k][0] }));
+    const last = a => a.map((x, i) => ({ ...x, cls: i === a.length - 1 ? '' : 'kt-dash' }));
+    const S = {
+      en: {
+        lang: 'en', recipes: 'Recipes', listT: 'List', settings: 'Settings', search: 'Search recipes', addLabel: 'Add a recipe',
+        filters: ['Favorites', 'Lenten', 'Cakes', 'Feast days'], count: '5 recipes',
+        recs: [
+          { title: 'Baked beans prebranac', servings: '6 servings', time: '2 h 15 min', rating: 5, favorite: true },
+          { title: 'Lenten sarma', letter: 'L', servings: '8 servings', time: '3 h', rating: 4, favorite: true },
+          { title: 'Stuffed peppers', servings: '4 servings', time: '1 h 30 min', rating: 4 },
+          { title: 'Cornbread with cheese', letter: 'C', servings: '4 servings', time: '50 min', rating: 5 },
+        ],
+        nav: [{ value: 'recipes', label: 'Recipes', icon: 'menu_book' }, { value: 'plan', label: 'Plan', icon: 'calendar_month' }, { value: 'list', label: 'List', icon: 'list' }, { value: 'settings', label: 'Settings', icon: 'tune' }],
+        provider: 'Signed in with Google', appearance: 'Appearance', themeT: 'Theme', themeD: 'Applies to this app only, whatever your phone uses.', language: 'Language', account: 'Account', signout: 'Sign out',
+        themeOpts: [{ value: 'light', label: 'Light', icon: 'light_mode' }, { value: 'dark', label: 'Dark', icon: 'dark_mode' }],
+        households: 'Households', intro: 'Each has its own recipes, plan and list. Tap one to switch to it, or the gear to manage it.',
+        create: 'Create a new household', join: 'Join with a code',
+        household: 'Household', two: '2 members', rename: 'Rename household', membersH: 'Members', owner: 'Owner', memberYou: 'Member · you', inviteH: 'Invite someone', createCode: 'Create invite code',
+        anotherH: 'Another home?', anotherB: 'Keep a separate box of recipes, plan and list, for example for a weekend house.', addHh: 'Add a household', leave: 'Leave household',
+        range: [{ value: 'this', label: 'This week' }, { value: 'next', label: 'Next' }, { value: 'pick', label: 'Dates' }],
+        switchT: 'Switch household', manageAll: 'Manage households', undo: 'Undo', now: n => `Now in ${n}.`,
+        emptyT: 'No recipes yet.', emptyB: 'Add one with +, or import one from a link.', invite: 'Invite',
+        revT: 'Review import', matched: '6 of 6 ingredients matched', titleL: 'Title', titleV: 'Sauerkraut sarma', ingrT: 'Ingredients', ingrS: '6 lines', methT: 'Method', methS: '5 steps',
+        savesTo: 'Saves to', change: 'Change', discard: 'Discard', save: 'Save recipe',
+        cancel: 'Cancel',
+      },
+      sr: {
+        lang: 'sr', recipes: 'Recepti', listT: 'Spisak', settings: 'Podešavanja', search: 'Pretražite recepte', addLabel: 'Dodajte recept',
+        filters: ['Omiljeni', 'Posno', 'Kolači', 'Slave'], count: '5 recepata',
+        recs: [
+          { title: 'Prebranac', servings: '6 porcija', time: '2 h 15 min', rating: 5, favorite: true },
+          { title: 'Posna sarma', letter: 'P', servings: '8 porcija', time: '3 h', rating: 4, favorite: true },
+          { title: 'Punjene paprike', servings: '4 porcije', time: '1 h 30 min', rating: 4 },
+          { title: 'Proja sa sirom', letter: 'P', servings: '4 porcije', time: '50 min', rating: 5 },
+        ],
+        nav: [{ value: 'recipes', label: 'Recepti', icon: 'menu_book' }, { value: 'plan', label: 'Plan', icon: 'calendar_month' }, { value: 'list', label: 'Spisak', icon: 'list' }, { value: 'settings', label: 'Podešavanja', icon: 'tune' }],
+        provider: 'Prijavljeni ste preko Google naloga', appearance: 'Izgled', themeT: 'Tema', themeD: 'Važi samo za ovu aplikaciju, bez obzira na podešavanje telefona.', language: 'Jezik', account: 'Nalog', signout: 'Odjavite se',
+        themeOpts: [{ value: 'light', label: 'Svetla', icon: 'light_mode' }, { value: 'dark', label: 'Tamna', icon: 'dark_mode' }],
+        households: 'Domaćinstva', intro: 'Svako ima svoje recepte, plan i spisak. Dodirnite jedno da pređete u njega, ili zupčanik da njime upravljate.',
+        create: 'Napravite novo domaćinstvo', join: 'Pridružite se pomoću koda',
+        household: 'Domaćinstvo', two: '2 člana', rename: 'Preimenujte domaćinstvo', membersH: 'Članovi', owner: 'Vlasnik', memberYou: 'Član · vi', inviteH: 'Pozovite nekoga', createCode: 'Napravite kod za poziv',
+        anotherH: 'Još jedan dom?', anotherB: 'Zasebni recepti, plan i spisak, na primer za vikendicu.', addHh: 'Dodajte domaćinstvo', leave: 'Napustite domaćinstvo',
+        range: [{ value: 'this', label: 'Ova nedelja' }, { value: 'next', label: 'Sledeća' }, { value: 'pick', label: 'Datumi' }],
+        switchT: 'Promenite domaćinstvo', manageAll: 'Upravljajte domaćinstvima', undo: 'Poništite', now: n => `Sada ste u domaćinstvu „${n}“.`,
+        emptyT: 'Još nema recepata.', emptyB: 'Dodajte recept pomoću +, ili ga uvezite sa linka.', invite: 'Pozovite',
+        revT: 'Pregled uvoza', matched: 'Prepoznato 6 od 6 sastojaka', titleL: 'Naslov', titleV: 'Sarma od kiselog kupusa', ingrT: 'Sastojci', ingrS: '6 redova', methT: 'Postupak', methS: '5 koraka',
+        savesTo: 'Čuva se u:', change: 'Promenite', discard: 'Odbacite', save: 'Sačuvajte recept',
+        cancel: 'Otkažite',
+      },
+    };
+    const mk = (theme, lang, cap, extra) => ({ ...S[lang], theme, cap, noSel: [], ...extra });
+    const listA = {
+      en: [{ aisle: 'Vegetables', items: last([{ name: 'bell peppers', n: '8' }, { name: 'onions', n: '1', u: 'kg' }]) }, { aisle: 'Meat', items: last([{ name: 'minced meat', n: '1.5', u: 'kg' }, { name: 'smoked bacon', n: '200', u: 'g' }]) }, { aisle: 'Dairy', items: last([{ name: 'white cheese', n: '500', u: 'g' }]) }],
+      sr: [{ aisle: 'Povrće', items: last([{ name: 'babura paprika', n: '8' }, { name: 'crni luk', n: '1', u: 'kg' }]) }, { aisle: 'Meso', items: last([{ name: 'mešano mleveno meso', n: '1,5', u: 'kg' }, { name: 'dimljena slanina', n: '200', u: 'g' }]) }, { aisle: 'Mlečni proizvodi', items: last([{ name: 'beli sir', n: '500', u: 'g' }]) }],
+    };
+    const listB = {
+      en: [{ aisle: 'Bakery', items: last([{ name: 'bread', n: '2' }]) }, { aisle: 'Dairy', items: last([{ name: 'milk', n: '2', u: 'l' }, { name: 'kajmak', n: '300', u: 'g' }]) }, { aisle: 'Fruit', items: last([{ name: 'plums', n: '1', u: 'kg' }, { name: 'lemons', n: '2' }]) }],
+      sr: [{ aisle: 'Pekara', items: last([{ name: 'hleb', n: '2' }]) }, { aisle: 'Mlečni proizvodi', items: last([{ name: 'mleko', n: '2', u: 'l' }, { name: 'kajmak', n: '300', u: 'g' }]) }, { aisle: 'Voće', items: last([{ name: 'šljive', n: '1', u: 'kg' }, { name: 'limun', n: '2' }]) }],
+    };
+    const three = ['mire', 'jov', 'ns'], five = ['mire', 'stan', 'jov', 'ns', 'kum'];
+    const dlg = (lang, verb) => h(React.Fragment, null, B({ variant: 'text' }, S[lang].cancel), B({ variant: 'destructive' }, verb));
+    const ppl = (lang, ownerYou) => ownerYou
+      ? [{ l: 'L', tone: 'primary', name: 'Luka Jovanović', sub: lang === 'sr' ? 'Vlasnik · vi' : 'Owner · you' }, { l: 'S', tone: 'secondary', name: 'Sanja Stanković', sub: lang === 'sr' ? 'Član' : 'Member' }]
+      : [{ l: 'M', tone: 'primary', name: 'Mira Jovanović', sub: S[lang].owner }, { l: 'L', tone: 'secondary', name: 'Luka Jovanović', sub: S[lang].memberYou }];
+    return {
+      langOptions: [{ value: 'sr', label: 'Srpski' }, { value: 'en', label: 'English' }],
+      skel: [{ h: 14, w: 30 }, { h: 16, w: 50, amt: true }, { h: 16, w: 38, amt: true }, { h: 14, w: 24 }, { h: 16, w: 56, amt: true }, { h: 16, w: 44, amt: true }],
+      d1: [
+        mk('light', 'en', 'D1·1 · One household · header as today', { plain: true, label: false, addAction: IB({ icon: 'add', label: 'Add a recipe' }) }),
+        mk('light', 'en', 'D1·2 · 2+ households · name under the title', { plain: false, label: true, hh: 'Kod Mire' }),
+        mk('dark', 'sr', 'D1·3 · One household · dark · sr', { plain: true, label: false, addAction: IB({ icon: 'add', label: 'Dodajte recept' }) }),
+        mk('dark', 'sr', 'D1·4 · 2+ households · dark · sr · long name', { plain: false, label: true, hh: LONG }),
+      ],
+      d2settings: [
+        mk('light', 'en', 'D2·1 · Settings · 2 households', { hhsLabel: 'Households', hh: 'Kod Mire', hhSub: '2 members · 1 more household' }),
+        mk('dark', 'sr', 'D2·2 · Settings · 5 households · dark · sr', { hhsLabel: 'Domaćinstva', hh: LONG, hhSub: '6 članova · još 4 domaćinstva' }),
+      ],
+      d2list: [
+        mk('light', 'en', 'D2·3 · Households · 2', { rows: rows(['mire', 'jov'], 'mire', 'en') }),
+        mk('dark', 'en', 'D2·4 · Households · 2 · dark', { rows: rows(['mire', 'jov'], 'mire', 'en') }),
+        mk('light', 'sr', 'D2·5 · Households · 5 · sr · long name', { rows: rows(five, 'stan', 'sr') }),
+        mk('dark', 'sr', 'D2·6 · Households · 5 · dark · sr', { rows: rows(five, 'stan', 'sr') }),
+      ],
+      d2single: [
+        mk('light', 'en', 'D2·7 · One household · Household screen + way in', {}),
+        mk('dark', 'sr', 'D2·8 · One household · dark · sr', {}),
+      ],
+      d3: [
+        mk('light', 'en', 'D3·1 · Sheet from the List header', { hh: 'Kod Mire', loaded: true, items: listA.en, sheet: true, rows: rows(three, 'mire', 'en') }),
+        mk('dark', 'sr', 'D3·2 · Sheet · dark · sr · 5', { hh: 'Kod Mire', loaded: true, items: listA.sr, sheet: true, rows: rows(five, 'mire', 'sr') }),
+        mk('light', 'en', 'D3·3 · Loading Jovanovići', { hh: 'Jovanovići', loading: true }),
+        mk('dark', 'sr', 'D3·4 · Loading · dark · sr', { hh: LONG, loading: true }),
+        mk('light', 'en', 'D3·5 · Landed on the List root', { hh: 'Jovanovići', loaded: true, items: listB.en, snack: S.en.now('Jovanovići') }),
+        mk('dark', 'sr', 'D3·6 · Landed · dark · sr · long name', { hh: LONG, loaded: true, items: listB.sr, snack: S.sr.now(LONG) }),
+      ],
+      d4form: [
+        mk('light', 'en', 'D4·1 · Create, from the list', { fTitle: 'Create another household', fBody: 'It starts empty. Kod Mire keeps its recipes, plan and list.', fLabel: 'Household name', fValue: 'Vikendica', fCta: 'Create' }),
+        mk('dark', 'sr', 'D4·2 · Create · dark · sr · long name', { fTitle: 'Napravite još jedno domaćinstvo', fBody: 'Počinje prazno. Kod Mire zadržava svoje recepte, plan i spisak.', fLabel: 'Naziv domaćinstva', fValue: LONG, fCta: 'Napravite' }),
+        mk('light', 'sr', 'D4·3 · Join · sr', { fTitle: 'Pridružite se još jednom domaćinstvu', fBody: 'Zatražite kod od nekoga iz tog domaćinstva. I dalje ćete biti i u Kod Mire.', fLabel: 'Kod za poziv', fValue: 'KT7-2QM', fCta: 'Pridružite se' }),
+        mk('dark', 'en', 'D4·4 · Join · dark', { fTitle: 'Join another household', fBody: "Ask someone in that household for a code. You'll stay in Kod Mire too.", fLabel: 'Invite code', fValue: 'KT7-2QM', fCta: 'Join' }),
+        mk('light', 'en', 'D4·5 · Join · already a member', { fTitle: 'Join another household', fBody: "Ask someone in that household for a code. You'll stay in Kod Mire too.", fLabel: 'Invite code', fValue: 'KT2-8LD', already: "You're already a member of Jovanovići.", fCta: 'Switch to Jovanovići', fAlt: 'Use another code' }),
+        mk('dark', 'sr', 'D4·6 · Already a member · dark · sr', { fTitle: 'Pridružite se još jednom domaćinstvu', fBody: 'Zatražite kod od nekoga iz tog domaćinstva. I dalje ćete biti i u Kod Mire.', fLabel: 'Kod za poziv', fValue: 'KT9-4VR', already: `Već ste član domaćinstva „${LONG}“.`, fCta: 'Pređite u to domaćinstvo', fAlt: 'Unesite drugi kod' }),
+      ],
+      d4land: [
+        mk('light', 'en', 'D4·7 · After Create · new household, Recipes root', { hh: 'Vikendica', snack: S.en.now('Vikendica') }),
+        mk('dark', 'sr', 'D4·8 · After Create · dark · sr', { hh: LONG, snack: S.sr.now(LONG) }),
+      ],
+      d5: [
+        mk('light', 'en', 'D5·1 · Leave · member', { hName: 'Kod Mire', hCount: '2 members', people: ppl('en'), dTitle: 'Leave Kod Mire?', dBody: "You'll lose access to its recipes, meal plans and shopping lists.", dSwitch: "You'll switch to Jovanovići.", dActions: dlg('en', 'Leave') }),
+        mk('dark', 'sr', 'D5·2 · Leave · dark · sr', { hName: 'Kod Mire', hCount: '2 člana', people: ppl('sr'), dTitle: 'Napustite Kod Mire?', dBody: 'Izgubićete pristup njegovim receptima, planovima obroka i spiskovima za kupovinu.', dSwitch: `Zatim prelazite u domaćinstvo „${LONG}“.`, dActions: dlg('sr', 'Napustite') }),
+        mk('light', 'sr', 'D5·3 · Delete · owner · sr · long name', { hName: LONG, hCount: '2 člana', people: ppl('sr', true), dTitle: `Obrišite „${LONG}“?`, dBody: 'Svi članovi gube pristup njegovim receptima, planovima obroka i spiskovima za kupovinu. Ovo se ne može poništiti iz aplikacije.', dSwitch: 'Zatim prelazite u domaćinstvo „Kod Mire“.', dActions: dlg('sr', 'Obrišite') }),
+        mk('dark', 'en', 'D5·4 · Delete · owner · dark', { hName: LONG, hCount: '2 members', people: ppl('en', true), dTitle: `Delete ${LONG}?`, dBody: "Everyone in it loses access to its recipes, meal plans and shopping lists. This can't be undone from the app.", dSwitch: "You'll switch to Kod Mire.", dActions: dlg('en', 'Delete') }),
+      ],
+      d6: [
+        mk('light', 'en', 'D6·1 · Import review · 2+ households', { hh: 'Kod Mire' }),
+        mk('dark', 'sr', 'D6·2 · Import review · dark · sr · long name', { hh: LONG }),
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

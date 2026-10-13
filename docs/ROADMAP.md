@@ -1130,9 +1130,10 @@ from `docs/IDEAS.md`, with the design brief in
 
 ### Slice C — The multiple-households UI
 
-**Status: not started.** It waits on the Claude Design round for
-`docs/design/BRIEF_multiple_households.md`, which goes through
-`/design-handoff`.
+**Status: in progress.** Six slices, from the Claude Design round in
+`docs/design/handoffs/2026-10-13-multiple-households/ROUND.md`.
+`phase9-household-list` is complete (`31b685d`). Decisions taken during it:
+D170. See `docs/journal/phase-9.md`. Next: `phase9-household-switcher`.
 
 ---
 
