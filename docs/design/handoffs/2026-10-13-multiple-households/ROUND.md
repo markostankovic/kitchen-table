@@ -119,7 +119,7 @@ None.
       member of X."), not red; the button becomes "Switch to X" or "Done".
       **Planner checks** what `redeem-invite` returns for an existing member
       since slice B dropped `already_in_household`.
-- [ ] `phase9-household-leave-switch` — leave and delete when you have
+- [x] `phase9-household-leave-switch` (`7d6847b`, D174) — leave and delete when you have
       others. Files: `lib/features/households/presentation/household_screen.dart`
       (`_leave`, `_deleteHousehold`), possibly
       `lib/core/household/` for the next-household pick, the `.arb` files.

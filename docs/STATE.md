@@ -1,46 +1,41 @@
 # State — 2026-10-13
 
 **Branch:** `main`
-**Last shipped:** Phase 9 slice C's fourth slice,
-`phase9-household-create-join-another` (`b955e3d`), from the design round
-`docs/design/handoffs/2026-10-13-multiple-households/` (§ D4, § D2's
-list-footer rows, § D2·7–8, D173). Someone who already has a household can
-create a second one, or join one with a code, from inside the app.
+**Last shipped:** Phase 9 slice C's fifth slice,
+`phase9-household-leave-switch` (`7d6847b`), from the design round
+`docs/design/handoffs/2026-10-13-multiple-households/` (§ D5, D174).
+Leaving or deleting a household when you have others.
 
-- **Way in.** Two rows under the Households list's card: "Create a new
-  household" and "Join with a code". With one household, the Household
-  screen's new "Another home?" card (exactly one household, D115) opens
-  the list. That card is the only change a one-household user sees.
-- **Forms.** The onboarding create / join screens in an `another` mode,
-  behind top-level `/households/new` and `/households/join`, outside the
-  shell: ✕, no mark, a body naming the current household, no cross-link.
-  Onboarding is unchanged.
-- **Landing.** The Recipes root in the new household, with "Now in X.":
-  Invite after a create (opens its screen, mints nothing), Undo after a
-  join.
-- **Already a member.** `redeemInvite` returns `InviteRedemption`. A code
-  for a household you're in shows a quiet `card` panel, with Done (the
-  current one, pops) or Switch to X, plus "Use another code".
+- **Dialog.** With two or more households, Leave / Delete name the
+  household (`Napustiti „X“?` / `Obrisati „X“?`). When it is the current
+  one, the dialog ends "You'll switch to Y." in `onSurface`, `md` below the
+  body. Buttons stay `Napusti` / `Obriši`.
+- **After.** It switches to Y (`switchTo`), goes to the Settings root, and
+  shows "You left X. Now in Y." (or "Deleted X. …") with no Undo. A
+  non-current household left through the list's gear gets the named dialog,
+  no switch sentence, and you're back on the list.
+- **Y** is the most recently used other household on this device:
+  `HouseholdRepository.select` now keeps `recent_households.<userId>` in
+  `DevicePreferences`, and the pure `nextHouseholdAfter` picks from it,
+  else join order.
+- **One household:** unchanged, the same dialog and the same path to
+  onboarding.
 
-`dart analyze` is clean, `flutter test` passes 1115/1115. `make check` is
+`dart analyze` is clean, `flutter test` passes 1128/1128. `make check` is
 green except the known `seed-check`.
 
-**Hosted is current, functions included, as of this walk.** The Edge
-Functions had been left at slice A (deployed 07:24 UTC, before slice B's
-`48728cf`), so on hosted a second household could not be joined
-(`409 already_in_household`). `make functions-deploy` was run during the
-walk: `redeem-invite` v5, `create-invite` v3. After any slice that touches
-`supabase/functions/`, check `supabase functions list` against the commit
-time. Both devices run this slice's release build.
+**Hosted** needs nothing from this slice (no migration, no function). The
+emulator runs this slice's release build; the Galaxy still runs slice 4's.
 
 **Hosted test data** for the next slices' walks:
 - the walk account (Galaxy) owns `Renamed Household` and `Porodica
   Stanković – vikendica` (current on the Galaxy);
 - `test-user` (emulator) owns `Kod Mire` and is a member of `Renamed
-  Household` (current on the emulator).
+  Household`. Current on the emulator: `Walk throwaway`.
 
-**Left by this slice's walk, for Marko to clean up** (the session may not
-delete or leave on hosted):
+**Still left for Marko to clean up**, from slice 4's walk (the session may
+not delete or leave on hosted). These are also the confirming taps this
+slice's walk still owes; see its loop below:
 - `test-user` owns two throwaways, `Walk throwaway` and `Porodica Stankovic
   - vikendica`. Delete them.
 - `test-user` joined the Galaxy's `Porodica Stanković – vikendica`. Leave
@@ -48,8 +43,9 @@ delete or leave on hosted):
 - Kod Mire's code `324272` is live. Revoke it.
 
 `test-user` is in five households until then. Brought back to Kod Mire +
-Renamed (or Kod Mire alone, for the en "Another home?" check this walk
-still owes), it is the walk stand-in again.
+Renamed, it is the walk stand-in again; with Kod Mire alone, it is the
+one-household account for this slice's check and slice 4's en "Another
+home?" check.
 
 Still open:
 - the switch sheet's rows turn into a small spinner for a frame or two as
@@ -132,9 +128,9 @@ Still open:
   Design updates them.
 
 **In flight:** none.
-**Next:** `phase9-household-leave-switch`: leave and delete when you have
-other households (§ D5 of the round; `ROUND.md`'s next unticked slice), via
-`/plan-slice-ui`. Then `phase9-import-save-to`.
+**Next:** `phase9-import-save-to`: where an import is saved, with 2+
+households (§ D6 of the round; `ROUND.md`'s last unticked slice), via
+`/plan-slice-ui`. Its walk needs a real share intent, so the Galaxy.
 Still open as candidates beside Phase 9:
 - the formatting toolbar in the translation review, the last raw formatting
   surface. It is a small `/plan-slice-ui` on D167's pattern;
@@ -150,9 +146,9 @@ Still open as candidates beside Phase 9:
 
 The open device-walk loops below still want one sitting with the Galaxy
 attached.
-**Latest decision:** D173
+**Latest decision:** D174
 
-**Twenty-one device-walk loops are open.** Phase 7 part 3's walk ran on the physical
+**Twenty-two device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB
 and search-field defects. It found one defect of its own, which was fixed and
 re-walked in the same sitting, so part 3's loop closed too. Part 5's walk
@@ -261,6 +257,10 @@ same sitting, so it opened no loop. The emulator can't reach this surface:
 its Gboard floats and gives the app no keyboard inset. The Galaxy's Gboard
 draws no composing underline in any field, so that check rests on the
 controller test.
+The `phase9-household-leave-switch` walk (`/design-walk household-leave`,
+2026-10-13, emulator, all four combinations, every dialog cancelled) was
+clean on everything it reached. It opened a loop for the confirming taps,
+which the session may not run on hosted, and for the one-household check.
 Oldest first:
 
 - ~~**Phase 5 part 5**~~ — **closed 2026-09-29.** Phase 7 part 5's walk
@@ -1257,6 +1257,37 @@ Oldest first:
   delete them), and joined the Galaxy's `Porodica Stanković – vikendica`
   (leave it). One more throwaway was deleted during the walk. The Galaxy's
   `950420` and `793155` are spent; `324272` (Kod Mire) is still live, revoke it.
+
+- **Phase 9** (`phase9-household-leave-switch`) — walked 2026-10-13 on the
+  **emulator** (`test-user`, five households, all four combinations, hosted
+  release build). Every dialog was opened and cancelled; nothing was left or
+  deleted. Clean on everything reached:
+  - recency: switched to the Galaxy's `Porodica Stanković – vikendica`
+    (B), then to `Porodica Stankovic - vikendica` (C). C's Delete named
+    B, not `Kod Mire` (first in join order). Then switched to B: B's
+    Leave named C;
+  - the named titles wrap to two lines in sr and en, and in the longest
+    one (`Napustiti „Porodica Stanković – vikendica“?`) the body and
+    the switch sentence fit without scrolling;
+  - the switch sentence is darker than the body in light (≈`#1F190F` vs
+    `#484134`) and brighter in dark (≈`#EBEBE4` vs `#CFD0C2`), in sr and
+    en; the destructive verb (`Obriši` / `Napusti`) reads in both;
+  - non-current through the gear (`Renamed Household`): named title, no
+    switch sentence;
+  - Cancel leaves the current household unchanged.
+  Cosmetic, not a defect: C's own name, `Porodica Stankovic - vikendica`,
+  breaks at its hyphen, so the sr title's second line starts
+  `- vikendica“?`. That's the name's own ASCII hyphen.
+  Not reached (Marko's confirming taps, which double as the STATE.md
+  cleanup above):
+  - after confirming: the Settings root, the household row showing the
+    named household, the snackbar with no action, and no flash of the left
+    household's spinner or `noHouseholdYet` during the switch (if there is
+    one, move `go` before `switchTo` in `household_screen.dart`'s `_go`);
+  - leaving a non-current one through the gear: back on the list, current
+    unchanged;
+  - the one-household check: today's dialog exactly, then onboarding.
+    `test-user` is in five households; once it's back to one it serves.
 
 All open ones need the hosted release build: `make install-hosted` on
 the Galaxy, or `make install-emulator` on the emulator for anything behind

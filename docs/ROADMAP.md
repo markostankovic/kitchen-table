@@ -1137,8 +1137,9 @@ D170. `phase9-household-switcher` is complete (`7dd0d1c`). Decisions taken
 during it: D171. `phase9-household-switch-loading` is complete
 (`d95724b`). Decisions taken during it: D172.
 `phase9-household-create-join-another` is complete (`b955e3d`). Decisions
-taken during it: D173. See `docs/journal/phase-9.md`.
-Next: `phase9-household-leave-switch`.
+taken during it: D173. `phase9-household-leave-switch` is complete
+(`7d6847b`). Decisions taken during it: D174. See `docs/journal/phase-9.md`.
+Next: `phase9-import-save-to`.
 
 ---
 

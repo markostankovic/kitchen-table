@@ -671,3 +671,91 @@ functions were behind, though: see the walk below.
     and the session may not delete or leave on hosted;
   - onboarding on a device (the widget test covers the mark and
     cross-link).
+
+### Slice C, part 5 — Leaving and deleting when you have others (`phase9-household-leave-switch`)
+
+**Status:** complete (`7d6847b`). Decisions taken during it: D174.
+
+Slice 5 of 6 of the design round
+`docs/design/handoffs/2026-10-13-multiple-households/` (§ D5). Planned with
+`/plan-slice`, built, walked and closed on 2026-10-13. No package,
+migration or function change.
+
+- **Recent list.** `recentHouseholdsKey(userId)` →
+  `recent_households.<userId>` in `device_preferences.dart`.
+  `HouseholdRepository.select` writes it after the selection: front,
+  deduped, cap 10, `,`-joined. `recentHouseholdIds(userId)` reads it back,
+  dropping empty segments.
+- **Pick.** `domain/next_household.dart`'s pure `nextHouseholdAfter`: the
+  first recent id still held and not being left, else join order, else
+  null. `nextHouseholdAfterLeavingProvider(householdId)` (not keepAlive)
+  wraps it with `myHouseholds` and the repository's list.
+- **Household screen.** `_leave` and `_deleteHousehold` now pass their
+  strings and RPC to one `_go`, and the dialog is one `_confirmGoing`:
+  - one household, or `myHouseholds` without a value: today's dialog and
+    `invalidate` → read → `_landAfterGoing`;
+  - others, not current: the named title and body, then today's path back to
+    the list;
+  - others, current: the pick is resolved before the dialog. The content
+    becomes a `Column` of the body, `AppSpacing.md`, and "You'll switch to
+    Y." in `bodyMedium` `onSurface`. On confirm it captures messenger,
+    router and notifier (D173's shape), then runs the RPC, `switchTo`,
+    `router.go(SettingsRoute)`, and "You left X. Now in Y." /
+    "Deleted X. Now in Y." with `persist: false` and no action. A failed
+    RPC shows its error and stops. A failed `switchTo` shows its error and
+    goes nowhere.
+- **Strings.** 7 new keys (sr template with descriptions, en). The existing
+  keys are unchanged.
+- **Docs.** DESIGN_SYSTEM.md § Dialog (the two-or-more variant), §
+  Household (what confirming does with others) and § Menu, snackbar,
+  banner (the no-Undo counter-example).
+- **Tests.**
+  - New `next_household_test.dart` (5).
+  - `household_repository_offline_test` +4: front/dedupe, cap at 10, empty
+    store, per user.
+  - `household_screen_test` +4: one household is today's dialog with no
+    `select`; current with others names the recent one, not the oldest,
+    with the switch sentence in `onSurface`, `select('h3')`, Settings and
+    the snackbar with no action; the owner's delete variant; non-current
+    has no switch sentence and no `select`.
+
+**Differs from the plan.**
+- **Two existing screen tests weren't one-household**, unlike the plan
+  said: "leaving the current household, when another remains, lands on
+  Settings" and "…not current lands back on the list". They now go
+  through the new path. Only the fake changed (`select` records
+  `selectCalls` and moves `currentId`; `recentHouseholdIds` answers
+  `recent`), and both pass unchanged.
+- **`_go` holds a `listenManual` subscription** while it awaits the
+  autoDispose pick provider, so a bare `ref.read(...future)` can't lose its
+  provider mid-await. The plan had the bare read.
+- The pick provider's `AppFailure` is caught and treated as null, which
+  gives the named dialog and today's path, the plan's "stay total" case.
+
+**How it was verified.**
+- `dart analyze` clean, `flutter test` **1128/1128**. `make -k check` green
+  except the known `seed-check`. `l10n-check` passed once the regenerated
+  files were staged.
+- **Walk** (`/design-walk household-leave`), **emulator**, `test-user` in
+  five households, hosted release build, all four combinations. Every
+  dialog was opened and cancelled; the session may not leave or delete on
+  hosted. Clean:
+  - **Recency.** Switched to the Galaxy's `Porodica Stanković –
+    vikendica` (B), then `Porodica Stankovic - vikendica` (C). C's Delete
+    named B, not `Kod Mire`, which is first in join order. After switching
+    to B, B's Leave named C.
+  - The named titles wrap to two lines in sr and en. In the longest,
+    `Napustiti „Porodica Stanković – vikendica“?`, the body and the
+    switch sentence fit without scrolling.
+  - Switch sentence vs body, measured off the screenshots: darker in light
+    (≈`#1F190F` vs `#484134`), brighter in dark (≈`#EBEBE4` vs
+    `#CFD0C2`). The destructive verbs read in both.
+  - Non-current through the gear (`Renamed Household`): named, no switch
+    sentence. Cancel left the current household unchanged.
+  - Cosmetic: C's own ASCII hyphen puts `- vikendica“?` at the start of
+    the sr title's second line. That comes from the name.
+- **Not reached**, so STATE keeps a loop: everything after a confirming tap
+  (Settings root, the row, the action-less snackbar, any flash of the left
+  household during the switch), leaving a non-current household, and the
+  one-household dialog → onboarding. Marko's confirming taps on the
+  throwaways, which are also the hosted cleanup, cover all three.
