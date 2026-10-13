@@ -132,7 +132,7 @@ None.
       one you used most recently among the others": slice B stores only the
       current selection, so this may need a per-household last-used record in
       `DevicePreferences`, or a decision to fall back to join order.
-- [ ] `phase9-import-save-to` — where an import is saved. Files:
+- [x] `phase9-import-save-to` (`a6e268e`, D175) — where an import is saved. Files:
       `lib/features/import/presentation/import_review_screen.dart` (its
       `AppActionBar` footer), the import application/data path that saves,
       the `.arb` files. Bundle: § D6. With 2+ households one `bodyMedium`

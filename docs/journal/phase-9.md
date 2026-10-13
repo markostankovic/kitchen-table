@@ -759,3 +759,95 @@ migration or function change.
   household during the switch), leaving a non-current household, and the
   one-household dialog → onboarding. Marko's confirming taps on the
   throwaways, which are also the hosted cleanup, cover all three.
+
+### Slice C, part 6 — Where an import is saved (`phase9-import-save-to`)
+
+**Status:** complete (`a6e268e`). Decisions taken during it: D175.
+
+Slice 6 of 6, the last, of the design round
+`docs/design/handoffs/2026-10-13-multiple-households/` (§ D6). Planned with
+`/plan-slice-ui`, built, walked and closed on 2026-10-13. One migration, no
+package and no function change. With it, Phase 9 slice C is complete.
+
+- **Server.** `20261013180000_save_imported_recipe_target.sql` drops and
+  recreates `save_imported_recipe` with a fifth argument,
+  `target_household uuid default null`. The body is copied from
+  `20261006100000_recipe_structure.sql`, which stays untouched. After the
+  auth check, the job lookup (still `is_household_member(j.household_id)`)
+  and the status check, a non-null target must pass
+  `is_household_member(target_household)` or it raises `42501`. Then
+  `household := coalesce(target_household, household)`. The grants are
+  re-stated for the new signature. The `null` default lets installed builds'
+  four-argument call resolve onto it.
+- **Data / domain.** `ImportJob` gains `householdId` (`_jobColumns` reads
+  `household_id`). `ImportRepository.saveImported` and `ImportConfirm.save`
+  take `String? targetHouseholdId`. The key goes into the RPC payload only
+  when it is non-null, so an unchanged save sends exactly the old payload.
+- **Core.** `householdNameAmongMany(householdId)` next to
+  `householdSwitcherName`: the name when `myHouseholds` has 2+ and contains
+  the id, else null (and null on `AppFailure`). The private
+  `_HouseholdSwitchSheet` now takes `title`, `selectedId` and `showManage`.
+  `showHouseholdSwitchSheet` keeps its signature and output.
+  `showSaveToHouseholdSheet(context, selectedId:)` returns `({id, name})?`,
+  has no Manage row and no hairline, and switches nothing.
+- **Review screen.** `_targetHouseholdId` is screen state. Null means the
+  job's own household, and picking the job's household again resets it to
+  null. When `householdNameAmongMany(effective id)` is null, the bar is
+  today's `Row`, unchanged. Otherwise `AppActionBar`'s child is a `Column`:
+  `_SavesToLine` (`home_outlined` 16 `onSurfaceVariant`, `sm`, a
+  `bodyMedium` `onSurfaceVariant` prefix plus the name in w600 `onSurface`,
+  `maxLines: 2`, a theme `TextButton`, min height 48), then `xs`, then the
+  buttons. Change is disabled while busy.
+- **Save.** `_submit` captures the messenger, the effective id and the
+  shown name before the await. If the line was shown and the target isn't
+  the current household, it `go`es to `RecipesRoute` (the current
+  household's root, with no switch). Otherwise it `go`es to the detail, as
+  before. Then "Saved to X." / `Sačuvano u domaćinstvu „X“.`, after
+  `hideCurrentSnackBar`, with no action. One household gives no snackbar.
+- **Strings.** 4 new keys: `importSavesToPrefix`, `importSaveToChange`,
+  `saveToHouseholdSheetTitle` and `savedToHousehold`.
+- **Docs.** DESIGN_SYSTEM.md: § Import review's action bar, § Household's
+  switch sheet (second use), § Menu, snackbar, banner, § The shared widgets,
+  and § Action bar.
+- **Tests.**
+  - New `household_name_among_many_test.dart` (4).
+  - `import_review_screen_test` +6:
+    - one household: no line, null target, the detail, no snackbar;
+    - 2+ name the job's household even when it isn't the current one;
+    - the name's weight and colour;
+    - an unchanged save sends null, lands on the detail and shows the
+      snackbar;
+    - Change opens Save to with no Manage row, and picking another
+      household sends its id, lands on Recipes and shows the snackbar;
+    - Serbian at 360dp wraps the long name without overflow.
+
+    The existing tests run with one household and pass unchanged.
+  - `save_imported_recipe_test.sql` adds three cases:
+    - a target the caller belongs to: the recipe lands there and the job
+      is done;
+    - a target the caller isn't in: `42501`, with the recipe count
+      unchanged;
+    - an explicit null target behaves like no target.
+
+**Differs from the plan.**
+- **The current id** is read with `await
+  currentHouseholdIdProvider.future`, and only when the line was shown. The
+  plan said `currentHouseholdProvider`. Awaiting `.future` gives the same
+  safety against a cold read, and a one-household save makes no extra read.
+- **Picking the job's own household back** clears the target to null, so
+  that save sends the old payload. The plan didn't cover this case.
+
+**How it was verified.**
+- `dart analyze` is clean, and `flutter test` passes **1138/1138**.
+- `make check` is green except the known `seed-check`. `l10n-check` passes
+  once the regenerated files are committed.
+- After a fresh `supabase db reset`, `make test-sql` passes, including
+  `save_imported_recipe: all assertions passed`.
+- **Hosted.** Marko pushed the migration. `supabase db push --dry-run`
+  afterwards reports "Remote database is up to date".
+- **Walk** (`/design-walk import-review`) on the Galaxy, against the
+  handoff's checklist. Marko reported it clean. Its details weren't
+  recorded in the closing session: what was measured, whether the
+  one-household check on `test-user` ran or is still owed (it depended on
+  the hosted cleanup), and whether the walk's throwaway recipes were
+  soft-deleted.

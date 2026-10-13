@@ -1,41 +1,49 @@
 # State — 2026-10-13
 
 **Branch:** `main`
-**Last shipped:** Phase 9 slice C's fifth slice,
-`phase9-household-leave-switch` (`7d6847b`), from the design round
-`docs/design/handoffs/2026-10-13-multiple-households/` (§ D5, D174).
-Leaving or deleting a household when you have others.
+**Last shipped:** Phase 9 slice C's sixth and last slice,
+`phase9-import-save-to` (`a6e268e`), from the design round
+`docs/design/handoffs/2026-10-13-multiple-households/` (§ D6, D175).
+With it, **Phase 9 (multiple households) is complete**. This slice covers
+where an import is saved when you have more than one household.
 
-- **Dialog.** With two or more households, Leave / Delete name the
-  household (`Napustiti „X“?` / `Obrisati „X“?`). When it is the current
-  one, the dialog ends "You'll switch to Y." in `onSurface`, `md` below the
-  body. Buttons stay `Napusti` / `Obriši`.
-- **After.** It switches to Y (`switchTo`), goes to the Settings root, and
-  shows "You left X. Now in Y." (or "Deleted X. …") with no Undo. A
-  non-current household left through the list's gear gets the named dialog,
-  no switch sentence, and you're back on the list.
-- **Y** is the most recently used other household on this device:
-  `HouseholdRepository.select` now keeps `recent_households.<userId>` in
-  `DevicePreferences`, and the pure `nextHouseholdAfter` picks from it,
-  else join order.
-- **One household:** unchanged, the same dialog and the same path to
-  onboarding.
+- **Footer.** With two or more households, import review's action bar
+  carries one line above its buttons: `home` 16, `Čuva se u: **X**` /
+  `Saves to **X**` (the name in w600 `onSurface`, up to two lines), and
+  `Promenite` / `Change`. The default is the **job's** household.
+- **Sheet.** Change opens `showSaveToHouseholdSheet` (`Sačuvajte u
+  domaćinstvu` / `Save to`). It has no Manage row and picks for this
+  import only. Nothing switches.
+- **After.** Saving into a household that isn't current lands on the
+  current Recipes root. Otherwise it lands on the detail. Both show
+  `Sačuvano u domaćinstvu „X“.` / `Saved to X.`, with no action.
+- **Server.** `save_imported_recipe` takes `target_household uuid default
+  null`, accepted only for a household the caller belongs to (`42501`).
+  The client sends the key only when a target was picked.
+- **One household:** unchanged, with the same bar and no snackbar.
 
-`dart analyze` is clean, `flutter test` passes 1128/1128. `make check` is
-green except the known `seed-check`.
+`dart analyze` is clean, and `flutter test` passes 1138/1138. `make check`
+is green except the known `seed-check`. `make test-sql` passes after a
+fresh `db reset`.
 
-**Hosted** needs nothing from this slice (no migration, no function). The
-emulator runs this slice's release build; the Galaxy still runs slice 4's.
+**Hosted has the new migration**
+(`20261013180000_save_imported_recipe_target.sql`, pushed by Marko). The
+dry run reports "up to date". The Galaxy runs this slice's release build,
+and Marko reported its walk clean.
 
-**Hosted test data** for the next slices' walks:
+**Hosted test data:**
 - the walk account (Galaxy) owns `Renamed Household` and `Porodica
-  Stanković – vikendica` (current on the Galaxy);
+  Stanković – vikendica`;
 - `test-user` (emulator) owns `Kod Mire` and is a member of `Renamed
-  Household`. Current on the emulator: `Walk throwaway`.
+  Household`.
+
+Not recorded from this slice's walk, so check it next time: whether the
+one-household footer check ran, and whether the walk's throwaway recipes
+were soft-deleted. If they weren't, they're on hosted.
 
 **Still left for Marko to clean up**, from slice 4's walk (the session may
-not delete or leave on hosted). These are also the confirming taps this
-slice's walk still owes; see its loop below:
+not delete or leave on hosted). These are also the confirming taps slice
+5's walk still owes; see its loop below:
 - `test-user` owns two throwaways, `Walk throwaway` and `Porodica Stankovic
   - vikendica`. Delete them.
 - `test-user` joined the Galaxy's `Porodica Stanković – vikendica`. Leave
@@ -44,8 +52,8 @@ slice's walk still owes; see its loop below:
 
 `test-user` is in five households until then. Brought back to Kod Mire +
 Renamed, it is the walk stand-in again; with Kod Mire alone, it is the
-one-household account for this slice's check and slice 4's en "Another
-home?" check.
+one-household account for slice 4's en "Another home?" check and, if it
+wasn't done on the walk, slice 6's one-household footer check.
 
 Still open:
 - the switch sheet's rows turn into a small spinner for a frame or two as
@@ -128,10 +136,8 @@ Still open:
   Design updates them.
 
 **In flight:** none.
-**Next:** `phase9-import-save-to`: where an import is saved, with 2+
-households (§ D6 of the round; `ROUND.md`'s last unticked slice), via
-`/plan-slice-ui`. Its walk needs a real share intent, so the Galaxy.
-Still open as candidates beside Phase 9:
+**Next:** nothing is queued on the roadmap. Phase 9 is complete, and no
+Phase 10 is planned. Candidates:
 - the formatting toolbar in the translation review, the last raw formatting
   surface. It is a small `/plan-slice-ui` on D167's pattern;
 - Phase 8 part 4 (real thumbnails), which stays optional, "only if part 2 is
@@ -142,11 +148,12 @@ Still open as candidates beside Phase 9:
     menu's edge with it);
   - the dark menu-over-card edge (theme-level, wants a decision);
   - the recipe-delete confirm, the one filled destructive confirm left
-    (§ Buttons says text in destructive).
+    (§ Buttons says text in destructive);
+- `docs/IDEAS.md`, when you want to pick the next phase.
 
 The open device-walk loops below still want one sitting with the Galaxy
 attached.
-**Latest decision:** D174
+**Latest decision:** D175
 
 **Twenty-two device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB

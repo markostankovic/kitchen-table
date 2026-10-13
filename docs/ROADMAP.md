@@ -1130,16 +1130,15 @@ from `docs/IDEAS.md`, with the design brief in
 
 ### Slice C — The multiple-households UI
 
-**Status: in progress.** Six slices, from the Claude Design round in
-`docs/design/handoffs/2026-10-13-multiple-households/ROUND.md`.
-`phase9-household-list` is complete (`31b685d`). Decisions taken during it:
-D170. `phase9-household-switcher` is complete (`7dd0d1c`). Decisions taken
-during it: D171. `phase9-household-switch-loading` is complete
-(`d95724b`). Decisions taken during it: D172.
-`phase9-household-create-join-another` is complete (`b955e3d`). Decisions
-taken during it: D173. `phase9-household-leave-switch` is complete
-(`7d6847b`). Decisions taken during it: D174. See `docs/journal/phase-9.md`.
-Next: `phase9-import-save-to`.
+**Status: complete** (`a6e268e`). Decisions taken during it: D170, D171,
+D172, D173, D174, D175. See `docs/journal/phase-9.md`. Six slices, from the
+Claude Design round in
+`docs/design/handoffs/2026-10-13-multiple-households/ROUND.md`:
+`phase9-household-list` (`31b685d`), `phase9-household-switcher`
+(`7dd0d1c`), `phase9-household-switch-loading` (`d95724b`),
+`phase9-household-create-join-another` (`b955e3d`),
+`phase9-household-leave-switch` (`7d6847b`) and `phase9-import-save-to`
+(`a6e268e`).
 
 ---
 
