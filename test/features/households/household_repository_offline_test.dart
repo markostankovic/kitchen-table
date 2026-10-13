@@ -21,6 +21,7 @@ import 'package:kitchen_table/features/households/data/remote_household_datasour
 import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/features/households/domain/household_invite.dart';
 import 'package:kitchen_table/features/households/domain/household_member.dart';
+import 'package:kitchen_table/features/households/domain/invite_redemption.dart';
 
 Map<String, dynamic> _row({String id = 'h1', String? deletedAt}) =>
     <String, dynamic>{
@@ -72,7 +73,12 @@ class _FakeRemote implements RemoteHouseholdDataSource {
       throw UnimplementedError();
 
   @override
-  Future<String> redeemInvite(String code) async => 'joined-household-id';
+  Future<InviteRedemption> redeemInvite(String code) async =>
+      const InviteRedemption(
+        householdId: 'joined-household-id',
+        householdName: 'Joined',
+        alreadyMember: false,
+      );
 
   @override
   Future<void> rename(String id, String name) async {
@@ -331,8 +337,15 @@ void main() {
   });
 
   group('create / redeemInvite clear the cache (D88)', () {
-    test('redeemInvite returns the joined household\'s id', () async {
-      expect(await repo.redeemInvite('123456'), 'joined-household-id');
+    test('redeemInvite returns the remote\'s redemption', () async {
+      expect(
+        await repo.redeemInvite('123456'),
+        const InviteRedemption(
+          householdId: 'joined-household-id',
+          householdName: 'Joined',
+          alreadyMember: false,
+        ),
+      );
     });
 
     test(

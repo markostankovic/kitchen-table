@@ -419,12 +419,55 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
                         ),
                       ),
                     ),
+                  ..._anotherHome(l10n),
                   ..._destructiveRow(h, l10n),
                   const SizedBox(height: AppSpacing.xl),
                 ],
               ),
       ),
     );
+  }
+
+  /// "Another home?": the way in to the Households list -- and from there to
+  /// creating or joining another household -- for someone with exactly one
+  /// (phase9-household-create-join-another). With two or more, the list is
+  /// already how they got here. Absent while the count is loading or failed
+  /// (D115).
+  List<Widget> _anotherHome(AppLocalizations l10n) {
+    if (ref.watch(myHouseholdsProvider).value?.length != 1) {
+      return const <Widget>[];
+    }
+    final ThemeData theme = Theme.of(context);
+    return <Widget>[
+      const SizedBox(height: AppSpacing.xl),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(l10n.anotherHomeTitle, style: theme.textTheme.titleMedium),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  l10n.anotherHomeBody,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                OutlinedButton.icon(
+                  onPressed: () => const HouseholdsRoute().push<void>(context),
+                  icon: const Icon(Icons.add_home_outlined),
+                  label: Text(l10n.addHouseholdButton),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ];
   }
 
   /// The caller's own role, looked up from the same members list `_members()`

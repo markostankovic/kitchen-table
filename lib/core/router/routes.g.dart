@@ -10,6 +10,8 @@ List<RouteBase> get $appRoutes => [
   $signInRoute,
   $createHouseholdRoute,
   $joinHouseholdRoute,
+  $createAnotherHouseholdRoute,
+  $joinAnotherHouseholdRoute,
   $appShellRoute,
 ];
 
@@ -78,6 +80,60 @@ mixin $JoinHouseholdRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/join-household');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $createAnotherHouseholdRoute => GoRouteData.$route(
+  path: '/households/new',
+  hasOverriddenOnExit: false,
+  factory: $CreateAnotherHouseholdRoute._fromState,
+);
+
+mixin $CreateAnotherHouseholdRoute on GoRouteData {
+  static CreateAnotherHouseholdRoute _fromState(GoRouterState state) =>
+      const CreateAnotherHouseholdRoute();
+
+  @override
+  String get location => GoRouteData.$location('/households/new');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $joinAnotherHouseholdRoute => GoRouteData.$route(
+  path: '/households/join',
+  hasOverriddenOnExit: false,
+  factory: $JoinAnotherHouseholdRoute._fromState,
+);
+
+mixin $JoinAnotherHouseholdRoute on GoRouteData {
+  static JoinAnotherHouseholdRoute _fromState(GoRouterState state) =>
+      const JoinAnotherHouseholdRoute();
+
+  @override
+  String get location => GoRouteData.$location('/households/join');
 
   @override
   void go(BuildContext context) => context.go(location);

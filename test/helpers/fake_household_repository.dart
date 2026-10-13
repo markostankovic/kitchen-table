@@ -2,12 +2,13 @@ import 'package:kitchen_table/features/households/data/household_repository.dart
 import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/features/households/domain/household_member.dart';
 import 'package:kitchen_table/features/households/domain/household_membership.dart';
+import 'package:kitchen_table/features/households/domain/invite_redemption.dart';
 
 /// An in-memory [HouseholdRepository] that answers the multi-household reads
 /// the way the real one does (D169): [fetchCurrent] is the [select]ed
 /// household if [userId] is still in it, else the oldest in [households].
 ///
-/// [create] and [redeemInvite] append a household and return its id, so a
+/// [create] and [redeemInvite] append a household and return it, so a
 /// test can see onboarding end on the NEW household. `implements`, the house
 /// style: every unstubbed member throws by omission.
 class FakeHouseholdRepository implements HouseholdRepository {
@@ -70,11 +71,30 @@ class FakeHouseholdRepository implements HouseholdRepository {
     return id;
   }
 
+  /// Codes for households already in [households]: redeeming one answers
+  /// `alreadyMember: true`, as `redeem-invite` does, and adds nothing.
+  final Map<String, String> memberCodes = <String, String>{};
+
   @override
-  Future<String> redeemInvite(String code) async {
+  Future<InviteRedemption> redeemInvite(String code) async {
+    final String? existing = memberCodes[code];
+    if (existing != null) {
+      final Household h = households.firstWhere(
+        (Household h) => h.id == existing,
+      );
+      return InviteRedemption(
+        householdId: h.id,
+        householdName: h.name,
+        alreadyMember: true,
+      );
+    }
     final String id = 'joined-$code';
     households.add(Household(id: id, name: 'Joined', createdBy: 'other'));
-    return id;
+    return InviteRedemption(
+      householdId: id,
+      householdName: 'Joined',
+      alreadyMember: false,
+    );
   }
 
   @override

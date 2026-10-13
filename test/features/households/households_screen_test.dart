@@ -65,6 +65,10 @@ class _FakeRepo implements HouseholdRepository {
 
 const String _managePrefix = 'MANAGE ';
 
+/// Stand-ins for the in-app create / join forms.
+const String _createMarker = 'CREATE ANOTHER';
+const String _joinMarker = 'JOIN ANOTHER';
+
 Future<void> _pump(WidgetTester tester, _FakeRepo repo) async {
   final GoRouter router = GoRouter(
     initialLocation: '/settings/households',
@@ -78,6 +82,14 @@ Future<void> _pump(WidgetTester tester, _FakeRepo repo) async {
         builder: (_, GoRouterState state) => Scaffold(
           body: Text('$_managePrefix${state.pathParameters['householdId']}'),
         ),
+      ),
+      GoRoute(
+        path: '/households/new',
+        builder: (_, _) => const Scaffold(body: Text(_createMarker)),
+      ),
+      GoRoute(
+        path: '/households/join',
+        builder: (_, _) => const Scaffold(body: Text(_joinMarker)),
       ),
     ],
   );
@@ -197,5 +209,53 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('${_managePrefix}weekend'), findsOneWidget);
+  });
+
+  // phase9-household-create-join-another -- the two rows under the list.
+
+  testWidgets('two footer rows, no chevron, one hairline between them', (
+    WidgetTester tester,
+  ) async {
+    await _pump(tester, _FakeRepo());
+
+    final Finder create = find.widgetWithText(
+      ListTile,
+      sr.createNewHouseholdAction,
+    );
+    final Finder join = find.widgetWithText(ListTile, sr.joinWithCodeAction);
+    expect(create, findsOneWidget);
+    expect(join, findsOneWidget);
+    expect(
+      find.descendant(of: create, matching: find.byIcon(Icons.add)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: join, matching: find.byIcon(Icons.key_outlined)),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
+    expect(tester.getTopLeft(create).dy, lessThan(tester.getTopLeft(join).dy));
+  });
+
+  testWidgets('Create a new household pushes the create form', (
+    WidgetTester tester,
+  ) async {
+    await _pump(tester, _FakeRepo());
+
+    await tester.tap(find.text(sr.createNewHouseholdAction));
+    await tester.pumpAndSettle();
+
+    expect(find.text(_createMarker), findsOneWidget);
+  });
+
+  testWidgets('Join with a code pushes the join form', (
+    WidgetTester tester,
+  ) async {
+    await _pump(tester, _FakeRepo());
+
+    await tester.tap(find.text(sr.joinWithCodeAction));
+    await tester.pumpAndSettle();
+
+    expect(find.text(_joinMarker), findsOneWidget);
   });
 }

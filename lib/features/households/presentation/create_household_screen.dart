@@ -9,14 +9,24 @@ import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_field_label.dart';
 import '../application/household_providers.dart';
+import 'household_landing.dart';
 import 'onboarding_mark.dart';
 
 /// Onboarding: the signed-in user has no household yet.
 ///
 /// The other way out of onboarding is [JoinHouseholdScreen], for someone who
 /// was handed an invite code instead.
+///
+/// With [another], the in-app variant for someone who already has a
+/// household (phase9-household-create-join-another): ✕ in an app bar, no
+/// mark, a title `sm` under the bar, a body naming the current household,
+/// and no cross-link. A create lands on Recipes in the new household, with
+/// Invite.
 class CreateHouseholdScreen extends ConsumerStatefulWidget {
-  const CreateHouseholdScreen({super.key});
+  const CreateHouseholdScreen({this.another = false, super.key});
+
+  /// The in-app variant, pushed from Settings › Households.
+  final bool another;
 
   @override
   ConsumerState<CreateHouseholdScreen> createState() =>
@@ -44,9 +54,21 @@ class _CreateHouseholdScreenState extends ConsumerState<CreateHouseholdScreen> {
     });
 
     try {
+      final String name = _name.text.trim();
       final String id = await ref
           .read(householdRepositoryProvider)
-          .create(_name.text.trim());
+          .create(name);
+      if (widget.another) {
+        if (!mounted) return;
+        await landInHousehold(
+          context,
+          ref,
+          id: id,
+          name: name,
+          action: HouseholdLandingAction.invite,
+        );
+        return;
+      }
       // Switch to it, which re-reads, so the router's redirect sees the new
       // household and lets the user out of onboarding.
       await ref.read(currentHouseholdProvider.notifier).switchTo(id);
@@ -62,7 +84,12 @@ class _CreateHouseholdScreenState extends ConsumerState<CreateHouseholdScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
+    final bool another = widget.another;
+    final String currentName = another
+        ? ref.watch(currentHouseholdProvider).value?.name ?? ''
+        : '';
     return Scaffold(
+      appBar: another ? AppBar(leading: const CloseButton()) : null,
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -75,27 +102,33 @@ class _CreateHouseholdScreenState extends ConsumerState<CreateHouseholdScreen> {
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
+                  padding: EdgeInsets.fromLTRB(
                     AppSpacing.xl,
-                    AppSpacing.xxl + AppSpacing.xl,
+                    another ? AppSpacing.sm : AppSpacing.xxl + AppSpacing.xl,
                     AppSpacing.xl,
                     AppSpacing.xxl,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      const Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: OnboardingMark(),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
+                      if (!another) ...const <Widget>[
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: OnboardingMark(),
+                        ),
+                        SizedBox(height: AppSpacing.xl),
+                      ],
                       Text(
-                        l10n.createHouseholdTitle,
+                        another
+                            ? l10n.createAnotherHouseholdTitle
+                            : l10n.createHouseholdTitle,
                         style: theme.textTheme.headlineSmall,
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        l10n.createHouseholdSubtitle,
+                        another
+                            ? l10n.createAnotherHouseholdBody(currentName)
+                            : l10n.createHouseholdSubtitle,
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -136,16 +169,20 @@ class _CreateHouseholdScreenState extends ConsumerState<CreateHouseholdScreen> {
                               )
                             : Text(l10n.createHouseholdButton),
                       ),
-                      const SizedBox(height: AppSpacing.sm),
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size.fromHeight(AppSizes.button),
+                      if (!another) ...<Widget>[
+                        const SizedBox(height: AppSpacing.sm),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size.fromHeight(
+                              AppSizes.button,
+                            ),
+                          ),
+                          onPressed: _saving
+                              ? null
+                              : () => const JoinHouseholdRoute().go(context),
+                          child: Text(l10n.haveInviteCodeButton),
                         ),
-                        onPressed: _saving
-                            ? null
-                            : () => const JoinHouseholdRoute().go(context),
-                        child: Text(l10n.haveInviteCodeButton),
-                      ),
+                      ],
                     ],
                   ),
                 ),

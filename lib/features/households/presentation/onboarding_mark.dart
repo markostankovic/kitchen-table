@@ -2,8 +2,9 @@ import 'package:flutter/widgets.dart';
 
 import '../../../core/theme/app_sizes.dart';
 
-/// The app's mark as a rounded tile, at the top of the create and join
-/// household screens -- the one feature that uses it, so it lives here rather
+/// The app's mark as a rounded tile, at the top of the onboarding create and
+/// join household screens -- not their in-app "another" variants, which have
+/// an app bar instead. The one feature that uses it, so it lives here rather
 /// than in `core/widgets/`.
 ///
 /// The corners are baked into the PNG (`make icons`, radius 24/108 like the

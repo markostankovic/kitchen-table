@@ -69,13 +69,22 @@ void main() {
     );
   });
 
+  /// Keys whose Serbian string deliberately leaves out a placeholder the
+  /// English one uses. Each still declares it in `app_sr.arb`, so
+  /// `flutter gen-l10n` builds the same signature for both.
+  ///
+  /// - `switchToHouseholdButton`: "Pređite u to domaćinstvo" -- a household
+  ///   name can't be declined after `u`, and the quoted „…“ form is too long
+  ///   for a button (phase9-household-create-join-another).
+  const Set<String> deliberatelyOmitted = <String>{'switchToHouseholdButton'};
+
   test('every key uses the same placeholder names in both languages', () {
     final Set<String> sharedKeys =
         _translatableKeys(sr).intersection(_translatableKeys(en));
 
     final Map<String, ({Set<String> sr, Set<String> en})> mismatched =
         <String, ({Set<String> sr, Set<String> en})>{};
-    for (final String key in sharedKeys) {
+    for (final String key in sharedKeys.difference(deliberatelyOmitted)) {
       final Set<String> srPlaceholders =
           _placeholdersIn(sr[key] as String);
       final Set<String> enPlaceholders =

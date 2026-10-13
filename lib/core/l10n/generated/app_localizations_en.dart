@@ -1159,4 +1159,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String nowInHousehold(String name) {
     return 'Now in $name.';
   }
+
+  @override
+  String get createAnotherHouseholdTitle => 'Create another household';
+
+  @override
+  String createAnotherHouseholdBody(String name) {
+    return 'It starts empty. $name keeps its recipes, plan and list.';
+  }
+
+  @override
+  String get joinAnotherHouseholdTitle => 'Join another household';
+
+  @override
+  String joinAnotherHouseholdBody(String name) {
+    return 'Ask someone in that household for a code. You\'ll stay in $name too.';
+  }
+
+  @override
+  String alreadyMemberOfHousehold(String name) {
+    return 'You\'re already a member of $name.';
+  }
+
+  @override
+  String switchToHouseholdButton(String name) {
+    return 'Switch to $name';
+  }
+
+  @override
+  String get useAnotherCodeButton => 'Use another code';
+
+  @override
+  String get createNewHouseholdAction => 'Create a new household';
+
+  @override
+  String get joinWithCodeAction => 'Join with a code';
+
+  @override
+  String get anotherHomeTitle => 'Another home?';
+
+  @override
+  String get anotherHomeBody =>
+      'Keep a separate box of recipes, plan and list, for example for a weekend house.';
+
+  @override
+  String get addHouseholdButton => 'Add a household';
+
+  @override
+  String get inviteSnackbarAction => 'Invite';
 }

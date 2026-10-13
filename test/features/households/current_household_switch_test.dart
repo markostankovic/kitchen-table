@@ -119,7 +119,7 @@ void main() {
     container.listen(myHouseholdsProvider, (_, _) {});
     expect(await container.read(myHouseholdsProvider.future), hasLength(1));
 
-    final String joined = await repo.redeemInvite('123456');
+    final String joined = (await repo.redeemInvite('123456')).householdId;
     await container.read(currentHouseholdProvider.notifier).switchTo(joined);
 
     expect(

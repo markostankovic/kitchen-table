@@ -65,6 +65,43 @@ class JoinHouseholdRoute extends GoRouteData with $JoinHouseholdRoute {
       const JoinHouseholdScreen();
 }
 
+// In-app create / join, for someone who already has a household
+// (phase9-household-create-join-another). Pushed from Settings › Households.
+//
+// Top-level, outside the shell, and not under `/settings`: a finished form
+// lands on the Recipes root, and AppShell never marks the current tab stale,
+// so a form inside the Settings branch would still be on that branch's stack
+// -- going back to Settings would show it, finished. Out here it is popped
+// off with the landing. The redirect needs no entry for these: it rewrites
+// only sign-in and the two onboarding paths, and still sends a user with no
+// household to create-household.
+
+@TypedGoRoute<CreateAnotherHouseholdRoute>(
+  path: CreateAnotherHouseholdRoute.path,
+)
+class CreateAnotherHouseholdRoute extends GoRouteData
+    with $CreateAnotherHouseholdRoute {
+  const CreateAnotherHouseholdRoute();
+
+  static const String path = '/households/new';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const CreateHouseholdScreen(another: true);
+}
+
+@TypedGoRoute<JoinAnotherHouseholdRoute>(path: JoinAnotherHouseholdRoute.path)
+class JoinAnotherHouseholdRoute extends GoRouteData
+    with $JoinAnotherHouseholdRoute {
+  const JoinAnotherHouseholdRoute();
+
+  static const String path = '/households/join';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const JoinHouseholdScreen(another: true);
+}
+
 @TypedStatefulShellRoute<AppShellRoute>(
   branches: <TypedStatefulShellBranch<StatefulShellBranchData>>[
     TypedStatefulShellBranch<RecipesBranch>(

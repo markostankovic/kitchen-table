@@ -347,5 +347,19 @@
   "manageHouseholdTooltip": "Manage {name}",
   "switchHouseholdSheetTitle": "Switch household",
   "manageHouseholdsAction": "Manage households",
-  "nowInHousehold": "Now in {name}."
+  "nowInHousehold": "Now in {name}.",
+
+  "createAnotherHouseholdTitle": "Create another household",
+  "createAnotherHouseholdBody": "It starts empty. {name} keeps its recipes, plan and list.",
+  "joinAnotherHouseholdTitle": "Join another household",
+  "joinAnotherHouseholdBody": "Ask someone in that household for a code. You'll stay in {name} too.",
+  "alreadyMemberOfHousehold": "You're already a member of {name}.",
+  "switchToHouseholdButton": "Switch to {name}",
+  "useAnotherCodeButton": "Use another code",
+  "createNewHouseholdAction": "Create a new household",
+  "joinWithCodeAction": "Join with a code",
+  "anotherHomeTitle": "Another home?",
+  "anotherHomeBody": "Keep a separate box of recipes, plan and list, for example for a weekend house.",
+  "addHouseholdButton": "Add a household",
+  "inviteSnackbarAction": "Invite"
 }

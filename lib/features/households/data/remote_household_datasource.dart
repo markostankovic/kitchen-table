@@ -19,6 +19,7 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/supabase/supabase_failure.dart';
 import '../domain/household_invite.dart';
 import '../domain/household_member.dart';
+import '../domain/invite_redemption.dart';
 import 'dto/household_dto.dart';
 
 class RemoteHouseholdDataSource {
@@ -164,9 +165,10 @@ class RemoteHouseholdDataSource {
   /// Joins the household behind [code].
   ///
   /// An Edge Function because it writes `household_members`, which no client
-  /// may. Returns the joined household's id, so the caller can switch to
-  /// it.
-  Future<String> redeemInvite(String code) => runGuarded(() async {
+  /// may. Returns the household's id, so the caller can switch to it, with
+  /// its name and whether the caller already belonged to it -- the function
+  /// answers 200 for that, not an error.
+  Future<InviteRedemption> redeemInvite(String code) => runGuarded(() async {
         final FunctionResponse res = await _client.functions.invoke(
           'redeem-invite',
           body: <String, dynamic>{'code': code.trim()},
@@ -178,7 +180,13 @@ class RemoteHouseholdDataSource {
               message: 'The server sent an unexpected reply.',
               code: FailureCode.unexpectedServerReply);
         }
-        return data['householdId'] as String;
+        final Object? name = data['householdName'];
+        final Object? alreadyMember = data['alreadyMember'];
+        return InviteRedemption(
+          householdId: data['householdId'] as String,
+          householdName: name is String ? name : '',
+          alreadyMember: alreadyMember is bool && alreadyMember,
+        );
       });
 
   /// Renames a household. `households_update` permits this for any member,

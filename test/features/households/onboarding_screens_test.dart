@@ -22,6 +22,7 @@ import 'package:kitchen_table/features/households/application/household_provider
 import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/features/households/presentation/create_household_screen.dart';
 import 'package:kitchen_table/features/households/presentation/join_household_screen.dart';
+import 'package:kitchen_table/features/households/presentation/onboarding_mark.dart';
 
 import '../../helpers/fake_household_repository.dart';
 
@@ -89,6 +90,19 @@ void main() {
         text.textAlign == null || text.textAlign == TextAlign.start,
         isTrue,
       );
+    });
+
+    // phase9-household-create-join-another added an in-app "another" mode
+    // to both screens; onboarding keeps its mark, no app bar, and the
+    // cross-link.
+    testWidgets('$name: onboarding keeps the mark and the cross-link, no bar', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, screen);
+
+      expect(find.byType(OnboardingMark), findsOneWidget);
+      expect(find.byType(AppBar), findsNothing);
+      expect(find.byType(TextButton), findsOneWidget);
     });
 
     testWidgets('$name: the buttons are pinned to the bottom', (

@@ -1175,4 +1175,53 @@ class AppLocalizationsSr extends AppLocalizations {
   String nowInHousehold(String name) {
     return 'Sada ste u domaćinstvu „$name“.';
   }
+
+  @override
+  String get createAnotherHouseholdTitle => 'Napravite još jedno domaćinstvo';
+
+  @override
+  String createAnotherHouseholdBody(String name) {
+    return 'Počinje prazno. Domaćinstvo „$name“ zadržava svoje recepte, plan i spisak.';
+  }
+
+  @override
+  String get joinAnotherHouseholdTitle =>
+      'Pridružite se još jednom domaćinstvu';
+
+  @override
+  String joinAnotherHouseholdBody(String name) {
+    return 'Zatražite kod od nekoga iz tog domaćinstva. I dalje ćete biti i u domaćinstvu „$name“.';
+  }
+
+  @override
+  String alreadyMemberOfHousehold(String name) {
+    return 'Već ste član domaćinstva „$name“.';
+  }
+
+  @override
+  String switchToHouseholdButton(String name) {
+    return 'Pređite u to domaćinstvo';
+  }
+
+  @override
+  String get useAnotherCodeButton => 'Unesite drugi kod';
+
+  @override
+  String get createNewHouseholdAction => 'Napravite novo domaćinstvo';
+
+  @override
+  String get joinWithCodeAction => 'Pridružite se pomoću koda';
+
+  @override
+  String get anotherHomeTitle => 'Još jedan dom?';
+
+  @override
+  String get anotherHomeBody =>
+      'Zasebni recepti, plan i spisak, na primer za vikendicu.';
+
+  @override
+  String get addHouseholdButton => 'Dodajte domaćinstvo';
+
+  @override
+  String get inviteSnackbarAction => 'Pozovite';
 }

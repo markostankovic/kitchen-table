@@ -18,8 +18,10 @@ import '../domain/household_membership.dart';
 /// switches to that household; its gear opens that household's screen,
 /// current or not.
 ///
-/// Reached from Settings only when there are two or more; with one, the
-/// Settings row opens the Household screen directly.
+/// Reached from Settings when there are two or more; with one, the Settings
+/// row opens the Household screen directly, and its "Another home?" card
+/// opens this list. Under the list, two rows open the in-app create and join
+/// forms (phase9-household-create-join-another).
 class HouseholdsScreen extends ConsumerStatefulWidget {
   const HouseholdsScreen({super.key});
 
@@ -94,9 +96,46 @@ class _HouseholdsScreenState extends ConsumerState<HouseholdsScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: AppSpacing.sm),
+            _footerRow(
+              icon: Icons.add,
+              label: l10n.createNewHouseholdAction,
+              onTap: () => const CreateAnotherHouseholdRoute().push<void>(
+                context,
+              ),
+            ),
+            const Divider(height: 1),
+            _footerRow(
+              icon: Icons.key_outlined,
+              label: l10n.joinWithCodeAction,
+              onTap: () => const JoinAnotherHouseholdRoute().push<void>(
+                context,
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  /// The switch sheet's "Manage households" row, without its chevron: `xs`
+  /// content padding inside the list's `lg` gutter puts the icon at 20.
+  /// Inert while a switch is in flight, as the rows above are.
+  Widget _footerRow({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    return ListTile(
+      leading: Icon(icon, size: AppSizes.icon, color: colors.onSurfaceVariant),
+      title: Text(
+        label,
+        style: theme.textTheme.bodyLarge?.copyWith(color: colors.onSurface),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+      onTap: _switching ? null : onTap,
     );
   }
 

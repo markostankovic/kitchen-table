@@ -27,6 +27,7 @@ import '../domain/household.dart';
 import '../domain/household_invite.dart';
 import '../domain/household_member.dart';
 import '../domain/household_membership.dart';
+import '../domain/invite_redemption.dart';
 import 'dto/household_dto.dart';
 import 'local_household_datasource.dart';
 import 'remote_household_datasource.dart';
@@ -144,14 +145,16 @@ class HouseholdRepository {
   Future<HouseholdInvite> createInvite(String householdId) =>
       _remote.createInvite(householdId);
 
-  /// Joins the household behind [code], and returns its id.
+  /// Joins the household behind [code], and returns it as an
+  /// [InviteRedemption]: its id and name, and whether the caller was already
+  /// a member.
   ///
   /// Clears the cached current-household row on success, on [create]'s own
   /// reasoning (D88).
-  Future<String> redeemInvite(String code) async {
-    final String id = await _remote.redeemInvite(code);
+  Future<InviteRedemption> redeemInvite(String code) async {
+    final InviteRedemption redemption = await _remote.redeemInvite(code);
     await _local.clearAll();
-    return id;
+    return redemption;
   }
 
   /// Renames a household.

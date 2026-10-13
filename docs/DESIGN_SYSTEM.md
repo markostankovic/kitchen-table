@@ -265,7 +265,7 @@ number in the table.
 | `gripColumn` | 40 | the trailing column that glyph is centred in |
 | `signInIllustration` | 176 | the sign-in screen's painted recipe card, as a width (176 × 139) |
 | `lockup` | 48 | the sign-in screen's logo lockup, as a height |
-| `onboardingMark` | 56 | the mark tile on create / join household |
+| `onboardingMark` | 56 | the mark tile on the onboarding create / join household screens (not the in-app ones) |
 
 `emptyStateIcon` is its own name rather than a borrowed `target`: they are the
 same number today, but one is a hit area and the other is a drawing, and they
@@ -431,6 +431,26 @@ filled button, then `sm`, then the full-width text-button switcher pinned to
 the bottom by `SliverFillRemaining(hasScrollBody: false)` and a `Spacer`
 (D137). The padding goes inside `SliverFillRemaining`, not in a trailing
 `SliverPadding`, which would push the bottom air below the fold.
+
+The same two screens have an in-app **"another" mode** (`another: true`),
+pushed from the households list for someone who already has a household.
+It has an app bar with `CloseButton` as `leading` and no title, no mark, and
+padding `fromLTRB(xl, sm, xl, xxl)`, so the title sits `sm` under the bar:
+`Napravite još jedno domaćinstvo` / `Pridružite se još jednom domaćinstvu`
+in `headlineSmall` (wrapping), `sm`, a `bodyLarge` `onSurfaceVariant` body
+naming the current household, then the field as in onboarding. There is no
+cross-link text button. Onboarding mode is unchanged.
+
+**The already-a-member panel** (join, "another" mode only). A code for a
+household the caller already belongs to is not an error: `md` under the
+field, a `KitchenColors.card` fill, radius `AppRadii.sm`, padding `sm`
+vertical / `md` horizontal, a 16 (`iconInMeta`) `info_outline` in
+`onSurfaceVariant`, centred in a box one `bodyMedium` line tall, `sm`, then
+`Već ste član domaćinstva „…“.` in `bodyMedium` `onSurfaceVariant`. Never
+`error` or `errorContainer`. While it shows, the filled button reads
+`Pređite u to domaćinstvo` (another household) or `Gotovo` (the current one,
+which pops), and under it, `sm`, a full-width `Unesite drugi kod` text button
+clears the field and the panel. Editing the field also clears the panel.
 
 ### Formatting toolbar
 
@@ -1115,12 +1135,21 @@ adult. An `xs` start inset plus the theme's `lg` button padding puts the icon
 at 20dp (D146). Only one ever renders, and neither while the caller's role is
 unknown — absent, not disabled (D115).
 
+**"Another home?"** For someone with exactly one household only: absent
+while that count is loading or failed, and with two or more (D115). A theme
+`Card` in the screen's `lg` gutters, `xl` below Create invite code (or its
+failure line), above the destructive slot. Padded `lg`, start-aligned:
+`Još jedan dom?` in `titleMedium`, `xs`, the body in `bodyMedium`
+`onSurfaceVariant`, `md`, then a left-aligned, not full-width
+`OutlinedButton.icon` (`add_home_outlined`) that pushes the households list.
+
 The Household screen is keyed by household id: it shows any of the caller's
 households, not only the current one, and the button follows the caller's
 role in *that* household.
 
 **The households list.** Its own screen, `Domaćinstva`, reached from
-Settings when there are two or more. Under the app bar, Settings' insets, an
+Settings when there are two or more, and with one from the Household
+screen's "Another home?" card. Under the app bar, Settings' insets, an
 intro line in `bodyMedium` `onSurfaceVariant`, `lg`, then one theme `Card`
 (`Clip.antiAlias`) of `HouseholdRow`s in the order the caller joined. A row:
 a 24 radio (`radio_button_checked` in `primary` on the current one,
@@ -1133,6 +1162,16 @@ it starts under the names. Tapping a row switches to it; the current row is
 inert, and every row is while a switch is in flight. The gear pushes that
 household's screen, current or not. `HouseholdRow` lives in
 `core/household/widgets/`, shared by the list and the switch sheet.
+
+`sm` under the card, two footer `ListTile`s: `Napravite novo domaćinstvo`
+(`add`) and `Pridružite se pomoću koda` (`key_outlined`). Each has a 24
+`onSurfaceVariant` leading icon, a `bodyLarge` `onSurface` label and no
+chevron, with `xs` content padding inside the list's `lg` gutter, which puts
+the icon at 20. One full-width hairline (`Divider(height: 1)`) between them,
+none after. They push the "another" create and join screens, top-level routes
+outside the shell. A finished create lands on the Recipes root with "Now in
+X." and Pozovite (opens the new household's screen). A join lands the same
+way with Poništi. Both rows are inert while a switch is in flight.
 
 **The switch sheet.** `showHouseholdSwitchSheet`, opened from the household
 line. The theme sheet, as Add meal (`surfaceContainerHigh`, top radius

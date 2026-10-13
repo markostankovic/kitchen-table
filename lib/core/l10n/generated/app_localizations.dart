@@ -2035,6 +2035,84 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Sada ste u domaćinstvu „{name}“.'**
   String nowInHousehold(String name);
+
+  /// In-app create household screen (from Settings › Households), its title. Onboarding uses createHouseholdTitle.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napravite još jedno domaćinstvo'**
+  String get createAnotherHouseholdTitle;
+
+  /// In-app create household screen, the body under the title; {name} is the current household.
+  ///
+  /// In sr, this message translates to:
+  /// **'Počinje prazno. Domaćinstvo „{name}“ zadržava svoje recepte, plan i spisak.'**
+  String createAnotherHouseholdBody(String name);
+
+  /// In-app join household screen (from Settings › Households), its title. Onboarding uses joinHouseholdTitle.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pridružite se još jednom domaćinstvu'**
+  String get joinAnotherHouseholdTitle;
+
+  /// In-app join household screen, the body under the title; {name} is the current household.
+  ///
+  /// In sr, this message translates to:
+  /// **'Zatražite kod od nekoga iz tog domaćinstva. I dalje ćete biti i u domaćinstvu „{name}“.'**
+  String joinAnotherHouseholdBody(String name);
+
+  /// In-app join household screen, the quiet panel under the code field when the code is for a household the caller already belongs to. Not an error.
+  ///
+  /// In sr, this message translates to:
+  /// **'Već ste član domaćinstva „{name}“.'**
+  String alreadyMemberOfHousehold(String name);
+
+  /// In-app join household screen, the main button while the already-a-member panel shows for a household that is not current. The Serbian string deliberately omits the name; the placeholder is declared because English uses it.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pređite u to domaćinstvo'**
+  String switchToHouseholdButton(String name);
+
+  /// In-app join household screen, the text button under the main one while the already-a-member panel shows; clears the field.
+  ///
+  /// In sr, this message translates to:
+  /// **'Unesite drugi kod'**
+  String get useAnotherCodeButton;
+
+  /// Settings › Households, the first row under the list; opens the in-app create household screen.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napravite novo domaćinstvo'**
+  String get createNewHouseholdAction;
+
+  /// Settings › Households, the second row under the list; opens the in-app join household screen.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pridružite se pomoću koda'**
+  String get joinWithCodeAction;
+
+  /// Household screen, the title of the card shown to someone with exactly one household.
+  ///
+  /// In sr, this message translates to:
+  /// **'Još jedan dom?'**
+  String get anotherHomeTitle;
+
+  /// Household screen, the body of the Another home? card.
+  ///
+  /// In sr, this message translates to:
+  /// **'Zasebni recepti, plan i spisak, na primer za vikendicu.'**
+  String get anotherHomeBody;
+
+  /// Household screen, the Another home? card's button; opens Settings › Households.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodajte domaćinstvo'**
+  String get addHouseholdButton;
+
+  /// Snackbar action after creating another household (with nowInHousehold); opens the new household's screen, where an invite code can be created.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pozovite'**
+  String get inviteSnackbarAction;
 }
 
 class _AppLocalizationsDelegate

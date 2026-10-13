@@ -4,8 +4,11 @@
 // mechanism means no mocking package, so CLAUDE.md rule 8 is never
 // triggered (app_shell_test.dart's own precedent).
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kitchen_table/core/error/app_failure.dart';
@@ -21,6 +24,7 @@ import 'package:kitchen_table/features/households/data/household_repository.dart
 import 'package:kitchen_table/features/households/domain/household.dart';
 import 'package:kitchen_table/features/households/domain/household_invite.dart';
 import 'package:kitchen_table/features/households/domain/household_member.dart';
+import 'package:kitchen_table/features/households/domain/invite_redemption.dart';
 import 'package:kitchen_table/features/households/domain/household_membership.dart';
 import 'package:kitchen_table/features/households/presentation/household_screen.dart';
 
@@ -128,7 +132,8 @@ class _FakeRepo implements HouseholdRepository {
   }
 
   @override
-  Future<String> redeemInvite(String code) => throw UnimplementedError();
+  Future<InviteRedemption> redeemInvite(String code) =>
+      throw UnimplementedError();
 
   @override
   Future<void> select({
@@ -182,7 +187,14 @@ Future<void> _pump(
   required String Function() readName,
   String userId = 'u1',
   String householdId = _householdId,
+  List<Override> extraOverrides = const <Override>[],
+  // Taller than the default 800x600, so the ListView builds down to the
+  // destructive row now that "Another home?" sits above it.
+  Size surface = const Size(800, 1000),
 }) async {
+  tester.view.physicalSize = surface;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
   repo.readName = readName;
   // Flat routes at the real paths, so SettingsRoute / HouseholdsRoute's
   // `go` lands somewhere a test can see.
@@ -221,6 +233,7 @@ Future<void> _pump(
         currentHouseholdProvider.overrideWith(
           () => FixedCurrentHousehold(() async => repo.current()),
         ),
+        ...extraOverrides,
       ],
       child: MaterialApp.router(
         theme: AppTheme.light(),
@@ -731,16 +744,17 @@ void main() {
       'at 360x780 in Serbian, the invite card\'s buttons fit and the name '
       'is headlineSmall',
       (WidgetTester tester) async {
-        tester.view.physicalSize = const Size(360, 780);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
         const String name = 'Domaćinstvo porodice Stanković-Petrović';
         final _FakeRepo repo = _FakeRepo()
           ..members = _ownerAndAdult
           ..invites = <HouseholdInvite>[_invite()];
-        await _pump(tester, repo: repo, readName: () => name, userId: 'u1');
+        await _pump(
+          tester,
+          repo: repo,
+          readName: () => name,
+          userId: 'u1',
+          surface: const Size(360, 780),
+        );
 
         expect(tester.takeException(), isNull);
 
@@ -854,6 +868,77 @@ void main() {
             .widgetList<AppMonogramTile>(find.byType(AppMonogramTile))
             .map((AppMonogramTile t) => t.circular),
         everyElement(isTrue),
+      );
+    });
+  });
+
+  // phase9-household-create-join-another -- "Another home?".
+
+  group('Another home? card', () {
+    testWidgets('shows with exactly one household, and opens the list', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, repo: _FakeRepo(), readName: () => 'H');
+
+      expect(find.text(sr.anotherHomeTitle), findsOneWidget);
+      expect(find.text(sr.anotherHomeBody), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text(sr.addHouseholdButton),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text(sr.addHouseholdButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text(_listMarker), findsOneWidget);
+    });
+
+    testWidgets('is absent with two households', (WidgetTester tester) async {
+      final _FakeRepo repo = _FakeRepo()
+        ..others = const <Household>[
+          Household(id: 'h2', name: 'Vikendica', createdBy: 'u2'),
+        ];
+      await _pump(tester, repo: repo, readName: () => 'H');
+
+      expect(find.text(sr.householdScreenTitle), findsOneWidget);
+      expect(find.text(sr.anotherHomeTitle), findsNothing);
+    });
+
+    testWidgets('is absent while myHouseholds is loading', (
+      WidgetTester tester,
+    ) async {
+      final Completer<List<HouseholdMembership>> never =
+          Completer<List<HouseholdMembership>>();
+      await _pump(
+        tester,
+        repo: _FakeRepo(),
+        readName: () => 'H',
+        extraOverrides: [
+          myHouseholdsProvider.overrideWith((Ref ref) => never.future),
+          householdByIdProvider(_householdId).overrideWith(
+            (Ref ref) async =>
+                const Household(id: _householdId, name: 'H', createdBy: 'u1'),
+          ),
+        ],
+      );
+
+      expect(find.text('H'), findsOneWidget);
+      expect(find.text(sr.anotherHomeTitle), findsNothing);
+    });
+
+    testWidgets('sits above the destructive row', (WidgetTester tester) async {
+      final _FakeRepo repo = _FakeRepo()..members = _ownerAndAdult;
+      await _pump(tester, repo: repo, readName: () => 'H');
+
+      await tester.scrollUntilVisible(
+        find.text(sr.deleteHouseholdButton),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(
+        tester.getTopLeft(find.text(sr.addHouseholdButton)).dy,
+        lessThan(tester.getTopLeft(find.text(sr.deleteHouseholdButton)).dy),
       );
     });
   });

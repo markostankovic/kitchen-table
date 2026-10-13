@@ -1545,5 +1545,77 @@
         "type": "String"
       }
     }
+  },
+  "createAnotherHouseholdTitle": "Napravite još jedno domaćinstvo",
+  "@createAnotherHouseholdTitle": {
+    "description": "In-app create household screen (from Settings › Households), its title. Onboarding uses createHouseholdTitle."
+  },
+  "createAnotherHouseholdBody": "Počinje prazno. Domaćinstvo „{name}“ zadržava svoje recepte, plan i spisak.",
+  "@createAnotherHouseholdBody": {
+    "description": "In-app create household screen, the body under the title; {name} is the current household.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "joinAnotherHouseholdTitle": "Pridružite se još jednom domaćinstvu",
+  "@joinAnotherHouseholdTitle": {
+    "description": "In-app join household screen (from Settings › Households), its title. Onboarding uses joinHouseholdTitle."
+  },
+  "joinAnotherHouseholdBody": "Zatražite kod od nekoga iz tog domaćinstva. I dalje ćete biti i u domaćinstvu „{name}“.",
+  "@joinAnotherHouseholdBody": {
+    "description": "In-app join household screen, the body under the title; {name} is the current household.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "alreadyMemberOfHousehold": "Već ste član domaćinstva „{name}“.",
+  "@alreadyMemberOfHousehold": {
+    "description": "In-app join household screen, the quiet panel under the code field when the code is for a household the caller already belongs to. Not an error.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "switchToHouseholdButton": "Pređite u to domaćinstvo",
+  "@switchToHouseholdButton": {
+    "description": "In-app join household screen, the main button while the already-a-member panel shows for a household that is not current. The Serbian string deliberately omits the name; the placeholder is declared because English uses it.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "useAnotherCodeButton": "Unesite drugi kod",
+  "@useAnotherCodeButton": {
+    "description": "In-app join household screen, the text button under the main one while the already-a-member panel shows; clears the field."
+  },
+  "createNewHouseholdAction": "Napravite novo domaćinstvo",
+  "@createNewHouseholdAction": {
+    "description": "Settings › Households, the first row under the list; opens the in-app create household screen."
+  },
+  "joinWithCodeAction": "Pridružite se pomoću koda",
+  "@joinWithCodeAction": {
+    "description": "Settings › Households, the second row under the list; opens the in-app join household screen."
+  },
+  "anotherHomeTitle": "Još jedan dom?",
+  "@anotherHomeTitle": {
+    "description": "Household screen, the title of the card shown to someone with exactly one household."
+  },
+  "anotherHomeBody": "Zasebni recepti, plan i spisak, na primer za vikendicu.",
+  "@anotherHomeBody": {
+    "description": "Household screen, the body of the Another home? card."
+  },
+  "addHouseholdButton": "Dodajte domaćinstvo",
+  "@addHouseholdButton": {
+    "description": "Household screen, the Another home? card's button; opens Settings › Households."
+  },
+  "inviteSnackbarAction": "Pozovite",
+  "@inviteSnackbarAction": {
+    "description": "Snackbar action after creating another household (with nowInHousehold); opens the new household's screen, where an invite code can be created."
   }
 }
