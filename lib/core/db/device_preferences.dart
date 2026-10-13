@@ -19,6 +19,12 @@ const String themeModeKey = 'theme_mode';
 /// it.
 String selectedHouseholdKey(String userId) => 'selected_household.$userId';
 
+/// The key [userId]'s recently selected household ids are stored under on
+/// this device, most recent first, joined by `,` (D174) -- per user, on
+/// [selectedHouseholdKey]'s reasoning. Stale ids are filtered on read,
+/// never pruned (D169).
+String recentHouseholdsKey(String userId) => 'recent_households.$userId';
+
 class DevicePreferenceStore {
   const DevicePreferenceStore(this._db);
 

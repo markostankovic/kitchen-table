@@ -1617,5 +1617,64 @@
   "inviteSnackbarAction": "Pozovite",
   "@inviteSnackbarAction": {
     "description": "Snackbar action after creating another household (with nowInHousehold); opens the new household's screen, where an invite code can be created."
+  },
+  "leaveNamedHouseholdDialogTitle": "Napustiti „{name}“?",
+  "@leaveNamedHouseholdDialogTitle": {
+    "description": "Household screen, the leave confirm dialog's title when the caller has two or more households; names the one being left.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "leaveNamedHouseholdConfirmBody": "Izgubićete pristup njegovim receptima, planovima obroka i listama za kupovinu.",
+  "@leaveNamedHouseholdConfirmBody": {
+    "description": "Household screen, the leave confirm dialog's body when the caller has two or more households."
+  },
+  "deleteNamedHouseholdDialogTitle": "Obrisati „{name}“?",
+  "@deleteNamedHouseholdDialogTitle": {
+    "description": "Household screen, the delete confirm dialog's title when the caller has two or more households; names the one being deleted.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteNamedHouseholdConfirmBody": "Svi članovi gube pristup njegovim receptima, planovima obroka i listama za kupovinu. Ovo se ne može poništiti iz aplikacije.",
+  "@deleteNamedHouseholdConfirmBody": {
+    "description": "Household screen, the delete confirm dialog's body when the caller has two or more households."
+  },
+  "householdSwitchAfterLeaving": "Zatim prelazite u domaćinstvo „{name}“.",
+  "@householdSwitchAfterLeaving": {
+    "description": "Household screen, the leave/delete confirm dialog's last sentence when the current household is being left; names the household the app switches to.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "leftHouseholdNowIn": "Napustili ste „{left}“. Sada ste u domaćinstvu „{next}“.",
+  "@leftHouseholdNowIn": {
+    "description": "Snackbar after leaving the current household when the caller has others; no Undo, since leaving cannot be undone from the app.",
+    "placeholders": {
+      "left": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      }
+    }
+  },
+  "deletedHouseholdNowIn": "Domaćinstvo „{left}“ je obrisano. Sada ste u domaćinstvu „{next}“.",
+  "@deletedHouseholdNowIn": {
+    "description": "Snackbar after deleting the current household when the caller has others; no Undo, since deleting cannot be undone from the app.",
+    "placeholders": {
+      "left": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      }
+    }
   }
 }

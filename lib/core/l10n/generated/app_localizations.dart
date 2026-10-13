@@ -2113,6 +2113,48 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Pozovite'**
   String get inviteSnackbarAction;
+
+  /// Household screen, the leave confirm dialog's title when the caller has two or more households; names the one being left.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napustiti „{name}“?'**
+  String leaveNamedHouseholdDialogTitle(String name);
+
+  /// Household screen, the leave confirm dialog's body when the caller has two or more households.
+  ///
+  /// In sr, this message translates to:
+  /// **'Izgubićete pristup njegovim receptima, planovima obroka i listama za kupovinu.'**
+  String get leaveNamedHouseholdConfirmBody;
+
+  /// Household screen, the delete confirm dialog's title when the caller has two or more households; names the one being deleted.
+  ///
+  /// In sr, this message translates to:
+  /// **'Obrisati „{name}“?'**
+  String deleteNamedHouseholdDialogTitle(String name);
+
+  /// Household screen, the delete confirm dialog's body when the caller has two or more households.
+  ///
+  /// In sr, this message translates to:
+  /// **'Svi članovi gube pristup njegovim receptima, planovima obroka i listama za kupovinu. Ovo se ne može poništiti iz aplikacije.'**
+  String get deleteNamedHouseholdConfirmBody;
+
+  /// Household screen, the leave/delete confirm dialog's last sentence when the current household is being left; names the household the app switches to.
+  ///
+  /// In sr, this message translates to:
+  /// **'Zatim prelazite u domaćinstvo „{name}“.'**
+  String householdSwitchAfterLeaving(String name);
+
+  /// Snackbar after leaving the current household when the caller has others; no Undo, since leaving cannot be undone from the app.
+  ///
+  /// In sr, this message translates to:
+  /// **'Napustili ste „{left}“. Sada ste u domaćinstvu „{next}“.'**
+  String leftHouseholdNowIn(String left, String next);
+
+  /// Snackbar after deleting the current household when the caller has others; no Undo, since deleting cannot be undone from the app.
+  ///
+  /// In sr, this message translates to:
+  /// **'Domaćinstvo „{left}“ je obrisano. Sada ste u domaćinstvu „{next}“.'**
+  String deletedHouseholdNowIn(String left, String next);
 }
 
 class _AppLocalizationsDelegate

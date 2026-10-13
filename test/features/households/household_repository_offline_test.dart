@@ -336,6 +336,39 @@ void main() {
     );
   });
 
+  group('recent households (D174)', () {
+    test('recentHouseholdIds on an empty store is empty', () async {
+      expect(await repo.recentHouseholdIds('u1'), isEmpty);
+    });
+
+    test('select puts the id at the front and drops its older entry',
+        () async {
+      await repo.select(userId: 'u1', householdId: 'a');
+      await repo.select(userId: 'u1', householdId: 'b');
+      await repo.select(userId: 'u1', householdId: 'c');
+      await repo.select(userId: 'u1', householdId: 'a');
+
+      expect(await repo.recentHouseholdIds('u1'), <String>['a', 'c', 'b']);
+    });
+
+    test('select keeps at most ten ids', () async {
+      for (int i = 0; i < 12; i++) {
+        await repo.select(userId: 'u1', householdId: 'h$i');
+      }
+
+      final List<String> recent = await repo.recentHouseholdIds('u1');
+      expect(recent, hasLength(10));
+      expect(recent.first, 'h11');
+      expect(recent.last, 'h2');
+    });
+
+    test('one user\'s recent list does not leak into another\'s', () async {
+      await repo.select(userId: 'u1', householdId: 'a');
+
+      expect(await repo.recentHouseholdIds('u2'), isEmpty);
+    });
+  });
+
   group('create / redeemInvite clear the cache (D88)', () {
     test('redeemInvite returns the remote\'s redemption', () async {
       expect(

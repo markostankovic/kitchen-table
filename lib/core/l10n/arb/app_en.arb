@@ -361,5 +361,12 @@
   "anotherHomeTitle": "Another home?",
   "anotherHomeBody": "Keep a separate box of recipes, plan and list, for example for a weekend house.",
   "addHouseholdButton": "Add a household",
-  "inviteSnackbarAction": "Invite"
+  "inviteSnackbarAction": "Invite",
+  "leaveNamedHouseholdDialogTitle": "Leave {name}?",
+  "leaveNamedHouseholdConfirmBody": "You'll lose access to its recipes, meal plans and shopping lists.",
+  "deleteNamedHouseholdDialogTitle": "Delete {name}?",
+  "deleteNamedHouseholdConfirmBody": "Everyone in it loses access to its recipes, meal plans and shopping lists. This can't be undone from the app.",
+  "householdSwitchAfterLeaving": "You'll switch to {name}.",
+  "leftHouseholdNowIn": "You left {left}. Now in {next}.",
+  "deletedHouseholdNowIn": "Deleted {left}. Now in {next}."
 }

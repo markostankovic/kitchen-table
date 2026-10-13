@@ -356,6 +356,124 @@ final class MyHouseholdsProvider
 
 String _$myHouseholdsHash() => r'2414cad7cfee6c32d5318582b0d166c25ec184fa';
 
+/// Where the caller would land after leaving or deleting [householdId]: the
+/// most recently used other household on this device, else the first other
+/// one in join order, else null (D174, `nextHouseholdAfter`).
+///
+/// Resolved before the confirm dialog opens, so the dialog can name it and
+/// the post-confirm `switchTo` lands exactly there -- not on
+/// `fetchCurrent`'s oldest-first fallback (D169), which may differ.
+
+@ProviderFor(nextHouseholdAfterLeaving)
+final nextHouseholdAfterLeavingProvider = NextHouseholdAfterLeavingFamily._();
+
+/// Where the caller would land after leaving or deleting [householdId]: the
+/// most recently used other household on this device, else the first other
+/// one in join order, else null (D174, `nextHouseholdAfter`).
+///
+/// Resolved before the confirm dialog opens, so the dialog can name it and
+/// the post-confirm `switchTo` lands exactly there -- not on
+/// `fetchCurrent`'s oldest-first fallback (D169), which may differ.
+
+final class NextHouseholdAfterLeavingProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<HouseholdMembership?>,
+          HouseholdMembership?,
+          FutureOr<HouseholdMembership?>
+        >
+    with
+        $FutureModifier<HouseholdMembership?>,
+        $FutureProvider<HouseholdMembership?> {
+  /// Where the caller would land after leaving or deleting [householdId]: the
+  /// most recently used other household on this device, else the first other
+  /// one in join order, else null (D174, `nextHouseholdAfter`).
+  ///
+  /// Resolved before the confirm dialog opens, so the dialog can name it and
+  /// the post-confirm `switchTo` lands exactly there -- not on
+  /// `fetchCurrent`'s oldest-first fallback (D169), which may differ.
+  NextHouseholdAfterLeavingProvider._({
+    required NextHouseholdAfterLeavingFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'nextHouseholdAfterLeavingProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$nextHouseholdAfterLeavingHash();
+
+  @override
+  String toString() {
+    return r'nextHouseholdAfterLeavingProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<HouseholdMembership?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<HouseholdMembership?> create(Ref ref) {
+    final argument = this.argument as String;
+    return nextHouseholdAfterLeaving(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is NextHouseholdAfterLeavingProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$nextHouseholdAfterLeavingHash() =>
+    r'a10c34c85ec792e6401f2688b0483a6cfabc3db6';
+
+/// Where the caller would land after leaving or deleting [householdId]: the
+/// most recently used other household on this device, else the first other
+/// one in join order, else null (D174, `nextHouseholdAfter`).
+///
+/// Resolved before the confirm dialog opens, so the dialog can name it and
+/// the post-confirm `switchTo` lands exactly there -- not on
+/// `fetchCurrent`'s oldest-first fallback (D169), which may differ.
+
+final class NextHouseholdAfterLeavingFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<HouseholdMembership?>, String> {
+  NextHouseholdAfterLeavingFamily._()
+    : super(
+        retry: null,
+        name: r'nextHouseholdAfterLeavingProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Where the caller would land after leaving or deleting [householdId]: the
+  /// most recently used other household on this device, else the first other
+  /// one in join order, else null (D174, `nextHouseholdAfter`).
+  ///
+  /// Resolved before the confirm dialog opens, so the dialog can name it and
+  /// the post-confirm `switchTo` lands exactly there -- not on
+  /// `fetchCurrent`'s oldest-first fallback (D169), which may differ.
+
+  NextHouseholdAfterLeavingProvider call(String householdId) =>
+      NextHouseholdAfterLeavingProvider._(argument: householdId, from: this);
+
+  @override
+  String toString() => r'nextHouseholdAfterLeavingProvider';
+}
+
 /// [householdId], if it is one of the caller's households, else null -- the
 /// Household screen's header, which may show a household other than the
 /// current one.

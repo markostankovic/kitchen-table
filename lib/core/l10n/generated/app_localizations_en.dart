@@ -1207,4 +1207,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inviteSnackbarAction => 'Invite';
+
+  @override
+  String leaveNamedHouseholdDialogTitle(String name) {
+    return 'Leave $name?';
+  }
+
+  @override
+  String get leaveNamedHouseholdConfirmBody =>
+      'You\'ll lose access to its recipes, meal plans and shopping lists.';
+
+  @override
+  String deleteNamedHouseholdDialogTitle(String name) {
+    return 'Delete $name?';
+  }
+
+  @override
+  String get deleteNamedHouseholdConfirmBody =>
+      'Everyone in it loses access to its recipes, meal plans and shopping lists. This can\'t be undone from the app.';
+
+  @override
+  String householdSwitchAfterLeaving(String name) {
+    return 'You\'ll switch to $name.';
+  }
+
+  @override
+  String leftHouseholdNowIn(String left, String next) {
+    return 'You left $left. Now in $next.';
+  }
+
+  @override
+  String deletedHouseholdNowIn(String left, String next) {
+    return 'Deleted $left. Now in $next.';
+  }
 }

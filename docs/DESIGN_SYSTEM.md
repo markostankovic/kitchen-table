@@ -1133,7 +1133,10 @@ then a left-aligned `TextButton.icon` in `destructive` — Delete household
 (`delete_forever_outlined`) for the owner, Leave household (`logout`) for an
 adult. An `xs` start inset plus the theme's `lg` button padding puts the icon
 at 20dp (D146). Only one ever renders, and neither while the caller's role is
-unknown — absent, not disabled (D115).
+unknown — absent, not disabled (D115). With other households, confirming the
+current one switches to the most recently used other household, lands on the
+Settings root and says so in a snackbar without Undo; a non-current one
+(reached through the list's gear) stays put, back on the list (D174).
 
 **"Another home?"** For someone with exactly one household only: absent
 while that count is loading or failed, and with two or more (D115). A theme
@@ -1242,7 +1245,10 @@ though the design's menu has no icon slot. Snackbars on `inverseSurface` with th
 `inversePrimary`. A snackbar that confirms a reversible change carries a `Poništi` /
 `Undo` `SnackBarAction`, its colour left to the theme (`inversePrimary`) —
 the first is the shopping list's pantry move; the household switch sheet's
-`Sada ste u domaćinstvu „X“.` / `Now in X.` is another. The offline banner on `offline` / `onOffline` — calm.
+`Sada ste u domaćinstvu „X“.` / `Now in X.` is another. The counter-example:
+`Napustili ste „X“. Sada ste u domaćinstvu „Y“.` / `You left X. Now in Y.`
+(and its delete twin) carries **no** Undo, because leaving isn't reversible
+from the app. The offline banner on `offline` / `onOffline` — calm.
 
 ### Dialog
 
@@ -1253,6 +1259,14 @@ never a filled button: Discard import, Remove member, Leave household, Delete
 household. The longest body
 copy in the app lives in these — they have to hold a 147-character Serbian
 sentence without scrolling.
+
+**With two or more households**, Leave and Delete household name it: the
+title is `Napustiti „X“?` / `Obrisati „X“?` and wraps when the name is long;
+the body stays the theme's `bodyMedium` in `onSurfaceVariant`. When the
+current household is being left, a final sentence — `Zatim prelazite u
+domaćinstvo „Y“.` / `You'll switch to Y.` — follows `md` below the body, in
+`bodyMedium` `onSurface`, neither bold nor `primary`. The buttons keep
+`Napusti` / `Obriši`. The one-household dialog is unchanged (D174).
 
 ### Empty state
 

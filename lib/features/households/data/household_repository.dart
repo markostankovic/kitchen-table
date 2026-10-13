@@ -113,12 +113,36 @@ class HouseholdRepository {
   /// reasoning (D88): the cached row is the OLD household, so a network blip
   /// on the confirming re-fetch must surface as an error rather than silently
   /// serve the household being switched away from.
+  ///
+  /// Also puts [householdId] at the front of [userId]'s recent list (D174),
+  /// after the selection itself, so the list can never cost the switch.
   Future<void> select({
     required String userId,
     required String householdId,
   }) async {
     await _preferences.write(selectedHouseholdKey(userId), householdId);
     await _local.clearCurrent(userId);
+    final List<String> recent = await recentHouseholdIds(userId);
+    final List<String> updated = <String>[
+      householdId,
+      ...recent.where((String id) => id != householdId),
+    ].take(_recentHouseholdsCap).toList();
+    await _preferences.write(recentHouseholdsKey(userId), updated.join(','));
+  }
+
+  static const int _recentHouseholdsCap = 10;
+
+  /// The households [userId] has [select]ed on this device, most recent
+  /// first (D174, next to D169's selection). May name households since left
+  /// or deleted; callers filter against the memberships they hold.
+  Future<List<String>> recentHouseholdIds(String userId) async {
+    final String? stored =
+        await _preferences.read(recentHouseholdsKey(userId));
+    if (stored == null) return const <String>[];
+    return stored
+        .split(',')
+        .where((String id) => id.isNotEmpty)
+        .toList();
   }
 
   /// Creates a household and the caller's owner membership, atomically.

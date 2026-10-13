@@ -49,6 +49,10 @@ class _FakeRepo implements HouseholdRepository {
   String? revokedInviteId;
   String? invitedHouseholdId;
   AppFailure? nextFailure;
+  final List<String> selectCalls = <String>[];
+
+  /// What `recentHouseholdIds` answers, most recent first (D174).
+  List<String> recent = const <String>[];
 
   /// The shown household's name, read fresh on every membership fetch so a
   /// rename's confirming re-read sees what was just written.
@@ -139,7 +143,13 @@ class _FakeRepo implements HouseholdRepository {
   Future<void> select({
     required String userId,
     required String householdId,
-  }) => throw UnimplementedError();
+  }) async {
+    selectCalls.add(householdId);
+    currentId = householdId;
+  }
+
+  @override
+  Future<List<String>> recentHouseholdIds(String userId) async => recent;
 
   @override
   Future<void> removeMember(String householdId, String userId) async {
@@ -710,6 +720,143 @@ void main() {
 
       expect(find.text(sr.deleteHouseholdButton), findsNothing);
     });
+  });
+
+  group('leaving with other households (phase9-household-leave-switch)', () {
+    // Join order: h1 (shown), h2, h3. h2 is what fetchCurrent's fallback
+    // would pick; the recent list says h3.
+    const List<Household> twoOthers = <Household>[
+      Household(id: 'h2', name: 'Stari stan', createdBy: 'u3'),
+      Household(id: 'h3', name: 'Vikendica', createdBy: 'u3'),
+    ];
+
+    testWidgets(
+      'with one household the dialog is today\'s: unnamed title and body, '
+      'no switch sentence, no select',
+      (WidgetTester tester) async {
+        final _FakeRepo repo = _FakeRepo()..members = _ownerAndAdult;
+        await _pump(tester, repo: repo, readName: () => 'H', userId: 'u2');
+
+        await _tapBottomRow(tester, sr.leaveHouseholdButton);
+
+        expect(find.text(sr.leaveHouseholdDialogTitle), findsOneWidget);
+        expect(find.text(sr.leaveHouseholdConfirmBody), findsOneWidget);
+        expect(find.textContaining('Zatim prelazite'), findsNothing);
+
+        await tester.tap(find.widgetWithText(TextButton, sr.leaveButton));
+        await tester.pumpAndSettle();
+
+        expect(repo.leaveHouseholdCalls, 1);
+        expect(repo.selectCalls, isEmpty);
+        expect(find.byType(SnackBar), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'leaving the current one names it, names the most recent other -- not '
+      'the oldest -- and switches there with a snackbar without Undo',
+      (WidgetTester tester) async {
+        final _FakeRepo repo = _FakeRepo()
+          ..members = _ownerAndAdult
+          ..others = twoOthers
+          ..recent = const <String>['h1', 'h3', 'h2'];
+        await _pump(tester, repo: repo, readName: () => 'H', userId: 'u2');
+
+        await _tapBottomRow(tester, sr.leaveHouseholdButton);
+
+        expect(find.text(sr.leaveNamedHouseholdDialogTitle('H')), findsOneWidget);
+        expect(find.text(sr.leaveNamedHouseholdConfirmBody), findsOneWidget);
+        final Finder switchSentence = find.text(
+          sr.householdSwitchAfterLeaving('Vikendica'),
+        );
+        expect(switchSentence, findsOneWidget);
+        expect(
+          find.text(sr.householdSwitchAfterLeaving('Stari stan')),
+          findsNothing,
+        );
+        final BuildContext dialogContext = tester.element(switchSentence);
+        expect(
+          tester.widget<Text>(switchSentence).style?.color,
+          Theme.of(dialogContext).colorScheme.onSurface,
+        );
+        _expectDestructiveTextButton(tester, sr.leaveButton);
+
+        await tester.tap(find.widgetWithText(TextButton, sr.leaveButton));
+        await tester.pumpAndSettle();
+
+        expect(repo.leftHouseholdId, _householdId);
+        expect(repo.selectCalls, <String>['h3']);
+        expect(repo.currentId, 'h3');
+        expect(find.text(_settingsMarker), findsOneWidget);
+        expect(
+          find.text(sr.leftHouseholdNowIn('H', 'Vikendica')),
+          findsOneWidget,
+        );
+        expect(find.byType(SnackBarAction), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'the owner deleting the current one gets the deleted… variant',
+      (WidgetTester tester) async {
+        final _FakeRepo repo = _FakeRepo()
+          ..members = _ownerAndAdult
+          ..others = twoOthers
+          ..recent = const <String>['h3'];
+        await _pump(tester, repo: repo, readName: () => 'H', userId: 'u1');
+
+        await _tapBottomRow(tester, sr.deleteHouseholdButton);
+
+        expect(
+          find.text(sr.deleteNamedHouseholdDialogTitle('H')),
+          findsOneWidget,
+        );
+        expect(find.text(sr.deleteNamedHouseholdConfirmBody), findsOneWidget);
+        expect(
+          find.text(sr.householdSwitchAfterLeaving('Vikendica')),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.widgetWithText(TextButton, sr.deleteButton));
+        await tester.pumpAndSettle();
+
+        expect(repo.deletedHouseholdId, _householdId);
+        expect(repo.selectCalls, <String>['h3']);
+        expect(find.text(_settingsMarker), findsOneWidget);
+        expect(
+          find.text(sr.deletedHouseholdNowIn('H', 'Vikendica')),
+          findsOneWidget,
+        );
+        expect(find.byType(SnackBarAction), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'leaving one that is not current names it, with no switch sentence and '
+      'no select',
+      (WidgetTester tester) async {
+        final _FakeRepo repo = _FakeRepo()
+          ..members = _ownerAndAdult
+          ..others = twoOthers
+          ..recent = const <String>['h3', 'h2']
+          ..currentId = 'h3';
+        await _pump(tester, repo: repo, readName: () => 'H', userId: 'u2');
+
+        await _tapBottomRow(tester, sr.leaveHouseholdButton);
+
+        expect(find.text(sr.leaveNamedHouseholdDialogTitle('H')), findsOneWidget);
+        expect(find.textContaining('Zatim prelazite'), findsNothing);
+
+        await tester.tap(find.widgetWithText(TextButton, sr.leaveButton));
+        await tester.pumpAndSettle();
+
+        expect(repo.leftHouseholdId, _householdId);
+        expect(repo.selectCalls, isEmpty);
+        expect(repo.currentId, 'h3');
+        expect(find.text(_listMarker), findsOneWidget);
+        expect(find.byType(SnackBar), findsNothing);
+      },
+    );
   });
 
   group('revoke invite', () {

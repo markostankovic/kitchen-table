@@ -11,6 +11,7 @@ import '../domain/household.dart';
 import '../domain/household_invite.dart';
 import '../domain/household_member.dart';
 import '../domain/household_membership.dart';
+import '../domain/next_household.dart';
 
 part 'household_providers.g.dart';
 
@@ -125,6 +126,29 @@ Future<List<HouseholdMembership>> myHouseholds(Ref ref) async {
   return ref.watch(householdRepositoryProvider).fetchMemberships(
     userId: userId,
   );
+}
+
+/// Where the caller would land after leaving or deleting [householdId]: the
+/// most recently used other household on this device, else the first other
+/// one in join order, else null (D174, `nextHouseholdAfter`).
+///
+/// Resolved before the confirm dialog opens, so the dialog can name it and
+/// the post-confirm `switchTo` lands exactly there -- not on
+/// `fetchCurrent`'s oldest-first fallback (D169), which may differ.
+@riverpod
+Future<HouseholdMembership?> nextHouseholdAfterLeaving(
+  Ref ref,
+  String householdId,
+) async {
+  final String? userId = ref.watch(currentUserIdProvider).value;
+  if (userId == null) return null;
+  final List<HouseholdMembership> mine = await ref.watch(
+    myHouseholdsProvider.future,
+  );
+  final List<String> recent = await ref
+      .watch(householdRepositoryProvider)
+      .recentHouseholdIds(userId);
+  return nextHouseholdAfter(householdId, mine, recent);
 }
 
 /// [householdId], if it is one of the caller's households, else null -- the

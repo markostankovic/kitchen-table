@@ -1224,4 +1224,37 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get inviteSnackbarAction => 'Pozovite';
+
+  @override
+  String leaveNamedHouseholdDialogTitle(String name) {
+    return 'Napustiti „$name“?';
+  }
+
+  @override
+  String get leaveNamedHouseholdConfirmBody =>
+      'Izgubićete pristup njegovim receptima, planovima obroka i listama za kupovinu.';
+
+  @override
+  String deleteNamedHouseholdDialogTitle(String name) {
+    return 'Obrisati „$name“?';
+  }
+
+  @override
+  String get deleteNamedHouseholdConfirmBody =>
+      'Svi članovi gube pristup njegovim receptima, planovima obroka i listama za kupovinu. Ovo se ne može poništiti iz aplikacije.';
+
+  @override
+  String householdSwitchAfterLeaving(String name) {
+    return 'Zatim prelazite u domaćinstvo „$name“.';
+  }
+
+  @override
+  String leftHouseholdNowIn(String left, String next) {
+    return 'Napustili ste „$left“. Sada ste u domaćinstvu „$next“.';
+  }
+
+  @override
+  String deletedHouseholdNowIn(String left, String next) {
+    return 'Domaćinstvo „$left“ je obrisano. Sada ste u domaćinstvu „$next“.';
+  }
 }

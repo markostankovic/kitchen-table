@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/error/failure_l10n.dart';
@@ -17,6 +18,7 @@ import '../application/household_providers.dart';
 import '../domain/household.dart';
 import '../domain/household_invite.dart';
 import '../domain/household_member.dart';
+import '../domain/household_membership.dart';
 
 /// Household management: who is in it, and how to let someone else in.
 ///
@@ -180,54 +182,169 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
 
   /// Confirms, then has the caller leave [h]. Only reachable by an adult --
   /// the owner never sees this affordance.
-  Future<void> _leave(Household h, AppLocalizations l10n) async {
-    final KitchenColors kitchen = Theme.of(context).extension<KitchenColors>()!;
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext dialogContext) => AlertDialog(
-        title: Text(l10n.leaveHouseholdDialogTitle),
-        content: Text(l10n.leaveHouseholdConfirmBody),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(l10n.cancelButton),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: kitchen.destructive),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.leaveButton),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    final bool wasCurrent = _isCurrent();
-    try {
-      await ref.read(householdRepositoryProvider).leaveHousehold(h.id);
-      ref.invalidate(currentHouseholdProvider);
-      final Household? next = await ref.read(currentHouseholdProvider.future);
-      if (!mounted) return;
-      _landAfterGoing(next, wasCurrent: wasCurrent);
-    } on AppFailure catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
-    }
-  }
+  Future<void> _leave(Household h, AppLocalizations l10n) => _go(
+    h,
+    l10n,
+    oneTitle: l10n.leaveHouseholdDialogTitle,
+    oneBody: l10n.leaveHouseholdConfirmBody,
+    namedTitle: l10n.leaveNamedHouseholdDialogTitle(h.name),
+    namedBody: l10n.leaveNamedHouseholdConfirmBody,
+    verb: l10n.leaveButton,
+    nowIn: l10n.leftHouseholdNowIn,
+    run: () => ref.read(householdRepositoryProvider).leaveHousehold(h.id),
+  );
 
   /// Confirms, then deletes the household entirely. Owner-only -- the row
   /// that calls this is rendered only for the owner, so the RPC's own guard
   /// is a backstop for a stale screen, not something this dialog expects to
   /// hit (D115: absent, not disabled with a tooltip).
-  Future<void> _deleteHousehold(Household h, AppLocalizations l10n) async {
-    final KitchenColors kitchen = Theme.of(context).extension<KitchenColors>()!;
-    final bool? confirmed = await showDialog<bool>(
+  Future<void> _deleteHousehold(Household h, AppLocalizations l10n) => _go(
+    h,
+    l10n,
+    oneTitle: l10n.deleteHouseholdDialogTitle,
+    oneBody: l10n.deleteHouseholdConfirmBody(h.name),
+    namedTitle: l10n.deleteNamedHouseholdDialogTitle(h.name),
+    namedBody: l10n.deleteNamedHouseholdConfirmBody,
+    verb: l10n.deleteButton,
+    nowIn: l10n.deletedHouseholdNowIn,
+    run: () => ref.read(householdRepositoryProvider).deleteHousehold(h.id),
+  );
+
+  /// Leave and delete, which differ only in their strings and [run]
+  /// (phase9-household-leave-switch, D174).
+  ///
+  /// With one household -- or while [myHouseholdsProvider] has no value
+  /// (D115) -- the [oneTitle]/[oneBody] dialog and today's landing, exactly.
+  /// With others, the named dialog; and when [h] is the current household,
+  /// the dialog also names where the caller lands, and confirming switches
+  /// there, goes to the Settings root and says so -- no Undo, since leaving
+  /// can't be undone from the app.
+  Future<void> _go(
+    Household h,
+    AppLocalizations l10n, {
+    required String oneTitle,
+    required String oneBody,
+    required String namedTitle,
+    required String namedBody,
+    required String verb,
+    required String Function(String left, String next) nowIn,
+    required Future<void> Function() run,
+  }) async {
+    final List<HouseholdMembership>? mine = ref
+        .read(myHouseholdsProvider)
+        .value;
+    final bool multi = mine != null && mine.length >= 2;
+    final bool wasCurrent = _isCurrent();
+
+    HouseholdMembership? next;
+    if (multi && wasCurrent) {
+      // Held open across the await: the provider is autoDispose, and a bare
+      // read would leave it with no listener while it resolves.
+      final ProviderSubscription<AsyncValue<HouseholdMembership?>> hold = ref
+          .listenManual(nextHouseholdAfterLeavingProvider(h.id), (_, _) {});
+      try {
+        next = await ref.read(nextHouseholdAfterLeavingProvider(h.id).future);
+      } on AppFailure {
+        next = null;
+      } finally {
+        hold.close();
+      }
+      if (!mounted) return;
+    }
+
+    final bool? confirmed = await _confirmGoing(
+      title: multi ? namedTitle : oneTitle,
+      body: multi ? namedBody : oneBody,
+      switchName: next?.household.name,
+      verb: verb,
+    );
+    if (confirmed != true || !mounted) return;
+
+    if (next == null) {
+      try {
+        await run();
+        ref.invalidate(currentHouseholdProvider);
+        final Household? landed = await ref.read(
+          currentHouseholdProvider.future,
+        );
+        if (!mounted) return;
+        _landAfterGoing(landed, wasCurrent: wasCurrent);
+      } on AppFailure catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
+      }
+      return;
+    }
+
+    // On landInHousehold's shape (D173): everything the tail needs is
+    // captured before the await, since this screen is left behind by the go.
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final GoRouter router = GoRouter.of(context);
+    final CurrentHousehold notifier = ref.read(
+      currentHouseholdProvider.notifier,
+    );
+    final Household nextHousehold = next.household;
+    try {
+      await run();
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(e.localized(l10n))));
+      return;
+    }
+    try {
+      await notifier.switchTo(nextHousehold.id);
+    } on AppFailure catch (e) {
+      // The household is already gone; nothing to retry. The router's
+      // listener and fetchCurrent settle the current household on the next
+      // read.
+      messenger.showSnackBar(SnackBar(content: Text(e.localized(l10n))));
+      return;
+    }
+    router.go(const SettingsRoute().location);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(nowIn(h.name, nextHousehold.name)),
+          persist: false,
+        ),
+      );
+  }
+
+  /// The leave/delete confirm dialog. [switchName], when given, adds the
+  /// "You'll switch to …" sentence in `onSurface`, [AppSpacing.md] below the
+  /// body; without it the content is the single body [Text], as it always
+  /// was.
+  Future<bool?> _confirmGoing({
+    required String title,
+    required String body,
+    required String? switchName,
+    required String verb,
+  }) {
+    final ThemeData theme = Theme.of(context);
+    final KitchenColors kitchen = theme.extension<KitchenColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
-        title: Text(l10n.deleteHouseholdDialogTitle),
-        content: Text(l10n.deleteHouseholdConfirmBody(h.name)),
+        title: Text(title),
+        content: switchName == null
+            ? Text(body)
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(body),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    l10n.householdSwitchAfterLeaving(switchName),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -236,27 +353,11 @@ class _HouseholdScreenState extends ConsumerState<HouseholdScreen> {
           TextButton(
             style: TextButton.styleFrom(foregroundColor: kitchen.destructive),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.deleteButton),
+            child: Text(verb),
           ),
         ],
       ),
     );
-
-    if (confirmed != true) return;
-
-    final bool wasCurrent = _isCurrent();
-    try {
-      await ref.read(householdRepositoryProvider).deleteHousehold(h.id);
-      ref.invalidate(currentHouseholdProvider);
-      // No SnackBar on success -- same as _leave.
-      final Household? next = await ref.read(currentHouseholdProvider.future);
-      if (!mounted) return;
-      _landAfterGoing(next, wasCurrent: wasCurrent);
-    } on AppFailure catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.localized(l10n))));
-    }
   }
 
   /// Whether this screen's household is the current one. Read before a
