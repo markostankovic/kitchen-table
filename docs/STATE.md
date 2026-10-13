@@ -1,37 +1,37 @@
-# State — 2026-10-08
+# State — 2026-10-13
 
 **Branch:** `main`
-**Last shipped:** `phase8-import-review-toolbar` (`10de5cd`), a follow-on to
-round `2026-10-06-round-2-recipe-structure` that isn't one of its slices.
-Import review's Method step and note rows and its Notes card now show the
-D165 markup styled in place and take the formatting toolbar. The toolbar
-replaces the review's action bar while one of them is typed in (D167).
+**Last shipped:** Phase 9 slice A, `multi-household-a` (`2030b66`), the
+first of three slices that let one account belong to several households.
+Five Edge Functions (import-text, import-url, import-photo, create-invite,
+translate-tags) take `householdId` in the body, checked by membership,
+in place of "oldest household wins" (D168). Nothing changes for the user.
 
-- **Promoted.** The editor's private `_FormattableField` is now
-  `AppFormattableField` in `core/widgets/`, moved unchanged. The editor's
-  tests passed without changes.
-- **Placement.** Review sits inside the shell, so it reads the keyboard off
-  `View.of` (plus `didChangeMetrics`). The toolbar is the body Column's last
-  child in place of `AppActionBar`, with no inset padding. Heading rows
-  stay plain.
-- **Collapse lets go of focus.** Method and Notes keep their fields alive
-  (`maintainState`), so a focused step stranded the toolbar when its card
-  collapsed. Collapsing a card now unfocuses focus held inside it, and only
-  there. A widget test found this; the walk confirmed it.
-- **Notes subline.** It is `richPlainText` (new, pure, built on the
-  existing scan), so it no longer shows `**` / `*` / `- `.
-- Client-only: no migration, no Edge Function, no package, no new l10n key.
+- **Server.** `requireHousehold` in `_shared/auth.ts`: no id falls back to
+  the oldest membership (legacy, for installed APKs), a malformed one is
+  400 `invalid_household`, and a non-member gets 403 `not_a_member`.
+  `readOptionalJsonBody` lets the two functions that took no body accept an
+  empty one.
+- **Client.** The import screens send `currentHouseholdIdProvider`'s id.
+  `ImportRepository` lost its own oldest-household query. Tag translation
+  sends the saved recipe's household, and create-invite the shown one.
+- `invalid_household` maps onto `not_a_member`'s client arm. `translate-tags`
+  is now in `make functions-deploy`.
+- No migration, no package, no new l10n key.
 
-`dart analyze` is clean and `flutter test` passes 1026/1026. `make check` is
-green except the known `seed-check`; `make test-sql`, the function tests and
-`make l10n-check` pass. **Walked** on the **physical Galaxy** against hosted,
-all four combinations (`/design-walk import-review`). The walk was clean and
-opened no loop.
+`dart analyze` is clean, `flutter test` passes 1035/1035 and the Deno
+function tests pass 173/173. `make check` is green except the known
+`seed-check`; `make test-sql` and `make l10n-check` pass.
 
-**Hosted is current**: this slice is client-only. The walk's throwaway
-`pogaca` was soft-deleted.
+**Hosted is current**: all eight functions were deployed on 2026-10-13.
+Marko confirmed the previously installed build still imports (the legacy
+path). The new release APK is on the physical Galaxy, and Marko walked it
+before closing.
 
 Still open:
+- **D168's legacy fallback**: a function body with no `householdId` still
+  resolves the caller's oldest household. Slice B deletes it, together with
+  `resolveHousehold`;
 - **a throwaway recipe on hosted**: `Setnja odeljci TEST`, saved by the
   `phase8-ingredient-sections-edit` editor walk (later walks' throwaways
   were soft-deleted). It wants deleting (the app's own soft delete), which
@@ -100,9 +100,13 @@ Still open:
   Design updates them.
 
 **In flight:** none.
-**Next:** no slice is planned. Round `2026-10-06-round-2-recipe-structure`
-is done (`docs/design/handoffs/2026-10-06-round-2-recipe-structure/ROUND.md`,
-every box ticked). The candidates, for Marko to pick from:
+**Next:** Phase 9 slice B, client selection and switching (`/plan-slice
+multi-household-b`). The client picks its current household instead of the
+oldest; `currentHouseholdIdProvider` stays the one definition (D52).
+`redeem-invite`'s `already_in_household` guard goes, and so do
+`resolveHousehold` and D168's fallback. Slice C (the UI) waits on Claude
+Design's round for `docs/design/BRIEF_multiple_households.md`.
+Still open as candidates beside Phase 9:
 - the formatting toolbar in the translation review, the last raw formatting
   surface. It is a small `/plan-slice-ui` on D167's pattern;
 - Phase 8 part 4 (real thumbnails), which stays optional, "only if part 2 is
@@ -116,8 +120,8 @@ every box ticked). The candidates, for Marko to pick from:
     (§ Buttons says text in destructive).
 
 The open device-walk loops below still want one sitting with the Galaxy
-attached; it was attached for this slice's walk.
-**Latest decision:** D167
+attached.
+**Latest decision:** D168
 
 **Twenty device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB

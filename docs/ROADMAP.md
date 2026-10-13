@@ -1105,6 +1105,37 @@ every URL and re-download every photo.
 
 ---
 
+## Phase 9 — Multiple households
+
+One account can belong to several households, for example its own family
+plus the parents' house, and is "in" one at a time. With a single household
+the app must look and behave exactly as it does today. Planned 2026-10-12
+from `docs/IDEAS.md`, with the design brief in
+`docs/design/BRIEF_multiple_households.md`.
+
+**Order.** A, then B, then C. C waits on the Claude Design round.
+
+### Slice A — Edge Functions take an explicit household
+
+**Status: complete** (`2030b66`). Decisions taken during it: D168. See `docs/journal/phase-9.md`.
+
+### Slice B — Client selection and switching
+
+**Status: not started.**
+
+- The client chooses its current household rather than taking the oldest.
+  `currentHouseholdIdProvider` stays the one definition (D52).
+- Drop `redeem-invite`'s `already_in_household` guard, and delete
+  `resolveHousehold` and D168's legacy fallback.
+
+### Slice C — The multiple-households UI
+
+**Status: not started.** It waits on the Claude Design round for
+`docs/design/BRIEF_multiple_households.md`, which goes through
+`/design-handoff`.
+
+---
+
 ## Standing rules across phases
 
 - Anything AI-produced is `status = 'draft'` until a human marks it tested.
