@@ -1,0 +1,147 @@
+# Generating a recipe in an AI chat for paste import
+
+A prompt for getting a recipe out of an external AI chat (Claude, ChatGPT, …)
+in a shape that the paste import reads cleanly.
+
+## Why plain text, not JSON
+
+Paste import (`supabase/functions/import-text/`) already runs a model that
+turns prose into structure (`ModelRecipe` in
+`supabase/functions/_shared/schema.ts`), so asking the chat for JSON gains
+nothing. What matters is the **ingredient lines**. The model returns those
+verbatim, and deterministic code reads them: `parse_line.ts` takes the
+quantity and unit, then `match.ts` matches the ingredient. A line in the
+patterns of `test/fixtures/ingredient_lines.json` comes back with its
+quantity, unit and ingredient filled in, and the review screen has less to
+flag.
+
+## What the parser likes
+
+| Do | Why |
+|---|---|
+| One ingredient per line, quantity first, then unit, then name: `200 g brašna` | That order is what `parse_line.ts` reads |
+| Seeded units only: `g, kg, ml, dl, l, kašičica, kašika, šolja, čaša, kom, čen, glavica, veza, kriška, kesica, konzerva, prstohvat` | Anything else is left without a unit |
+| `1/2`, `1 1/2`, `½`, `1,5`, ranges `2-3` | Become exact integer fractions or ranges |
+| Notes after a comma or in brackets: `2 šolje brašna, prosejano` | Become the line's note, so the name stays clean for matching |
+| `po ukusu` / `po želji` at the **end** of a line | Marks the line optional |
+| No `k.` or `kaš.` | Deliberately not parsed, because they're ambiguous |
+| Section headings on their own line: `Za fil:` | Become ingredient sections or method headings |
+| Times written in steps: `pecite 25 minuta` | Become a step timer |
+| `Porcije`, `Priprema` and `Kuvanje` stated explicitly | Fill servings, prep time and cook time |
+| Latin script | Display is Latin only |
+
+Tags are not imported (`ModelRecipe` has no tags field), so asking for them
+does nothing. Leave out a "source" line: the import would save it as the
+recipe's attribution, and a chat bot isn't a real source.
+
+## Prompt template (Serbian)
+
+```
+Napiši recept za: <JELO / ŽELJE, npr. "posna musaka sa sočivom za 4 osobe, bez rerne duže od 45 min">
+
+Vrati SAMO recept, bez uvoda i komentara, tačno u ovom formatu, latinicom:
+
+<Naziv recepta>
+
+<Jedna ili dve rečenice o jelu.>
+
+Porcije: <broj>
+Priprema: <broj> minuta
+Kuvanje: <broj> minuta
+
+Sastojci:
+<podnaslov ako ima više delova, npr. "Za testo:">
+- <količina> <jedinica> <namirnica>, <napomena ako treba>
+
+Priprema:
+1. <korak>
+2. <korak>
+
+Napomena:
+- <saveti, ako ih ima>
+
+Pravila za sastojke:
+- Jedan sastojak po redu, količina UVEK prva, pa jedinica, pa namirnica.
+- Koristi samo ove jedinice, napisane cele: g, kg, ml, dl, l, kašičica, kašika, šolja, čaša, kom, čen, glavica, veza, kriška, kesica, konzerva, prstohvat.
+- Razlomci kao 1/2 ili 1 1/2; decimale sa zarezom (1,5 dl); raspon kao 2-3.
+- Napomenu o obradi stavi posle zareza ili u zagradu ("1 glavica luka, sitno seckana").
+- Začine bez količine piši kao "so po ukusu".
+- Bez skraćenica tipa "k." ili "kaš.", bez podebljanog teksta.
+U koracima navedi vreme brojem kad postoji ("pecite 25 minuta").
+```
+
+## Prompt template (English)
+
+```
+Write a recipe for: <DISH / WISHES>
+
+Return ONLY the recipe, no intro or commentary, in exactly this format:
+
+<Recipe title>
+
+<One or two sentences about the dish.>
+
+Servings: <number>
+Prep: <number> minutes
+Cook: <number> minutes
+
+Ingredients:
+<subheading if the recipe has parts, e.g. "For the dough:">
+- <quantity> <unit> <ingredient>, <note if needed>
+
+Method:
+1. <step>
+2. <step>
+
+Notes:
+- <tips, if any>
+
+Ingredient rules:
+- One ingredient per line, quantity ALWAYS first, then unit, then ingredient.
+- Use only these units, spelled out: g, kg, ml, l, tsp, tbsp, cup, oz, lb, clove, can, pinch.
+- Fractions as 1/2 or 1 1/2; ranges as 2-3.
+- Put preparation notes after a comma or in brackets ("1 onion, finely chopped").
+- Write seasoning without a quantity as "salt to taste".
+- No abbreviations beyond the units above, no bold text.
+In steps, state times as numbers where there is one ("bake for 25 minutes").
+```
+
+## What a good reply looks like
+
+```
+Posna musaka sa sočivom
+
+Sočna posna musaka sa slojevima krompira i sočiva, za porodični ručak.
+
+Porcije: 4
+Priprema: 20 minuta
+Kuvanje: 45 minuta
+
+Sastojci:
+Za fil:
+- 200 g crvenog sočiva
+- 1 glavica crnog luka, sitno seckana
+- 2 čena belog luka
+- 2 kašike ulja
+- 1 kašičica slatke paprike
+- so po ukusu
+Za slojeve:
+- 1 kg krompira (oljuštenog)
+- 2 dl biljnog mleka
+
+Priprema:
+1. Sočivo operite i kuvajte 15 minuta.
+2. Na ulju dinstajte luk 5 minuta, dodajte beli luk i papriku.
+...
+
+Napomena:
+- Može se pripremiti dan ranije.
+```
+
+Copy everything from the title down into the paste import. The limit is
+40,000 characters. Each import counts against the household's monthly AI
+allowance, and nothing is saved until the review screen. The lines it flags
+are the ingredient matches it wasn't sure about.
+
+If the unit seed or the parser's rules change, update the unit lists and
+rules here to match.
