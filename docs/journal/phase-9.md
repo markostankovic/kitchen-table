@@ -912,3 +912,52 @@ names the end note, which the plan didn't ask for.
 - **Not reached on the walk:** the empty case (no hosted recipe has zero
   ingredients, and no throwaway was made; the widget test covers it), and
   the sectioned recipe in en/dark (the tap missed; sr/dark covered it).
+
+### Design round 4, part 2 — Sign-in without the illustration (`phase9-sign-in-no-illustration`)
+
+**Status:** complete (`9cb614e`). Decisions taken during it: D177.
+
+Slice 2 of 2, and the last, of the post-Phase-9 design round
+`docs/design/handoffs/2026-10-16-round-4-recipe-detail-signin/`, which it
+closes. Planned with `/plan-slice-ui`, built, walked and closed on
+2026-10-16. There is no token change, no package, no schema change and no
+asset change.
+
+- **Screen.** `sign_in_screen.dart` loses the `sign_in_illustration.dart`
+  import, `const SignInIllustration()` and the `xxl + sm` (40) `SizedBox`
+  under it. The lockup's `Image.asset`, with its brand-name comment, is now
+  the first child of the centred content `Column`. Nothing else moved.
+- **Deleted.** `sign_in_illustration.dart` (`SignInIllustration` and
+  `_RecipeCardPainter`), and `AppSizes.signInIllustration` with its doc
+  comment. `assets/`, `pubspec.yaml` and `tool/gen_app_icons.py` are
+  untouched: the painter never used the bundle's `recipe-card.png`.
+- **Docs.** DESIGN_SYSTEM.md loses the `signInIllustration` row in § Size
+  and motion and the `assets/recipe-card.png` row in § Token map. No other
+  mention of the illustration was left in the file.
+- **Tests.** `sign_in_screen_test` +1: the lockup `Image` (found by its
+  `semanticLabel`) is the first child of its nearest `Column`. The header
+  comment names round 4 / D177. The four existing tests pass unchanged.
+
+**Differs from the plan.** Nothing.
+
+**How it was verified.**
+- The `SignInIllustration|signInIllustration|sign_in_illustration` grep
+  over `lib test docs/DESIGN_SYSTEM.md` returns nothing.
+- `dart analyze` is clean, and `flutter test` passes **1141/1141**.
+- `make check` is green except the known `seed-check`. It stops there, so
+  `make test-sql` and `make l10n-check` were run on their own afterwards
+  (both exit 0).
+- **Walk** (`/design-walk sign-in`, 2026-10-16) on the **emulator**, with
+  the hosted release build from `make install-emulator`. Sign-in was
+  reached by signing out from Settings, and left again with Dev login, for
+  all four combinations. No gap where the illustration was. The lockup and
+  the two-line tagline sit centred in the space above the pinned button.
+  The Serbian tagline wraps evenly with nothing cut off. The lockup
+  switches to its dark PNG in dark, and the tagline stays readable. The
+  Google button reads as neutral in both brightnesses. The en combinations
+  render Serbian, as D77 says and STATE already lists; their layout is the
+  same. The walk restored `Srpski` / `Svetla`, signed in.
+- **Not reached on the walk:** the Google button's busy and failure path,
+  which needs the Galaxy. This slice didn't touch it. The emulator build
+  also shows the D125 `Dev login` button under the Google button, which a
+  release build without its defines doesn't.

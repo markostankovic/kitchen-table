@@ -1,5 +1,5 @@
 # D137 — Onboarding per the design round: lockup and a painted illustration on sign-in, an outlined Google button with the official G, top-aligned `headlineSmall` onboarding with the buttons pinned
-**Status:** active — amends D124 #2 (placement) and #4 (titles), D126 #1 (the Google button), and `DESIGN_SYSTEM.md` § Logo's "the sign-in screen has no logo"
+**Status:** active — #1's illustration half superseded by D177: sign-in has no illustration, the lockup leads; amends D124 #2 (placement) and #4 (titles), D126 #1 (the Google button), and `DESIGN_SYSTEM.md` § Logo's "the sign-in screen has no logo"
 **Touches:** lib/features/auth/presentation/sign_in_screen.dart, lib/features/auth/presentation/sign_in_illustration.dart, lib/features/households/presentation/create_household_screen.dart, lib/features/households/presentation/join_household_screen.dart, lib/features/households/presentation/onboarding_mark.dart, lib/core/theme/app_sizes.dart, tool/gen_app_icons.py, assets/brand/, pubspec.yaml, docs/DESIGN_SYSTEM.md
 
 **Decided.** The user chose "do per design" for frames 01–03 of round

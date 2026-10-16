@@ -1,30 +1,30 @@
 # State — 2026-10-16
 
 **Branch:** `main`
-**Last shipped:** design round 4's first slice,
-`phase9-recipe-detail-ingredients-card` (`2686df5`), from
-`docs/design/handoffs/2026-10-16-round-4-recipe-detail-signin/` (D176).
-Phase 9 (multiple households) was already complete. Round 4 is a
-post-Phase-9 design round with two slices and no token change.
+**Last shipped:** design round 4's second and last slice,
+`phase9-sign-in-no-illustration` (`9cb614e`), from
+`docs/design/handoffs/2026-10-16-round-4-recipe-detail-signin/` (D177).
+That closes round 4, a post-Phase-9 design round with two slices and no
+token change. The first was `phase9-recipe-detail-ingredients-card`
+(`2686df5`, D176).
 
-- **Recipe detail.** The Ingredients heading (with `za N porcija` /
-  `for N servings`), every section heading and every row now sit on one
-  themed `Card`, padded `lg lg lg xs` (`lg` at the bottom when there are no
-  ingredients). There is 24 from the stat strip to the card and 32 from the
-  card to the Steps heading. Rows stay flush inside the card, not `inset`.
-- **Unchanged:** the stat strip, the Steps timeline, the end-note card,
-  `IngredientLineRow`, and the editor and import review lists, which stay
-  bare.
+- **Sign-in.** The painted recipe-card illustration is gone, with the 40
+  gap under it, `SignInIllustration`'s file and `AppSizes.signInIllustration`
+  (and its two DESIGN_SYSTEM.md rows). The lockup now leads the block
+  (lockup, tagline, failure line), still centred above the pinned Google
+  button. D137 #1's illustration half is superseded; #2–#4 stand.
+- **Unchanged:** the lockup PNGs, the outlined neutral 52dp Google button,
+  the dev-login button, `assets/` and `pubspec.yaml`.
 
-`dart analyze` is clean, and `flutter test` passes 1140/1140. `make check`
+`dart analyze` is clean, and `flutter test` passes 1141/1141. `make check`
 is green except the known `seed-check`. `test-sql` and `l10n-check`,
 which run after it, pass on their own.
 
-**Walked clean** (`/design-walk recipe-detail`, emulator, all four
-combinations, 2026-10-16), so no loop was opened. Not reached: the
-empty-ingredients case on a device (covered by a widget test). The slice
-needs nothing on hosted. The emulator runs this slice's release build; the
-Galaxy still runs `phase9-import-save-to`'s.
+**Walked clean** (`/design-walk sign-in`, emulator, all four combinations,
+2026-10-16), so no loop was opened. Not reached: the Google button's busy
+and failure path, which needs the Galaxy (this slice didn't touch it). The
+slice needs nothing on hosted. The emulator runs this slice's release
+build; the Galaxy still runs `phase9-import-save-to`'s.
 
 **Hosted test data:**
 - the walk account (Galaxy) owns `Renamed Household` and `Porodica
@@ -131,11 +131,8 @@ Still open:
   Design updates them.
 
 **In flight:** none.
-**Next:** round 4's second and last slice, `phase9-sign-in-no-illustration`
-(`/plan-slice-ui`): drop the sign-in illustration and its gap, and remove
-`AppSizes.signInIllustration` and its DESIGN_SYSTEM.md rows. It partly
-supersedes D137, so its close records a new decision. After that, nothing
-is queued on the roadmap. Candidates:
+**Next:** nothing is queued on the roadmap, and round 4 is closed.
+Candidates:
 - the formatting toolbar in the translation review, the last raw formatting
   surface. It is a small `/plan-slice-ui` on D167's pattern;
 - Phase 8 part 4 (real thumbnails), which stays optional, "only if part 2 is
@@ -151,7 +148,7 @@ is queued on the roadmap. Candidates:
 
 The open device-walk loops below still want one sitting with the Galaxy
 attached.
-**Latest decision:** D176
+**Latest decision:** D177
 
 **Twenty-two device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB

@@ -54,7 +54,7 @@ None.
       below the card still comes out at 32. The editor and import review
       ingredient lists are **not** in scope, because the canvas leaves them
       bare.
-- [ ] `phase9-sign-in-no-illustration`: Sign in. Files:
+- [x] `phase9-sign-in-no-illustration` (`9cb614e`, D177): Sign in. Files:
       `lib/features/auth/presentation/sign_in_screen.dart`,
       `lib/features/auth/presentation/sign_in_illustration.dart` (deleted),
       `lib/core/theme/app_sizes.dart` (`signInIllustration` removed),
