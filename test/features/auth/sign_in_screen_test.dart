@@ -1,5 +1,6 @@
 // Phase 7 part 8 -- the sign-in screen's Garden layout; part 15 (D137) --
-// the lockup and the outlined Google button.
+// the lockup and the outlined Google button; design round 4 (D177) -- the
+// illustration is gone, so the lockup leads.
 //
 // Built on household_screen_test.dart's harness: a ProviderScope and a
 // Serbian MaterialApp (D77 -- nobody is signed in, so this screen renders
@@ -68,6 +69,20 @@ void main() {
       );
     });
   }
+
+  testWidgets('the lockup leads the content block (no illustration, D177)', (
+    WidgetTester tester,
+  ) async {
+    await _pump(tester);
+
+    final Finder lockup = find.byWidgetPredicate(
+      (Widget w) => w is Image && w.semanticLabel == 'Kitchen Table',
+    );
+    final Column content = tester.widget<Column>(
+      find.ancestor(of: lockup, matching: find.byType(Column)).first,
+    );
+    expect(content.children.first, tester.widget<Image>(lockup));
+  });
 
   testWidgets('the Google button is neutral: lowest fill, outline side', (
     WidgetTester tester,

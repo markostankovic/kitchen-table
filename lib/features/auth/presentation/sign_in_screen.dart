@@ -8,7 +8,6 @@ import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../application/auth_providers.dart';
-import 'sign_in_illustration.dart';
 
 /// The way in: Google, the only path (D96).
 ///
@@ -104,8 +103,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        const SignInIllustration(),
-                        const SizedBox(height: AppSpacing.xxl + AppSpacing.sm),
                         // The brand name, not chrome -- never localized, the
                         // same way 'Srpski'/'English' are never localized
                         // either. So an English-only lockup is right in `sr`.

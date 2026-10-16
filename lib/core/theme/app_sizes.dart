@@ -79,10 +79,6 @@ abstract final class AppSizes {
   /// [avatar], though the number matches: that is a person's circle.
   static const double gripColumn = 40;
 
-  /// The sign-in screen's painted recipe-card illustration, as a width. Its
-  /// height follows from the drawing's 176 x 139 aspect ratio.
-  static const double signInIllustration = 176;
-
   /// The sign-in screen's logo lockup (mark plus "Kitchen Table"), as a
   /// height. The image's width follows from its own aspect ratio.
   static const double lockup = 48;

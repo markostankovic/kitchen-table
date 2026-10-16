@@ -263,7 +263,6 @@ number in the table.
 | `emptyStateIcon` | 48 | `AppEmptyState`'s icon |
 | `grip` | 20 | the drag-indicator glyph on a meal-plan entry and the editor's ingredient and step rows |
 | `gripColumn` | 40 | the trailing column that glyph is centred in |
-| `signInIllustration` | 176 | the sign-in screen's painted recipe card, as a width (176 × 139) |
 | `lockup` | 48 | the sign-in screen's logo lockup, as a height |
 | `onboardingMark` | 56 | the mark tile on the onboarding create / join household screens (not the in-app ones) |
 
@@ -328,7 +327,6 @@ above own them.
 | `--duration-short`, `--duration-medium` | `AppDurations.short`, `.medium` |
 | `--ease-emphasized` (`cubic-bezier(0.2,0,0,1)`, M3's CSS fallback) | `AppDurations.emphasized` (`Curves.easeInOutCubicEmphasized`) |
 | `--elevation-2`, `--elevation-3` | M3 elevation 2 / 3 with `shadowColor: scheme.shadow` (§ Elevation) |
-| `assets/recipe-card.png` | `SignInIllustration` (a painter in theme roles, D137) |
 | `assets/mark-master.svg` | `assets/brand/mark.png` (`make icons`) |
 | `lockup-en-light.svg`, `lockup-en-dark.svg` | `assets/brand/lockup_light.png`, `lockup_dark.png` (`make icons`) |
 | (web only, no mapping) | `--font-sans`, `--font-mono`, the `--surface-*` / `--text-*` / `--border-*` aliases (they resolve to roles above), `.kt-state`, `.kt-dash` |
