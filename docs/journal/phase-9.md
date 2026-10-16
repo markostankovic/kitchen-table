@@ -851,3 +851,64 @@ package and no function change. With it, Phase 9 slice C is complete.
   one-household check on `test-user` ran or is still owed (it depended on
   the hosted cleanup), and whether the walk's throwaway recipes were
   soft-deleted.
+
+### Design round 4, part 1 — The ingredients on a card (`phase9-recipe-detail-ingredients-card`)
+
+**Status:** complete (`2686df5`). Decisions taken during it: D176.
+
+Slice 1 of 2 of the post-Phase-9 design round
+`docs/design/handoffs/2026-10-16-round-4-recipe-detail-signin/`. Planned
+with `/plan-slice-ui`, built, walked and closed on 2026-10-16. There is no
+token change, no package and no schema change. The round's only
+recipe-detail change is this wrapper.
+
+- **Screen.** In `recipe_detail_screen.dart`, `_Body` now passes the
+  `AppSectionHeading` (with its "za N porcija" trailer) and the existing
+  if/else (`noIngredientsYet`, or `_ingredientRows` unchanged) to a new
+  private `_IngredientsCard`. Its shape is `_RecipeNotesCard`'s (D155):
+  `SizedBox(width: double.infinity)`, then a bare themed `Card` (D134, no
+  `color:` or `shape:`), then a `Padding` of `fromLTRB(lg, lg, lg, xs)`
+  (`lg` at the bottom when `isEmpty`), then a start-aligned `Column`. The
+  gap below it went from `xl` to `xxl`, with a comment saying why. Section
+  headings (`RecipeGroupHeading`, D161) and the D156 run logic move inside
+  the card unchanged. `IngredientLineRow` is untouched.
+- **Docs.** DESIGN_SYSTEM.md § Cards now lists the detail's ingredients
+  and its end note, which had been carded since D155 but wasn't listed.
+  § Ingredient lines no longer says detail rows sit flush with the gutter.
+  They sit flush inside the card, still not `inset`, and the section now
+  gives the padding and the 32 to Steps.
+- **Tests.** `recipe_screens_test` +2:
+  - on `_sectionedLines`, the Ingredients heading, both section headings
+    and the first and last rows resolve to the same `Card` element, and
+    the Steps heading has no `Card` ancestor;
+  - with no ingredients, "No ingredients yet." shares the heading's card.
+
+  The existing detail tests pass unchanged. The end-note test's
+  `find.ancestor(…, Card)` still finds exactly one, because it starts from
+  the note text.
+
+**Differs from the plan.** Nothing in the code. The § Cards line also
+names the end note, which the plan didn't ask for.
+
+**How it was verified.**
+- `dart analyze` is clean, and `flutter test` passes **1140/1140**.
+- `make check` is green except the known `seed-check`. It stops there, so
+  `make test-sql` (exit 0) and `l10n-check` (no diff) were run on their
+  own afterwards.
+- **Walk** (`/design-walk recipe-detail`, 2026-10-16) on the **emulator**,
+  with the hosted release build from `make install-emulator` and Dev
+  login. It ran all four combinations on `Setnja odeljci TEST` (a
+  heading-less run, then `Krem`) and `Domaći čorbasti pasulj…` (servings,
+  a long wrapping title, two wrapping unmatched lines with rings, notes
+  under rows). Measured on the sr/light screenshot at 2.625 px/dp: 63 px
+  (24) from the stat strip's rule to the card, about 84 px (32) from the
+  card to Koraci, and the dashes start 42 px (16) inside the card edge.
+  "za 6 porcija" / "for 6 servings" sit on the heading's baseline at the
+  right. In dark, the dashes, the rings and `Krem` read clearly on
+  `surfaceContainerHigh`, the one contrast this slice changes. Nothing
+  overflowed in Serbian. With phone `uimode night yes` and the app on
+  `Svetla`, the app stayed light. The walk restored `Srpski` / `Svetla`
+  and reset `uimode` to `no`.
+- **Not reached on the walk:** the empty case (no hosted recipe has zero
+  ingredients, and no throwaway was made; the widget test covers it), and
+  the sectioned recipe in en/dark (the tap missed; sr/dark covered it).

@@ -1,35 +1,30 @@
-# State — 2026-10-13
+# State — 2026-10-16
 
 **Branch:** `main`
-**Last shipped:** Phase 9 slice C's sixth and last slice,
-`phase9-import-save-to` (`a6e268e`), from the design round
-`docs/design/handoffs/2026-10-13-multiple-households/` (§ D6, D175).
-With it, **Phase 9 (multiple households) is complete**. This slice covers
-where an import is saved when you have more than one household.
+**Last shipped:** design round 4's first slice,
+`phase9-recipe-detail-ingredients-card` (`2686df5`), from
+`docs/design/handoffs/2026-10-16-round-4-recipe-detail-signin/` (D176).
+Phase 9 (multiple households) was already complete. Round 4 is a
+post-Phase-9 design round with two slices and no token change.
 
-- **Footer.** With two or more households, import review's action bar
-  carries one line above its buttons: `home` 16, `Čuva se u: **X**` /
-  `Saves to **X**` (the name in w600 `onSurface`, up to two lines), and
-  `Promenite` / `Change`. The default is the **job's** household.
-- **Sheet.** Change opens `showSaveToHouseholdSheet` (`Sačuvajte u
-  domaćinstvu` / `Save to`). It has no Manage row and picks for this
-  import only. Nothing switches.
-- **After.** Saving into a household that isn't current lands on the
-  current Recipes root. Otherwise it lands on the detail. Both show
-  `Sačuvano u domaćinstvu „X“.` / `Saved to X.`, with no action.
-- **Server.** `save_imported_recipe` takes `target_household uuid default
-  null`, accepted only for a household the caller belongs to (`42501`).
-  The client sends the key only when a target was picked.
-- **One household:** unchanged, with the same bar and no snackbar.
+- **Recipe detail.** The Ingredients heading (with `za N porcija` /
+  `for N servings`), every section heading and every row now sit on one
+  themed `Card`, padded `lg lg lg xs` (`lg` at the bottom when there are no
+  ingredients). There is 24 from the stat strip to the card and 32 from the
+  card to the Steps heading. Rows stay flush inside the card, not `inset`.
+- **Unchanged:** the stat strip, the Steps timeline, the end-note card,
+  `IngredientLineRow`, and the editor and import review lists, which stay
+  bare.
 
-`dart analyze` is clean, and `flutter test` passes 1138/1138. `make check`
-is green except the known `seed-check`. `make test-sql` passes after a
-fresh `db reset`.
+`dart analyze` is clean, and `flutter test` passes 1140/1140. `make check`
+is green except the known `seed-check`. `test-sql` and `l10n-check`,
+which run after it, pass on their own.
 
-**Hosted has the new migration**
-(`20261013180000_save_imported_recipe_target.sql`, pushed by Marko). The
-dry run reports "up to date". The Galaxy runs this slice's release build,
-and Marko reported its walk clean.
+**Walked clean** (`/design-walk recipe-detail`, emulator, all four
+combinations, 2026-10-16), so no loop was opened. Not reached: the
+empty-ingredients case on a device (covered by a widget test). The slice
+needs nothing on hosted. The emulator runs this slice's release build; the
+Galaxy still runs `phase9-import-save-to`'s.
 
 **Hosted test data:**
 - the walk account (Galaxy) owns `Renamed Household` and `Porodica
@@ -37,7 +32,7 @@ and Marko reported its walk clean.
 - `test-user` (emulator) owns `Kod Mire` and is a member of `Renamed
   Household`.
 
-Not recorded from this slice's walk, so check it next time: whether the
+Not recorded from `phase9-import-save-to`'s walk, so check it next time: whether the
 one-household footer check ran, and whether the walk's throwaway recipes
 were soft-deleted. If they weren't, they're on hosted.
 
@@ -136,8 +131,11 @@ Still open:
   Design updates them.
 
 **In flight:** none.
-**Next:** nothing is queued on the roadmap. Phase 9 is complete, and no
-Phase 10 is planned. Candidates:
+**Next:** round 4's second and last slice, `phase9-sign-in-no-illustration`
+(`/plan-slice-ui`): drop the sign-in illustration and its gap, and remove
+`AppSizes.signInIllustration` and its DESIGN_SYSTEM.md rows. It partly
+supersedes D137, so its close records a new decision. After that, nothing
+is queued on the roadmap. Candidates:
 - the formatting toolbar in the translation review, the last raw formatting
   surface. It is a small `/plan-slice-ui` on D167's pattern;
 - Phase 8 part 4 (real thumbnails), which stays optional, "only if part 2 is
@@ -153,7 +151,7 @@ Phase 10 is planned. Candidates:
 
 The open device-walk loops below still want one sitting with the Galaxy
 attached.
-**Latest decision:** D175
+**Latest decision:** D176
 
 **Twenty-two device-walk loops are open.** Phase 7 part 3's walk ran on the physical
 Galaxy (2026-09-25) and closed four: Phase 6 1a and 2, and part 2's own FAB

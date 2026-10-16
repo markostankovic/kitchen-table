@@ -1,0 +1,23 @@
+/* One family: the platform sans (Roboto on Android / SF on iOS). Literata removed 2026-09-30.
+   Weight 700 marks a recipe name — the only 700 text besides the wordmark. */
+:root{
+--font-sans:"Roboto",-apple-system,system-ui,sans-serif;
+--font-mono:"Roboto Mono",ui-monospace,monospace;
+--type-display-small:700 32px/40px var(--font-sans);--tracking-display-small:0.5px;
+--type-headline-small:700 28px/34px var(--font-sans);--tracking-headline-small:0.3px;
+--type-recipe-title:700 17px/24px var(--font-sans);--tracking-recipe-title:0.1px;
+--type-monogram:700 30px/36px var(--font-sans);
+--type-title-large:600 22px/28px var(--font-sans);
+--type-title-medium:600 18px/24px var(--font-sans);
+--type-title-small:600 14px/20px var(--font-sans);
+--type-body-large:400 18px/28px var(--font-sans);
+--type-body-medium:400 14px/20px var(--font-sans);
+--type-body-small:400 12px/16px var(--font-sans);
+--type-label-large:600 14px/20px var(--font-sans);
+--type-label-medium:500 12px/16px var(--font-sans);
+/* aliases */
+--text-wordmark:var(--type-display-small);--text-recipe-title-large:var(--type-headline-small);
+--text-app-bar:var(--type-title-large);--text-section:var(--type-title-medium);--text-group-label:var(--type-title-small);
+--text-step:var(--type-body-large);--text-ingredient:var(--type-body-large);--text-body:var(--type-body-medium);
+--text-meta:var(--type-body-small);--text-button:var(--type-label-large);--text-badge:var(--type-label-medium);
+}
