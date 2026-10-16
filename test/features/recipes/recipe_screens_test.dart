@@ -1397,6 +1397,52 @@ void main() {
       expect(find.textContaining('serving'), findsNothing);
     });
 
+    // Design round 4: the Ingredients heading and its rows sit on one card.
+    testWidgets('the ingredients sit on a card; the Steps heading does not',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(ingredients: _sectionedLines),
+      );
+
+      Element cardOf(Finder of) =>
+          tester.element(find.ancestor(of: of, matching: find.byType(Card)));
+      // The harness renders in English.
+      final Element card = cardOf(find.text('Ingredients'));
+      expect(cardOf(find.text('Za testo')), same(card));
+      expect(cardOf(find.text('Za fil')), same(card));
+      expect(
+        cardOf(find.textContaining('brašno', findRichText: true)),
+        same(card),
+      );
+      expect(
+        cardOf(find.textContaining('pavlaka', findRichText: true)),
+        same(card),
+      );
+      expect(
+        find.ancestor(
+          of: find.text('Steps', skipOffstage: false),
+          matching: find.byType(Card),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('with no ingredients, the empty text sits on the card',
+        (WidgetTester tester) async {
+      await _pumpDetail(
+        tester,
+        _detail.copyWith(ingredients: const <RecipeIngredient>[]),
+      );
+
+      Element cardOf(Finder of) =>
+          tester.element(find.ancestor(of: of, matching: find.byType(Card)));
+      expect(
+        cardOf(find.text('No ingredients yet.')),
+        same(cardOf(find.text('Ingredients'))),
+      );
+    });
+
     testWidgets('a URL import\'s source line is the lead-in and the host, '
         'on one line', (WidgetTester tester) async {
       await _pumpDetail(

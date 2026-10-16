@@ -490,7 +490,8 @@ toolbar would stay on the keyboard for a field nobody can see.
 `KitchenColors.card`, no hairline, radius 12, elevation 0, no surface tint. The
 fill alone separates a card from the cream ground — not a border, not a shadow
 (D134). Every themed `Card` follows: recipe list, meal plan, settings,
-shopping list, import review, the household invite card.
+shopping list, import review, the household invite card, the recipe
+detail's ingredients and its end note.
 
 ### Navigation
 
@@ -684,8 +685,11 @@ Only the shopping list passes any.
 divider with it, so the dashes start and end at the text. The flagged tint
 and marker still run the full width, down to the divider with no gap. Import review sets it on **every** row, so
 flagged and unflagged names and amounts line up (`Review import@1x.png`). The
-recipe detail and the shopping list sit flush with the gutter
-(`Recipe@1x.png`).
+shopping list sits flush with the gutter. On recipe detail the rows sit
+flush inside the ingredients card, 16 in from the card edge and still not
+`inset`: the card pads `lg lg lg xs` (`lg` at the bottom when there are no
+ingredients, since the empty text has no trailing padding), and the card is
+followed by `xxl` (32) to the Steps heading (D176).
 
 On import review the name is the local parse of the raw text, falling back to
 the whole raw text when there is no usable parse, and a matched line's trailer

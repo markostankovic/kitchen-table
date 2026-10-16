@@ -530,22 +530,29 @@ class _Body extends ConsumerWidget {
               // width in Serbian as in English; a joined sentence is not.
               AppStatStrip(columns: _stats(context, kitchen)),
               const SizedBox(height: AppSpacing.xl),
-              AppSectionHeading(
-                text: l10n.ingredientsHeading,
-                trailing: detail.recipe.servings == null
-                    ? null
-                    : l10n.ingredientsForServings(detail.recipe.servings!),
-              ),
-              if (detail.ingredients.isEmpty)
-                Text(
-                  l10n.noIngredientsYet,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+              _IngredientsCard(
+                isEmpty: detail.ingredients.isEmpty,
+                children: <Widget>[
+                  AppSectionHeading(
+                    text: l10n.ingredientsHeading,
+                    trailing: detail.recipe.servings == null
+                        ? null
+                        : l10n.ingredientsForServings(detail.recipe.servings!),
                   ),
-                )
-              else
-                ..._ingredientRows(detail.ingredients, units),
-              const SizedBox(height: AppSpacing.xl),
+                  if (detail.ingredients.isEmpty)
+                    Text(
+                      l10n.noIngredientsYet,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  else
+                    ..._ingredientRows(detail.ingredients, units),
+                ],
+              ),
+              // 32 to Steps: the card's edge is the boundary now, not a
+              // last row's own `sm` padding.
+              const SizedBox(height: AppSpacing.xxl),
               AppSectionHeading(text: l10n.stepsHeading),
               if (detail.displaySteps.isEmpty)
                 Text(
@@ -1044,6 +1051,38 @@ class _StepNoteRow extends StatelessWidget {
 ///
 /// The body renders the light-formatting subset through `AppRichText`
 /// (D165): bold, italic, bullet and numbered lists.
+/// The Ingredients heading and its rows on one themed card (D176).
+///
+/// The bottom is `xs`: the last row already ends in its own `sm` padding.
+/// The empty-state text has none, so it takes the full `lg`.
+class _IngredientsCard extends StatelessWidget {
+  const _IngredientsCard({required this.isEmpty, required this.children});
+
+  final bool isEmpty;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            isEmpty ? AppSpacing.lg : AppSpacing.xs,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: children,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _RecipeNotesCard extends StatelessWidget {
   const _RecipeNotesCard({required this.notes, required this.l10n});
 
