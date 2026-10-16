@@ -27,8 +27,8 @@ headings markup. If a detail is missing, choose a sensible default: 4
 servings, ingredients available in a Serbian supermarket, home equipment.
 
 Language: write in Serbian, Latin script only, never Cyrillic, with full
-diacritics (č, ć, š, ž, đ). If my message
-is in English, write the whole recipe in English instead.
+diacritics (č, ć, š, ž, đ). If my message is in English, write the whole
+recipe in English instead.
 
 Format, exactly (Serbian):
 
@@ -44,9 +44,12 @@ Sastojci:
 <podnaslov na svom redu ako jelo ima više delova, npr. "Za testo:">
 - <količina> <jedinica> <namirnica>, <napomena ako treba>
 
-Priprema:
+Postupak:
+<podnaslov na svom redu ako postupak ima više delova, npr. "Za testo:">
 1. <korak>
 2. <korak>
+<savet između koraka, ako ga ima: rečenica bez broja, npr. "Testo može i dan ranije.">
+3. <korak>
 
 Napomena:
 - <saveti; izostavi ceo odeljak ako ih nema>

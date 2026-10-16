@@ -55,9 +55,12 @@ Sastojci:
 <podnaslov ako ima više delova, npr. "Za testo:">
 - <količina> <jedinica> <namirnica>, <napomena ako treba>
 
-Priprema:
+Postupak:
+<podnaslov na svom redu ako postupak ima više delova, npr. "Za testo:">
 1. <korak>
 2. <korak>
+<savet između koraka, ako ga ima: rečenica bez broja>
+3. <korak>
 
 Napomena:
 - <saveti, ako ih ima>
@@ -96,8 +99,11 @@ Ingredients:
 - <quantity> <unit> <ingredient>, <note if needed>
 
 Method:
+<subheading on its own line if the method has parts, e.g. "For the dough:">
 1. <step>
 2. <step>
+<tip between steps, if any: a sentence without a number>
+3. <step>
 
 Notes:
 - <tips, if any>
@@ -138,7 +144,7 @@ Za slojeve:
 - 1 kg krompira (oljuštenog)
 - 2 dl biljnog mleka
 
-Priprema:
+Postupak:
 1. Sočivo operite i kuvajte 15 minuta.
 2. Na ulju dinstajte luk 5 minuta, dodajte beli luk i papriku.
 Fil može da se pripremi i dan ranije.
