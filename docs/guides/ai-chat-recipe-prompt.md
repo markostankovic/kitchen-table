@@ -23,12 +23,14 @@ flag.
 | Seeded units only: `g, kg, ml, dl, l, kašičica, kašika, šolja, čaša, kom, čen, glavica, veza, kriška, kesica, konzerva, prstohvat` | Anything else is left without a unit |
 | `1/2`, `1 1/2`, `½`, `1,5`, ranges `2-3` | Become exact integer fractions or ranges |
 | Notes after a comma or in brackets: `2 šolje brašna, prosejano` | Become the line's note, so the name stays clean for matching |
-| `po ukusu` / `po želji` at the **end** of a line | Marks the line optional |
+| `po ukusu` / `po želji` / `(opciono)` at the **end** of a line: `so po ukusu`, `100 g kajmaka (opciono)` | Marks the line optional |
 | No `k.` or `kaš.` | Deliberately not parsed, because they're ambiguous |
 | Section headings on their own line: `Za fil:` | Become ingredient sections or method headings |
 | Times written in steps: `pecite 25 minuta` | Become a step timer |
+| An aside between steps on its own unnumbered line, as a sentence: `Testo može i dan ranije.` | Becomes a note between steps; a closing `Napomena` section becomes the recipe's notes instead |
 | `Porcije`, `Priprema` and `Kuvanje` stated explicitly | Fill servings, prep time and cook time |
-| Latin script | Display is Latin only |
+| Servings as one whole number (`4`, not `4-6` or `1 tepsija`), times in whole minutes | The fields are positive integers; anything else comes back empty |
+| Latin script with full diacritics (č, ć, š, ž, đ) | Display is Latin only, and the text is shown as written |
 
 Tags are not imported (`ModelRecipe` has no tags field), so asking for them
 does nothing. Leave out a "source" line: the import would save it as the
@@ -66,8 +68,12 @@ Pravila za sastojke:
 - Razlomci kao 1/2 ili 1 1/2; decimale sa zarezom (1,5 dl); raspon kao 2-3.
 - Napomenu o obradi stavi posle zareza ili u zagradu ("1 glavica luka, sitno seckana").
 - Začine bez količine piši kao "so po ukusu".
+- Sastojak koji može da se izostavi završi sa "(opciono)" ili ", po želji".
+- Porcije su jedan ceo broj, a vremena u celim minutima.
+- Piši sa svim kvačicama (č, ć, š, ž, đ).
 - Bez skraćenica tipa "k." ili "kaš.", bez podebljanog teksta.
 U koracima navedi vreme brojem kad postoji ("pecite 25 minuta").
+Savet koji važi između dva koraka napiši kao zasebnu rečenicu bez broja, tačno na tom mestu; opšte savete stavi u "Napomena" na kraju.
 ```
 
 ## Prompt template (English)
@@ -102,8 +108,11 @@ Ingredient rules:
 - Fractions as 1/2 or 1 1/2; ranges as 2-3.
 - Put preparation notes after a comma or in brackets ("1 onion, finely chopped").
 - Write seasoning without a quantity as "salt to taste".
+- End an ingredient that can be left out with "(optional)" or ", if desired".
+- Servings is one whole number; times are whole minutes.
 - No abbreviations beyond the units above, no bold text.
 In steps, state times as numbers where there is one ("bake for 25 minutes").
+A tip that belongs between two steps goes on its own unnumbered line as a sentence, right where it applies; general tips go in "Notes" at the end.
 ```
 
 ## What a good reply looks like
@@ -132,7 +141,8 @@ Za slojeve:
 Priprema:
 1. Sočivo operite i kuvajte 15 minuta.
 2. Na ulju dinstajte luk 5 minuta, dodajte beli luk i papriku.
-...
+Fil može da se pripremi i dan ranije.
+3. ...
 
 Napomena:
 - Može se pripremiti dan ranije.

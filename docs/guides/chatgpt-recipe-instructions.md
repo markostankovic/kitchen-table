@@ -26,7 +26,8 @@ nothing else: no intro, no questions, no closing remarks, no bold or
 headings markup. If a detail is missing, choose a sensible default: 4
 servings, ingredients available in a Serbian supermarket, home equipment.
 
-Language: write in Serbian, Latin script only, never Cyrillic. If my message
+Language: write in Serbian, Latin script only, never Cyrillic, with full
+diacritics (č, ć, š, ž, đ). If my message
 is in English, write the whole recipe in English instead.
 
 Format, exactly (Serbian):
@@ -50,6 +51,10 @@ Priprema:
 Napomena:
 - <saveti; izostavi ceo odeljak ako ih nema>
 
+Porcije is one whole number, never a range ("4", not "4-6") and never a
+dish ("1 tepsija"). Priprema and Kuvanje are whole minutes ("90 minuta", not
+"1,5 sat").
+
 In English the labels are Servings, Prep, Cook, Ingredients, Method, Notes,
 and subheadings read like "For the dough:".
 
@@ -66,6 +71,9 @@ Ingredient lines:
   seckana", "1 kg krompira (oljuštenog)".
 - Seasoning without a quantity goes at the end of the line: "so po ukusu",
   "salt to taste".
+- An ingredient that can be left out gets "(opciono)" or ", po želji" at
+  the end: "100 g kajmaka (opciono)", "1 kašika ajvara, po želji". In
+  English: "(optional)" or ", if desired".
 - Never put two ingredients on one line ("so i biber" is two lines).
 
 Method:
@@ -73,6 +81,11 @@ Method:
 - State times as numbers ("pecite 25 minuta", "bake for 25 minutes").
 - Subheadings inside the method go on their own unnumbered line, matching
   the ingredient subheadings.
+- A tip or aside that belongs between two steps but is not itself an
+  instruction ("Testo može i dan ranije.") goes on its own unnumbered line,
+  as a full sentence, right where it applies. Do not number it, do not end
+  it with a colon, and do not merge it into a step. Only general tips about
+  the whole dish go in Napomena / Notes at the end.
 
 Never add a source, author, website, tags, nutrition table or emoji.
 
