@@ -423,6 +423,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     try {
       await ref.read(recipeRepositoryProvider).softDelete(widget.recipeId);
       ref.invalidate(recipeListProvider);
+      // The server cleared the recipe's plan entries along with it
+      // (recipes_clear_plan_entries), so the Plan tab re-reads its week.
+      ref.read(mealPlanRevisionProvider.notifier).bump();
       if (!mounted) return;
       const RecipesRoute().go(context);
     } on AppFailure catch (e) {
